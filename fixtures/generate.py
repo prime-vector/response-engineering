@@ -13,7 +13,11 @@ import json
 from datetime import datetime, timedelta, timezone
 
 # Synthetic anchor. D0 is the day the denial storm begins.
-D0 = datetime(2027, 3, 2, 0, 0, tzinfo=timezone.utc)
+# SCENARIO.md section 3 fixes this as Monday 2 March, and the day of week is
+# load bearing: the workload is a batch schedule, so anything reading the
+# window has to agree with the scenario on which days are working days.
+# 2 March 2026 is a Monday. 2 March 2027 is not.
+D0 = datetime(2026, 3, 2, 0, 0, tzinfo=timezone.utc)
 CHANGE_DAY = D0 - timedelta(days=8)      # compliance agent rollout
 BRIDGE = D0 + timedelta(days=15, hours=17)
 
