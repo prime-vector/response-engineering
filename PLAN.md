@@ -23,7 +23,7 @@ It is a demonstration, not a platform. Success is a four minute video and a repo
 
 - [x] Incident Commander, holds the hypothesis board
 - [x] Telemetry Analyst, consumes the problem feed and detects recurrence
-- [ ] Change Correlator, correlates change and package history against onset
+- [x] Change Correlator, correlates change and package history against onset
 - [ ] Scribe, produces the timeline and the draft change record
 - [ ] Comms, produces the stakeholder update
 
@@ -34,7 +34,7 @@ Cost Guardrail is deliberately excluded. It does not fit this scenario and forci
 
 - [x] Mock MCP adapter serving the `telemetry` surface on 8422
 - [x] Mock MCP adapter serving the `change_registry` surface on 8423
-- [ ] `depends_on` chain wired commander to brief
+- [x] `depends_on` chain wired commander to brief
 - [ ] Deterministic enough to record without retakes
 
 ### M4: Governance visible
@@ -83,8 +83,9 @@ Three acts, four minutes, in this order:
 | Decision | Status |
 | --- | --- |
 | Brand and org the repo lands under | Open. Blocks M5, nothing earlier. |
-| Whether act one is a separate invocation or the first turn of the pipeline | Open. Decide during M3. |
-| Whether the mock adapter becomes its own package | Defer until it exists. |
+| Whether act one is a separate invocation or the first turn of the pipeline | Resolved during M3: a separate invocation of the Telemetry Analyst against the D+1 view. |
+| Whether the mock adapter becomes its own package | The mock exists in-repo. Repackage only if a second consumer appears. |
+| Who owns the change registry | Resolved: the Change Correlator, exclusively. The commander consumes correlation through its `changes` input and holds telemetry only. |
 
 ---
 

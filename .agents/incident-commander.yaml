@@ -34,21 +34,17 @@ intelligence:
     # is not enough for a full board at 4000 output tokens.
     timeout: 300
 
+# Telemetry only. The change registry belongs to the Change Correlator; the
+# commander consumes its correlation output through the changes input field
+# and never runs the query itself. One agent owns each evidence surface.
 tools:
   telemetry:
     type: mcp
     endpoint: http://localhost:8422
     description: >
       Platform-agnostic telemetry surface. Problem feed, metric series and
-      entity description. See interfaces/TELEMETRY.md. Mock adapter in
-      development, vendor adapters implement the same tool surface.
-    timeout: 30
-  change_registry:
-    type: mcp
-    endpoint: http://localhost:8423
-    description: >
-      Platform-agnostic change surface. Change records, package and agent
-      install history, deployment events. Read only.
+      entity description. See interfaces/TELEMETRY.md. Mock adapter at
+      mock/adapter.py, vendor adapters implement the same tool surface.
     timeout: 30
 
 sandbox:
@@ -59,9 +55,6 @@ sandbox:
       - metrics_query
       - entity_describe
       - processes_top
-      - changes_list
-      - packages_installed
-      - deployments_list
   http:
     allow_domains: [localhost]
   file:
@@ -98,7 +91,7 @@ tasks:
       may converge on a cause.
     timeout: 120
     # Tool binding is per task. Without this list the runner attaches nothing.
-    tools: [telemetry, change_registry]
+    tools: [telemetry]
     input:
       type: object
       properties:
@@ -386,6 +379,9 @@ prompts:
     strings, even for one item. standing_conditions_noted is an array of
     plain strings. Every other field listed above is a scalar: never emit []
     or {} for a string or boolean field, omit optional fields instead.
+    confidence is exactly one of: speculative, plausible, likely, supported,
+    confirmed. incident_state is exactly one of: triage, investigating,
+    hypothesis_blocked, mitigating, monitoring, unresolved_suppressed.
     summary is two sentences and under 600 characters; the detail belongs on
     the board, not in the summary.
 
