@@ -9,14 +9,14 @@ This is not a throwaway: it is the conformance reference. A vendor adapter
 is correct when it satisfies the same tool surface against the same fixtures.
 
 The adapter serves whatever fixture view it is started with, and nothing
-else. Time-honesty comes from the view (a D+2 view simply contains no
+else. Time-honesty comes from the view (a D+1 view simply contains no
 process snapshot and no change query), and tool access comes from each
 spec's sandbox. The adapter enforces neither; it just refuses to invent
 data the view does not hold.
 
     python3 mock/adapter.py --surface telemetry                            # 8422
     python3 mock/adapter.py --surface change_registry                      # 8423
-    python3 mock/adapter.py --surface telemetry --fixture fixtures/composite-incident.d2.json
+    python3 mock/adapter.py --surface telemetry --fixture fixtures/composite-incident.d1.json
 
 MCP tool names use underscores (problems_list) rather than the dotted
 interface names (problems.list): model-facing tool name constraints do not

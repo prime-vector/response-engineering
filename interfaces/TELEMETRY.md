@@ -85,4 +85,4 @@ Same treatment. ServiceNow, Jira Service Management or a webhook sit behind one 
 
 ## Conformance
 
-An adapter is conformant when it satisfies both fixture views, `fixtures/composite-incident.json` and `fixtures/composite-incident.d2.json`, and returns the same agent decisions as the mock. Those fixtures are the test suite. The D+2 view matters as much as the bridge view: an adapter that invents data the view does not hold (a process listing nobody collected, a change query nobody ran) fails conformance even if the data looks plausible.
+An adapter is conformant when it satisfies both fixture views, `fixtures/composite-incident.json` and `fixtures/composite-incident.d1.json`, and returns the same agent decisions as the mock. Those fixtures are the test suite. The D+1 view matters as much as the bridge view: an adapter that invents data the view does not hold (a process listing nobody collected, a change query nobody ran) fails conformance even if the data looks plausible.

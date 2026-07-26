@@ -10,17 +10,18 @@ Built on [Open Agent Spec](https://github.com/prime-vector/open-agent-spec).
 
 ## Status
 
-Early. Two of five agents written, mock adapters serving both tool surfaces. Both agents verified live end to end against the mocks: the analyst on the D+2 view, the commander on the bridge view, each producing contract-valid output.
+Early. Three of five agents written, mock adapters serving both tool surfaces. All three verified live end to end against the mocks: the analyst on the D+1 view, the correlator querying the registry through MCP, the commander on the bridge view, each producing contract-valid output.
 
 | Artefact | State |
 | --- | --- |
 | `SCENARIO.md` | Draft, needs review |
 | `.agents/incident-commander.yaml` | Written, validates against OAS 1.5.1 |
 | `.agents/telemetry-analyst.yaml` | Written, validates against OAS 1.5.1 |
+| `.agents/change-correlator.yaml` | Written, validates against OAS 1.5.1 |
 | `interfaces/TELEMETRY.md` | Draft interface contract |
-| `fixtures/composite-incident*.json` | Generated, two views (D+2 and D+15), cadence needs tuning against reference |
+| `fixtures/composite-incident*.json` | Generated, two views (D+1 and D+15), cadence needs tuning against reference |
 | `mock/adapter.py` | Written, smoke-tested against both fixture views |
-| Change Correlator, Scribe, Comms | Not started |
+| Scribe, Comms | Not started |
 
 ## Layout
 
@@ -30,10 +31,11 @@ PLAN.md                            milestones and definition of done
 CLAUDE.md                          working rules for this repo
 .agents/incident-commander.yaml    holds the hypothesis board
 .agents/telemetry-analyst.yaml     detects recurrence in the problem feed
+.agents/change-correlator.yaml     correlates change history against onset
 interfaces/TELEMETRY.md            platform-agnostic tool surface
 fixtures/generate.py               synthetic fixture generator, two views
 fixtures/composite-incident.json   generated, D+15 bridge view
-fixtures/composite-incident.d2.json  generated, D+2 view for act one
+fixtures/composite-incident.d1.json  generated, D+1 view for act one
 mock/adapter.py                    mock MCP adapter, both surfaces, fixture-backed
 ```
 
@@ -43,6 +45,7 @@ mock/adapter.py                    mock MCP adapter, both surfaces, fixture-back
 pipx install open-agent-spec
 oa validate --spec .agents/incident-commander.yaml
 oa validate --spec .agents/telemetry-analyst.yaml
+oa validate --spec .agents/change-correlator.yaml
 
 # the mock adapters, one terminal each, fixture-backed
 python3 mock/adapter.py --surface telemetry                # 8422, D+15 bridge view
@@ -55,14 +58,16 @@ export ANTHROPIC_API_KEY=...
 patch "$(python3 -c 'import oas_cli.providers.anthropic_http as m; print(m.__file__)')" \
   < patches/oas-1.5.1-anthropic-tool-messages.diff
 
-# act two: the bridge, run from evidence
+# act two: change correlation first, then the bridge, run from evidence
+oa run --spec .agents/change-correlator.yaml --task correlate \
+  --input "$(cat fixtures/composite-incident.json)" --quiet
 oa run --spec .agents/incident-commander.yaml --task assess \
   --input "$(cat fixtures/composite-incident.json)" --quiet
 
-# act one: restart the telemetry adapter on the D+2 view first
-python3 mock/adapter.py --surface telemetry --fixture fixtures/composite-incident.d2.json
+# act one: restart the telemetry adapter on the D+1 view first
+python3 mock/adapter.py --surface telemetry --fixture fixtures/composite-incident.d1.json
 oa run --spec .agents/telemetry-analyst.yaml --task detect \
-  --input "$(cat fixtures/composite-incident.d2.json)" --quiet
+  --input "$(cat fixtures/composite-incident.d1.json)" --quiet
 ```
 
 ## Design position

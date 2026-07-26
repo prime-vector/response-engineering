@@ -12,7 +12,7 @@ not what was obtainable. Absence means uncollected, however cheap the
 collection would have been. That asymmetry is the scenario.
 
     python3 fixtures/generate.py > fixtures/composite-incident.json             # D+15, the bridge
-    python3 fixtures/generate.py --at d2 > fixtures/composite-incident.d2.json  # act one
+    python3 fixtures/generate.py --at d1 > fixtures/composite-incident.d1.json  # act one
 """
 
 import argparse
@@ -27,9 +27,10 @@ TICKET = D0 + timedelta(days=15, hours=16, minutes=40)
 BRIDGE = D0 + timedelta(days=15, hours=17)
 
 VIEWS = {
-    # Act one. Third auto-closed occurrence on the board, no ticket, no bridge,
+    # Act one. Second occurrence on the same signature, auto-closed and
+    # unacknowledged, exactly as SCENARIO.md stages it. No ticket, no bridge,
     # nothing collected from the host. The only signal is the feed itself.
-    "d2": D0 + timedelta(days=2, hours=9),
+    "d1": D0 + timedelta(days=1, hours=12),
     # Acts two and three. Two and a half hours into the bridge: process
     # snapshot taken, change correlation run, deciding evidence requested
     # and still outstanding.
@@ -104,7 +105,7 @@ def build(view):
         "view": view,
         "as_of": iso(as_of),
 
-        # No incident exists at D+2. Nothing has been reported, nothing has
+        # No incident exists at D+1. Nothing has been reported, nothing has
         # been declared. That is the point of act one.
         "incident_id": "SYN-0001" if at_bridge else None,
         "elapsed_minutes": (
@@ -174,7 +175,7 @@ def build(view):
         # the deciding evidence was never collected, so the agent cannot use it.
         "evidence": [],
 
-        # Empty at D+2: nobody has hypothesised anything yet, so naming the
+        # Empty at D+1: nobody has hypothesised anything yet, so naming the
         # deciding evidence here would leak insight backwards in time.
         "missing_evidence": [],
 

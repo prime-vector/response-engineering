@@ -42,8 +42,8 @@ tools:
     endpoint: http://localhost:8422
     description: >
       Platform-agnostic telemetry surface. Problem feed, metric series and
-      entity description. See interfaces/TELEMETRY.md. Mock adapter in
-      development, vendor adapters implement the same tool surface.
+      entity description. See interfaces/TELEMETRY.md. Mock adapter at
+      mock/adapter.py, vendor adapters implement the same tool surface.
     timeout: 30
 
 sandbox:
@@ -84,8 +84,8 @@ tasks:
     description: >
       Given a point-in-time view of the problem feed, metric series and entity
       description, report any recurrence, the humans who have not consumed it,
-      and the standing conditions that make it matter. The D+2 fixture view is
-      the reference input: three auto-closed problems and nothing else.
+      and the standing conditions that make it matter. The D+1 fixture view is
+      the reference input: two auto-closed problems and nothing else.
     timeout: 120
     # Tool binding is per task. Without this list the runner attaches nothing.
     tools: [telemetry]
