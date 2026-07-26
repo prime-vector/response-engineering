@@ -60,31 +60,33 @@ sandbox:
   file:
     allow_paths: ["./fixtures/"]
 
-behavioural_contract:
-  version: "1.0"
-  description: >
-    Enforces that a correlation is never quotable as a cause. Every
-    correlation carries its confidence, its temporal offset and the test
-    that would settle it, and registry blind spots travel with the result.
-  role: "Change correlator"
-  behavioural_flags:
-    conservatism: "high"
-    verbosity: "balanced"
-    temperature_control:
-      mode: "strict"
-      range: [0.0, 0.3]
-  response_contract:
-    output_format:
-      required_fields:
-        - onset_at
-        - correlation_found
-        - correlations
-        - registry_caveats
-        - next_actions
-
 tasks:
 
   correlate:
+    # Task-level rather than root-level: the runner merges a root contract
+    # into every task with arrays unioned, so a root contract would bind
+    # any future task on this spec to this task's required fields.
+    behavioural_contract:
+      version: "1.0"
+      description: >
+        Enforces that a correlation is never quotable as a cause. Every
+        correlation carries its confidence, its temporal offset and the test
+        that would settle it, and registry blind spots travel with the result.
+      role: "Change correlator"
+      behavioural_flags:
+        conservatism: "high"
+        verbosity: "balanced"
+        temperature_control:
+          mode: "strict"
+          range: [0.0, 0.3]
+      response_contract:
+        output_format:
+          required_fields:
+            - onset_at
+            - correlation_found
+            - correlations
+            - registry_caveats
+            - next_actions
     description: >
       Given a point-in-time view of the entity and its signals, derive onset,
       query the change registry, and report every change in the surrounding

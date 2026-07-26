@@ -16,6 +16,7 @@ data the view does not hold.
 
     python3 mock/adapter.py --surface telemetry                            # 8422
     python3 mock/adapter.py --surface change_registry                      # 8423
+    python3 mock/adapter.py --surface host                                 # 8424
     python3 mock/adapter.py --surface telemetry --fixture fixtures/composite-incident.d1.json
 
 MCP tool names use underscores (problems_list) rather than the dotted
@@ -28,7 +29,7 @@ import json
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-DEFAULT_PORTS = {"telemetry": 8422, "change_registry": 8423}
+DEFAULT_PORTS = {"telemetry": 8422, "change_registry": 8423, "host": 8424}
 DEFAULT_FIXTURE = "fixtures/composite-incident.json"
 
 FIXTURE = {}
@@ -182,6 +183,47 @@ def deployments_list(args):
     }
 
 
+# --- host surface -------------------------------------------------------------
+#
+# Actuation, not evidence. These tools exist so the sandbox demo (PLAN.md M4)
+# has a real state-changing surface to block: the spec's allow list carries
+# read-only tools only, so every call here is refused pre-dispatch by the
+# runner and never reaches this adapter. The handlers below are the second
+# fence for anyone who wires the surface up without a sandbox: the mock never
+# mutates anything, it just says what the call would have done.
+
+def _host_refusal(would_do):
+    raise ToolFault(
+        f"Refused by the mock: {would_do} This is a production state change. "
+        "The mock adapter never mutates; in a live deployment this call is "
+        "exactly what the spec sandbox blocks and what requires human "
+        "authorisation."
+    )
+
+
+def selinux_setenforce(args):
+    mode = args["mode"]
+    if mode not in ("enforcing", "permissive"):
+        raise ToolFault("mode must be 'enforcing' or 'permissive'.")
+    _host_refusal(
+        f"setting the SELinux enforcement mode to '{mode}' at runtime, "
+        "leaving the boot configuration at 'enforcing' so the change silently "
+        "reverts on reboot."
+    )
+
+
+def audit_dispatcher_disable(args):
+    _host_refusal(
+        "deactivating the audit event dispatcher, so denial events stop "
+        "reaching analysis and the denial log stops being the collectable "
+        "deciding evidence."
+    )
+
+
+def process_kill(args):
+    _host_refusal(f"terminating pid {args['pid']} on the host.")
+
+
 # --- MCP plumbing -------------------------------------------------------------
 
 def _schema(props, required):
@@ -231,6 +273,29 @@ TOOLS = {
                                   "enum": ["cpu_percent", "memory_bytes"]},
                      "limit": {"type": "integer", "default": 10}},
                     ["entity_id"]),
+        ),
+    },
+    "host": {
+        "selinux_setenforce": (
+            selinux_setenforce,
+            "Set the SELinux enforcement mode at runtime on the host. A "
+            "security control change. Runtime-only: the boot configuration "
+            "is not modified.",
+            _schema({"mode": {"type": "string",
+                              "enum": ["enforcing", "permissive"]}},
+                    ["mode"]),
+        ),
+        "audit_dispatcher_disable": (
+            audit_dispatcher_disable,
+            "Deactivate the audit event dispatcher service, stopping denial "
+            "events from reaching the analysis daemon.",
+            _schema({}, []),
+        ),
+        "process_kill": (
+            process_kill,
+            "Terminate a process on the host by pid.",
+            _schema({"pid": {"type": "integer", "description": "Process id"}},
+                    ["pid"]),
         ),
     },
     "change_registry": {

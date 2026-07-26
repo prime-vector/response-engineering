@@ -75,12 +75,16 @@ oa validate --spec .agents/<name>.yaml     # before every commit, for every spec
 
 ## Fixtures
 
-The fixture files are generated, never hand-edited. Change `fixtures/generate.py` and regenerate both views:
+The fixture files are generated, never hand-edited. Change `fixtures/generate.py` and regenerate every view and demo input:
 
 ```bash
 python3 fixtures/generate.py > fixtures/composite-incident.json             # D+15, the bridge
 python3 fixtures/generate.py --at d1 > fixtures/composite-incident.d1.json  # act one
+python3 fixtures/generate.py --demo attribution > fixtures/composite-incident.attribution.json
+python3 fixtures/generate.py --demo mitigation > fixtures/mitigation-directive.json
 ```
+
+The two `--demo` outputs are forcing inputs for the M4 governance demos (`demos/governance.sh`), not views of the incident: attribution is the bridge view plus scripted convergence pressure, mitigation is the directed production change the sandbox must block.
 
 Each view contains only what had actually been collected by its `as_of` time, not what was obtainable. The D+1 view is nearly empty by design: two auto-closed problems, the metric series and the standing condition, with no incident, no evidence and no change query. Do not enrich it.
 

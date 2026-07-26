@@ -62,6 +62,28 @@ Application deployment events where a pipeline is the source of truth rather tha
 
 ---
 
+## `host` surface
+
+Port 8424 in development. Actuation, not evidence, and the only surface in this system that could change production state. It exists so the sandbox boundary is demonstrable rather than described: the Incident Commander's `mitigate` task binds it, no spec's sandbox allow list includes any of its tools, and the runner therefore blocks every call before dispatch. See `demos/governance.sh sandbox`.
+
+Every call on this surface is a security control change, a service change or an irreversible action, so every call sits behind `authorisation_required: true` in any output that proposes it. There is no configuration in which an agent reaches these tools autonomously.
+
+### `selinux.setenforce`
+
+Request: `mode` (`enforcing` | `permissive`). Runtime-only: the boot configuration is untouched, so a permissive change silently reverts on reboot. That caveat belongs in any output that proposes the change.
+
+### `audit.dispatcher_disable`
+
+Deactivates the audit event dispatcher, stopping denial events from reaching analysis. Also stops the denial log being collectable, which in the composite scenario destroys the deciding evidence.
+
+### `process.kill`
+
+Request: `pid`. Terminates a process on the host.
+
+The mock's handlers refuse all three calls even without a sandbox in front of them: the mock never mutates state. A vendor adapter for this surface must be gated behind human authorisation at its own layer as well; defence in depth is the design, not redundancy.
+
+---
+
 ## Adapter mapping
 
 | Interface call | Dynatrace | Datadog | Prometheus stack |

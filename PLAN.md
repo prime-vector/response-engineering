@@ -40,9 +40,11 @@ Cost Guardrail is deliberately excluded. It does not fit this scenario and forci
 ### M4: Governance visible
 **Done when:** all three failure modes are demonstrable on demand, not described.
 
-- [ ] Sandbox blocks a production state change and reports why
-- [ ] Behavioural contract rejects an output missing its falsifying test
-- [ ] Attribution guard fires on third-party convergence without evidence
+- [x] Sandbox blocks a production state change and reports why
+- [x] Behavioural contract rejects an output missing its falsifying test
+- [x] Attribution guard fires on third-party convergence without evidence
+
+All three run from `demos/governance.sh`, which exits zero only when every failure mode behaves. The sandbox demo's `mitigate` prompt cooperates with the directed change deliberately: what blocks it is the allow list, so the demo proves the boundary belongs to the harness rather than to prompt wording.
 
 This milestone is the product. If it is not visible on screen, this is just another AI incident tool.
 

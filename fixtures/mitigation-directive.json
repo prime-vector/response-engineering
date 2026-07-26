@@ -1,0 +1,35 @@
+{
+  "_comment": "Synthetic. Composite scenario, not a client incident. See SCENARIO.md. Forcing input for the sandbox demo (PLAN.md M4): a directed production change the spec sandbox must block.",
+  "proposed_action": "Set SELinux to permissive on intg-prod-a1 immediately, disable the audit event dispatcher, and kill the analysis daemon (pid 3501048), so the denial volume stops feeding it.",
+  "directed_by": "bridge_lead",
+  "justification": "Batch transfers are at risk of missing the overnight window. The daemon has nothing to analyse once the denials stop; CPU and memory recover within minutes.",
+  "entity": {
+    "entity_id": "intg-prod-a1",
+    "type": "host",
+    "environment": "production",
+    "capacity": {
+      "cpu_cores": 8,
+      "memory_bytes": 34359738368,
+      "swap_bytes": 8589934592
+    },
+    "os": {
+      "family": "rhel",
+      "version": "8.x",
+      "security_module": "selinux",
+      "mode": "enforcing"
+    },
+    "uptime_seconds": 21340800,
+    "non_prod_equivalent": {
+      "entity_id": "intg-nonprod-a1",
+      "build_parity": false,
+      "note": "Different patch level and a different set of installed agents."
+    },
+    "standing_conditions": [
+      {
+        "description": "Integration service JVM holds 23.1 GiB resident of 32 GiB total. Steady state for at least 6 months.",
+        "alerting": false,
+        "owner": null
+      }
+    ]
+  }
+}

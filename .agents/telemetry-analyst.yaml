@@ -56,31 +56,33 @@ sandbox:
   file:
     allow_paths: ["./fixtures/"]
 
-behavioural_contract:
-  version: "1.0"
-  description: >
-    Enforces that a recurrence report carries its own epistemics and nothing
-    else. Findings without a falsifying test do not leave this agent, and
-    causal hypotheses do not appear at all.
-  role: "Telemetry analyst"
-  behavioural_flags:
-    conservatism: "high"
-    verbosity: "balanced"
-    temperature_control:
-      mode: "strict"
-      range: [0.0, 0.3]
-  response_contract:
-    output_format:
-      required_fields:
-        - recurrence_detected
-        - recurrences
-        - findings
-        - standing_conditions_implicated
-        - next_actions
-
 tasks:
 
   detect:
+    # Task-level rather than root-level: the runner merges a root contract
+    # into every task with arrays unioned, so a root contract would bind
+    # any future task on this spec to this task's required fields.
+    behavioural_contract:
+      version: "1.0"
+      description: >
+        Enforces that a recurrence report carries its own epistemics and nothing
+        else. Findings without a falsifying test do not leave this agent, and
+        causal hypotheses do not appear at all.
+      role: "Telemetry analyst"
+      behavioural_flags:
+        conservatism: "high"
+        verbosity: "balanced"
+        temperature_control:
+          mode: "strict"
+          range: [0.0, 0.3]
+      response_contract:
+        output_format:
+          required_fields:
+            - recurrence_detected
+            - recurrences
+            - findings
+            - standing_conditions_implicated
+            - next_actions
     description: >
       Given a point-in-time view of the problem feed, metric series and entity
       description, report any recurrence, the humans who have not consumed it,
