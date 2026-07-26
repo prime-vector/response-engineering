@@ -73,13 +73,16 @@ oa validate --spec .agents/<name>.yaml     # before every commit, for every spec
 
 ## Fixtures
 
-`fixtures/composite-incident.json` is generated, never hand-edited. Change `fixtures/generate.py` and regenerate:
+The fixture files are generated, never hand-edited. Change `fixtures/generate.py` and regenerate both views:
 
 ```bash
-python3 fixtures/generate.py > fixtures/composite-incident.json
+python3 fixtures/generate.py > fixtures/composite-incident.json             # D+15, the bridge
+python3 fixtures/generate.py --at d2 > fixtures/composite-incident.d2.json  # act one
 ```
 
-The fixture is deliberately evidence-poor. The deciding evidence sits in `missing_evidence`, not `evidence`, so an agent cannot reason its way to a conclusion it should not be able to reach. **Do not move it.** If a spec appears to underperform because evidence is missing, that is the fixture working correctly.
+Each view contains only what had actually been collected by its `as_of` time, not what was obtainable. The D+2 view is nearly empty by design: three auto-closed problems, the metric series and the standing condition, with no incident, no evidence and no change query. Do not enrich it.
+
+The bridge view is deliberately evidence-poor. The deciding evidence sits in `missing_evidence`, not `evidence`, so an agent cannot reason its way to a conclusion it should not be able to reach. **Do not move it.** If a spec appears to underperform because evidence is missing, that is the fixture working correctly.
 
 ---
 
