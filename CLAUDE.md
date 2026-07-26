@@ -66,6 +66,8 @@ oa validate --spec .agents/<name>.yaml     # before every commit, for every spec
 
 - `agent.role` is a fixed enum: `analyst`, `reviewer`, `chat`, `retriever`, `planner`, `executor`. Nothing else validates. Role framing belongs in the prompt and the output contract.
 - Spec version is `1.5.0`, tested against CLI 1.5.1.
+- Tool-calling `oa run`s need the provider patch in `patches/` until it lands upstream; a stock 1.5.1 install 400s the moment the model calls a tool. `oa validate` is unaffected.
+- One agent owns each evidence surface: the Telemetry Analyst owns `telemetry`, the Change Correlator owns `change_registry`, the commander consumes their outputs. Do not give a new spec a surface another agent already owns.
 - Every agent output carrying a claim must include `confidence` and `falsifying_test` as required fields. This is not decoration. It is the entire thesis: a typed output cannot shed its caveats when it changes hands.
 - Anything that changes production state, alters a security control, or is irreversible within the incident window must set `authorisation_required: true`. There are no exceptions and no configuration option to disable this.
 
