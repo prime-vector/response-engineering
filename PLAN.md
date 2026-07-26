@@ -22,7 +22,7 @@ It is a demonstration, not a platform. Success is a four minute video and a repo
 **Done when:** all five specs validate against OAS 1.5.x and the role boundaries hold without overlap.
 
 - [x] Incident Commander, holds the hypothesis board
-- [ ] Telemetry Analyst, consumes the problem feed and detects recurrence
+- [x] Telemetry Analyst, consumes the problem feed and detects recurrence
 - [ ] Change Correlator, correlates change and package history against onset
 - [ ] Scribe, produces the timeline and the draft change record
 - [ ] Comms, produces the stakeholder update

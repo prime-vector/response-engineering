@@ -10,15 +10,16 @@ Built on [Open Agent Spec](https://github.com/prime-vector/open-agent-spec).
 
 ## Status
 
-Early. One of five agents written. Not runnable end to end yet.
+Early. Two of five agents written. Not runnable end to end yet.
 
 | Artefact | State |
 | --- | --- |
 | `SCENARIO.md` | Draft, needs review |
 | `.agents/incident-commander.yaml` | Written, validates against OAS 1.5.1 |
+| `.agents/telemetry-analyst.yaml` | Written, validates against OAS 1.5.1 |
 | `interfaces/TELEMETRY.md` | Draft interface contract |
-| `fixtures/composite-incident.json` | Generated, cadence needs tuning against reference |
-| Telemetry Analyst, Change Correlator, Scribe, Comms | Not started |
+| `fixtures/composite-incident*.json` | Generated, two views (D+2 and D+15), cadence needs tuning against reference |
+| Change Correlator, Scribe, Comms | Not started |
 | Mock MCP adapters | Not started |
 
 ## Layout
@@ -28,9 +29,11 @@ SCENARIO.md                        source of truth, read this first
 PLAN.md                            milestones and definition of done
 CLAUDE.md                          working rules for this repo
 .agents/incident-commander.yaml    holds the hypothesis board
+.agents/telemetry-analyst.yaml     detects recurrence in the problem feed
 interfaces/TELEMETRY.md            platform-agnostic tool surface
-fixtures/generate.py               synthetic fixture generator
-fixtures/composite-incident.json   generated, 15 day incident
+fixtures/generate.py               synthetic fixture generator, two views
+fixtures/composite-incident.json   generated, D+15 bridge view
+fixtures/composite-incident.d2.json  generated, D+2 view for act one
 ```
 
 ## Run
@@ -38,6 +41,7 @@ fixtures/composite-incident.json   generated, 15 day incident
 ```bash
 pipx install open-agent-spec
 oa validate --spec .agents/incident-commander.yaml
+oa validate --spec .agents/telemetry-analyst.yaml
 
 # needs the mock MCP adapters before this will execute
 export ANTHROPIC_API_KEY=...

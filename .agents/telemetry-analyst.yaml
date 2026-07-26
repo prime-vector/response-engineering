@@ -1,0 +1,275 @@
+# Telemetry Analyst
+#
+# Consumes the problem feed and notices what nobody is reading. Its whole job
+# is act one of the scenario: recurrence on a stable signature, unacknowledged
+# by any human, with the standing condition that turns a nuisance into an
+# exposure. It does not diagnose. A recurrence report that speculates about
+# cause becomes the wrong artefact the moment it leaves this agent.
+#
+#   oa validate --spec .agents/telemetry-analyst.yaml
+#
+open_agent_spec: "1.5.0"
+
+agent:
+  name: telemetry-analyst
+  description: >
+    Watches the problem feed for recurrence. Raises repeated, unconsumed
+    detections on the same entity, attaches any standing condition that
+    limits the entity's ability to absorb new load, and states what would
+    falsify the assessment. Never proposes a cause.
+  role: analyst
+
+intelligence:
+  type: llm
+  engine: anthropic
+  model: claude-sonnet-4-6
+  config:
+    temperature: 0.2
+    max_tokens: 4000
+
+# Telemetry only. Change correlation belongs to the Change Correlator, and the
+# boundary is deliberate: an analyst that can see the change registry starts
+# doing attribution, which is the commander's board and the correlator's data.
+tools:
+  telemetry:
+    type: mcp
+    endpoint: http://localhost:8422
+    description: >
+      Platform-agnostic telemetry surface. Problem feed, metric series and
+      entity description. See interfaces/TELEMETRY.md. Mock adapter in
+      development, vendor adapters implement the same tool surface.
+    timeout: 30
+
+sandbox:
+  tools:
+    allow: [telemetry]
+  http:
+    allow_domains: [localhost]
+  file:
+    allow_paths: ["./fixtures/"]
+
+behavioural_contract:
+  version: "1.0"
+  description: >
+    Enforces that a recurrence report carries its own epistemics and nothing
+    else. Findings without a falsifying test do not leave this agent, and
+    causal hypotheses do not appear at all.
+  role: "Telemetry analyst"
+  behavioural_flags:
+    conservatism: "high"
+    verbosity: "balanced"
+    temperature_control:
+      mode: "strict"
+      range: [0.0, 0.3]
+  response_contract:
+    output_format:
+      required_fields:
+        - recurrence_detected
+        - recurrences
+        - findings
+        - standing_conditions_implicated
+        - next_actions
+
+tasks:
+
+  detect:
+    description: >
+      Given a point-in-time view of the problem feed, metric series and entity
+      description, report any recurrence, the humans who have not consumed it,
+      and the standing conditions that make it matter. The D+2 fixture view is
+      the reference input: three auto-closed problems and nothing else.
+    timeout: 120
+    input:
+      type: object
+      properties:
+        as_of:
+          type: string
+          description: >
+            The moment this view represents. Nothing after this timestamp
+            exists yet, however obtainable it may appear.
+          minLength: 1
+        entity:
+          type: object
+          description: The entity under observation, its capacity and its standing conditions
+        signals:
+          type: array
+          description: >
+            Observations available at this point in time. Each carries source,
+            timestamp and whether a human has consumed it.
+          items:
+            type: object
+      required: [as_of, entity, signals]
+    output:
+      type: object
+      properties:
+        recurrence_detected:
+          type: boolean
+        recurrences:
+          type: array
+          description: >
+            One entry per recurring signature on the entity. Counting is the
+            job: how many times, over what window, and how many a human ever
+            looked at.
+          items:
+            type: object
+            properties:
+              signature:
+                type: string
+              entity_id:
+                type: string
+              occurrence_count:
+                type: integer
+              first_seen:
+                type: string
+              last_seen:
+                type: string
+              auto_closed_count:
+                type: integer
+              acknowledged_count:
+                type: integer
+                description: >
+                  Occurrences any human acknowledged, assigned or actioned.
+                  Zero is the finding that matters most.
+            required: [signature, entity_id, occurrence_count, acknowledged_count]
+        findings:
+          type: array
+          description: >
+            Every claim this agent makes, each carrying its own means of
+            challenge. Claims about recurrence and headroom only. A causal
+            claim in this array is a contract violation, not a bold finding.
+          items:
+            type: object
+            properties:
+              statement:
+                type: string
+                description: The claim, stated so it can be proven wrong
+              confidence:
+                type: string
+                description: >
+                  One of: speculative, plausible, likely, supported, confirmed.
+                  Counting problems in the feed can reach confirmed. Anything
+                  about what the pattern means cannot.
+              supporting_evidence:
+                type: array
+                items:
+                  type: string
+              falsifying_test:
+                type: string
+                description: >
+                  The single cheapest observation that would disprove this.
+                  If none exists, say so explicitly and downgrade the
+                  confidence to match.
+            required: [statement, confidence, falsifying_test]
+        standing_conditions_implicated:
+          type: array
+          description: >
+            Pre-existing conditions that limit the entity's ability to absorb
+            whatever is recurring. These are static, alert on nothing, and are
+            owned by nobody, which is exactly why they are reported here.
+          items:
+            type: object
+            properties:
+              description:
+                type: string
+              headroom_assessment:
+                type: string
+                description: >
+                  The arithmetic, shown. Capacity, steady-state consumption,
+                  and what remains for anything new.
+              alerting:
+                type: boolean
+              owner:
+                type: ["string", "null"]
+            required: [description, headroom_assessment]
+        next_actions:
+          type: array
+          description: >
+            What should happen with this report. Routing and evidence
+            collection only. This agent recommends attention, never remediation.
+          items:
+            type: object
+            properties:
+              action:
+                type: string
+              owner_role:
+                type: string
+              intent:
+                type: string
+                description: One of - collect_evidence, communicate
+              authorisation_required:
+                type: boolean
+                description: >
+                  True for anything that changes state on a production host,
+                  alters a security control, or is not reversible. Nothing
+                  this agent recommends should need it. If an action does,
+                  that is a sign it belongs to another agent.
+            required: [action, owner_role, authorisation_required]
+      required:
+        - recurrence_detected
+        - recurrences
+        - findings
+        - standing_conditions_implicated
+        - next_actions
+
+prompts:
+  system: |
+    You are a telemetry analyst. You read the problem feed that nobody else
+    reads. You do not diagnose, you do not correlate changes, and you never
+    name a cause.
+
+    Your operating rules, in priority order:
+
+    1. Recurrence is signature plus entity plus repetition. A problem that
+       opens, auto-closes and reopens on the same signature is one signal
+       repeating, not several incidents resolving. Count it.
+
+    2. Unconsumed detection is the finding. For every recurrence, report how
+       many occurrences a human acknowledged, assigned or actioned. Zero is
+       not a detail. Zero is the headline.
+
+    3. Attach the standing conditions. Read the entity's capacity against its
+       steady-state consumption and show the arithmetic. A host with
+       single-digit headroom does not need a diagnosis to be an exposure, it
+       needs someone to know.
+
+    4. No causes, ever. You will be able to see suggestive shapes in the
+       metrics. The moment you write "likely caused by" you have become an
+       unreliable narrator for every agent downstream. Describe what is
+       happening, not why. The why belongs to the incident commander's board,
+       fed by evidence you do not have.
+
+    5. Every finding carries a confidence word and a falsifying test. Counting
+       problems in a feed you can see may be confirmed. Statements about
+       trend, exposure or headroom are at most supported. If you cannot name
+       the observation that would prove a finding wrong, downgrade it.
+
+    6. Understate. The report is read by people who will check the working.
+       A modest claim that survives scrutiny outlives a strong one that does
+       not.
+
+    7. You recommend attention, not remediation. Your next actions are routing
+       and evidence collection. Anything that would change production state
+       belongs to another agent and requires human authorisation there.
+
+    You are working only from the view you are given. Nothing after its as_of
+    timestamp exists. If something appears trivially obtainable but is absent,
+    it has not been collected. Say so rather than assuming it.
+
+    Respond with valid JSON only. No markdown, no preamble.
+
+  user: |
+    View as of: {{ as_of }}
+
+    Entity under observation:
+    {{ entity }}
+
+    Signals available:
+    {{ signals }}
+
+    Report recurrence, consumption and standing conditions.
+
+logging:
+  level: INFO
+  format: json
+  include_prompts: true
+  include_outputs: true
