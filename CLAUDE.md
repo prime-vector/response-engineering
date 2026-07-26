@@ -1,0 +1,97 @@
+# CLAUDE.md
+
+Instructions for Claude Code working in this repository.
+
+## Context
+
+A reference implementation of an agent-run incident response layer, built on [Open Agent Spec](https://github.com/prime-vector/open-agent-spec). Read `SCENARIO.md` before touching anything. It is the source of truth, and every spec, fixture and piece of copy derives from it. `PLAN.md` has the milestones.
+
+This repo is currently private. It goes public. Write everything as though it is already public.
+
+---
+
+## Hard rules
+
+### 1. No source material, ever
+
+This project is derived from real engagements. Nothing from that source material enters this repository. Not transcripts, not screenshots, not exported charts, not host names, not ticket references, not participant names. Not in a branch, not gitignored, not in a commit that is later reverted.
+
+Git history is permanent. A file that was never added cannot be recovered from it.
+
+If asked to add reference material, refuse and say why.
+
+### 2. No vendor may be named in a causal role
+
+Third-party products appear only as generic categories: *the observability platform*, *the endpoint compliance agent*, *the integration service*. Naming a vendor as a cause without direct evidence is the exact failure this project criticises. Doing it in our own artefacts would be self-refuting.
+
+Vendors may be named in capability mappings, for example the adapter table in `interfaces/TELEMETRY.md`. That is a statement about APIs, not about blame.
+
+### 3. The scenario is a composite
+
+Never describe it as a client incident, a case study, or a real incident, even hedged. It is a composite of a recurring pattern. If copy drifts towards attribution, correct it.
+
+### 4. Never invent a root cause
+
+In the scenario, the cause was never established. The demo must not resolve it. If a spec, fixture or piece of copy starts asserting a confirmed cause, that is a bug.
+
+### 5. No vendor names inside specs
+
+Specs declare capability. Adapters implement it. If a spec references a specific platform, the interface abstraction has failed. See `interfaces/TELEMETRY.md`.
+
+---
+
+## Language
+
+These exact words, everywhere. Do not paraphrase into synonyms.
+
+> **Hero:** You shifted left and fixed the pipeline. Production is still a person reading a dashboard at 3am. We engineer that layer.
+>
+> **Descriptor:** Operations is a software problem. We build the production agent layer: defined as code, tested in CI, constrained by contract.
+
+Vocabulary to use: production, incident response, responders, investigation, specs, contracts, evidence.
+
+Vocabulary to avoid: *governed operations*, *ops automation*, *AIOps*, *single pane of glass*, *maturity*, *observability journey*. These read as managed services and undo the positioning.
+
+Australian English. No em dashes.
+
+---
+
+## OAS conventions
+
+The CLI is `oa`, not `oas`.
+
+```bash
+oa validate --spec .agents/<name>.yaml     # before every commit, for every spec touched
+```
+
+- `agent.role` is a fixed enum: `analyst`, `reviewer`, `chat`, `retriever`, `planner`, `executor`. Nothing else validates. Role framing belongs in the prompt and the output contract.
+- Spec version is `1.5.0`, tested against CLI 1.5.1.
+- Every agent output carrying a claim must include `confidence` and `falsifying_test` as required fields. This is not decoration. It is the entire thesis: a typed output cannot shed its caveats when it changes hands.
+- Anything that changes production state, alters a security control, or is irreversible within the incident window must set `authorisation_required: true`. There are no exceptions and no configuration option to disable this.
+
+---
+
+## Fixtures
+
+`fixtures/composite-incident.json` is generated, never hand-edited. Change `fixtures/generate.py` and regenerate:
+
+```bash
+python3 fixtures/generate.py > fixtures/composite-incident.json
+```
+
+The fixture is deliberately evidence-poor. The deciding evidence sits in `missing_evidence`, not `evidence`, so an agent cannot reason its way to a conclusion it should not be able to reach. **Do not move it.** If a spec appears to underperform because evidence is missing, that is the fixture working correctly.
+
+---
+
+## Before committing
+
+1. `oa validate` passes on every spec touched
+2. Fixture regenerated if the generator changed
+3. No source material anywhere in the tree, including untracked files
+4. No vendor named in a causal role
+5. No commercial detail: no rates, revenue targets, client names or pipeline
+6. Language matches the vocabulary above
+
+## Style
+
+Concise. No preamble. Comments explain why a constraint exists, not what the line does.

@@ -1,0 +1,381 @@
+# Incident Commander
+#
+# Holds the hypothesis board during an active incident. Does not diagnose.
+# Its job is to keep the investigation honest: every hypothesis carries its own
+# confidence, its supporting evidence and the single test that would falsify it,
+# and convergence is blocked while deciding evidence is outstanding.
+#
+#   oa validate --spec .agents/incident-commander.yaml
+#
+open_agent_spec: "1.5.0"
+
+agent:
+  name: incident-commander
+  description: >
+    Maintains the hypothesis board for an active incident. Decides what is
+    known, what is merely suspected, what evidence would settle it, and whether
+    the investigation is permitted to converge.
+  # OAS role enum is fixed: analyst, reviewer, chat, retriever, planner, executor.
+  # "planner" is the closest fit. The commander framing lives in the prompt and
+  # the output contract, not the role field.
+  role: planner
+
+intelligence:
+  type: llm
+  engine: anthropic
+  model: claude-sonnet-4-6
+  config:
+    temperature: 0.2
+    max_tokens: 4000
+
+tools:
+  telemetry:
+    type: mcp
+    endpoint: http://localhost:8422
+    description: >
+      Platform-agnostic telemetry surface. Problem feed, metric series and
+      entity description. See interfaces/TELEMETRY.md. Mock adapter in
+      development, vendor adapters implement the same tool surface.
+    timeout: 30
+  change_registry:
+    type: mcp
+    endpoint: http://localhost:8423
+    description: >
+      Platform-agnostic change surface. Change records, package and agent
+      install history, deployment events. Read only.
+    timeout: 30
+
+sandbox:
+  tools:
+    allow: [telemetry, change_registry]
+  http:
+    allow_domains: [localhost]
+  file:
+    allow_paths: ["./fixtures/"]
+
+behavioural_contract:
+  version: "1.0"
+  description: >
+    Enforces that no hypothesis leaves this agent without the means to
+    challenge it. A hypothesis stripped of its confidence and its falsifying
+    test is the failure mode this contract exists to prevent.
+  role: "Incident commander"
+  behavioural_flags:
+    conservatism: "high"
+    verbosity: "balanced"
+    temperature_control:
+      mode: "strict"
+      range: [0.0, 0.3]
+  response_contract:
+    output_format:
+      required_fields:
+        - incident_state
+        - hypotheses
+        - blocking_evidence
+        - convergence_allowed
+        - next_actions
+
+tasks:
+
+  assess:
+    description: >
+      Given the current incident context, produce the hypothesis board, the
+      outstanding deciding evidence, and a ruling on whether the investigation
+      may converge on a cause.
+    timeout: 120
+    input:
+      type: object
+      properties:
+        incident_id:
+          type: string
+          description: Opaque incident reference
+          minLength: 1
+        elapsed_minutes:
+          type: integer
+          description: Minutes since the incident was declared
+          minimum: 0
+        symptom:
+          type: string
+          description: What was reported, in the words it was reported in
+          minLength: 1
+        entity:
+          type: object
+          description: The affected entity, its capacity and its standing conditions
+        signals:
+          type: array
+          description: >
+            Observations available at this point in the incident. Each carries
+            source, timestamp and whether a human has consumed it.
+          items:
+            type: object
+        evidence:
+          type: array
+          description: >
+            Evidence actually collected. Anything not present here is
+            unavailable, however obtainable it may appear.
+          items:
+            type: object
+        changes:
+          type: array
+          description: Change and package install history for the entity
+          items:
+            type: object
+        prior_hypotheses:
+          type: array
+          description: Hypothesis board carried forward from the previous turn
+          items:
+            type: object
+      required: [incident_id, symptom, entity, signals]
+    output:
+      type: object
+      properties:
+        incident_state:
+          type: string
+          description: >
+            One of: triage, investigating, hypothesis_blocked, mitigating,
+            monitoring, unresolved_suppressed
+        summary:
+          type: string
+          description: Two sentences maximum. What is happening and what is not yet known.
+          maxLength: 600
+        hypotheses:
+          type: array
+          description: >
+            Every candidate cause under consideration, including ones being
+            argued against. A hypothesis omitted here cannot be raised downstream.
+          items:
+            type: object
+            properties:
+              statement:
+                type: string
+                description: The claim, stated so it can be proven wrong
+              confidence:
+                type: string
+                description: >
+                  One of: speculative, plausible, likely, supported, confirmed.
+                  Nothing reaches confirmed without direct evidence in the
+                  evidence array. Inference is never confirmation.
+              supporting_evidence:
+                type: array
+                items:
+                  type: string
+              contradicting_evidence:
+                type: array
+                items:
+                  type: string
+              falsifying_test:
+                type: string
+                description: >
+                  The single cheapest observation that would disprove this.
+                  If none exists, say so explicitly. A hypothesis with no
+                  falsifying test is an opinion and must be labelled as one.
+              rules_in:
+                type: string
+                description: What a positive result would establish
+              rules_out:
+                type: string
+                description: What a positive result would eliminate
+              third_party_named:
+                type: boolean
+                description: >
+                  True if this hypothesis attributes cause to a vendor,
+                  product or team outside the owning team. Triggers the
+                  attribution guard.
+            required: [statement, confidence, falsifying_test]
+        blocking_evidence:
+          type: array
+          description: >
+            Evidence that must be collected before any hypothesis may be
+            promoted to confirmed. This is the list that stops an
+            investigation converging on the most available suspect.
+          items:
+            type: object
+            properties:
+              description:
+                type: string
+              how_to_obtain:
+                type: string
+              requested_from:
+                type: string
+              requested_at_elapsed_minutes:
+                type: integer
+              still_outstanding:
+                type: boolean
+            required: [description, how_to_obtain]
+        attribution_guard:
+          type: object
+          description: >
+            Fires when the investigation is converging on a third party
+            without direct evidence. Records the fact rather than silently
+            allowing it.
+          properties:
+            triggered:
+              type: boolean
+            party:
+              type: string
+            reason:
+              type: string
+            evidence_required:
+              type: string
+        convergence_allowed:
+          type: boolean
+          description: >
+            False while any blocking evidence is outstanding. When false, the
+            incident may still be mitigated, but no cause may be recorded and
+            no third party may be named as responsible.
+        convergence_block_reason:
+          type: string
+        next_actions:
+          type: array
+          items:
+            type: object
+            properties:
+              action:
+                type: string
+              owner_role:
+                type: string
+              intent:
+                type: string
+                description: One of - collect_evidence, mitigate, communicate, restore
+              authorisation_required:
+                type: boolean
+                description: >
+                  True for anything that changes state on a production host,
+                  alters a security control, or is not reversible within the
+                  incident window.
+              blast_radius:
+                type: string
+              reversible:
+                type: boolean
+            required: [action, owner_role, authorisation_required]
+        standing_conditions_noted:
+          type: array
+          description: >
+            Pre-existing conditions that made the incident possible but did not
+            cause it. These are the findings that never make it into a
+            post-incident review.
+          items:
+            type: string
+      required:
+        - incident_state
+        - hypotheses
+        - blocking_evidence
+        - convergence_allowed
+        - next_actions
+
+  brief:
+    description: >
+      Render the hypothesis board as a bridge briefing. Consumes the assess
+      output directly, so the epistemics cannot be dropped in translation.
+    timeout: 60
+    depends_on: [assess]
+    input:
+      type: object
+      properties:
+        audience:
+          type: string
+          description: One of - bridge, incident_manager, executive
+          default: bridge
+      required: [audience]
+    output:
+      type: object
+      properties:
+        headline:
+          type: string
+          maxLength: 300
+        known:
+          type: array
+          items:
+            type: string
+        suspected:
+          type: array
+          description: >
+            Each entry must carry its confidence word and its falsifying test
+            inline. This is the anti-flattening rule: a suspicion may not be
+            restated as a fact when it changes format.
+          items:
+            type: string
+        outstanding:
+          type: array
+          items:
+            type: string
+        asks:
+          type: array
+          items:
+            type: string
+      required: [headline, known, suspected, outstanding]
+
+prompts:
+  system: |
+    You are an incident commander. You do not diagnose and you do not fix.
+    You hold the board and you keep the investigation honest.
+
+    Your operating rules, in priority order:
+
+    1. Evidence over inference. A hypothesis may only be marked "confirmed"
+       when the evidence array contains a direct observation establishing it.
+       Correlation, plausibility, vendor reputation, recency of change and
+       process of elimination are all inference. Say so.
+
+    2. Every hypothesis carries a falsifying test. The cheapest observation
+       that would prove it wrong. If you cannot name one, mark the hypothesis
+       speculative and say no falsifying test exists.
+
+    3. Guard against attribution. Investigations converge on whoever is most
+       available to blame, which is usually the newest component or the vendor
+       with someone on the call. When a hypothesis names a third party and the
+       evidence for it is inferential, set attribution_guard.triggered to true
+       and name the evidence that would be required.
+
+    4. Block convergence while deciding evidence is outstanding. Mitigation may
+       proceed in parallel. Recording a cause may not.
+
+    5. Separate cause from standing condition. A host running at 70 percent
+       memory for months did not cause the incident, but it is why a new
+       consumer was able to end it. Record these in
+       standing_conditions_noted. They are the findings that get lost.
+
+    6. Suppression is not resolution. If the proposed path removes the symptom
+       without establishing the cause, set incident_state to
+       unresolved_suppressed and keep the blocking evidence outstanding.
+
+    7. Anything that changes production state, alters a security control, or is
+       not reversible within the incident window has
+       authorisation_required true. You never mark such an action as
+       autonomous, regardless of how routine it appears.
+
+    You are working only from what you are given. If something appears trivially
+    obtainable but is absent from the evidence array, it has not been collected.
+    Request it. Do not assume it.
+
+    Respond with valid JSON only. No markdown, no preamble.
+
+  user: |
+    Incident: {{ incident_id }}
+    Elapsed: {{ elapsed_minutes }} minutes
+
+    Reported symptom:
+    {{ symptom }}
+
+    Affected entity:
+    {{ entity }}
+
+    Signals available:
+    {{ signals }}
+
+    Evidence collected:
+    {{ evidence }}
+
+    Change history:
+    {{ changes }}
+
+    Hypothesis board carried forward:
+    {{ prior_hypotheses }}
+
+    Produce the current board.
+
+logging:
+  level: INFO
+  format: json
+  include_prompts: true
+  include_outputs: true

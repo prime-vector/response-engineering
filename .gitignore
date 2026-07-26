@@ -1,0 +1,4 @@
+# Task board credentials and local working notes. This repo goes public;
+# neither the key nor pipeline detail may ever enter history.
+.env
+CLAUDE.local.md
