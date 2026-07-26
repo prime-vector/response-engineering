@@ -148,4 +148,4 @@ The final output is: hypothesis unresolved, deciding evidence outstanding, here 
 
 - [ ] Reference chart of the 15 day problem feed, for faithful synthetic reconstruction. Reference only, never published.
 - [ ] Confirm the fixture's problem cadence and severity mix against that reference
-- [ ] Decide whether act one runs as a separate spec invocation or as the first turn of the same pipeline
+- [x] Decide whether act one runs as a separate spec invocation or as the first turn of the same pipeline. Resolved during M3: a separate invocation of the Telemetry Analyst against the D+1 view.
