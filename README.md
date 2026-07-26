@@ -10,7 +10,7 @@ Built on [Open Agent Spec](https://github.com/prime-vector/open-agent-spec).
 
 ## Status
 
-Early. Two of five agents written, mock adapters serving both tool surfaces. A live end to end run has not been recorded yet.
+Early. Two of five agents written, mock adapters serving both tool surfaces. Both agents verified live end to end against the mocks: the analyst on the D+2 view, the commander on the bridge view, each producing contract-valid output.
 
 | Artefact | State |
 | --- | --- |
@@ -49,6 +49,11 @@ python3 mock/adapter.py --surface telemetry                # 8422, D+15 bridge v
 python3 mock/adapter.py --surface change_registry          # 8423
 
 export ANTHROPIC_API_KEY=...
+
+# one upstream patch: OAS 1.5.1's Anthropic provider does not yet translate
+# tool messages to Anthropic's format. See the header of the patch file.
+patch "$(python3 -c 'import oas_cli.providers.anthropic_http as m; print(m.__file__)')" \
+  < patches/oas-1.5.1-anthropic-tool-messages.diff
 
 # act two: the bridge, run from evidence
 oa run --spec .agents/incident-commander.yaml --task assess \

@@ -1,0 +1,75 @@
+Upstream fix for Open Agent Spec CLI 1.5.1: the Anthropic provider
+forwards the runner's OpenAI-shaped tool messages (assistant
+tool_calls, role "tool" results) verbatim, which the Anthropic API
+rejects with HTTP 400. This converts them to tool_use / tool_result
+content blocks. Apply to the installed package until it lands upstream:
+
+    patch "$(python3 -c 'import oas_cli.providers.anthropic_http as m; print(m.__file__)')" \
+        < patches/oas-1.5.1-anthropic-tool-messages.diff
+
+--- a/oas_cli/providers/anthropic_http.py
++++ b/oas_cli/providers/anthropic_http.py
+@@ -20,6 +20,54 @@
+ _ANTHROPIC_VERSION = "2023-06-01"
+ 
+ 
++def _to_anthropic_messages(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
++    """Convert the runner's OpenAI-shaped tool messages to Anthropic format.
++
++    The runner appends assistant turns carrying ``tool_calls`` and results as
++    ``role: "tool"`` messages. Anthropic only accepts user/assistant roles,
++    with tool activity expressed as ``tool_use`` / ``tool_result`` content
++    blocks, so translate on the way out.
++    """
++    out: list[dict[str, Any]] = []
++    for m in messages:
++        role = m.get("role")
++        if role == "assistant" and m.get("tool_calls"):
++            content: list[dict[str, Any]] = []
++            if m.get("content"):
++                content.append({"type": "text", "text": m["content"]})
++            for tc in m["tool_calls"]:
++                args = tc.get("function", {}).get("arguments", {})
++                if isinstance(args, str):
++                    try:
++                        args = json.loads(args)
++                    except json.JSONDecodeError:
++                        args = {}
++                content.append(
++                    {
++                        "type": "tool_use",
++                        "id": tc["id"],
++                        "name": tc.get("function", {}).get("name", ""),
++                        "input": args,
++                    }
++                )
++            out.append({"role": "assistant", "content": content})
++        elif role == "tool":
++            block = {
++                "type": "tool_result",
++                "tool_use_id": m.get("tool_call_id"),
++                "content": m.get("content", ""),
++            }
++            # Consecutive tool results for parallel calls must share one
++            # user turn, or the API rejects the unmatched tool_use ids.
++            if out and out[-1]["role"] == "user" and isinstance(out[-1]["content"], list):
++                out[-1]["content"].append(block)
++            else:
++                out.append({"role": "user", "content": [block]})
++        else:
++            out.append(m)
++    return out
++
++
+ class AnthropicProvider(IntelligenceProvider):
+     """Calls Anthropic Claude via raw HTTP — no anthropic SDK required.
+ 
+@@ -131,7 +179,7 @@
+ 
+         payload: dict[str, Any] = {
+             "model": model,
+-            "messages": messages,
++            "messages": _to_anthropic_messages(messages),
+             "max_tokens": max_tokens,
+             "temperature": temperature,
+         }
