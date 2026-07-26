@@ -4,7 +4,9 @@
 
 The seam is MCP. Each adapter is an MCP server exposing the tool surface below over JSON-RPC 2.0 across HTTP. OAS speaks MCP natively, so no SDK and no glue code sits between the spec and the platform.
 
-Mock first. The mock is not a throwaway: it is the conformance reference, and any vendor adapter is correct when it satisfies the same contract against the same fixtures.
+Mock first. The mock is not a throwaway: it is the conformance reference, and any vendor adapter is correct when it satisfies the same contract against the same fixtures. The mock lives at `mock/adapter.py`, stdlib only, and serves whichever fixture view it is started with.
+
+Naming: this document uses dotted call names (`problems.list`) for readability. The MCP tool names use underscores (`problems_list`) because model-facing tool name constraints do not allow dots.
 
 ---
 
@@ -83,4 +85,4 @@ Same treatment. ServiceNow, Jira Service Management or a webhook sit behind one 
 
 ## Conformance
 
-An adapter is conformant when it satisfies `fixtures/composite-incident.json` and returns the same agent decisions as the mock. That fixture is the test suite.
+An adapter is conformant when it satisfies both fixture views, `fixtures/composite-incident.json` and `fixtures/composite-incident.d2.json`, and returns the same agent decisions as the mock. Those fixtures are the test suite. The D+2 view matters as much as the bridge view: an adapter that invents data the view does not hold (a process listing nobody collected, a change query nobody ran) fails conformance even if the data looks plausible.

@@ -10,7 +10,7 @@ Built on [Open Agent Spec](https://github.com/prime-vector/open-agent-spec).
 
 ## Status
 
-Early. Two of five agents written. Not runnable end to end yet.
+Early. Two of five agents written, mock adapters serving both tool surfaces. A live end to end run has not been recorded yet.
 
 | Artefact | State |
 | --- | --- |
@@ -19,8 +19,8 @@ Early. Two of five agents written. Not runnable end to end yet.
 | `.agents/telemetry-analyst.yaml` | Written, validates against OAS 1.5.1 |
 | `interfaces/TELEMETRY.md` | Draft interface contract |
 | `fixtures/composite-incident*.json` | Generated, two views (D+2 and D+15), cadence needs tuning against reference |
+| `mock/adapter.py` | Written, smoke-tested against both fixture views |
 | Change Correlator, Scribe, Comms | Not started |
-| Mock MCP adapters | Not started |
 
 ## Layout
 
@@ -34,6 +34,7 @@ interfaces/TELEMETRY.md            platform-agnostic tool surface
 fixtures/generate.py               synthetic fixture generator, two views
 fixtures/composite-incident.json   generated, D+15 bridge view
 fixtures/composite-incident.d2.json  generated, D+2 view for act one
+mock/adapter.py                    mock MCP adapter, both surfaces, fixture-backed
 ```
 
 ## Run
@@ -43,10 +44,20 @@ pipx install open-agent-spec
 oa validate --spec .agents/incident-commander.yaml
 oa validate --spec .agents/telemetry-analyst.yaml
 
-# needs the mock MCP adapters before this will execute
+# the mock adapters, one terminal each, fixture-backed
+python3 mock/adapter.py --surface telemetry                # 8422, D+15 bridge view
+python3 mock/adapter.py --surface change_registry          # 8423
+
 export ANTHROPIC_API_KEY=...
+
+# act two: the bridge, run from evidence
 oa run --spec .agents/incident-commander.yaml --task assess \
-  --input fixtures/composite-incident.json --quiet
+  --input "$(cat fixtures/composite-incident.json)" --quiet
+
+# act one: restart the telemetry adapter on the D+2 view first
+python3 mock/adapter.py --surface telemetry --fixture fixtures/composite-incident.d2.json
+oa run --spec .agents/telemetry-analyst.yaml --task detect \
+  --input "$(cat fixtures/composite-incident.d2.json)" --quiet
 ```
 
 ## Design position

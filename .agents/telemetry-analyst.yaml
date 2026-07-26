@@ -79,6 +79,8 @@ tasks:
       and the standing conditions that make it matter. The D+2 fixture view is
       the reference input: three auto-closed problems and nothing else.
     timeout: 120
+    # Tool binding is per task. Without this list the runner attaches nothing.
+    tools: [telemetry]
     input:
       type: object
       properties:

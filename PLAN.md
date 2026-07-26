@@ -32,8 +32,8 @@ Cost Guardrail is deliberately excluded. It does not fit this scenario and forci
 ### M3: Runnable
 **Done when:** `oa run` executes the pipeline end to end against the fixture with no live platform.
 
-- [ ] Mock MCP adapter serving the `telemetry` surface on 8422
-- [ ] Mock MCP adapter serving the `change_registry` surface on 8423
+- [x] Mock MCP adapter serving the `telemetry` surface on 8422
+- [x] Mock MCP adapter serving the `change_registry` surface on 8423
 - [ ] `depends_on` chain wired commander to brief
 - [ ] Deterministic enough to record without retakes
 

@@ -83,6 +83,8 @@ tasks:
       outstanding deciding evidence, and a ruling on whether the investigation
       may converge on a cause.
     timeout: 120
+    # Tool binding is per task. Without this list the runner attaches nothing.
+    tools: [telemetry, change_registry]
     input:
       type: object
       properties:
