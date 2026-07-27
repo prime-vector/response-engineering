@@ -352,7 +352,9 @@ tasks:
             Required when cause_status is confirmed: the board's confirmed
             hypothesis and its direct evidence, quoted verbatim. If the
             board does not contain them, this field cannot honestly be
-            written, which is the point.
+            written. A quote is checkable against the board after the
+            fact, which is what makes fabricating one a detectable act
+            rather than a silent omission.
         authorisation_required:
           # Pinned by schema, not left to judgement: this task documents
           # directed production changes, and a draft claiming a production
@@ -388,8 +390,12 @@ tasks:
         - draft_ref
       # Rule 6 of the task prompt, structurally, matching the commander's
       # attribution pattern: a record claiming a confirmed cause must carry
-      # the board material it is confirmed from. The claim stays the
-      # model's judgement; the record of its basis is not optional.
+      # the board material it is confirmed from. Same class of control as
+      # the attribution guard, and the same honest limit: the basis cannot
+      # be silently omitted, but a model intent on confirming could still
+      # fabricate one against an empty board. This pin forces the record,
+      # not the truth of it; content stays the model's judgement. Do not
+      # sell it as a peer of the submitted/authorisation_required pins.
       allOf:
         - if:
             properties:
