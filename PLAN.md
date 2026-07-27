@@ -41,10 +41,14 @@ Cost Guardrail is deliberately excluded. It does not fit this scenario and forci
 **Done when:** all three failure modes are demonstrable on demand, not described.
 
 - [x] Sandbox blocks a production state change and reports why
-- [x] Behavioural contract rejects an output missing its falsifying test
+- [x] Output contract rejects a board missing its falsifying test
 - [x] Attribution guard fires on third-party convergence without evidence
 
 All three run from `demos/governance.sh`, which exits zero only when every failure mode behaves. The sandbox demo's `mitigate` prompt cooperates with the directed change deliberately: what blocks it is the allow list, so the demo proves the boundary belongs to the harness rather than to prompt wording.
+
+Two of the three fail closed in the runner. The attribution guard is a different class of control: the agent's judgement made structural, with a schema backstop that rejects any board naming a third party below confirmed confidence without the guard triggered. Say it that way; do not sell it as a peer of the sandbox.
+
+This milestone proves the boundaries only. The narrated act three, blast radius stated, escalation for authorisation, Scribe's draft change record, is demo assembly plus Scribe's milestone and is not claimed here.
 
 This milestone is the product. If it is not visible on screen, this is just another AI incident tool.
 

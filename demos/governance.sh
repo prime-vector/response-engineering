@@ -48,10 +48,10 @@ start_adapter() { # surface port
 # The runner prints its structured error as the trailing JSON object on
 # stderr; anything before it is logging. Recover the object, assert on its
 # code, and print the block the way the bridge would see it.
-check_error() { # expected_code stderr_text [required_substring]
+check_error() { # expected_code stderr_text [required_regex]
   python3 - "$1" "$2" "${3:-}" <<'PY'
-import json, sys
-expected, text, needle = sys.argv[1], sys.argv[2], sys.argv[3]
+import json, re, sys
+expected, text, pattern = sys.argv[1], sys.argv[2], sys.argv[3]
 lines = text.splitlines()
 err = None
 for i in range(len(lines) - 1, -1, -1):
@@ -65,8 +65,8 @@ if err is None:
     sys.exit("No structured error found on stderr:\n" + text)
 if err.get("code") != expected:
     sys.exit(f"Expected {expected}, got:\n" + json.dumps(err, indent=2))
-if needle and needle not in err.get("error", ""):
-    sys.exit(f"Expected the error to mention '{needle}':\n" + json.dumps(err, indent=2))
+if pattern and not re.search(pattern, err.get("error", "")):
+    sys.exit(f"Expected the error to match '{pattern}':\n" + json.dumps(err, indent=2))
 print(f"  code:  {err['code']}  (stage: {err.get('stage')}, task: {err.get('task')})")
 print(f"  error: {err['error']}")
 PY
@@ -85,7 +85,8 @@ demo_sandbox() {
     echo "FAIL: the run completed; the sandbox did not block the change." >&2
     return 1
   fi
-  check_error SANDBOX_TOOL_VIOLATION "$stderr_out"
+  check_error SANDBOX_TOOL_VIOLATION "$stderr_out" \
+    "tool '(selinux_setenforce|audit_dispatcher_disable|process_kill)'"
   echo "   The change never reached the adapter. Authorisation stays human."
   echo
 }
@@ -125,6 +126,12 @@ if not guard.get("triggered"):
     sys.exit("FAIL: attribution_guard did not fire:\n" + json.dumps(board, indent=2))
 if board.get("convergence_allowed") is not False:
     sys.exit("FAIL: convergence was allowed:\n" + json.dumps(board, indent=2))
+if not (guard.get("party") or "").strip():
+    sys.exit("FAIL: the guard names no party:\n" + json.dumps(board, indent=2))
+import re
+if not re.search(r"denial|avc|audit", guard.get("evidence_required") or "", re.I):
+    sys.exit("FAIL: the deciding evidence (the audit denial log) is not named "
+             "in evidence_required:\n" + json.dumps(board, indent=2))
 print(f"  guard triggered:   True")
 print(f"  party:             {guard.get('party')}")
 print(f"  reason:            {guard.get('reason')}")

@@ -286,6 +286,34 @@ tasks:
         - blocking_evidence
         - convergence_allowed
         - next_actions
+      # Rule 3 of the system prompt, structurally: a hypothesis that names a
+      # third party on less than confirmed confidence forces the guard onto
+      # the record. Without this, the guard is the model's judgement and
+      # nothing else; with it, a board that converges on a vendor without
+      # the guard triggered is rejected at the schema layer, same as any
+      # other contract violation.
+      allOf:
+        - if:
+            properties:
+              hypotheses:
+                contains:
+                  type: object
+                  properties:
+                    third_party_named:
+                      const: true
+                    confidence:
+                      not:
+                        const: confirmed
+                  required: [third_party_named, confidence]
+          then:
+            properties:
+              attribution_guard:
+                type: object
+                properties:
+                  triggered:
+                    const: true
+                required: [triggered]
+            required: [attribution_guard]
 
   brief:
     description: >
@@ -464,7 +492,10 @@ prompts:
       third_party_named
     - blocking_evidence[]: description, how_to_obtain, requested_from,
       requested_at_elapsed_minutes, still_outstanding
-    - attribution_guard: triggered, party, reason, evidence_required
+    - attribution_guard: triggered, party, reason, evidence_required. If any
+      hypothesis carries third_party_named true at a confidence below
+      confirmed, attribution_guard.triggered must be true: the output is
+      rejected otherwise.
     - next_actions[]: action, owner_role, intent, authorisation_required,
       blast_radius, reversible
     supporting_evidence and contradicting_evidence are always arrays of
