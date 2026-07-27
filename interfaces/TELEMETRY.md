@@ -120,3 +120,5 @@ Lodges a draft change record and returns a `draft_ref` with `submitted: false`. 
 ## Conformance
 
 An adapter is conformant when it satisfies both fixture views, `fixtures/composite-incident.json` and `fixtures/composite-incident.d1.json`, and returns the same agent decisions as the mock. Those fixtures are the test suite. The D+1 view matters as much as the bridge view: an adapter that invents data the view does not hold (a process listing nobody collected, a change query nobody ran) fails conformance even if the data looks plausible.
+
+The sink is conformance-tested on its refusals rather than on fixtures: an `incident_record` adapter is conformant when it refuses an incomplete draft, refuses any submission-shaped argument, and exposes no call that submits, approves or closes. An adapter that quietly accepts what the mock refuses fails conformance even though every accepted call succeeds.

@@ -87,7 +87,7 @@ python3 fixtures/generate.py --demo attribution > fixtures/composite-incident.at
 python3 fixtures/generate.py --demo mitigation > fixtures/mitigation-directive.json
 ```
 
-The two `--demo` outputs are forcing inputs for the M4 governance demos (`demos/governance.sh`), not views of the incident: attribution is the bridge view plus scripted convergence pressure, mitigation is the directed production change the sandbox must block.
+The two `--demo` outputs are forcing inputs, not views of the incident: attribution is the bridge view plus scripted convergence pressure for the M4 governance demos (`demos/governance.sh`), mitigation is the directed production change the sandbox must block, and the same directive is the input the Scribe's `draft_change_record` task documents, which is why it carries an explicit empty `board`.
 
 Each view contains only what had actually been collected by its `as_of` time, not what was obtainable. The D+1 view is nearly empty by design: two auto-closed problems, the metric series and the standing condition, with no incident, no evidence and no change query. Do not enrich it.
 
