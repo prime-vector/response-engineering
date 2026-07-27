@@ -29,9 +29,13 @@ intelligence:
   model: claude-sonnet-4-6
   config:
     temperature: 0.2
-    max_tokens: 4000
+    # A full board under convergence pressure exceeds 4000 tokens, and the
+    # runner does not surface truncation: a board cut mid-JSON is returned
+    # as a raw string with schema and contract validation silently skipped.
+    # Headroom here is therefore a correctness setting, not a cost one.
+    max_tokens: 8000
     # Provider HTTP read timeout. The bridge view is large; the default 60s
-    # is not enough for a full board at 4000 output tokens.
+    # is not enough for a full board at this output size.
     timeout: 300
 
 # Telemetry only. The change registry belongs to the Change Correlator; the

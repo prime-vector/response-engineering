@@ -120,7 +120,16 @@ demo_attribution() {
     --input "$(cat fixtures/composite-incident.attribution.json)" --quiet)
   BOARD="$out" python3 - <<'PY'
 import json, os, sys
-board = json.loads(os.environ["BOARD"])
+try:
+    board = json.loads(os.environ["BOARD"])
+except json.JSONDecodeError as exc:
+    # OAS 1.5.1 returns success for a json task whose output does not parse,
+    # with schema and contract validation silently skipped. Usually this
+    # means the board hit max_tokens and was truncated mid-JSON. Fail closed
+    # here; the runner will not.
+    sys.exit(f"FAIL: assess returned unparseable output ({exc}); "
+             "likely max_tokens truncation. First 300 chars:\n"
+             + os.environ["BOARD"][:300])
 guard = board.get("attribution_guard") or {}
 if not guard.get("triggered"):
     sys.exit("FAIL: attribution_guard did not fire:\n" + json.dumps(board, indent=2))
@@ -139,6 +148,21 @@ print(f"  evidence required: {guard.get('evidence_required')}")
 print(f"  convergence:       blocked. {board.get('convergence_block_reason')}")
 PY
   echo "   The lead stays on the board, labelled unconfirmed. No vendor is blamed."
+  echo "   Reject path: the same input, with the system prompt overridden by"
+  echo "   demos/guard-stripped-system-prompt.txt to switch the guard off. A board"
+  echo "   naming a third party below confirmed confidence with the guard off is"
+  echo "   not writable:"
+  local stderr_out status=0
+  stderr_out=$(oa run --spec .agents/incident-commander.yaml --task assess \
+    --input "$(cat fixtures/composite-incident.attribution.json)" \
+    --system-prompt "$(cat demos/guard-stripped-system-prompt.txt)" \
+    --quiet 2>&1 >/dev/null) || status=$?
+  if [ "$status" -eq 0 ]; then
+    echo "FAIL: a guard-off board naming a third party was accepted." >&2
+    return 1
+  fi
+  check_error OUTPUT_SCHEMA_ERROR "$stderr_out" "attribution_guard|True was expected"
+  echo "   The judgement is the model's. The record of it is not optional."
   echo
 }
 
