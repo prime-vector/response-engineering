@@ -337,12 +337,22 @@ tasks:
             shows it worked, and the observation that shows it did not.
         cause_status:
           type: string
+          # Enum rather than description: a third word is rejected at the
+          # schema layer, same as the other pins.
+          enum: [unconfirmed, confirmed]
           description: >
-            One of: unconfirmed, confirmed. Confirmed only when the input
-            board carries a confirmed hypothesis with convergence allowed.
-            A change record is where a mitigation is documented, never
-            where a cause is established, and a suppression with the cause
-            unconfirmed is recorded as exactly that.
+            Confirmed only when the input board carries a confirmed
+            hypothesis with convergence allowed. A change record is where a
+            mitigation is documented, never where a cause is established,
+            and a suppression with the cause unconfirmed is recorded as
+            exactly that.
+        cause_basis:
+          type: string
+          description: >
+            Required when cause_status is confirmed: the board's confirmed
+            hypothesis and its direct evidence, quoted verbatim. If the
+            board does not contain them, this field cannot honestly be
+            written, which is the point.
         authorisation_required:
           # Pinned by schema, not left to judgement: this task documents
           # directed production changes, and a draft claiming a production
@@ -376,6 +386,18 @@ tasks:
         - authorisation_required
         - submitted
         - draft_ref
+      # Rule 6 of the task prompt, structurally, matching the commander's
+      # attribution pattern: a record claiming a confirmed cause must carry
+      # the board material it is confirmed from. The claim stays the
+      # model's judgement; the record of its basis is not optional.
+      allOf:
+        - if:
+            properties:
+              cause_status:
+                const: confirmed
+            required: [cause_status]
+          then:
+            required: [cause_basis]
     prompts:
       system: |
         You are the incident scribe drafting a change record for a directed
@@ -410,10 +432,13 @@ tasks:
            it did not. "Monitor the host" is not a validation plan.
 
         6. cause_status stays unconfirmed unless the board you are given
-           carries a confirmed hypothesis with convergence allowed. Never
-           name a third party as cause in any field. If the change removes
-           a symptom while the cause is unconfirmed, the record says the
-           cause is unconfirmed, in those words.
+           carries a confirmed hypothesis with convergence allowed. If you
+           set it to confirmed, cause_basis must quote that hypothesis and
+           its direct evidence from the board verbatim; the output is
+           rejected without it. Never name a third party as cause in any
+           field. If the change removes a symptom while the cause is
+           unconfirmed, the record says the cause is unconfirmed, in those
+           words.
 
         7. Lodge the draft. Call change_draft with the complete draft and
            report the returned reference in draft_ref. Do not report until
@@ -426,7 +451,8 @@ tasks:
         top-level keys: change_type, summary, description, risk,
         blast_radius, implementation_plan, backout_plan, validation_plan,
         cause_status, authorisation_required, approvals_required,
-        draft_ref, submitted. No markdown fences, no preamble, no text
+        draft_ref, submitted, plus cause_basis only when cause_status is
+        confirmed. No markdown fences, no preamble, no text
         after the closing brace. Bare JSON numbers never contain digit
         grouping (34359738368, not 34,359,738,368); formatted figures
         belong inside strings.

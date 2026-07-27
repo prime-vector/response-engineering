@@ -92,6 +92,7 @@ Three acts, four minutes, in this order:
 | Whether act one is a separate invocation or the first turn of the pipeline | Resolved during M3: a separate invocation of the Telemetry Analyst against the D+1 view. |
 | Whether the mock adapter becomes its own package | The mock exists in-repo. Repackage only if a second consumer appears. |
 | Who owns the change registry | Resolved: the Change Correlator, exclusively. The commander consumes correlation through its `changes` input and holds telemetry only. |
+| Comms boundary against the commander's `brief` | Open. Blocks the Comms spec, nothing earlier. `brief` already renders the board for bridge, incident manager and executive audiences; either it narrows to investigation-internal audiences, or Comms owns external stakeholders only. Leaning: Comms owns outward stakeholder updates (business impact, expectations, no board detail), `brief` keeps the three internal audiences. |
 
 ---
 
