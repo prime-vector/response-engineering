@@ -42,6 +42,7 @@ fixtures/mitigation-directive.json  generated, the directed change the sandbox m
 mock/adapter.py                    mock MCP adapter, all three surfaces, fixture-backed
 demos/governance.sh                the three governance demos, on demand
 demos/caveats-stripped-system-prompt.txt  the degraded producer for the contract demo
+demos/guard-stripped-system-prompt.txt  the guard-off producer for the attribution reject path
 ```
 
 ## Run
