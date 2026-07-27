@@ -10,7 +10,7 @@ Built on [Open Agent Spec](https://github.com/prime-vector/open-agent-spec).
 
 ## Status
 
-Early. Three of five agents written, mock adapters serving all three tool surfaces. All three agents verified live end to end against the mocks: the analyst on the D+1 view, the correlator querying the registry through MCP, the commander on the bridge view, each producing contract-valid output. The three governance failure modes are scripted and verified live: `demos/governance.sh` exits zero only when the sandbox blocks, the contract rejects and the attribution guard fires.
+Early. Four of five agents written, mock adapters serving all four tool surfaces. All four agents verified live end to end against the mocks: the analyst on the D+1 view, the correlator querying the registry through MCP, the commander on the bridge view, the Scribe filing the timeline and lodging the draft change record through the record sink, each producing contract-valid output. The three governance failure modes are scripted and verified live: `demos/governance.sh` exits zero only when the sandbox blocks, the contract rejects and the attribution guard fires.
 
 | Artefact | State |
 | --- | --- |
@@ -18,11 +18,12 @@ Early. Three of five agents written, mock adapters serving all three tool surfac
 | `.agents/incident-commander.yaml` | Written, validates against OAS 1.5.1 |
 | `.agents/telemetry-analyst.yaml` | Written, validates against OAS 1.5.1 |
 | `.agents/change-correlator.yaml` | Written, validates against OAS 1.5.1 |
+| `.agents/scribe.yaml` | Written, validates against OAS 1.5.1 |
 | `interfaces/TELEMETRY.md` | Draft interface contract |
 | `fixtures/composite-incident*.json` | Generated, two views (D+1 and D+15) plus two demo forcing inputs, cadence needs tuning against reference |
-| `mock/adapter.py` | Written, smoke-tested against both fixture views, host surface added for the sandbox demo |
+| `mock/adapter.py` | Written, smoke-tested against both fixture views, host and record-sink surfaces added |
 | `demos/governance.sh` | Written, all three failure modes verified live |
-| Scribe, Comms | Not started |
+| Comms | Not started |
 
 ## Layout
 
@@ -33,13 +34,14 @@ CLAUDE.md                          working rules for this repo
 .agents/incident-commander.yaml    holds the hypothesis board
 .agents/telemetry-analyst.yaml     detects recurrence in the problem feed
 .agents/change-correlator.yaml     correlates change history against onset
+.agents/scribe.yaml                files the timeline, drafts the change record
 interfaces/TELEMETRY.md            platform-agnostic tool surface
 fixtures/generate.py               synthetic fixture generator, two views
 fixtures/composite-incident.json   generated, D+15 bridge view
 fixtures/composite-incident.d1.json  generated, D+1 view for act one
 fixtures/composite-incident.attribution.json  generated, bridge view plus convergence pressure
 fixtures/mitigation-directive.json  generated, the directed change the sandbox must block
-mock/adapter.py                    mock MCP adapter, all three surfaces, fixture-backed
+mock/adapter.py                    mock MCP adapter, all four surfaces, fixture-backed
 demos/governance.sh                the three governance demos, on demand
 demos/caveats-stripped-system-prompt.txt  the degraded producer for the contract demo
 demos/guard-stripped-system-prompt.txt  the guard-off producer for the attribution reject path
@@ -52,6 +54,7 @@ pipx install open-agent-spec
 oa validate --spec .agents/incident-commander.yaml
 oa validate --spec .agents/telemetry-analyst.yaml
 oa validate --spec .agents/change-correlator.yaml
+oa validate --spec .agents/scribe.yaml
 
 # the mock adapters, one terminal each, fixture-backed
 python3 mock/adapter.py --surface telemetry                # 8422, D+15 bridge view
@@ -74,6 +77,19 @@ oa run --spec .agents/incident-commander.yaml --task assess \
 python3 mock/adapter.py --surface telemetry --fixture fixtures/composite-incident.d1.json
 oa run --spec .agents/telemetry-analyst.yaml --task detect \
   --input "$(cat fixtures/composite-incident.d1.json)" --quiet
+
+# act three closer: the Scribe lodges the draft change record with the record
+# sink. Draft only; the surface has no submit call. Submission is human, always.
+python3 mock/adapter.py --surface incident_record          # 8425
+oa run --spec .agents/scribe.yaml --task draft_change_record \
+  --input "$(cat fixtures/mitigation-directive.json)" --quiet
+
+# the timeline, filed on the incident record. board and mitigation_attempts
+# carry earlier agent outputs; they are required and passed empty here, because
+# the runner renders a missing input key as literal {{ placeholder }} text.
+oa run --spec .agents/scribe.yaml --task timeline \
+  --input "$(python3 -c 'import json; v = json.load(open("fixtures/composite-incident.json")); v.update(board={}, mitigation_attempts=[]); print(json.dumps(v))')" \
+  --quiet
 ```
 
 ## Governance, on demand

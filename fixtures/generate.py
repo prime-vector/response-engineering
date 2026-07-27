@@ -412,6 +412,11 @@ def demo_mitigation():
             "memory recover within minutes."
         ),
         "entity": entity_block(),
+        # Consumed by the Scribe's draft_change_record task as well as the
+        # commander's mitigate task. Empty deliberately: the directive is
+        # issued before any board has confirmed a cause, so the draft the
+        # Scribe produces must record the cause as unconfirmed.
+        "board": {},
     }
 
 

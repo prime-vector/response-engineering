@@ -24,7 +24,7 @@ It is a demonstration, not a platform. Success is a four minute video and a repo
 - [x] Incident Commander, holds the hypothesis board
 - [x] Telemetry Analyst, consumes the problem feed and detects recurrence
 - [x] Change Correlator, correlates change and package history against onset
-- [ ] Scribe, produces the timeline and the draft change record
+- [x] Scribe, produces the timeline and the draft change record
 - [ ] Comms, produces the stakeholder update
 
 Cost Guardrail is deliberately excluded. It does not fit this scenario and forcing it in would weaken the demo.

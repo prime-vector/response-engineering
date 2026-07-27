@@ -99,9 +99,21 @@ Two of these have no telemetry vendor behind them, which is the point. Change hi
 
 ---
 
-## Sink side
+## `incident_record` surface, the sink
 
-Same treatment. ServiceNow, Jira Service Management or a webhook sit behind one `incident_record` surface: `record.create`, `record.update`, `change.draft`. `change.draft` produces a draft only. Submission is a human action, always.
+Port 8425 in development. Same treatment as the evidence surfaces: ServiceNow, Jira Service Management or a webhook sit behind it, and the Scribe is the only agent bound to it. Write-shaped but inert: every call produces a draft or an append, and the surface deliberately has no submit, approve or close call. Submission is a human action, always, so the capability an agent would need to bypass that is structurally absent rather than blocked.
+
+### `record.create`
+
+Creates an incident record and returns a `record_ref`. The record is created open; closing it is a human action.
+
+### `record.update`
+
+Appends to an existing record, e.g. the assembled timeline. Request: `record_ref`, `update`. Cannot change record state.
+
+### `change.draft`
+
+Lodges a draft change record and returns a `draft_ref` with `submitted: false`. A draft missing its `summary`, `risk`, `blast_radius`, `implementation_plan`, `backout_plan`, `validation_plan` or `authorisation_required` is refused, not quietly accepted: an incomplete change record is how caveats get lost in a record system, so the sink is the second fence behind the Scribe's output contract. Defence in depth is the design here too; a vendor adapter for this surface must apply the same refusals at its own layer.
 
 ---
 

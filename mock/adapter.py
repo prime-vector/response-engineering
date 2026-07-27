@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Mock MCP adapter for the telemetry and change_registry surfaces.
+Mock MCP adapter for the telemetry, change_registry, host and
+incident_record surfaces.
 
 Serves interfaces/TELEMETRY.md over JSON-RPC 2.0 on plain HTTP, backed
 entirely by a generated fixture view. Stdlib only, no dependencies.
@@ -17,6 +18,7 @@ data the view does not hold.
     python3 mock/adapter.py --surface telemetry                            # 8422
     python3 mock/adapter.py --surface change_registry                      # 8423
     python3 mock/adapter.py --surface host                                 # 8424
+    python3 mock/adapter.py --surface incident_record                      # 8425
     python3 mock/adapter.py --surface telemetry --fixture fixtures/composite-incident.d1.json
 
 MCP tool names use underscores (problems_list) rather than the dotted
@@ -25,11 +27,13 @@ allow dots.
 """
 
 import argparse
+import hashlib
 import json
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-DEFAULT_PORTS = {"telemetry": 8422, "change_registry": 8423, "host": 8424}
+DEFAULT_PORTS = {"telemetry": 8422, "change_registry": 8423, "host": 8424,
+                 "incident_record": 8425}
 DEFAULT_FIXTURE = "fixtures/composite-incident.json"
 
 FIXTURE = {}
@@ -224,6 +228,91 @@ def process_kill(args):
     _host_refusal(f"terminating pid {args['pid']} on the host.")
 
 
+# --- incident_record surface ---------------------------------------------------
+#
+# The sink. Write-shaped but inert: everything here produces a draft or an
+# append, and the surface deliberately has no submit call, so the capability
+# an agent would need to submit a change is structurally absent rather than
+# blocked. References are content hashes, so the mock stays stateless and a
+# repeat run with the same payload gets the same reference.
+
+def _ref(prefix, payload):
+    digest = hashlib.sha256(
+        json.dumps(payload, sort_keys=True).encode()).hexdigest()[:8]
+    return f"{prefix}-{digest}"
+
+
+def _refuse_submission(args):
+    for key in ("submit", "submitted", "approve", "approved", "close", "state"):
+        if args.get(key) not in (None, False, "draft", "open"):
+            raise ToolFault(
+                f"Refused: '{key}' is not accepted on this surface. Nothing "
+                "here submits, approves or closes a record. Those are human "
+                "actions in the record system."
+            )
+
+
+# A draft change record missing its caveats is how epistemics get lost in a
+# record system, so the sink is the second fence behind the Scribe's output
+# contract: an incomplete draft is refused, not quietly accepted.
+_DRAFT_REQUIRED = ("summary", "risk", "blast_radius", "implementation_plan",
+                   "backout_plan", "validation_plan", "authorisation_required")
+
+
+def record_create(args):
+    _refuse_submission(args)
+    if not str(args.get("summary", "")).strip():
+        raise ToolFault("A record needs a summary.")
+    return {
+        "record_ref": _ref("rec", args),
+        "created": True,
+        "note": ("Accepted without persistence: the mock is the conformance "
+                 "reference, not a store. Submission and closure remain "
+                 "human actions."),
+    }
+
+
+def record_update(args):
+    _refuse_submission(args)
+    if not str(args.get("record_ref", "")).strip():
+        raise ToolFault(
+            "record_ref is required. Update an existing record, or create "
+            "one with record_create first."
+        )
+    return {
+        "record_ref": args["record_ref"],
+        "accepted": True,
+        "note": ("Append accepted without persistence: the mock is the "
+                 "conformance reference, not a store."),
+    }
+
+
+def change_draft(args):
+    _refuse_submission(args)
+    missing = [f for f in _DRAFT_REQUIRED if f not in args
+               or args[f] in (None, "", [])]
+    if missing:
+        raise ToolFault(
+            f"Draft refused, missing: {missing}. An incomplete change "
+            "record is how caveats get lost; this sink does not accept one. "
+            f"Required fields: {list(_DRAFT_REQUIRED)}."
+        )
+    if args.get("authorisation_required") is not True:
+        raise ToolFault(
+            "Draft refused: authorisation_required must be true. Every "
+            "change lodged through this sink is a production change, and a "
+            "draft claiming otherwise is the failure mode itself."
+        )
+    return {
+        "draft_ref": _ref("chg-draft", args),
+        "status": "draft",
+        "submitted": False,
+        "note": ("Draft only. No tool on this surface submits; a human does "
+                 "that in the record system, with the approvals the draft "
+                 "names."),
+    }
+
+
 # --- MCP plumbing -------------------------------------------------------------
 
 def _schema(props, required):
@@ -298,6 +387,42 @@ TOOLS = {
                     ["pid"]),
         ),
     },
+    "incident_record": {
+        "record_create": (
+            record_create,
+            "Create an incident record. Returns a record reference. The "
+            "record is created open; closure is a human action.",
+            _schema({"summary": {"type": "string",
+                                 "description": "What the record is for"}},
+                    ["summary"]),
+        ),
+        "record_update": (
+            record_update,
+            "Append to an existing incident record, e.g. the assembled "
+            "timeline. Cannot close, submit or approve anything.",
+            _schema({"record_ref": {"type": "string",
+                                    "description": "The record to append to"},
+                     "update": {"type": "object",
+                                "description": "The content to append"}},
+                    ["record_ref"]),
+        ),
+        "change_draft": (
+            change_draft,
+            "Lodge a draft change record. Draft only: there is no submit "
+            "call on this surface, and an incomplete draft is refused. "
+            "Extra fields (change_type, description, cause_status, "
+            "approvals_required) are accepted and carried on the draft.",
+            _schema({"summary": {"type": "string"},
+                     "risk": {"type": "string"},
+                     "blast_radius": {"type": "string"},
+                     "implementation_plan": {"type": "array",
+                                             "items": {"type": "string"}},
+                     "backout_plan": {"type": "string"},
+                     "validation_plan": {"type": "string"},
+                     "authorisation_required": {"type": "boolean"}},
+                    list(_DRAFT_REQUIRED)),
+        ),
+    },
     "change_registry": {
         "changes_list": (
             changes_list,
@@ -370,6 +495,9 @@ class Handler(BaseHTTPRequestHandler):
         elif method == "tools/list":
             result = _tools_list()
         elif method == "tools/call":
+            # Named in the log deliberately: whether an agent really called
+            # the sink is exactly the claim its output cannot prove.
+            print(f"[mock-{SURFACE}] tools/call {params.get('name')}")
             try:
                 result = _tools_call(params)
             except ToolFault as fault:

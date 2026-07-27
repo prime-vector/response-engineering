@@ -153,7 +153,12 @@ tasks:
           description: Hypothesis board carried forward from the previous turn
           items:
             type: object
-      required: [incident_id, symptom, entity, signals]
+      # Every templated variable is required: the runner substitutes
+      # {{ placeholders }} only from keys present in the input and passes
+      # missing ones through as literal text, silently. Empty values are
+      # passed explicitly, never omitted.
+      required: [incident_id, elapsed_minutes, symptom, entity, signals,
+                 evidence, changes, prior_hypotheses]
     output:
       type: object
       properties:
@@ -386,7 +391,8 @@ tasks:
           type: string
         entity:
           type: object
-      required: [proposed_action]
+      # Every templated variable is required; see the assess input for why.
+      required: [proposed_action, directed_by, justification, entity]
     output:
       type: object
       properties:
