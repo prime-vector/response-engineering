@@ -33,10 +33,12 @@ intelligence:
   model: claude-sonnet-4-6
   config:
     temperature: 0.2
-    # A full-incident timeline is board-sized, and the runner does not
-    # surface truncation: output cut mid-JSON skips schema and contract
-    # validation and exits 0. Headroom is a correctness setting here.
-    max_tokens: 8000
+    # The timeline is generated twice in one response budget: once as the
+    # record_update tool call's arguments and once as the final JSON reply,
+    # and a live board grows both. At 8000 a composed run truncated inside
+    # the tool call and the runner failed open to an empty, exit-zero
+    # output. Headroom is a correctness setting here.
+    max_tokens: 16000
     # Provider HTTP read timeout, matching the other specs.
     timeout: 300
 
@@ -95,7 +97,9 @@ tasks:
       Assemble the incident timeline from the view and board state provided,
       then file it on the incident record with record_update. Entries come
       only from the input; what was never collected is recorded as a gap.
-    timeout: 120
+    # Generous for the same reason as max_tokens: a composed run carries the
+    # live board and the reply is timeline-sized twice over.
+    timeout: 300
     # Tool binding is per task. Without this list the runner attaches nothing.
     tools: [incident_record]
     input:

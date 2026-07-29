@@ -10,7 +10,7 @@ Built on [Open Agent Spec](https://github.com/prime-vector/open-agent-spec).
 
 ## Status
 
-Early. Four of five agents written, mock adapters serving all four tool surfaces. All four agents verified live end to end against the mocks: the analyst on the D+1 view, the correlator querying the registry through MCP, the commander on the bridge view, the Scribe filing the timeline and lodging the draft change record through the record sink, each producing contract-valid output. The three governance failure modes are scripted and verified live: `demos/governance.sh` exits zero only when the sandbox blocks, the contract rejects and the attribution guard fires.
+Early. Four of five agents written, mock adapters serving all four tool surfaces. All four agents verified live end to end against the mocks, and the handoffs between them are dataflow, not narration: `demos/investigate.sh` composes the three acts in one run, the correlator's typed output becoming the commander's `correlation` input and the commander's live board becoming the Scribe's timeline input, each stage producing contract-valid output. The three governance failure modes are scripted and verified live: `demos/governance.sh` exits zero only when the sandbox blocks, the contract rejects and the attribution guard fires.
 
 | Artefact | State |
 | --- | --- |
@@ -22,6 +22,7 @@ Early. Four of five agents written, mock adapters serving all four tool surfaces
 | `interfaces/TELEMETRY.md` | Draft interface contract |
 | `fixtures/composite-incident*.json` | Generated, two views (D+1 and D+15) plus two demo forcing inputs, cadence needs tuning against reference |
 | `mock/adapter.py` | Written, smoke-tested against both fixture views, host and record-sink surfaces added |
+| `demos/investigate.sh` | Written, the composed three-act pipeline verified live |
 | `demos/governance.sh` | Written, all three failure modes verified live |
 | Comms | Not started |
 
@@ -42,6 +43,7 @@ fixtures/composite-incident.d1.json  generated, D+1 view for act one
 fixtures/composite-incident.attribution.json  generated, bridge view plus convergence pressure
 fixtures/mitigation-directive.json  generated, the directed change the sandbox must block
 mock/adapter.py                    mock MCP adapter, all four surfaces, fixture-backed
+demos/investigate.sh               the three acts composed: correlator into commander into Scribe
 demos/governance.sh                the three governance demos, on demand
 demos/caveats-stripped-system-prompt.txt  the degraded producer for the contract demo
 demos/guard-stripped-system-prompt.txt  the guard-off producer for the attribution reject path
@@ -67,13 +69,21 @@ export ANTHROPIC_API_KEY=...
 patch "$(python3 -c 'import oas_cli.providers.anthropic_http as m; print(m.__file__)')" \
   < patches/oas-1.5.1-anthropic-tool-messages.diff
 
-# act two: change correlation first, then the bridge, run from evidence
+# the three acts, composed: recurrence at D+1, the correlator's typed output
+# into the commander's correlation input, the live board into the Scribe's
+# timeline. Manages its own adapters; stop yours first.
+./demos/investigate.sh
+
+# or act two standalone, against the adapters above. The bridge view embeds
+# a scripted correlator output shaped to the correlate contract, so a
+# standalone assess receives the same typed handoff the driver composes
+# live. The commander never sees raw registry rows.
 oa run --spec .agents/change-correlator.yaml --task correlate \
   --input "$(cat fixtures/composite-incident.json)" --quiet
 oa run --spec .agents/incident-commander.yaml --task assess \
   --input "$(cat fixtures/composite-incident.json)" --quiet
 
-# act one: restart the telemetry adapter on the D+1 view first
+# act one standalone: restart the telemetry adapter on the D+1 view first
 python3 mock/adapter.py --surface telemetry --fixture fixtures/composite-incident.d1.json
 oa run --spec .agents/telemetry-analyst.yaml --task detect \
   --input "$(cat fixtures/composite-incident.d1.json)" --quiet
@@ -84,9 +94,10 @@ python3 mock/adapter.py --surface incident_record          # 8425
 oa run --spec .agents/scribe.yaml --task draft_change_record \
   --input "$(cat fixtures/mitigation-directive.json)" --quiet
 
-# the timeline, filed on the incident record. board and mitigation_attempts
-# carry earlier agent outputs; they are required and passed empty here, because
-# the runner renders a missing input key as literal {{ placeholder }} text.
+# the timeline standalone, filed on the incident record. board and
+# mitigation_attempts carry earlier agent outputs; the driver passes the live
+# board, and a standalone run passes them empty, because the runner renders a
+# missing input key as literal {{ placeholder }} text.
 oa run --spec .agents/scribe.yaml --task timeline \
   --input "$(python3 -c 'import json; v = json.load(open("fixtures/composite-incident.json")); v.update(board={}, mitigation_attempts=[]); print(json.dumps(v))')" \
   --quiet

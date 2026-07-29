@@ -525,5 +525,6 @@
   "evidence": [],
   "missing_evidence": [],
   "changes": [],
+  "correlation": {},
   "prior_hypotheses": []
 }

@@ -2132,5 +2132,60 @@
       "note": "The audit analysis daemon has been installed for 3 years. Its activation is not an installation event. The newest package on the host predates onset by 8 days."
     }
   ],
+  "correlation": {
+    "onset_at": "2026-03-02T03:17:00+00:00",
+    "correlation_found": true,
+    "correlations": [
+      {
+        "statement": "Endpoint compliance agent 7.4.2 (CHG-88104) was rolled out to the server fleet 8 days before onset. It is the newest change on the host.",
+        "change_ref": "CHG-88104",
+        "implemented_at": "2026-02-22T00:00:00+00:00",
+        "offset_from_onset": "8 days before onset",
+        "confidence": "confirmed",
+        "supporting_evidence": [
+          "Change record CHG-88104, implemented_at from the registry.",
+          "Package history: endpoint-compliance-agent 7.4.2-27 installed the same day."
+        ],
+        "falsifying_test": "Evidence the compliance agent was not active on the host at onset, or that its activity does not generate the denials the analysis daemon is processing.",
+        "third_party_named": true
+      },
+      {
+        "statement": "audit-analysis-server 3.3.22 was installed 1085 days before onset. The analysis daemon's activation at onset is not an installation event and does not appear in the registry.",
+        "change_ref": "audit-analysis-server",
+        "implemented_at": "2023-03-13T00:00:00+00:00",
+        "offset_from_onset": "1085 days before onset",
+        "confidence": "confirmed",
+        "supporting_evidence": [
+          "Package history: audit-analysis-server 3.3.22-2.el8."
+        ],
+        "falsifying_test": "A daemon start record earlier than onset, which would break the reading that its activity began with the denial volume.",
+        "third_party_named": false
+      },
+      {
+        "statement": "kernel 4.18.0 was installed 192 days before onset.",
+        "change_ref": "kernel",
+        "implemented_at": "2025-08-22T00:00:00+00:00",
+        "offset_from_onset": "192 days before onset",
+        "confidence": "confirmed",
+        "supporting_evidence": [
+          "Package history: kernel 4.18.0."
+        ],
+        "falsifying_test": "Not applicable: no observation links this change to onset. Listed for window completeness.",
+        "third_party_named": false
+      }
+    ],
+    "registry_caveats": [
+      "self_updating_agents_not_reflected: absence from package history is not absence of change.",
+      "No pipeline-sourced deployments for this host. OS package history is the only change surface the registry can see."
+    ],
+    "next_actions": [
+      {
+        "action": "Obtain the audit denial log for the affected window to identify the source domain generating the denials. Settles whether the newest change is implicated.",
+        "owner_role": "platform_team",
+        "intent": "collect_evidence",
+        "authorisation_required": false
+      }
+    ]
+  },
   "prior_hypotheses": []
 }

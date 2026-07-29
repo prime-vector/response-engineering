@@ -283,6 +283,9 @@ prompts:
       alerting, owner
     - next_actions[]: action, owner_role, intent, authorisation_required
     supporting_evidence is always an array of strings, even for one item.
+    Every standing_conditions_implicated entry carries both description and
+    headroom_assessment: the headroom arithmetic goes in headroom_assessment,
+    never folded into description, and an entry without it is rejected.
 
   user: |
     View as of: {{ as_of }}

@@ -39,8 +39,8 @@ intelligence:
     timeout: 300
 
 # Telemetry only. The change registry belongs to the Change Correlator; the
-# commander consumes its correlation output through the changes input field
-# and never runs the query itself. One agent owns each evidence surface.
+# commander consumes its typed correlate output through the correlation input
+# field and never runs the query itself. One agent owns each evidence surface.
 tools:
   telemetry:
     type: mcp
@@ -143,9 +143,22 @@ tasks:
             unavailable, however obtainable it may appear.
           items:
             type: object
-        changes:
+        correlation:
+          type: object
+          description: >
+            The Change Correlator's correlate output, verbatim: onset_at,
+            correlation_found, correlations (each with confidence,
+            falsifying_test and third_party_named), registry_caveats,
+            next_actions. Never raw registry rows; the typed output is the
+            handoff, so the correlator's epistemics arrive intact. Empty
+            object when no correlation has been run.
+        missing_evidence:
           type: array
-          description: Change and package install history for the entity
+          description: >
+            Evidence already requested and still outstanding at input time,
+            with requester and request time. The requests are known; their
+            contents are not. Anything here must not be re-requested as if
+            new, and must not be treated as collected.
           items:
             type: object
         prior_hypotheses:
@@ -158,7 +171,7 @@ tasks:
       # missing ones through as literal text, silently. Empty values are
       # passed explicitly, never omitted.
       required: [incident_id, elapsed_minutes, symptom, entity, signals,
-                 evidence, changes, prior_hypotheses]
+                 evidence, correlation, missing_evidence, prior_hypotheses]
     output:
       type: object
       properties:
@@ -487,6 +500,17 @@ prompts:
     obtainable but is absent from the evidence array, it has not been collected.
     Request it. Do not assume it.
 
+    Change correlation reaches you typed, from the change correlator: temporal
+    statements, each with its confidence, falsifying test and third-party
+    flag, plus the registry's blind spots. Weigh it as given. Do not upgrade
+    its confidence, do not re-derive proximity from raw records, and carry
+    registry caveats onto the board where a hypothesis rests on them.
+
+    Evidence listed as already requested and outstanding stays on the board as
+    blocking evidence, carrying its requester and request time with
+    still_outstanding true. Do not re-request it as if new, and do not treat
+    the request as the evidence.
+
     Your entire reply must be a single JSON object with exactly these
     top-level keys: incident_state, summary, hypotheses, blocking_evidence,
     attribution_guard, convergence_allowed, convergence_block_reason,
@@ -534,8 +558,11 @@ prompts:
     Evidence collected:
     {{ evidence }}
 
-    Change history:
-    {{ changes }}
+    Change correlation, as produced by the Change Correlator:
+    {{ correlation }}
+
+    Evidence already requested and still outstanding:
+    {{ missing_evidence }}
 
     Hypothesis board carried forward:
     {{ prior_hypotheses }}

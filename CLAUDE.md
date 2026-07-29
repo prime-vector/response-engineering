@@ -71,7 +71,7 @@ oa validate --spec .agents/<name>.yaml     # before every commit, for every spec
 - Every agent output carrying a claim must include `confidence` and `falsifying_test` as required fields. This is not decoration. It is the entire thesis: a typed output cannot shed its caveats when it changes hands.
 - Every variable a prompt template references must be a required input field. The CLI 1.5.1 runner substitutes `{{ placeholders }}` only from keys present in the input; a missing optional key reaches the model as literal template text, degrades the run silently, and input schema `default:` values are not applied. Callers pass empty values (`{}`, `[]`) explicitly.
 - A task whose job is a tool call must say so in the mitigate task's wording: "Do not report until you have done X with a tool call." Without it the model self-attests: the Scribe's first live run reported `record_updated: true` having never called the sink. The runner cannot bind tool results into outputs, so a success flag or returned reference in an output proves nothing on its own; verify tool-use claims from the adapter log (the mock names every `tools/call`), never from the output.
-- Size `max_tokens` with real headroom and declare `behavioural_contract` per task, never at spec root. Both for the same reason: CLI 1.5.1 fails open. A root contract merges into every task with arrays unioned, and a truncated JSON output skips schema and contract validation entirely and exits 0. Both are filed upstream; until fixed, headroom and task scoping are correctness settings.
+- Size `max_tokens` with real headroom and declare `behavioural_contract` per task, never at spec root. Both for the same reason: CLI 1.5.1 fails open. A root contract merges into every task with arrays unioned, and a truncated JSON output skips schema and contract validation entirely and exits 0. Both are filed upstream; until fixed, headroom and task scoping are correctness settings. A task that files its payload with a tool call generates that payload twice in one response budget, once as tool arguments and once as the final reply: size for both, or the response truncates inside the tool call and the run exits 0 with empty output.
 - Anything that changes production state, alters a security control, or is irreversible within the incident window must set `authorisation_required: true`. There are no exceptions and no configuration option to disable this.
 
 ---
@@ -86,6 +86,8 @@ python3 fixtures/generate.py --at d1 > fixtures/composite-incident.d1.json  # ac
 python3 fixtures/generate.py --demo attribution > fixtures/composite-incident.attribution.json
 python3 fixtures/generate.py --demo mitigation > fixtures/mitigation-directive.json
 ```
+
+The bridge view embeds a scripted correlator output in `correlation`, shaped exactly to the correlate task's output contract, so standalone assess runs and the governance demos stay deterministic; `demos/investigate.sh` replaces it with a live correlator run. The raw rows in `changes` feed the mock registry and the Scribe's timeline only. The commander never sees them: the typed output is the handoff.
 
 The two `--demo` outputs are forcing inputs, not views of the incident: attribution is the bridge view plus scripted convergence pressure for the M4 governance demos (`demos/governance.sh`), mitigation is the directed production change the sandbox must block, and the same directive is the input the Scribe's `draft_change_record` task documents, which is why it carries an explicit empty `board`.
 

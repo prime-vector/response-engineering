@@ -35,6 +35,7 @@ Cost Guardrail is deliberately excluded. It does not fit this scenario and forci
 - [x] Mock MCP adapter serving the `telemetry` surface on 8422
 - [x] Mock MCP adapter serving the `change_registry` surface on 8423
 - [x] `depends_on` chain wired commander to brief
+- [x] Pipeline driver composing the acts as dataflow: correlator output into the commander's `correlation` input, the live board into the Scribe's timeline (`demos/investigate.sh`)
 - [ ] Deterministic enough to record without retakes
 
 ### M4: Governance visible
@@ -91,7 +92,7 @@ Three acts, four minutes, in this order:
 | Brand and org the repo lands under | Open. Blocks M5, nothing earlier. |
 | Whether act one is a separate invocation or the first turn of the pipeline | Resolved during M3: a separate invocation of the Telemetry Analyst against the D+1 view. |
 | Whether the mock adapter becomes its own package | The mock exists in-repo. Repackage only if a second consumer appears. |
-| Who owns the change registry | Resolved: the Change Correlator, exclusively. The commander consumes correlation through its `changes` input and holds telemetry only. |
+| Who owns the change registry | Resolved: the Change Correlator, exclusively. The commander consumes the correlator's typed output through its `correlation` input, never raw registry rows, and holds telemetry only. |
 | Comms boundary against the commander's `brief` | Open. Blocks the Comms spec, nothing earlier. `brief` already renders the board for bridge, incident manager and executive audiences; either it narrows to investigation-internal audiences, or Comms owns external stakeholders only. Leaning: Comms owns outward stakeholder updates (business impact, expectations, no board detail), `brief` keeps the three internal audiences. |
 
 ---

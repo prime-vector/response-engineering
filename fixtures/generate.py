@@ -193,9 +193,18 @@ def build(view):
         # deciding evidence here would leak insight backwards in time.
         "missing_evidence": [],
 
-        # Absence means no query has been run, not that the registry is empty.
-        # The registry was queryable throughout; nobody looked until D+15.
+        # Registry rows: served by the mock change_registry adapter and read
+        # by the Scribe's timeline. The commander never sees these. Absence
+        # means no query has been run, not that the registry is empty. The
+        # registry was queryable throughout; nobody looked until D+15.
         "changes": [],
+
+        # The Change Correlator's typed correlate output, which is the
+        # commander's only view of change history: the handoff is the typed
+        # object, never the rows above, so the correlator's confidence,
+        # falsifying tests and registry caveats arrive intact. Empty at D+1:
+        # no correlation had been run.
+        "correlation": {},
 
         "prior_hypotheses": [],
     }
@@ -293,6 +302,96 @@ def build(view):
                 ),
             },
         ]
+
+        # Scripted to the correlate task's output contract, so a standalone
+        # assess run and the governance demos stay deterministic.
+        # demos/investigate.sh replaces this with a live correlator run; the
+        # shape must not drift from .agents/change-correlator.yaml.
+        # Onset mirrors the first problem in problems(): D0 + 3h17.
+        onset = D0 + timedelta(hours=3, minutes=17)
+        fixture["correlation"] = {
+            "onset_at": iso(onset),
+            "correlation_found": True,
+            "correlations": [
+                {
+                    "statement": (
+                        "Endpoint compliance agent 7.4.2 (CHG-88104) was "
+                        "rolled out to the server fleet 8 days before onset. "
+                        "It is the newest change on the host."
+                    ),
+                    "change_ref": "CHG-88104",
+                    "implemented_at": iso(CHANGE_DAY),
+                    "offset_from_onset": "8 days before onset",
+                    "confidence": "confirmed",
+                    "supporting_evidence": [
+                        "Change record CHG-88104, implemented_at from the registry.",
+                        "Package history: endpoint-compliance-agent 7.4.2-27 installed the same day.",
+                    ],
+                    "falsifying_test": (
+                        "Evidence the compliance agent was not active on the "
+                        "host at onset, or that its activity does not "
+                        "generate the denials the analysis daemon is "
+                        "processing."
+                    ),
+                    "third_party_named": True,
+                },
+                {
+                    "statement": (
+                        "audit-analysis-server 3.3.22 was installed 1085 days "
+                        "before onset. The analysis daemon's activation at "
+                        "onset is not an installation event and does not "
+                        "appear in the registry."
+                    ),
+                    "change_ref": "audit-analysis-server",
+                    "implemented_at": iso(D0 - timedelta(days=1085)),
+                    "offset_from_onset": "1085 days before onset",
+                    "confidence": "confirmed",
+                    "supporting_evidence": [
+                        "Package history: audit-analysis-server 3.3.22-2.el8.",
+                    ],
+                    "falsifying_test": (
+                        "A daemon start record earlier than onset, which "
+                        "would break the reading that its activity began "
+                        "with the denial volume."
+                    ),
+                    "third_party_named": False,
+                },
+                {
+                    "statement": "kernel 4.18.0 was installed 192 days before onset.",
+                    "change_ref": "kernel",
+                    "implemented_at": iso(D0 - timedelta(days=192)),
+                    "offset_from_onset": "192 days before onset",
+                    "confidence": "confirmed",
+                    "supporting_evidence": [
+                        "Package history: kernel 4.18.0.",
+                    ],
+                    "falsifying_test": (
+                        "Not applicable: no observation links this change to "
+                        "onset. Listed for window completeness."
+                    ),
+                    "third_party_named": False,
+                },
+            ],
+            "registry_caveats": [
+                "self_updating_agents_not_reflected: absence from package "
+                "history is not absence of change.",
+                "No pipeline-sourced deployments for this host. OS package "
+                "history is the only change surface the registry can see.",
+            ],
+            "next_actions": [
+                {
+                    "action": (
+                        "Obtain the audit denial log for the affected window "
+                        "to identify the source domain generating the "
+                        "denials. Settles whether the newest change is "
+                        "implicated."
+                    ),
+                    "owner_role": "platform_team",
+                    "intent": "collect_evidence",
+                    "authorisation_required": False,
+                },
+            ],
+        }
 
     return fixture
 

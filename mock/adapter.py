@@ -496,8 +496,11 @@ class Handler(BaseHTTPRequestHandler):
             result = _tools_list()
         elif method == "tools/call":
             # Named in the log deliberately: whether an agent really called
-            # the sink is exactly the claim its output cannot prove.
-            print(f"[mock-{SURFACE}] tools/call {params.get('name')}")
+            # the sink is exactly the claim its output cannot prove. Flushed
+            # so the line survives the adapter being killed with its stdout
+            # redirected; an audit line lost to buffering reads as a call
+            # that never happened.
+            print(f"[mock-{SURFACE}] tools/call {params.get('name')}", flush=True)
             try:
                 result = _tools_call(params)
             except ToolFault as fault:
