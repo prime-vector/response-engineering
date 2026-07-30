@@ -64,9 +64,9 @@ The CLI is `oa`, not `oas`.
 oa validate --spec .agents/<name>.yaml     # before every commit, for every spec touched
 ```
 
-- `agent.role` is a fixed enum: `analyst`, `reviewer`, `chat`, `retriever`, `planner`, `executor`. Nothing else validates. Role framing belongs in the prompt and the output contract.
-- Spec version is `1.5.0`, tested against CLI 1.5.1.
-- Tool-calling `oa run`s need the provider patch in `patches/` until it lands upstream; a stock 1.5.1 install 400s the moment the model calls a tool. `oa validate` is unaffected.
+- `agent.role`: CLI 1.6.0 (Python and npm, both published) loosened role from the 1.5.x closed enum to a free-form string with well-known values. The incident commander declares `role: commander`, one of the 1.6.0 well-known hierarchy roles; the other specs keep their 1.5.x enum values, which remain well-known. Role is informational; role framing belongs in the prompt and the output contract.
+- Spec version is `1.5.0`, tested against CLI 1.6.0 (previously 1.5.1). The 1.5.1 fail-open findings below have no fix in the 1.6.0 changelog; treat them as current.
+- Tool-calling `oa run`s need the provider patch in `patches/` until it lands upstream; stock installs through 1.6.0 400 the moment the model calls a tool (re-verified live on 1.6.0, 30 Jul 2026). `oa validate` is unaffected. A pipx upgrade also drops the contracts extra: re-inject `behavioural-contracts` afterwards, or contract validation skips with only a warning.
 - One agent owns each surface: the Telemetry Analyst owns `telemetry`, the Change Correlator owns `change_registry`, the Scribe owns the `incident_record` sink, the commander consumes their outputs. Do not give a new spec a surface another agent already owns.
 - Every agent output carrying a claim must include `confidence` and `falsifying_test` as required fields. This is not decoration. It is the entire thesis: a typed output cannot shed its caveats when it changes hands.
 - Every variable a prompt template references must be a required input field. The CLI 1.5.1 runner substitutes `{{ placeholders }}` only from keys present in the input; a missing optional key reaches the model as literal template text, degrades the run silently, and input schema `default:` values are not applied. Callers pass empty values (`{}`, `[]`) explicitly.

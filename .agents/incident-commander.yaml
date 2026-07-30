@@ -18,7 +18,7 @@ agent:
   # OAS role enum is fixed: analyst, reviewer, chat, retriever, planner, executor.
   # "planner" is the closest fit. The commander framing lives in the prompt and
   # the output contract, not the role field.
-  role: planner
+  role: commander
 
 intelligence:
   type: llm
