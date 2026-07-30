@@ -6,6 +6,32 @@ Operations is a software problem. We build the production agent layer: defined a
 
 Built on [Open Agent Spec](https://github.com/prime-vector/open-agent-spec).
 
+```mermaid
+flowchart LR
+    subgraph evidence["Evidence surfaces (one owning agent each)"]
+        TEL[("telemetry")]
+        CHG[("change_registry")]
+    end
+
+    subgraph agents["Specs on Open Agent Spec: sandboxed tools, contract-validated outputs"]
+        TA["Telemetry Analyst<br/>detect"]
+        CC["Change Correlator<br/>correlate"]
+        IC["Incident Commander<br/>assess"]
+        SCR["Scribe<br/>timeline, change record"]
+    end
+
+    REC[("incident_record sink")]
+
+    TEL --> TA
+    CHG --> CC
+    TA -- "typed findings" --> IC
+    CC -- "typed correlation" --> IC
+    IC -- "live board" --> SCR
+    SCR -- "tool call, verified in the adapter log" --> REC
+```
+
+Every arrow between agents is a typed output whose claims carry `confidence` and `falsifying_test` as required fields: a claim cannot shed its caveats when it changes hands. No agent reads another's evidence surface, and the record is written only through a tool call the adapter log can prove.
+
 ---
 
 ## Status
@@ -15,10 +41,10 @@ Early. Four of five agents written, mock adapters serving all four tool surfaces
 | Artefact | State |
 | --- | --- |
 | `SCENARIO.md` | Draft, needs review |
-| `.agents/incident-commander.yaml` | Written, validates against OAS 1.5.1 |
-| `.agents/telemetry-analyst.yaml` | Written, validates against OAS 1.5.1 |
-| `.agents/change-correlator.yaml` | Written, validates against OAS 1.5.1 |
-| `.agents/scribe.yaml` | Written, validates against OAS 1.5.1 |
+| `.agents/incident-commander.yaml` | Written, validates against OAS 1.6.0 |
+| `.agents/telemetry-analyst.yaml` | Written, validates against OAS 1.6.0 |
+| `.agents/change-correlator.yaml` | Written, validates against OAS 1.6.0 |
+| `.agents/scribe.yaml` | Written, validates against OAS 1.6.0 |
 | `interfaces/TELEMETRY.md` | Draft interface contract |
 | `fixtures/composite-incident*.json` | Generated, two views (D+1 and D+15) plus two demo forcing inputs, cadence needs tuning against reference |
 | `mock/adapter.py` | Written, smoke-tested against both fixture views, host and record-sink surfaces added |
@@ -64,8 +90,8 @@ python3 mock/adapter.py --surface change_registry          # 8423
 
 export ANTHROPIC_API_KEY=...
 
-# one upstream patch: OAS 1.5.1's Anthropic provider does not yet translate
-# tool messages to Anthropic's format. See the header of the patch file.
+# one upstream patch: the Anthropic provider (still, through OAS 1.6.0) does
+# not translate tool messages to Anthropic's format. See the patch file header.
 patch "$(python3 -c 'import oas_cli.providers.anthropic_http as m; print(m.__file__)')" \
   < patches/oas-1.5.1-anthropic-tool-messages.diff
 
@@ -137,3 +163,20 @@ This is the third layer. It has no incumbent, which is not an accident: it needs
 The Incident Commander's output requires, per hypothesis: a confidence word, supporting evidence, and the single test that would falsify it. Convergence on a cause is blocked while deciding evidence is outstanding, and naming a third party on inferential evidence trips an attribution guard.
 
 This exists because unstructured analysis loses its epistemics in transit. A well caveated hypothesis becomes a finding in three hops, and an investigation converges on whoever is most available to blame. A typed output cannot shed its own caveats when it changes hands.
+
+## Where this sits
+
+```mermaid
+flowchart TB
+    subgraph pv["Prime Vector, the standards home"]
+        OAS["Open Agent Spec<br/>the open standard: agents as code,<br/>typed contracts, sandboxing"]
+        RE["Response Engineering, this repo<br/>reference implementation:<br/>an agent-run investigation layer"]
+    end
+    GEN["Genai Pty Ltd<br/>the engineering practice"]
+
+    OAS -->|"base for"| RE
+    GEN -->|"built and maintains"| RE
+    GEN -.->|"co-maintains"| OAS
+```
+
+The standard and its reference implementation live together under Prime Vector. The implementation is built and maintained by [Genai Pty Ltd](https://genai.com.au), the engineering practice of the same engineers who co-maintain Open Agent Spec; that dual role is stated here so nobody has to discover it. Genai takes this layer into production incident response engagements.
