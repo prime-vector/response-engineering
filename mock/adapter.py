@@ -15,6 +15,13 @@ process snapshot and no change query), and tool access comes from each
 spec's sandbox. The adapter enforces neither; it just refuses to invent
 data the view does not hold.
 
+Plain HTTP on 127.0.0.1 with no authentication: any process on the host
+can call every tool on a running surface. Acceptable for a fixture-backed
+mock and for nothing else. A vendor adapter fronts real systems, so it
+authenticates its callers and carries its own refusals (the host
+surface's, the sink's) at its own layer: a spec's sandbox constrains one
+agent, not the network. See interfaces/TELEMETRY.md.
+
     python3 mock/adapter.py --surface telemetry                            # 8422
     python3 mock/adapter.py --surface change_registry                      # 8423
     python3 mock/adapter.py --surface host                                 # 8424
