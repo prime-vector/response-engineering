@@ -10,7 +10,7 @@
 #
 #   oa validate --spec .agents/scribe.yaml
 #
-open_agent_spec: "1.5.0"
+open_agent_spec: "1.6.0"
 
 agent:
   name: scribe

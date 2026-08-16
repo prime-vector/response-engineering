@@ -7,7 +7,7 @@
 #
 #   oa validate --spec .agents/incident-commander.yaml
 #
-open_agent_spec: "1.5.0"
+open_agent_spec: "1.6.0"
 
 agent:
   name: incident-commander
@@ -15,9 +15,9 @@ agent:
     Maintains the hypothesis board for an active incident. Decides what is
     known, what is merely suspected, what evidence would settle it, and whether
     the investigation is permitted to converge.
-  # OAS role enum is fixed: analyst, reviewer, chat, retriever, planner, executor.
-  # "planner" is the closest fit. The commander framing lives in the prompt and
-  # the output contract, not the role field.
+  # Free-form since 1.6.0, which is why this spec cannot declare 1.5.0: the 1.5
+  # enum has no "commander". Role is informational either way, so the commander
+  # framing lives in the prompt and the output contract, not here.
   role: commander
 
 intelligence:

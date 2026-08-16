@@ -19,7 +19,7 @@ It is a demonstration, not a platform. Success is a four minute video and a repo
 - [ ] Sanitisation review
 
 ### M2: Specs written
-**Done when:** all five specs validate against OAS 1.5.x and the role boundaries hold without overlap.
+**Done when:** all five specs validate against OAS 1.6.0 and the role boundaries hold without overlap.
 
 - [x] Incident Commander, holds the hypothesis board
 - [x] Telemetry Analyst, consumes the problem feed and detects recurrence

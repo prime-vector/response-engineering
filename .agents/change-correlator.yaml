@@ -13,7 +13,7 @@
 #
 #   oa validate --spec .agents/change-correlator.yaml
 #
-open_agent_spec: "1.5.0"
+open_agent_spec: "1.6.0"
 
 agent:
   name: change-correlator
