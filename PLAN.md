@@ -63,7 +63,7 @@ This milestone is the product. If it is not visible on screen, this is just anot
 
 ### M6: Precedent Analyst
 
-Full spec: `docs/PrecedentAnalyst.md`
+Full spec: `docs/precedent-analyst.md`
 
 The fifth agent. Owns a retrieval surface over prior incident records and runbook documentation, hands the commander typed precedent alongside findings and correlation. Headline risk is the confident wrong precedent, so refusal and divergence are contract requirements, not tuning targets.
 
