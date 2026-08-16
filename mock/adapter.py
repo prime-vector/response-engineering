@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Mock MCP adapter for the telemetry, change_registry, host and
-incident_record surfaces.
+Mock MCP adapter for the telemetry, change_registry, host,
+incident_record and precedent_archive surfaces.
 
 Serves interfaces/TELEMETRY.md over JSON-RPC 2.0 on plain HTTP, backed
 entirely by a generated fixture view. Stdlib only, no dependencies.
@@ -19,7 +19,13 @@ data the view does not hold.
     python3 mock/adapter.py --surface change_registry                      # 8423
     python3 mock/adapter.py --surface host                                 # 8424
     python3 mock/adapter.py --surface incident_record                      # 8425
+    python3 mock/adapter.py --surface precedent_archive                    # 8426
     python3 mock/adapter.py --surface telemetry --fixture fixtures/composite-incident.d1.json
+
+The evidence surfaces are backed by a fixture view. precedent_archive is
+backed by the corpus index instead (corpus/ingest.py), because the archive
+holds what was recorded before the incident: it is the one surface whose
+content does not move with as_of.
 
 MCP tool names use underscores (problems_list) rather than the dotted
 interface names (problems.list): model-facing tool name constraints do not
@@ -29,12 +35,15 @@ allow dots.
 import argparse
 import hashlib
 import json
+import math
+import re
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 DEFAULT_PORTS = {"telemetry": 8422, "change_registry": 8423, "host": 8424,
-                 "incident_record": 8425}
+                 "incident_record": 8425, "precedent_archive": 8426}
 DEFAULT_FIXTURE = "fixtures/composite-incident.json"
+DEFAULT_INDEX = "corpus/index.json"
 
 FIXTURE = {}
 SURFACE = ""
@@ -313,6 +322,186 @@ def change_draft(args):
     }
 
 
+# --- precedent_archive surface -------------------------------------------------
+#
+# Read only, permanently: no ingest call, no feedback call, no usefulness
+# rating. Writing to the archive is a pipeline concern (corpus/ingest.py),
+# outside the incident window and outside any agent's reach.
+#
+# Retrieval here is term overlap with inverse document frequency, stdlib only
+# and deterministic. The real adapter uses a vector store and a reranker
+# (docs/precedent-analyst.md); none of that appears in the spec, which is the
+# whole point of interfaces/PRECEDENT.md. What the mock has to reproduce is
+# not the ranking, it is the contract: complete citations, a floor that
+# returns nothing rather than the nearest match, and the qualifier fields that
+# stop a passage being over-read.
+
+INDEX = {}
+FLOOR = 0.35
+MAX_PER_SOURCE = 2
+
+_WORD = re.compile(r"[a-z0-9]+")
+
+
+def _terms(text):
+    return _WORD.findall(str(text).lower())
+
+
+def _idf():
+    """Inverse document frequency over passages, computed once per process.
+
+    Also fixes the weight of a term the corpus has never seen. That weight is
+    the refusal mechanism: an unseen term is maximally informative and matches
+    nothing, so a genuinely novel incident cannot score its way past the floor
+    on the handful of ordinary English words it shares with the archive.
+    Weighting unknown terms at zero instead scores a query only on what the
+    corpus happens to contain, which reads every novel incident as familiar.
+    """
+    if "_idf" not in INDEX:
+        passages = INDEX.get("passages", [])
+        seen = {}
+        for passage in passages:
+            for term in set(_terms(passage["text"]) + _terms(passage["heading_path"])):
+                seen[term] = seen.get(term, 0) + 1
+        total = max(len(passages), 1)
+        INDEX["_idf"] = {t: math.log(1 + total / c) for t, c in seen.items()}
+        INDEX["_idf_unknown"] = math.log(1 + 2 * total)
+    return INDEX["_idf"]
+
+
+def _score(query_terms, passage):
+    """Fraction of the query's information content the passage matches.
+
+    Normalised to 0..1 deliberately: a floor is only meaningful if the score
+    means the same thing across queries of different lengths. A raw sum would
+    make the floor a function of how much the caller typed.
+    """
+    idf = _idf()
+    unknown = INDEX["_idf_unknown"]
+    weights = {t: idf.get(t, unknown) for t in set(query_terms)}
+    available = sum(weights.values())
+    if not available:
+        return 0.0
+    body = set(_terms(passage["text"]))
+    heading = set(_terms(passage["heading_path"]))
+    matched = 0.0
+    for term, weight in weights.items():
+        if term in body:
+            matched += weight
+        elif term in heading:
+            # A heading match is real but weaker: it says the passage is in
+            # the right section, not that it says the thing.
+            matched += weight * 0.5
+    return round(matched / available, 3)
+
+
+def _cite(passage, score=None):
+    out = {
+        "passage_id": passage["passage_id"],
+        "source_uri": passage["source_uri"],
+        "heading_path": passage["heading_path"],
+        "ordinal": passage["ordinal"],
+        "text": passage["text"],
+        "source_family": passage.get("source_family"),
+        "recorded_at": passage.get("recorded_at"),
+        "record_status": passage.get("record_status", "filed"),
+        "cause_claimed": passage.get("cause_claimed"),
+        "superseded_by": passage.get("superseded_by"),
+    }
+    if score is not None:
+        out["relevance"] = score
+    return out
+
+
+def precedent_search(args):
+    terms = _terms(" ".join(args.get("signature_terms") or []))
+    terms += _terms(args.get("symptom_text") or "")
+    if not terms:
+        raise ToolFault(
+            "Give signature_terms, symptom_text, or both. An empty query "
+            "returns nothing here rather than everything: a ranked list of "
+            "the whole archive is the anchoring failure with extra steps."
+        )
+
+    before = args.get("before")
+    limit = int(args.get("limit") or 5)
+
+    candidates = []
+    for passage in INDEX.get("passages", []):
+        # Precedent is time-ordered evidence. A replay of what was knowable
+        # on day two must not retrieve a record written on day fifteen.
+        if before and passage.get("recorded_at", "") > str(before)[:10]:
+            continue
+        candidates.append((_score(terms, passage), passage))
+
+    scored = sorted([c for c in candidates if c[0] > 0],
+                    key=lambda c: (-c[0], c[1]["passage_id"]))
+
+    # Below the floor the surface returns nothing, not the nearest match at a
+    # low score. A weak result in a result set still anchors, and the agent's
+    # output contract cannot save it once a passage is in hand.
+    above = [c for c in scored if c[0] >= FLOOR]
+
+    # No more than two passages from any one document. Four passages from a
+    # single prior incident is not corroboration, it is the same record
+    # quoted four times, and it reads as weight. Capping the source is what
+    # gives the agent something to state a divergence against.
+    kept, per_source = [], {}
+    for score, passage in above:
+        uri = passage["source_uri"]
+        if per_source.get(uri, 0) >= MAX_PER_SOURCE:
+            continue
+        per_source[uri] = per_source.get(uri, 0) + 1
+        kept.append((score, passage))
+        if len(kept) >= limit:
+            break
+
+    return {
+        "passages": [_cite(p, s) for s, p in kept],
+        "floor_applied": FLOOR,
+        "total_before_floor": len(scored),
+        "excluded_by_before": (
+            len(INDEX.get("passages", [])) - len(candidates) if before else 0),
+        "note": (
+            "No passage met the relevance floor. This is a complete answer, "
+            "not an empty one: the archive was searched and nothing in it "
+            "supports a precedent claim." if not kept else
+            "Passages are verbatim. cause_claimed is what a prior record "
+            "asserted, which is a signal and never evidence."
+        ),
+    }
+
+
+def passage_get(args):
+    wanted = str(args.get("passage_id") or "").strip()
+    if not wanted:
+        raise ToolFault("passage_id is required.")
+    for passage in INDEX.get("passages", []):
+        if passage["passage_id"] == wanted:
+            return _cite(passage)
+    raise ToolFault(
+        f"No passage '{wanted}' in this archive. A citation that does not "
+        "resolve is not a citation; do not report a precedent that rests on it."
+    )
+
+
+def coverage_describe(_args):
+    return {
+        "source_families": INDEX.get("source_families", []),
+        "date_range": INDEX.get("date_range"),
+        "document_count": INDEX.get("document_count", 0),
+        "passage_count": INDEX.get("passage_count", 0),
+        "corpus_current_to": INDEX.get("corpus_current_to"),
+        "chunker": INDEX.get("chunker"),
+        "floor_applied": FLOOR,
+        "note": (
+            "What the archive holds, so a report of no applicable precedent "
+            "can be checked. An archive whose date range starts after the "
+            "incident cannot hold precedent for it."
+        ),
+    }
+
+
 # --- MCP plumbing -------------------------------------------------------------
 
 def _schema(props, required):
@@ -421,6 +610,41 @@ TOOLS = {
                      "validation_plan": {"type": "string"},
                      "authorisation_required": {"type": "boolean"}},
                     list(_DRAFT_REQUIRED)),
+        ),
+    },
+    "precedent_archive": {
+        "precedent_search": (
+            precedent_search,
+            "Search prior incident records and runbook procedures. Returns "
+            "verbatim passages, each with a complete citation and a relevance "
+            "score. Below the relevance floor it returns no passages rather "
+            "than the nearest match.",
+            _schema({
+                "signature_terms": {
+                    "type": "array", "items": {"type": "string"},
+                    "description": "Stable signature terms for the current incident"},
+                "symptom_text": {
+                    "type": "string",
+                    "description": "Free text describing what is happening now"},
+                "before": {
+                    "type": "string",
+                    "description": "Exclude anything recorded after this date"},
+                "limit": {"type": "integer", "default": 5},
+            }, []),
+        ),
+        "passage_get": (
+            passage_get,
+            "Resolve a passage_id to its full passage and complete citation, "
+            "so a cited precedent can be checked without the search that "
+            "produced it.",
+            _schema({"passage_id": {"type": "string"}}, ["passage_id"]),
+        ),
+        "coverage_describe": (
+            coverage_describe,
+            "What the archive holds: source families, date range, document "
+            "and passage counts. Makes a report of no applicable precedent "
+            "checkable rather than unfalsifiable.",
+            _schema({}, []),
         ),
     },
     "change_registry": {
@@ -536,19 +760,40 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
-    global FIXTURE, SURFACE
+    global FIXTURE, SURFACE, INDEX, FLOOR
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--surface", choices=sorted(DEFAULT_PORTS), required=True)
     parser.add_argument("--port", type=int, default=None)
     parser.add_argument("--fixture", default=DEFAULT_FIXTURE,
                         help="Which fixture view to serve (default: the D+15 bridge view)")
+    parser.add_argument("--index", default=DEFAULT_INDEX,
+                        help="precedent_archive only: which corpus index to serve")
+    parser.add_argument("--floor", type=float, default=FLOOR,
+                        help="precedent_archive only: relevance floor below "
+                             "which the surface returns no passages")
     args = parser.parse_args()
 
     SURFACE = args.surface
+    port = args.port or DEFAULT_PORTS[args.surface]
+
+    # The archive is not a view of the incident, so it does not take one. It
+    # holds what was recorded before, which is why it is the one surface whose
+    # content does not move with as_of.
+    if SURFACE == "precedent_archive":
+        FLOOR = args.floor
+        with open(args.index) as fh:
+            INDEX = json.load(fh)
+        server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+        print(f"mock-{SURFACE} serving {INDEX.get('document_count')} documents, "
+              f"{INDEX.get('passage_count')} passages "
+              f"(chunker {INDEX.get('chunker')}, floor {FLOOR}) "
+              f"on 127.0.0.1:{port}")
+        server.serve_forever()
+        return
+
     with open(args.fixture) as fh:
         FIXTURE = json.load(fh)
 
-    port = args.port or DEFAULT_PORTS[args.surface]
     server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     print(f"mock-{args.surface} serving view '{FIXTURE.get('view')}' "
           f"(as_of {FIXTURE.get('as_of')}) on 127.0.0.1:{port}")

@@ -31,7 +31,7 @@ Passages are returned verbatim. The adapter does not summarise, paraphrase, merg
 
 ### `precedent.search`
 
-Request: `signature_terms` (the stable signature the Telemetry Analyst detects on), `symptom_text` (free text describing what is happening now), `before` (optional; excludes anything recorded after this time).
+Request: `signature_terms` (the stable signature the Telemetry Analyst detects on), `symptom_text` (free text describing what is happening now), `before` (optional; excludes anything recorded after this time), `limit` (optional).
 
 `before` exists because precedent is time-ordered evidence. An investigation reconstructing what was knowable on day two must not retrieve a record written on day fifteen. Without this the archive quietly leaks hindsight into a replay.
 
@@ -42,7 +42,9 @@ Response: `passages`, each with its citation, the verbatim text, a `relevance` s
 - `record_status`, where the passage comes from a record this system produced. A Scribe draft is unsubmitted and unreviewed, and a passage retrieved from one must say so rather than borrowing the authority of a filed record.
 - `superseded_by`, where a later change invalidated the resolution described. This is what lets the agent return `applicability: superseded`: surfaced, cited, and not recommended.
 
-Plus, on the response envelope: `floor_applied` (the score threshold in force) and `total_before_floor`.
+Plus, on the response envelope: `floor_applied` (the score threshold in force), `total_before_floor`, and `excluded_by_before` (how much the time bound removed, so a thin result set caused by the bound is distinguishable from a thin archive).
+
+**No more than two passages come from any one document.** Four passages from a single prior incident is not corroboration, it is one record quoted four times, and a result set weighted that way reads as agreement. Capping the source is what leaves room for the thing an agent has to state a divergence against.
 
 **Below the floor, the surface returns an empty passage set.** Not the nearest match with a low score attached, because a low score in a result set still anchors, and the failure this whole agent is built against is the confident wrong precedent. An empty set with `total_before_floor: 7` is a specific, auditable statement: seven candidates were found and none was good enough. The agent then has nothing to ground a claim in, and its output contract does the rest.
 
@@ -54,7 +56,9 @@ This is the call that makes a citation verifiable rather than decorative. A boar
 
 ### `coverage.describe`
 
-Request: none. Returns `source_families` (the categories ingested, e.g. prior incident records, runbook procedures, postmortems, vendor operational documentation), `date_range`, `document_count`, `passage_count` and `indexed_at`.
+Request: none. Returns `source_families` (the categories ingested, e.g. prior incident records, runbook procedures, postmortems, vendor operational documentation), `date_range`, `document_count`, `passage_count`, `chunker`, `floor_applied`, and `corpus_current_to`.
+
+`corpus_current_to` is the date of the newest document held, not the time the index was built. Deliberately: a build timestamp changes on every ingest whether or not anything was ingested, which makes an unchanged archive look refreshed. What a responder needs to know is how current the content is.
 
 Not decoration, and not a status endpoint. It is what makes a refusal falsifiable. "No applicable precedent" from an agent that cannot say what it searched is indistinguishable from an agent that searched nothing, and a refusal nobody can check is worth exactly as much as a claim nobody can check. The `no_applicable_precedent` path in the spec requires populated coverage for this reason.
 
@@ -72,7 +76,7 @@ It also states the archive's limits honestly. An archive whose `date_range` star
 
 Every column needs an index the source system does not provide, which is the honest position: none of these platforms exposes retrieval at the granularity a citation requires. The adapter owns the index. The interface owns the citation.
 
-The mock indexes the corpus described in `docs/precedent-analyst.md` and serves it from fixtures, stdlib only, like every other surface.
+The mock indexes the corpus with `corpus/ingest.py` and serves it from `corpus/index.json`, stdlib only, like every other surface. Its ranking is term overlap weighted by inverse document frequency, which is not what the real adapter does and is not meant to be: what the mock has to reproduce is the contract, not the retrieval. One property of it is load bearing, though, and any adapter needs the equivalent. A query term the archive has never seen must be weighted as maximally informative and unmatched, or a genuinely novel incident scores its way past the floor on the ordinary English it shares with the corpus, and the refusal path never fires.
 
 ---
 

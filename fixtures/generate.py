@@ -24,6 +24,7 @@ rather than described:
 
 import argparse
 import json
+import os
 from datetime import datetime, timedelta, timezone
 
 # Synthetic anchor. D0 is the day the denial storm begins.
@@ -519,13 +520,321 @@ def demo_mitigation():
     }
 
 
+# --- prior incident records, the archive side ---------------------------------
+#
+# Written in the shape the Scribe files, so the archive holds the artefacts
+# this system itself produces: the fifth agent reads what the fourth writes.
+# Every host, reference and date here is invented, same rules as the views.
+#
+# Two of these earn their place by being difficult rather than useful:
+#
+#   INC-2411 is the near miss. Same signature as the composite incident,
+#   different cause, and a resolution that would be actively wrong to repeat:
+#   there the JVM had just been resized, here the JVM is steady state and the
+#   new consumer is a separate process. An agent that recommends it has failed
+#   in exactly the way this agent exists to prevent.
+#
+#   INC-2288 is superseded. Its resolution was invalidated by a later standard,
+#   so it must be surfaceable without being recommended.
+
+PRIOR_RECORDS = [
+    {
+        "ref": "INC-2411",
+        "title": "Memory exhaustion on a batch integration host after a heap resize",
+        "recorded_at": "2025-11-04",
+        "status": "filed",
+        "signature": "host.memory.exhaustion:intg-prod-b2",
+        "cause_claimed": (
+            "JVM maximum heap raised from 20 GiB to 28 GiB in a tuning change "
+            "the previous evening, leaving no headroom for page cache."
+        ),
+        "summary": (
+            "Batch transfers ran late on intg-prod-b2. The host was swapping "
+            "heavily and the observability platform had opened and auto-closed "
+            "a memory exhaustion problem on each of the two preceding days."
+        ),
+        "timeline": [
+            ("D-1, 19:40", "JVM maximum heap raised from 20 GiB to 28 GiB under a "
+                           "standard tuning change, closed successful.", "change registry"),
+            ("D0, 02:10", "First memory exhaustion problem opens and auto-closes.",
+             "observability platform"),
+            ("D+2, 09:15", "Batch transfers running late, ticket raised.", "ITSM"),
+            ("D+2, 10:02", "Package and change history correlated. The heap change "
+                           "is the most recent change on the host.", "bridge"),
+            ("D+2, 11:30", "Heap reverted to 20 GiB and the service restarted "
+                           "outside the batch window. Swap usage returns to zero.", "host"),
+        ],
+        "resolution": (
+            "Reverted the heap change and restarted the integration service "
+            "outside the batch window. Confirmed by the swap curve returning "
+            "to its pre-change baseline within the hour."
+        ),
+        "gaps": [
+            "No process-level attribution was captured before the revert, so "
+            "the contribution of any other consumer was never measured.",
+        ],
+    },
+    {
+        "ref": "INC-2288",
+        "title": "Sustained CPU from an OS denial-analysis daemon",
+        "recorded_at": "2025-08-19",
+        "status": "filed",
+        "signature": "host.cpu.saturation:mid-prod-f3",
+        "cause_claimed": (
+            "Denial volume from a policy change kept the OS denial-analysis "
+            "daemon resident and busy."
+        ),
+        "summary": (
+            "A denial-analysis daemon held roughly 20% CPU sustained on "
+            "mid-prod-f3 for six days, spiking to full utilisation during "
+            "filesystem scans."
+        ),
+        "timeline": [
+            ("D0, 03:00", "Denial volume rises sharply. The audit dispatcher "
+                          "starts the analysis daemon, which stays resident.", "audit log"),
+            ("D+6, 14:20", "Daemon identified in a process snapshot as the top "
+                           "CPU consumer.", "bridge"),
+            ("D+6, 15:05", "Audit event dispatcher deactivated. Daemon exits and "
+                           "CPU recovers.", "host"),
+        ],
+        "resolution": (
+            "Deactivated the audit event dispatcher so the denial stream no "
+            "longer reached the analysis daemon."
+        ),
+        "gaps": [
+            "The source domain of the denials was never identified, because "
+            "the denial log stopped being collectable once the dispatcher was "
+            "deactivated.",
+        ],
+        "superseded_by": (
+            "Platform security standard SEC-STD-14 (2026-01-30) requires the "
+            "audit event dispatcher to remain active on production hosts. "
+            "Deactivating it is no longer an available resolution, and doing "
+            "it here destroyed the evidence that would have identified the "
+            "source domain."
+        ),
+    },
+    {
+        "ref": "INC-2350",
+        "title": "Host memory exhaustion from a log shipper backlog",
+        "recorded_at": "2025-09-27",
+        "status": "filed",
+        "signature": "host.memory.exhaustion:etl-prod-c1",
+        "cause_claimed": (
+            "A log shipper buffered to memory for four days after its "
+            "destination became unreachable."
+        ),
+        "summary": (
+            "Memory exhaustion on etl-prod-c1 with no recent change on the "
+            "host. The consumer was an existing process whose behaviour "
+            "changed, not a new one."
+        ),
+        "timeline": [
+            ("D0", "Log destination becomes unreachable. The shipper begins "
+                   "buffering in memory.", "host"),
+            ("D+4, 08:40", "Memory exhaustion problem opens for the fourth "
+                           "consecutive day, unacknowledged.", "observability platform"),
+            ("D+4, 11:15", "Process snapshot attributes 6 GiB resident to the "
+                           "shipper.", "bridge"),
+        ],
+        "resolution": (
+            "Capped the shipper's in-memory buffer and restored the "
+            "destination route."
+        ),
+        "gaps": [
+            "Change history was queried and found empty, which was recorded "
+            "as a finding rather than treated as absence of change.",
+        ],
+    },
+    {
+        "ref": "INC-2402",
+        "title": "Newest change blamed first, later exonerated",
+        "recorded_at": "2025-10-22",
+        "status": "filed",
+        "signature": "investigation.attribution:intg-prod-g2",
+        "cause_claimed": None,
+        "summary": (
+            "An investigation converged on the most recently deployed "
+            "component within twenty minutes of the bridge opening. The "
+            "component was demonstrated uninvolved the following morning, by "
+            "which point five hours had been spent on it."
+        ),
+        "timeline": [
+            ("D0, 17:20", "Most recent deployment named as the probable cause "
+                          "on the bridge. No direct evidence recorded.", "bridge"),
+            ("D+1, 09:30", "Component owner demonstrates the component is not "
+                           "loaded on the affected host.", "bridge"),
+            ("D+1, 10:00", "Investigation restarts from the evidence that was "
+                           "available at 17:20 the previous day.", "bridge"),
+        ],
+        "resolution": (
+            "No resolution recorded for the attribution itself. The incident "
+            "was closed with the cause unconfirmed."
+        ),
+        "gaps": [
+            "Nobody recorded what evidence would have distinguished the named "
+            "component from the alternatives, so the claim could not be "
+            "tested at the time it was made.",
+        ],
+    },
+    {
+        "ref": "INC-2377",
+        "title": "Non-production could not validate production",
+        "recorded_at": "2025-10-06",
+        "status": "filed",
+        "signature": "validation.parity:intg-prod-h1",
+        "cause_claimed": None,
+        "summary": (
+            "The comparison that would have settled a hypothesis in minutes "
+            "was unavailable: the non-production equivalent differed in build, "
+            "patch level and installed agents."
+        ),
+        "timeline": [
+            ("D0, 20:10", "Non-prod comparison proposed as the falsifying test.",
+             "bridge"),
+            ("D0, 21:45", "Comparison abandoned. Build parity confirmed absent.",
+             "bridge"),
+        ],
+        "resolution": (
+            "Hypothesis left unresolved. Build parity raised as a standing risk "
+            "rather than an incident action."
+        ),
+        "gaps": [
+            "Build parity was discovered mid-incident rather than being known "
+            "in advance.",
+        ],
+    },
+    {
+        "ref": "INC-2419",
+        "title": "Memory exhaustion closed with the cause unconfirmed",
+        "recorded_at": "2025-12-02",
+        "status": "filed",
+        "signature": "host.memory.exhaustion:intg-prod-j5",
+        "cause_claimed": None,
+        "summary": (
+            "Recurring memory exhaustion on intg-prod-j5 resolved by restarting "
+            "the workload. No cause was established before the symptom stopped."
+        ),
+        "timeline": [
+            ("D0 to D+9", "Memory exhaustion problem opens and auto-closes on "
+                          "seven of ten days, unacknowledged throughout.",
+             "observability platform"),
+            ("D+9, 22:15", "Workload restarted. Memory recovers.", "host"),
+            ("D+10, 08:00", "Incident closed. Root cause recorded as unconfirmed.",
+             "ITSM"),
+        ],
+        "resolution": (
+            "Workload restarted. The symptom stopped; the cause was not "
+            "established and no falsifying test was recorded."
+        ),
+        "gaps": [
+            "Process-level attribution was never captured while the host was "
+            "exhausted, so there is no record of what held the memory.",
+        ],
+    },
+    {
+        "ref": "DRAFT-2508",
+        "title": "Swap thrash during overlapping batch windows",
+        "recorded_at": "2026-02-11",
+        "status": "draft",
+        "signature": "host.memory.pressure:batch-prod-e1",
+        "cause_claimed": (
+            "Two batch schedules overlapped after a daylight saving shift, "
+            "putting both peak working sets on the host at once."
+        ),
+        "summary": (
+            "Unsubmitted draft. Swap usage on batch-prod-e1 rose to 6 GiB "
+            "nightly for three nights following a schedule change."
+        ),
+        "timeline": [
+            ("D0, 01:00", "Both batch schedules start within the same hour for "
+                          "the first time.", "scheduler"),
+            ("D+2, 09:00", "Draft opened while the pattern was still being "
+                           "confirmed.", "ITSM"),
+        ],
+        "resolution": (
+            "None recorded. The draft was never submitted, so nothing here has "
+            "been reviewed."
+        ),
+        "gaps": [
+            "The third night was not observed before the draft was written.",
+        ],
+    },
+]
+
+
+def _record_markdown(rec):
+    """Render one prior incident record as the corpus document the archive
+    ingests. Headings are the citation path, so they are structural rather
+    than decorative: heading-aware chunking carries them down to the passage.
+    """
+    front = {
+        "source_uri": f"corpus://incidents/{rec['ref']}",
+        "source_family": "prior_incident_record",
+        "licence": "Synthetic, generated by fixtures/generate.py",
+        "recorded_at": rec["recorded_at"],
+        "record_status": rec["status"],
+        "signature": rec["signature"],
+    }
+    if rec.get("cause_claimed"):
+        front["cause_claimed"] = rec["cause_claimed"]
+    if rec.get("superseded_by"):
+        front["superseded_by"] = rec["superseded_by"]
+
+    lines = ["---"]
+    lines += [f"{k}: {v}" for k, v in front.items()]
+    lines += ["---", "", f"# {rec['ref']}: {rec['title']}", "", "## Summary", "",
+              rec["summary"], "", "## Signature", "",
+              f"Detected under the stable signature `{rec['signature']}`.", ""]
+
+    if rec["status"] == "draft":
+        lines += ["## Record status", "",
+                  "This record is an unsubmitted draft. Nothing in it has been "
+                  "reviewed or filed, and it carries no more authority than the "
+                  "notes it was assembled from.", ""]
+
+    lines += ["## Timeline", ""]
+    for at, event, source in rec["timeline"]:
+        lines.append(f"- **{at}** {event} Source: {source}.")
+    lines += ["", "## Resolution", "", rec["resolution"], ""]
+
+    if rec.get("superseded_by"):
+        lines += ["## Superseded", "", rec["superseded_by"], ""]
+
+    lines += ["## Gaps", ""]
+    for gap in rec["gaps"]:
+        lines.append(f"- {gap}")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def write_corpus(directory):
+    """Write the synthetic prior incident records into the corpus tree."""
+    target = os.path.join(directory, "incidents")
+    os.makedirs(target, exist_ok=True)
+    written = []
+    for rec in PRIOR_RECORDS:
+        path = os.path.join(target, f"{rec['ref']}.md")
+        with open(path, "w") as fh:
+            fh.write(_record_markdown(rec))
+        written.append(path)
+    return written
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--at", choices=sorted(VIEWS), default="d15",
                         help="Which point in time the view represents (default: d15)")
     parser.add_argument("--demo", choices=["attribution", "mitigation"],
                         help="Emit a governance-demo forcing input instead of a plain view")
+    parser.add_argument("--corpus", metavar="DIR",
+                        help="Write the synthetic prior incident records into "
+                             "DIR/incidents instead of emitting a view")
     args = parser.parse_args()
+    if args.corpus:
+        for path in write_corpus(args.corpus):
+            print(path)
+        return
     if args.demo == "attribution":
         out = demo_attribution()
     elif args.demo == "mitigation":
