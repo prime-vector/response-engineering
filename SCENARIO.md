@@ -52,7 +52,7 @@ Relative days. Synthetic anchor: D0 = Monday 2 March.
 | When | Event | Visible to whom |
 | --- | --- | --- |
 | **D-8** | Endpoint compliance agent rolled out across the fleet. Routine change, low risk, closed successful. | Change registry |
-| **D0** | Agent's filesystem and integrity scanning begins generating SELinux AVC denials at volume. The audit dispatcher wakes the OS denial-analysis daemon, which stays up from this point. | Audit log (uncollected) |
+| **D0** | SELinux AVC denials begin at volume. The audit dispatcher wakes the OS denial-analysis daemon, which stays up from this point. The source domain of the denials is never identified. | Audit log (uncollected) |
 | **D0** | Daemon consumes ~20% CPU sustained, spiking to 99%. RSS climbs from ~0.6 GiB towards 4 GiB. Combined with the JVM, the host enters memory exhaustion. Page fault rate rises. Swap usage climbs to ~4.5 GiB. | OS metrics |
 | **D0 to D+15** | The observability platform opens and closes a memory-exhaustion problem on this host on **13 of 15 days**. Every one auto-closes. **None are acknowledged, assigned or actioned.** | Observability platform |
 | **D+15, 16:40** | Batch transfers running late. A business user raises a ticket. Severity 2. Bridge convened at 17:00. | ITSM |
@@ -60,15 +60,21 @@ Relative days. Synthetic anchor: D0 = Monday 2 March.
 | **D+15, ~19:00** | The caveats are lost in transmission. What reaches the bridge is "AI indicates the observability agent is involved." The observability vendor is engaged. Investigation converges on them. | Bridge |
 | **D+15, 19:21** | Change correlation finally run. Package history shows the compliance agent installed at D-8, the most recent change on the host, 8 days before onset. Two hours and twenty minutes into the bridge. | Bridge |
 | **D+16, 09:51** | Vendor demonstrates their agent does not inject into Python processes and is not attached to the daemon. Their telemetry shows the host has been memory-exhausted for 15 days and that the platform has been raising it throughout. | Bridge |
+| **D+16, 14:01 to 14:27** | Separately, a snapshot restore is rehearsed to an alternate location. Recovery point selected is **D+11, inside the affected window**. Restore takes 26 minutes against a stated 10 minute expectation, before any validation runs. | Cloud console |
 | **D+16, 14:49** | Suppression applied: SELinux set to permissive, audit dispatcher deactivated, daemon killed. CPU and memory recover. | Host |
 | **D+16, 19:29** | Incident closed. Root cause recorded as unconfirmed. | ITSM |
-| **D+16, 14:01 to 14:27** | Separately, a snapshot restore is rehearsed to an alternate location. Recovery point selected is **D+11, inside the affected window**. Restore takes 26 minutes against a stated 10 minute expectation, before any validation runs. | Cloud console |
 
 ### Never collected
 
 The audit denial log naming the source domain of the denials. This is the single piece of evidence that would have distinguished the compliance agent from the observability agent from the application's own service account. It was requested twice and never produced.
 
 **The cause was not found. It was made to stop mattering.**
+
+### Ground truth for generation (fiction, never evidence)
+
+The fixtures are generated from a defined causal chain: the compliance agent's filesystem and integrity scanning produces the denials that wake the daemon. It is recorded here so the synthetic data is internally coherent and so evals have a truth to score against.
+
+It is a property of the fiction, not a finding. No fixture exposes it, no agent can reach it, and no artefact may present it as established. In the pattern this composite is drawn from, the cause was never confirmed, and the timeline above carries only what was observable at the time.
 
 ---
 
