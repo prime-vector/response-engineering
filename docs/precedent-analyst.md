@@ -50,11 +50,11 @@ Tool calls on the surface:
 
 | Call | Input | Returns |
 |---|---|---|
-| `search_precedent` | signature terms, symptom text, optional time bound | ranked passages, each with a stable citation and a relevance score |
-| `get_passage` | passage id | full passage plus its citation |
-| `describe_coverage` | none | what the archive contains: source families, date range, document count |
+| `precedent.search` | signature terms, symptom text, optional time bound | ranked passages, each with a stable citation and a relevance score |
+| `passage.get` | passage id | full passage plus its citation |
+| `coverage.describe` | none | what the archive contains: source families, date range, document count |
 
-`describe_coverage` is not decoration. An agent that reports "no applicable precedent"
+`coverage.describe` is not decoration. An agent that reports "no applicable precedent"
 must be able to say what it searched, or the refusal is unfalsifiable.
 
 **Citation shape.** Every passage returns `source_uri`, `heading_path`, `ordinal` and
@@ -239,13 +239,13 @@ Writes timestamped JSON plus `evals/results/latest.md` as a table ready for the 
 **Phase 1, Adapter and corpus.** Postgres with pgvector up, manifest populated,
 ingest running with both chunkers, all three tool calls serving fixture-backed results
 with citations.
-*Done when:* re-ingesting unchanged sources embeds nothing new, and `search_precedent`
+*Done when:* re-ingesting unchanged sources embeds nothing new, and `precedent.search`
 returns cited passages for a hand-written query.
 
 **Phase 2, Agent spec.** `.agents/precedent-analyst.yaml` validates against OAS 1.6.0
 and runs standalone against the adapter, producing contract-valid output on a fixture.
 *Done when:* `oa run --spec .agents/precedent-analyst.yaml --task recall` returns
-precedents whose citations resolve back through `get_passage`.
+precedents whose citations resolve back through `passage.get`.
 
 **Phase 3, Refusal and grounding.** Confidence floor wired, `no_applicable_precedent`
 path exercised, `demos/governance.sh grounding` passing both paths.
