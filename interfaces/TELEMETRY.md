@@ -6,6 +6,8 @@ The seam is MCP. Each adapter is an MCP server exposing the tool surface below o
 
 Mock first. The mock is not a throwaway: it is the conformance reference, and any vendor adapter is correct when it satisfies the same contract against the same fixtures. The mock lives at `mock/adapter.py`, stdlib only, and serves whichever fixture view it is started with.
 
+The mock binds 127.0.0.1, speaks plain HTTP and authenticates nobody, which is acceptable for a fixture-backed conformance reference and nothing else: any local process can call every tool on a running surface. A vendor adapter fronts real systems, so it authenticates its callers, and its refusals (the host surface's, the sink's) hold at its own layer rather than trusting the spec sandbox in front of it. A spec's sandbox constrains one agent; the adapter is what stands between the network and the platform.
+
 Naming: this document uses dotted call names (`problems.list`) for readability. The MCP tool names use underscores (`problems_list`) because model-facing tool name constraints do not allow dots.
 
 ---

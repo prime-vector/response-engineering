@@ -29,6 +29,21 @@ esac
 
 : "${ANTHROPIC_API_KEY:?Set ANTHROPIC_API_KEY first; every act is a live run.}"
 
+# The runner skips contract validation with only a warning when the
+# behavioural-contracts extra is missing (a pipx upgrade drops it). Every
+# stage here claims contract-valid output, so that degradation fails closed.
+OA_PY="$(sed -n '1s/^#! *//p' "$(command -v oa)")"
+if [ -x "$OA_PY" ]; then
+  "$OA_PY" -c 'import sys; from oas_cli.runner import CONTRACTS_ENABLED; sys.exit(0 if CONTRACTS_ENABLED else 1)' || {
+    echo "behavioural-contracts is missing from oa's environment: the runner" >&2
+    echo "would skip contract validation with only a warning. Reinstall it:" >&2
+    echo "  pipx runpip open-agent-spec install behavioural-contracts" >&2
+    exit 1
+  }
+else
+  echo "warning: cannot locate oa's interpreter; contract validation unverified." >&2
+fi
+
 OUT="$(mktemp -d "${TMPDIR:-/tmp}/investigate.XXXXXX")"
 BOARD=""
 

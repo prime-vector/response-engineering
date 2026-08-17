@@ -56,6 +56,10 @@ sandbox:
   tools:
     allow: [changes_list, packages_installed, deployments_list]
   http:
+    # Constrains only the runner's generic http.* tools, which no task here
+    # binds; MCP calls are gated by the tool allow list above. The runner
+    # matches hostnames with the port stripped, so this cannot pin ports:
+    # a second fence, not a boundary.
     allow_domains: [localhost]
   file:
     allow_paths: ["./fixtures/"]
