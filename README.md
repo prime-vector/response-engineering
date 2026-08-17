@@ -91,7 +91,8 @@ oa validate --spec .agents/telemetry-analyst.yaml
 oa validate --spec .agents/change-correlator.yaml
 oa validate --spec .agents/scribe.yaml
 
-# the mock adapters, one terminal each, fixture-backed
+# the mock adapters, one terminal each, fixture-backed. Only the agents that
+# own a surface need one: assess binds no tools and reaches nothing.
 python3 mock/adapter.py --surface telemetry                # 8422, D+15 bridge view
 python3 mock/adapter.py --surface change_registry          # 8423
 
@@ -107,10 +108,10 @@ patch "$(python3 -c 'import oas_cli.providers.anthropic_http as m; print(m.__fil
 # timeline. Manages its own adapters; stop yours first.
 ./demos/investigate.sh
 
-# or act two standalone, against the adapters above. The bridge view embeds
-# a scripted correlator output shaped to the correlate contract, so a
-# standalone assess receives the same typed handoff the driver composes
-# live. The commander never sees raw registry rows.
+# or act two standalone. The correlator needs 8423; assess needs no adapter at
+# all. The bridge view embeds a scripted correlator output shaped to the
+# correlate contract, so a standalone assess receives the same typed handoff
+# the driver composes live. The commander never sees raw registry rows.
 oa run --spec .agents/change-correlator.yaml --task correlate \
   --input "$(cat fixtures/composite-incident.json)" --quiet
 oa run --spec .agents/incident-commander.yaml --task assess \

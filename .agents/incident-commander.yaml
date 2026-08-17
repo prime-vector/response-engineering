@@ -60,26 +60,6 @@ tools:
       That block is the demo. See demos/governance.sh.
     timeout: 30
 
-# Read-only, and the single source of the mitigate demo's block: the allow
-# list carries the telemetry tools and nothing from the host surface. The
-# runner checks this list before dispatching any tool call, so a state change
-# cannot happen here regardless of what the model or its prompt intends.
-sandbox:
-  # The allow list names individual MCP tools, not the provider alias.
-  tools:
-    allow:
-      - problems_list
-      - metrics_query
-      - entity_describe
-      - processes_top
-  http:
-    # Constrains only the runner's generic http.* tools, which no task here
-    # binds; MCP calls are gated by the tool allow list above. The runner
-    # matches hostnames with the port stripped, so this cannot pin ports:
-    # a second fence, not a boundary.
-    allow_domains: [localhost]
-  file:
-    allow_paths: ["./fixtures/"]
 
 tasks:
 
@@ -113,8 +93,23 @@ tasks:
       outstanding deciding evidence, and a ruling on whether the investigation
       may converge on a cause.
     timeout: 120
-    # Tool binding is per task. Without this list the runner attaches nothing.
-    tools: [telemetry]
+    # No tool binding. This task holds the board; it does not collect. The view
+    # it is given already carries signals, evidence and missing_evidence, and
+    # the correlator's and analyst's typed outputs arrive as input fields. A
+    # telemetry binding here would let the commander collect past the view it
+    # was handed, which is the leak missing_evidence exists to prevent and the
+    # same boundary the change_registry rule draws.
+    #
+    # The empty allow list is declared rather than omitted: a task with no
+    # sandbox is allow-all, so "binds nothing" holds only until someone adds a
+    # binding. Empty denies every tool by name.
+    sandbox:
+      tools:
+        allow: []
+      http:
+        allow_domains: [localhost]
+      file:
+        allow_paths: ["./fixtures/"]
     input:
       type: object
       properties:
@@ -346,6 +341,17 @@ tasks:
       Render the hypothesis board as a bridge briefing. Consumes the assess
       output directly, so the epistemics cannot be dropped in translation.
     timeout: 60
+    # No tool binding, and an explicit empty allow list rather than none: a
+    # task without a sandbox is allow-all, so the boundary is declared on the
+    # task that has nothing to bind for the same reason it is declared on the
+    # ones that do.
+    sandbox:
+      tools:
+        allow: []
+      http:
+        allow_domains: [localhost]
+      file:
+        allow_paths: ["./fixtures/"]
     depends_on: [assess]
     input:
       type: object
@@ -395,6 +401,20 @@ tasks:
       demos/governance.sh sandbox.
     timeout: 120
     tools: [host]
+    # The block the sandbox demo asserts, declared on the task it applies to
+    # rather than inherited as a side effect of a root list that happened to
+    # name telemetry tools and no host tool. This task binds the host surface
+    # and allows nothing, so every call dies pre-dispatch with
+    # SANDBOX_TOOL_VIOLATION regardless of what the model or its prompt
+    # intends. An empty allow list denies every tool by name; a task with no
+    # sandbox at all would allow every one of them.
+    sandbox:
+      tools:
+        allow: []
+      http:
+        allow_domains: [localhost]
+      file:
+        allow_paths: ["./fixtures/"]
     input:
       type: object
       properties:

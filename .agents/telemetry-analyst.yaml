@@ -46,20 +46,6 @@ tools:
       mock/adapter.py, vendor adapters implement the same tool surface.
     timeout: 30
 
-sandbox:
-  # The allow list names individual MCP tools, not the provider alias.
-  # Telemetry surface only, matching the tool binding above.
-  tools:
-    allow: [problems_list, metrics_query, entity_describe, processes_top]
-  http:
-    # Constrains only the runner's generic http.* tools, which no task here
-    # binds; MCP calls are gated by the tool allow list above. The runner
-    # matches hostnames with the port stripped, so this cannot pin ports:
-    # a second fence, not a boundary.
-    allow_domains: [localhost]
-  file:
-    allow_paths: ["./fixtures/"]
-
 tasks:
 
   detect:
@@ -95,6 +81,22 @@ tasks:
     timeout: 120
     # Tool binding is per task. Without this list the runner attaches nothing.
     tools: [telemetry]
+    # Task-level rather than root-level: the runner merges a root sandbox into
+    # every task, each of tools, http and file replacing the root key of the
+    # same name wholesale, so a root boundary is one a future task inherits
+    # without declaring it. Declared next to the binding it constrains. The
+    # allow list names individual MCP tools, not the provider alias.
+    sandbox:
+      tools:
+        allow: [problems_list, metrics_query, entity_describe, processes_top]
+      http:
+        # Constrains only the runner's generic http.* tools, which this task
+        # does not bind; MCP calls are gated by the tool allow list above. The
+        # runner matches hostnames with the port stripped, so this cannot pin
+        # ports: a second fence, not a boundary.
+        allow_domains: [localhost]
+      file:
+        allow_paths: ["./fixtures/"]
     input:
       type: object
       properties:
