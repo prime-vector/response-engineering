@@ -20,6 +20,7 @@ rather than described:
 
     python3 fixtures/generate.py --demo attribution > fixtures/composite-incident.attribution.json
     python3 fixtures/generate.py --demo mitigation > fixtures/mitigation-directive.json
+    python3 fixtures/generate.py --demo novel > fixtures/novel-incident.json
 """
 
 import argparse
@@ -520,6 +521,131 @@ def demo_mitigation():
     }
 
 
+def demo_novel():
+    """A different incident, invented to be genuinely novel against the archive.
+
+    Forcing input for the refusal demo. Every other fixture here is a view of
+    the composite scenario; this one deliberately is not, because a refusal
+    can only be demonstrated on something the archive has no answer for, and
+    the composite incident's signature is the one the near miss shares.
+
+    Two properties are load bearing:
+
+      Nothing in it overlaps the archive's vocabulary. The failure is session
+      establishment between two services, not resource exhaustion on a host,
+      so a search on its signature type meets the relevance floor and returns
+      nothing rather than the nearest-looking record.
+
+      It is dated after the archive's most recent document, so coverage at
+      this bound is the whole archive. The refusal has to be the archive
+      holding nothing applicable, not the time bound holding the answer back:
+      a demo where the bound does the work proves the bound, which
+      corpus/eval.py already proves.
+    """
+    as_of = datetime(2026, 4, 14, 9, 40, tzinfo=timezone.utc)
+    onset = datetime(2026, 4, 14, 4, 20, tzinfo=timezone.utc)
+
+    return {
+        "_comment": (
+            "Synthetic, and not the composite scenario: a separate invented "
+            "incident with no counterpart in the archive. See SCENARIO.md for "
+            "the sanitisation rules. Forcing input for the refusal demo "
+            "(docs/precedent-analyst.md phase 3): the correct answer is "
+            "no_applicable_precedent with search coverage populated."
+        ),
+        "view": "novel-refusal-forcing",
+        "as_of": iso(as_of),
+        "incident_id": "SYN-0002",
+        "symptom": (
+            "Consumers of the order events stream are reconnecting in a loop. "
+            "Queue depth is climbing on two of six broker nodes. No messages "
+            "have been lost and no consumer has reported an error to its "
+            "callers."
+        ),
+        "entity": {
+            "entity_id": "msg-prod-c3",
+            "type": "broker_node",
+            "environment": "production",
+            "cluster": {"name": "msg-prod-c", "nodes": 6, "affected_nodes": 2},
+            "uptime_seconds": 63 * 86400,
+        },
+        "signals": [
+            {
+                "source": "observability_platform",
+                "type": "problem_feed",
+                "window": {"from": iso(onset - timedelta(hours=12)), "to": iso(as_of)},
+                "problems": [
+                    {
+                        "id": "P-5210",
+                        "title": "Mutual TLS session establishment failing between broker and consumers",
+                        "signature": "broker.tls.session.handshake_failure:msg-prod-c3",
+                        "severity": "error",
+                        "opened_at": iso(onset),
+                        "closed_at": None,
+                        "auto_closed": False,
+                        "acknowledged_by": "platform_team",
+                        "affected_entities": ["msg-prod-c3", "msg-prod-c5"],
+                        "root_cause_claimed": None,
+                    },
+                ],
+                "total": 1,
+                "unacknowledged": 0,
+            },
+            {
+                "source": "broker",
+                "type": "counter_series",
+                "metric": "tls.handshake.failures",
+                "unit": "count",
+                "resolution": "1h",
+                "series": [
+                    {"t": iso(onset + timedelta(hours=h)), "v": v}
+                    for h, v in enumerate([0, 1180, 1240, 1195, 1260, 1215])
+                ],
+            },
+            {
+                "source": "certificate_inventory",
+                "type": "inventory",
+                "at": iso(as_of),
+                "note": (
+                    "The broker cluster's service certificates were reissued "
+                    "under a new intermediate authority on 2026-04-13. The "
+                    "consumer fleet's trust bundle was last distributed "
+                    "2026-02-02."
+                ),
+            },
+        ],
+        "evidence": [
+            {
+                "id": "E-1",
+                "description": (
+                    "Broker log records handshake failures from 04:20, each "
+                    "terminating during the certificate exchange."
+                ),
+                "collected_at": iso(as_of - timedelta(hours=1)),
+                "establishes": "the failures are at session establishment, not after it",
+                "does_not_establish": "which peer rejects, or on what grounds",
+            },
+        ],
+        "missing_evidence": [
+            {
+                "description": (
+                    "Packet capture of one failing handshake from a consumer "
+                    "host, showing which peer sends the alert and at which "
+                    "step of the exchange."
+                ),
+                "how_to_obtain": (
+                    "Capture on a consumer host during a reconnect attempt "
+                    "and decode the handshake."
+                ),
+                "requested_from": "platform_team",
+                "requested_at": iso(as_of - timedelta(minutes=25)),
+                "still_outstanding": True,
+                "note": "Deciding evidence. Everything before it is inference.",
+            },
+        ],
+    }
+
+
 # --- prior incident records, the archive side ---------------------------------
 #
 # Written in the shape the Scribe files, so the archive holds the artefacts
@@ -859,7 +985,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--at", choices=sorted(VIEWS), default="d15",
                         help="Which point in time the view represents (default: d15)")
-    parser.add_argument("--demo", choices=["attribution", "mitigation"],
+    parser.add_argument("--demo", choices=["attribution", "mitigation", "novel"],
                         help="Emit a governance-demo forcing input instead of a plain view")
     parser.add_argument("--corpus", metavar="DIR",
                         help="Write the synthetic prior incident records into "
@@ -873,6 +999,8 @@ def main():
         out = demo_attribution()
     elif args.demo == "mitigation":
         out = demo_mitigation()
+    elif args.demo == "novel":
+        out = demo_novel()
     else:
         out = build(args.at)
     print(json.dumps(out, indent=2))

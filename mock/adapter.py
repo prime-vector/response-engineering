@@ -771,6 +771,52 @@ def _tools_list():
     return {"tools": tools}
 
 
+def _log(line):
+    # Flushed for the same reason the call line is: an audit line lost to
+    # buffering when the adapter is killed reads as something that never
+    # happened.
+    print(f"[mock-{SURFACE}] {line}", flush=True)
+
+
+def _audit_lines(name, result):
+    """What left the surface, by id and uri only.
+
+    Naming the call proved that a call happened and never what came back, so
+    a claim of the shape "the draft was retrieved and rejected" was not
+    checkable from the log, and the self-attestation rule says an output
+    cannot be taken as proof of it either. A `hit` line names one passage
+    that left the surface, so a grounded_in id can be checked against the set
+    the agent was actually given, and a passage that was returned and not
+    cited can be told apart from one that was never returned.
+
+    Ids, uris and counts. Never passage text: this is an audit trail, and a
+    log that reproduces the archive is a second copy of it in a file nobody
+    is treating as one.
+
+    Only the archive's calls have lines here. The other surfaces return the
+    fixture view itself, where the claim in question is whether the call
+    happened at all, which the call line already settles.
+    """
+    if name == "precedent_search":
+        yield (f"returned {len(result['passages'])} passages of "
+               f"{result['cleared_floor']} above floor "
+               f"({result['candidates_considered']} considered, "
+               f"{result['total_scoring_above_zero']} scoring)")
+        passages = result["passages"]
+    elif name == "coverage_describe":
+        yield (f"returned coverage {result['document_count']} documents, "
+               f"{result['passage_count']} passages, to "
+               f"{result['corpus_current_to']}")
+        passages = []
+    elif name == "passage_get":
+        passages = [result]
+    else:
+        return
+    for passage in passages:
+        yield (f"hit {passage['passage_id']} "
+               f"{passage['source_uri']}#{passage['ordinal']}")
+
+
 def _tools_call(params):
     name = params.get("name", "")
     if name not in TOOLS[SURFACE]:
@@ -785,6 +831,8 @@ def _tools_call(params):
         raise
     except KeyError as exc:
         raise ToolFault(f"Missing required argument: {exc}") from exc
+    for line in _audit_lines(name, result):
+        _log(line)
     return {"content": [{"type": "text", "text": json.dumps(result, indent=2)}]}
 
 
@@ -814,11 +862,10 @@ class Handler(BaseHTTPRequestHandler):
             result = _tools_list()
         elif method == "tools/call":
             # Named in the log deliberately: whether an agent really called
-            # the sink is exactly the claim its output cannot prove. Flushed
-            # so the line survives the adapter being killed with its stdout
-            # redirected; an audit line lost to buffering reads as a call
-            # that never happened.
-            print(f"[mock-{SURFACE}] tools/call {params.get('name')}", flush=True)
+            # the sink is exactly the claim its output cannot prove. Logged
+            # before dispatch so a call that faults is still on the record;
+            # what came back is logged after, by _audit_lines.
+            _log(f"tools/call {params.get('name')}")
             try:
                 result = _tools_call(params)
             except ToolFault as fault:
@@ -850,7 +897,7 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(raw)
 
     def log_message(self, fmt, *args):
-        print(f"[mock-{SURFACE}] {fmt % args}")
+        _log(fmt % args)
 
 
 def main():
