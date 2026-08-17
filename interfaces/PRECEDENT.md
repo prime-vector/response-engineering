@@ -135,6 +135,8 @@ An adapter is conformant when, against the same corpus as the mock:
 
 7. A search with no `before` is refused, and the hindsight trap in the corpus is unreachable at the D+1 bound and reachable at a later one, from the same query.
 
+8. Every passage that leaves the surface is named in the adapter's log, by `passage_id` and `source_uri`, alongside the call that returned it. Ids, uris and counts only: an adapter that logs passage text has put a second copy of the archive somewhere nobody is treating as one. This is a requirement rather than an operational nicety because it is the only thing that can check a citation. Nothing binds a tool result into an agent's output, so a `passage_id` in a claim is a string the agent produced, and an adapter whose log names only the call leaves every citation self-attested.
+
 `corpus/eval.py` runs all of these against the mock and exits non-zero on failure. It is the executable form of this section, and an adapter is conformant when it passes the suite against both indexes.
 
 The near-miss case is the one to test first. Retrieval quality is measured in `evals/`; what is checked here is narrower and harder to fudge, that the surface hands the agent everything it needs to be wrong out loud rather than confidently.

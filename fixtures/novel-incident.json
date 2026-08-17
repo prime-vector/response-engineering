@@ -1,0 +1,105 @@
+{
+  "_comment": "Synthetic, and not the composite scenario: a separate invented incident with no counterpart in the archive. See SCENARIO.md for the sanitisation rules. Forcing input for the refusal demo (docs/precedent-analyst.md phase 3): the correct answer is no_applicable_precedent with search coverage populated.",
+  "view": "novel-refusal-forcing",
+  "as_of": "2026-04-14T09:40:00+00:00",
+  "incident_id": "SYN-0002",
+  "symptom": "Consumers of the order events stream are reconnecting in a loop. Queue depth is climbing on two of six broker nodes. No messages have been lost and no consumer has reported an error to its callers.",
+  "entity": {
+    "entity_id": "msg-prod-c3",
+    "type": "broker_node",
+    "environment": "production",
+    "cluster": {
+      "name": "msg-prod-c",
+      "nodes": 6,
+      "affected_nodes": 2
+    },
+    "uptime_seconds": 5443200
+  },
+  "signals": [
+    {
+      "source": "observability_platform",
+      "type": "problem_feed",
+      "window": {
+        "from": "2026-04-13T16:20:00+00:00",
+        "to": "2026-04-14T09:40:00+00:00"
+      },
+      "problems": [
+        {
+          "id": "P-5210",
+          "title": "Mutual TLS session establishment failing between broker and consumers",
+          "signature": "broker.tls.session.handshake_failure:msg-prod-c3",
+          "severity": "error",
+          "opened_at": "2026-04-14T04:20:00+00:00",
+          "closed_at": null,
+          "auto_closed": false,
+          "acknowledged_by": "platform_team",
+          "affected_entities": [
+            "msg-prod-c3",
+            "msg-prod-c5"
+          ],
+          "root_cause_claimed": null
+        }
+      ],
+      "total": 1,
+      "unacknowledged": 0
+    },
+    {
+      "source": "broker",
+      "type": "counter_series",
+      "metric": "tls.handshake.failures",
+      "unit": "count",
+      "resolution": "1h",
+      "series": [
+        {
+          "t": "2026-04-14T04:20:00+00:00",
+          "v": 0
+        },
+        {
+          "t": "2026-04-14T05:20:00+00:00",
+          "v": 1180
+        },
+        {
+          "t": "2026-04-14T06:20:00+00:00",
+          "v": 1240
+        },
+        {
+          "t": "2026-04-14T07:20:00+00:00",
+          "v": 1195
+        },
+        {
+          "t": "2026-04-14T08:20:00+00:00",
+          "v": 1260
+        },
+        {
+          "t": "2026-04-14T09:20:00+00:00",
+          "v": 1215
+        }
+      ]
+    },
+    {
+      "source": "certificate_inventory",
+      "type": "inventory",
+      "at": "2026-04-14T09:40:00+00:00",
+      "note": "The broker cluster's service certificates were reissued under a new intermediate authority on 2026-04-13. The consumer fleet's trust bundle was last distributed 2026-02-02."
+    }
+  ],
+  "evidence": [
+    {
+      "id": "E-1",
+      "description": "Broker log records handshake failures from 04:20, each terminating during the certificate exchange.",
+      "collected_at": "2026-04-14T08:40:00+00:00",
+      "establishes": "the failures are at session establishment, not after it",
+      "does_not_establish": "which peer rejects, or on what grounds"
+    }
+  ],
+  "missing_evidence": [
+    {
+      "description": "Packet capture of one failing handshake from a consumer host, showing which peer sends the alert and at which step of the exchange.",
+      "how_to_obtain": "Capture on a consumer host during a reconnect attempt and decode the handshake.",
+      "requested_from": "platform_team",
+      "requested_at": "2026-04-14T09:15:00+00:00",
+      "still_outstanding": true,
+      "note": "Deciding evidence. Everything before it is inference."
+    }
+  ]
+}

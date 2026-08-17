@@ -22,8 +22,11 @@ limitations with a measured value, kept visible instead of tidied away.
 
 import argparse
 import json
+import os
+import re
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.error
 import urllib.request
@@ -267,6 +270,42 @@ def case_read_only_declared():
         f"top-level combinators={combinators or 'none'}")
 
 
+def case_audit_log_names_hits(log_path):
+    """The log says what left the surface, by id, and never the passage text.
+
+    This is the only thing that can check a citation. The runner does not bind
+    tool results into outputs, so a passage_id in an agent's grounded_in is a
+    string the model wrote, whether or not the archive ever returned it, and
+    an adapter whose log names only the call leaves every citation
+    self-attested. Ids, uris and counts: a log carrying passage text is a
+    second copy of the archive in a file nobody is treating as one.
+    """
+    with open(log_path) as fh:
+        fh.seek(0, 2)
+        start = fh.tell()
+    r = rpc("precedent_search", {
+        "signature_terms": ["host.memory.exhaustion"],
+        "before": BRIDGE_BOUND, "limit": 8})
+    got = rpc("passage_get", {"passage_id": r["passages"][0]["passage_id"]})
+    with open(log_path) as fh:
+        fh.seek(start)
+        log = fh.read()
+
+    logged = re.findall(r"^\[mock-precedent_archive\] hit (\S+) (\S+)$", log, re.M)
+    expected = [(p["passage_id"], f"{p['source_uri']}#{p['ordinal']}")
+                for p in r["passages"]]
+    expected.append((got["passage_id"], f"{got['source_uri']}#{got['ordinal']}"))
+    counted = re.search(r"^\[mock-precedent_archive\] returned (\d+) passages", log, re.M)
+
+    # A distinctive run of the passage's own words, which must not appear.
+    sample = " ".join(r["passages"][0]["text"].split()[:8])
+    ok = (logged == expected
+          and counted and int(counted.group(1)) == len(r["passages"])
+          and sample not in log)
+    return ok, (f"{len(logged)} hit lines for {len(expected)} passages returned, "
+                f"text logged={sample in log}")
+
+
 def observed_degenerate_query():
     """OBSERVED, not asserted: the floor is not a semantic guarantee.
 
@@ -290,10 +329,14 @@ def main():
     parser.add_argument("--index", default="corpus/index.json")
     args = parser.parse_args()
 
+    # Captured rather than discarded: the audit lines are part of the contract
+    # now, so the suite has to be able to read them back.
+    log_fd, log_path = tempfile.mkstemp(prefix="precedent-archive-", suffix=".log")
+    log = os.fdopen(log_fd, "w")
     proc = subprocess.Popen(
         [sys.executable, "mock/adapter.py", "--surface", "precedent_archive",
          "--port", str(PORT), "--index", args.index],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        stdout=log, stderr=subprocess.DEVNULL)
     try:
         for _ in range(50):
             try:
@@ -322,6 +365,8 @@ def main():
             ("coverage is bounded like search", case_coverage_is_bounded),
             ("tools/list declares read-only and the real requirements",
              case_read_only_declared),
+            ("the log names every passage that left the surface",
+             lambda: case_audit_log_names_hits(log_path)),
         ]
 
         failures = 0
@@ -339,6 +384,8 @@ def main():
     finally:
         proc.terminate()
         proc.wait(timeout=5)
+        log.close()
+        os.unlink(log_path)
 
 
 if __name__ == "__main__":

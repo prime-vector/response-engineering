@@ -70,8 +70,8 @@ The fifth agent. Owns a retrieval surface over prior incident records and runboo
 - [x] `interfaces/PRECEDENT.md` written, no implementation named
 - [x] Adapter serving `precedent_archive`, cited passages, corpus manifest populated
 - [x] `.agents/precedent-analyst.yaml` validates against OAS 1.6.0, runs standalone
-- [ ] `no_applicable_precedent` path and grounding guard both exercised
-- [ ] `demos/governance.sh grounding` passes fire and reject
+- [x] `no_applicable_precedent` path and grounding guard both exercised
+- [x] `demos/governance.sh grounding` passes fire and reject
 - [ ] Evals baseline recorded
 - [ ] Measured improvement documented with before and after
 - [ ] `investigate.sh` composes four acts, precedent enters the board as supporting but never deciding evidence
@@ -91,7 +91,9 @@ Four things the live runs settled, none of which `oa validate` or the conformanc
 - **A citation has to be copied, not retyped.** An early run truncated every `heading_path` to the document title and dropped the `> Summary` segment, which is the part that makes a citation checkable in five seconds. The prompt now pins the citation fields as verbatim.
 - **`superseded` without the name is not a warning.** A run that correctly set `applicability: superseded` then wrote "this resolution is superseded" and dropped `SEC-STD-14` entirely. The qualifier had travelled: `document_superseded_by` is copied onto every passage of that document. It was the model that dropped the name, the same class of failure as the truncated heading, so it is pinned the same way: copy `document_superseded_by` into `divergence`, do not paraphrase it.
 
-**What the adapter log cannot tell you.** The mock logs `tools/call {name}` and nothing else: no arguments, no returned `source_uri`. So it verifies *that* a call happened and never *what came back*. Claims of the shape "the trap was retrieved and rejected" are not checkable from it, and must not be written down as though they were, which is the self-attestation rule applied to ourselves. Whether the `record_status` rule has fired on a live run is therefore still unknown, and `DRAFT-2601` is out of reach of the default `limit` anyway: at the bridge bound it sits seventh on the signature-type query, so `limit 5` excludes it and `limit 8` returns it. Phase 3 wants either the hit uris in the log or an eval that asserts against the returned set.
+**What the adapter log can now tell you.** It used to log `tools/call {name}` and nothing else, so it verified *that* a call happened and never *what came back*, and claims of the shape "the trap was retrieved and rejected" were not checkable from it. The archive now logs what left the surface as well: a `hit {passage_id} {source_uri}#{ordinal}` line per passage returned by `precedent_search` or `passage_get`, plus the counts behind a search. Ids, uris and counts only, never passage text, because an audit trail that reproduces the archive is a second copy of it.
+
+That closes the gap the grounding demo needed. It checks every cited `passage_id` against the returned set rather than against the output's own word, so an invented citation fails the demo, and it can report the working note as retrieved and uncited rather than asserting it. On the runs recorded below, `DRAFT-2601` was in the returned set and no precedent cited it.
 
 What the surface work had already decided for the spec, all of it still true:
 
@@ -103,7 +105,14 @@ What the surface work had already decided for the spec, all of it still true:
 
 Live `oa run` needs an API key and the `patches/` provider patch. `oa validate` needs neither.
 
-Phase 3 is next and nothing in it is done. Neither the refusal nor the grounding guard has been a live `oa run`. The refusal has been shown only at the surface, where a query of unseen terms returns an empty set with the counts populated, and the grounding guard only against the schema, where a precedent missing `grounded_in` is rejected with `OUTPUT_SCHEMA_ERROR: 'grounded_in' is a required property`. The Phase 3 done-when is a novel incident producing a coverage-populated refusal from a live run, and `demos/governance.sh grounding` passing both fire and reject.
+Phase 3 is done, and both halves of it are live runs rather than surface behaviour. `demos/governance.sh` now runs five modes.
+
+- **`grounding`, fire and reject.** Fire recalls against the bridge view: three precedents, `INC-2411` and `INC-2419` as `partial`, `INC-2288` as `superseded` naming `SEC-STD-14 (2026-01-30)`, every cited `passage_id` present in the adapter's returned set, no draft cited, and the near miss not offered as applying. Reject overrides the system prompt with `demos/grounding-stripped-system-prompt.txt` and is refused with `OUTPUT_SCHEMA_ERROR: 'grounded_in' is a required property`.
+- **`refusal`, live.** `fixtures/novel-incident.json` is a separate invented incident, session establishment failing between a broker and its consumers, dated after every document in the archive so coverage is the whole corpus and the bound is doing no work. The run established coverage first, issued six queries, every one returning nothing above the floor, and reported `no_applicable_precedent: true` with `search_coverage` populated and the queries recorded verbatim. The demo asserts the calls from the log, so a refusal that searched nothing fails.
+
+Two things the reject path settled. A soft stripped prompt does not force the failure: told only that it need not look things up, the model called the archive anyway, issued verbose queries, got nothing above the floor and correctly refused, and the run exited zero with no precedent to be ungrounded. The prompt has to name the precedent it is asserting from recall, exactly as the guard-stripped prompt names the party. And the override replaces the whole system prompt, so the retrieval guidance goes with it: a stripped run is not a plain run minus one rule.
+
+Phase 4 is next: the evals dataset and the baseline table. Nothing in it is done.
 
 ---
 
