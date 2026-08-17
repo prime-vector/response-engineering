@@ -78,6 +78,20 @@ The fifth agent. Owns a retrieval surface over prior incident records and runboo
 
 **Done when:** a board cites precedent by `passage_id`, convergence still blocks on outstanding deciding evidence, and the README carries a results table the runner can regenerate.
 
+#### Where this is up to
+
+Phases 0 and 1 are merged. The surface is live and honest enough to consume: `python3 mock/adapter.py --surface precedent_archive` on 8426, 12 documents, 59 heading-aware passages, `corpus/eval.py` green on both chunkers, CI running the lot.
+
+Phase 2 is the spec, `.agents/precedent-analyst.yaml`, task `recall`. What the surface work has already decided for it:
+
+- **`as_of` is a required input field.** Both `precedent_search` and `coverage_describe` require `before`, and the runner substitutes only from keys present in the input, so a missing `as_of` reaches the model as literal template text and the run degrades silently.
+- **The prompt passes the signature type, never the entity id.** `host.memory.exhaustion`, not `host.memory.exhaustion:intg-prod-a1`. Identity is not a similarity feature, and the archive holds records about this host.
+- **The mitigate-style wording covers both calls.** "Do not report `no_applicable_precedent` until you have called `coverage_describe`" as well as the search, or the agent self-attests a refusal it never checked. Verify from the adapter log, never from the output.
+- **`DRAFT-2601` is visible at the bridge bound and that is correct.** It was written by then. A draft working note is not evidence, so the spec has to handle it through `record_status` and the attribution guard rather than through the time bound. Do not move its date.
+- **The near miss is `INC-2411`.** Same signature, resolution that would be actively wrong to repeat here. It is what `divergence` exists to catch.
+
+Live `oa run` needs an API key and the `patches/` provider patch. `oa validate` needs neither.
+
 ---
 
 ## Definition of done for the demo

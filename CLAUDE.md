@@ -68,7 +68,8 @@ oa validate --spec .agents/<name>.yaml     # before every commit, for every spec
 - Spec version is `1.6.0`, tested against CLI 1.6.0 (previously 1.5.0 against 1.5.1). The 1.5.1 fail-open findings below have no fix in the 1.6.0 changelog; treat them as current. The declared version must be true rather than merely tolerated: the CLI bundles one schema, `oas-schema-1.6.json`, and selects nothing per version, so a spec declaring `1.5.0` while using `role: commander` validates green against a version it does not conform to. Declare what the spec actually uses.
 - 1.6.0 adds a root-level `sandbox` key. Do not use it. It merges into every task the way a root `behavioural_contract` does, with per-task overrides applied per constraint key, so a task silently inherits a boundary nobody declared on it. Sandbox constraints belong on the task, for the same fail-open reason contracts do.
 - Tool-calling `oa run`s need the provider patch in `patches/` until it lands upstream; stock installs through 1.6.0 400 the moment the model calls a tool (re-verified live on 1.6.0, 30 Jul 2026). `oa validate` is unaffected. A pipx upgrade also drops the contracts extra: re-inject `behavioural-contracts` afterwards, or contract validation skips with only a warning.
-- One agent owns each surface: the Telemetry Analyst owns `telemetry`, the Change Correlator owns `change_registry`, the Scribe owns the `incident_record` sink, the commander consumes their outputs. Do not give a new spec a surface another agent already owns.
+- One agent owns each surface: the Telemetry Analyst owns `telemetry` (8422), the Change Correlator owns `change_registry` (8423), the Scribe owns the `incident_record` sink (8425), the Precedent Analyst owns `precedent_archive` (8426), and `host` (8424) is bound by the commander's mitigate task so the sandbox has something to block. The commander consumes typed outputs, never another agent's surface. Do not give a new spec a surface another agent already owns.
+- Every call on `precedent_archive` takes a required `before`, and the caller passes the view's `as_of`. Coverage is bounded the same way as search: an unbounded coverage call leaks what search refuses, and a refusal cites coverage as proof it looked. Pass the signature type (`host.memory.exhaustion`), never the entity id: identity is not a similarity feature, and the archive holds records about the live host.
 - Every agent output carrying a claim must include `confidence` and `falsifying_test` as required fields. This is not decoration. It is the entire thesis: a typed output cannot shed its caveats when it changes hands.
 - Every variable a prompt template references must be a required input field. The CLI 1.5.1 runner substitutes `{{ placeholders }}` only from keys present in the input; a missing optional key reaches the model as literal template text, degrades the run silently, and input schema `default:` values are not applied. Callers pass empty values (`{}`, `[]`) explicitly.
 - A task whose job is a tool call must say so in the mitigate task's wording: "Do not report until you have done X with a tool call." Without it the model self-attests: the Scribe's first live run reported `record_updated: true` having never called the sink. The runner cannot bind tool results into outputs, so a success flag or returned reference in an output proves nothing on its own; verify tool-use claims from the adapter log (the mock names every `tools/call`), never from the output.
@@ -116,10 +117,14 @@ The bridge view is deliberately evidence-poor. The deciding evidence sits in `mi
 
 1. `oa validate` passes on every spec touched
 2. Fixture regenerated if the generator changed
-3. No source material anywhere in the tree, including untracked files
-4. No vendor named in a causal role
-5. No commercial detail: no rates, revenue targets, client names or pipeline
-6. Language matches the vocabulary above
+3. Corpus regenerated and both indexes current if the corpus changed: `corpus/ingest.py --check` and `--chunker fixed --check`
+4. `corpus/eval.py` passes against `corpus/index.json` and `corpus/index.fixed.json`
+5. No source material anywhere in the tree, including untracked files
+6. No vendor named in a causal role
+7. No commercial detail: no rates, revenue targets, client names or pipeline
+8. Language matches the vocabulary above
+
+`.github/workflows/checks.yml` runs 1 to 4 on every pull request, so a green check means the generated artefacts match their generators and the surface still satisfies its contract. It cannot check 5 to 8. Those stay human.
 
 ## Style
 
