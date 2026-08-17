@@ -670,14 +670,24 @@ TOOLS = {
     "precedent_archive": {
         "precedent_search": (
             precedent_search,
-            "Search prior incident records and runbook procedures. Returns "
-            "verbatim passages, each with a complete citation and a relevance "
-            "score. Below the relevance floor it returns no passages rather "
-            "than the nearest match.",
-            # anyOf rather than an empty required list: the runtime refuses a
-            # query with neither field, so tools/list has to say so. A schema
+            "Search prior incident records and runbook procedures. Give at "
+            "least one of signature_terms and symptom_text: a call with "
+            "neither is refused, because a ranked list of the whole archive "
+            "is the anchoring failure with extra steps. Returns verbatim "
+            "passages, each with a complete citation and a relevance score. "
+            "Below the relevance floor it returns no passages rather than "
+            "the nearest match.",
+            # The either/or is stated in the description rather than as a
+            # top-level anyOf. The runtime still refuses a query with neither
+            # field, and tools/list still has to say so, because a schema
             # that advertises everything as optional and then faults is a
-            # schema the model cannot plan against.
+            # schema the model cannot plan against. But the Anthropic tool
+            # API rejects oneOf, allOf and anyOf at the top level of an
+            # input_schema outright, and the runner hands the MCP schema
+            # through verbatim, so declaring it here 400s the request before
+            # the model sees a single tool. Found on the Precedent Analyst's
+            # first live run; no conformance case could have caught it,
+            # because the suite never calls a provider.
             {**_schema({
                 "signature_terms": {
                     "type": "array", "items": {"type": "string"},
@@ -695,8 +705,7 @@ TOOLS = {
                                    "this date. Pass the view's as_of."},
                 "limit": {"type": "integer", "default": 5},
             }, ["before"]),
-             "anyOf": [{"required": ["signature_terms"]},
-                       {"required": ["symptom_text"]}]},
+             },
         ),
         "passage_get": (
             passage_get,

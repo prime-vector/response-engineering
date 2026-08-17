@@ -239,16 +239,32 @@ def case_coverage_is_bounded():
 
 
 def case_read_only_declared():
-    """tools/list tells the truth about the surface and about the query."""
+    """tools/list tells the truth about the surface and about the query.
+
+    The either/or between signature_terms and symptom_text is asserted on the
+    description, not on a top-level anyOf. The Anthropic tool API rejects
+    anyOf at the top level of an input_schema and the runner passes the MCP
+    schema through verbatim, so a schema that declares it cannot be called by
+    the agent that owns the surface. What has to hold is that a caller can
+    read the requirement before making the call, not the keyword it is
+    written in. The top-level combinator check is part of the assertion:
+    a schema that reintroduces one is unusable, however conformant it looks.
+    """
     listed = tools_list()["tools"]
     annotated = all(t.get("annotations", {}).get("readOnlyHint") for t in listed)
     search = next(t for t in listed if t["name"] == "precedent_search")
-    honest = ("before" in search["inputSchema"].get("required", [])
-              and "anyOf" in search["inputSchema"])
+    schema = search["inputSchema"]
+    combinators = [k for k in ("anyOf", "oneOf", "allOf") if k in schema]
+    text = (search.get("description", "") or "").lower()
+    states_either_or = ("signature_terms" in text and "symptom_text" in text
+                        and "at least one" in text)
+    honest = ("before" in schema.get("required", [])
+              and states_either_or and not combinators)
     return annotated and honest, (
         f"readOnlyHint on {len(listed)}/{len(listed)}, "
-        f"before required={'before' in search['inputSchema'].get('required', [])}, "
-        f"anyOf declared={'anyOf' in search['inputSchema']}")
+        f"before required={'before' in schema.get('required', [])}, "
+        f"either/or stated={states_either_or}, "
+        f"top-level combinators={combinators or 'none'}")
 
 
 def observed_degenerate_query():

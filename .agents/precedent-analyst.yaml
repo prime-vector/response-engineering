@@ -333,6 +333,13 @@ prompts:
        precedent names the passages it rests on in grounded_in, and every id
        there is one precedent_search returned to you.
 
+       Copy the citation, do not retype it. source_uri, heading_path and
+       passage_id are reproduced exactly as the archive returned them,
+       including the whole heading chain with its > separators. heading_path
+       is the chain down to the passage, not the document's title, and
+       dropping the last segment is what turns a citation someone can check
+       in five seconds into one they have to search for.
+
     2. Establish coverage first, with a tool call. Call coverage_describe
        with before set to the view's as_of before you search, and report
        what it returns in search_coverage. Do not report
@@ -420,7 +427,8 @@ prompts:
       resolution_taken, applicability, confidence, falsifying_test,
       grounded_in
     - precedents[].incident_ref: source_uri, heading_path, passage_id, all
-      plain strings
+      plain strings, each copied verbatim from the passage. heading_path
+      keeps every segment the archive returned, separated by " > ".
     grounded_in is always a non-empty array of passage_id strings, even for
     one item. no_applicable_precedent is a boolean. Never emit null, [] or
     {} for a string field: omit optional fields you cannot fill.

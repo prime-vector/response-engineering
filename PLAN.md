@@ -69,7 +69,7 @@ The fifth agent. Owns a retrieval surface over prior incident records and runboo
 
 - [x] `interfaces/PRECEDENT.md` written, no implementation named
 - [x] Adapter serving `precedent_archive`, cited passages, corpus manifest populated
-- [ ] `.agents/precedent-analyst.yaml` validates against OAS 1.6.0, runs standalone
+- [x] `.agents/precedent-analyst.yaml` validates against OAS 1.6.0, runs standalone
 - [ ] `no_applicable_precedent` path and grounding guard both exercised
 - [ ] `demos/governance.sh grounding` passes fire and reject
 - [ ] Evals baseline recorded
@@ -82,7 +82,15 @@ The fifth agent. Owns a retrieval surface over prior incident records and runboo
 
 Phases 0 and 1 are merged. The surface is live and honest enough to consume: `python3 mock/adapter.py --surface precedent_archive` on 8426, 12 documents, 59 heading-aware passages, `corpus/eval.py` green on both chunkers, CI running the lot.
 
-Phase 2 is the spec, `.agents/precedent-analyst.yaml`, task `recall`. What the surface work has already decided for it:
+Phase 2 is merged. `recall` runs standalone against the surface and returns three precedents whose every cited `passage_id` resolves through `passage_get`: `INC-2411` and `INC-2419` as `partial`, `INC-2288` as `superseded`. `DRAFT-2601` was retrieved and not cited.
+
+Three things the first live run settled, none of which `oa validate` or the conformance suite could have caught:
+
+- **The provider rejects `anyOf` at the top level of a tool `input_schema`.** `precedent_search` declared one to express "at least one of `signature_terms` and `symptom_text`", and the runner passes the MCP schema through verbatim, so the request 400d before the model saw a tool. The either/or now lives in the tool description and `corpus/eval.py` asserts that instead. No conformance case could have found it: the suite never calls a provider.
+- **The whole reported symptom is a query that returns nothing.** 57 of 59 passages score above zero and none clears the floor, because a query carrying every word of a report is mostly words that do not discriminate. The signature type alone returns the near miss. The prompt tells the agent to query distinctive terms and to query more than once, which is also what surfaces `INC-2288` on the denial-daemon axis.
+- **A citation has to be copied, not retyped.** The first run truncated every `heading_path` to the document title and dropped the `> Summary` segment, which is the part that makes a citation checkable in five seconds. The prompt now pins the citation fields as verbatim.
+
+What the surface work had already decided for the spec, all of it still true:
 
 - **`as_of` is a required input field.** Both `precedent_search` and `coverage_describe` require `before`, and the runner substitutes only from keys present in the input, so a missing `as_of` reaches the model as literal template text and the run degrades silently.
 - **The prompt passes the signature type, never the entity id.** `host.memory.exhaustion`, not `host.memory.exhaustion:intg-prod-a1`. Identity is not a similarity feature, and the archive holds records about this host.
@@ -91,6 +99,8 @@ Phase 2 is the spec, `.agents/precedent-analyst.yaml`, task `recall`. What the s
 - **The near miss is `INC-2411`.** Same signature, resolution that would be actively wrong to repeat here. It is what `divergence` exists to catch.
 
 Live `oa run` needs an API key and the `patches/` provider patch. `oa validate` needs neither.
+
+Phase 3 is next: the `no_applicable_precedent` path and the grounding guard. Neither has been exercised live. The refusal has been checked only at the surface, where a query of unseen terms clears nothing, and the grounding guard only against the schema, where a precedent missing `grounded_in` is rejected with `OUTPUT_SCHEMA_ERROR: 'grounded_in' is a required property`.
 
 ---
 
