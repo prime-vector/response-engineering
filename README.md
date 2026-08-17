@@ -89,11 +89,16 @@ demos/grounding-stripped-system-prompt.txt  the uncited producer for the groundi
 ## Run
 
 ```bash
-pipx install open-agent-spec
+# The contracts extra is not optional: without it the runner skips contract
+# validation with only a warning, and both demo drivers refuse to start. The
+# version is pinned because the specs declare 1.6.0 and CI tests against it.
+pipx install "open-agent-spec[contracts]==1.6.0"
+
 oa validate --spec .agents/incident-commander.yaml
 oa validate --spec .agents/telemetry-analyst.yaml
 oa validate --spec .agents/change-correlator.yaml
 oa validate --spec .agents/scribe.yaml
+oa validate --spec .agents/precedent-analyst.yaml
 
 # the mock adapters, one terminal each, fixture-backed. Only the agents that
 # own a surface need one: assess binds no tools and reaches nothing.
