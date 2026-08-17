@@ -33,7 +33,9 @@ Passages are returned verbatim. The adapter does not summarise, paraphrase, merg
 
 ### `precedent.search`
 
-Request: `signature_terms` (the stable signature the Telemetry Analyst detects on), `symptom_text` (free text describing what is happening now), `before` (optional; excludes anything recorded after this time), `limit` (optional).
+Request: `signature_terms` (the stable signature type the Telemetry Analyst detects on), `symptom_text` (free text describing what is happening now), `before` (**required**; excludes anything recorded after this time), `limit` (optional). At least one of `signature_terms` and `symptom_text` must be present.
+
+Pass the signature *type*, never the entity id. The host is identity, not symptom, and a similarity query built on it makes identity a retrieval feature: the archive starts returning records because they mention the same machine rather than because they describe the same failure.
 
 `before` exists because precedent is time-ordered evidence. An investigation reconstructing what was knowable on day two must not retrieve a record written on day fifteen. Without this the archive quietly leaks hindsight into a replay.
 
@@ -47,15 +49,23 @@ Response: `passages`, each with its citation, the verbatim text, a `relevance` s
 
 The `document_` prefix is doing work. These are properties of the whole document, repeated on every passage cut from it, so two passages carrying the same claim are one source saying one thing twice. Named `cause_claimed` they read as two records agreeing, which is a corroboration the archive never offered.
 
-Plus, on the response envelope: `floor_applied`, `candidates_considered`, `total_scoring_above_zero`, `total_before_floor` and `excluded_by_before`.
+Plus, on the response envelope: `floor_applied`, `excluded_by_before`, and a ladder of three counts narrowing to the returned set.
 
-Four numbers rather than one, because one cannot separate the cases an empty result could mean. `candidates_considered: 0` means the time bound emptied the archive. Considered at 59 with nothing scoring means the archive holds nothing the query touches. Considered at 59 with 31 scoring and none above the floor means the archive was searched properly and nothing was good enough. Only the last is a precedent judgement, and a caller that cannot tell them apart will report the first two as though they were the third.
+| Count | Meaning |
+| --- | --- |
+| `candidates_considered` | Passages that survived the time bound |
+| `total_scoring_above_zero` | Of those, how many the query touched at all |
+| `cleared_floor` | Of those, how many met the floor, before the per-document cap and `limit` |
+
+Three rather than one, because one cannot separate the cases an empty result could mean. `candidates_considered: 0` means the bound emptied the archive. Considered at 59 with nothing scoring means the archive holds nothing the query touches. Considered at 59, 31 scoring, none clearing means the archive was searched properly and nothing was good enough. Only the last is a precedent judgement, and a caller that cannot tell them apart will report the first two as though they were the third.
+
+Each count answers a question the others cannot, which is the test for whether a fourth belongs. Two names for one number is worse than one name.
 
 **The bound is required.** There is no value meaning "no bound", and callers pass the view's `as_of`. An optional hindsight control is how hindsight gets in: a replay of what was knowable on day two that omits the bound still looks correct, and nothing in the result says otherwise.
 
 **No more than two passages come from any one document.** Four passages from a single prior incident is not corroboration, it is one record quoted four times, and a result set weighted that way reads as agreement. Capping the source is what leaves room for the thing an agent has to state a divergence against.
 
-**Below the floor, the surface returns an empty passage set.** Not the nearest match with a low score attached, because a low score in a result set still anchors, and the failure this whole agent is built against is the confident wrong precedent. An empty set with `total_before_floor: 7` is a specific, auditable statement: seven candidates were found and none was good enough. The agent then has nothing to ground a claim in, and its output contract does the rest.
+**Below the floor, the surface returns an empty passage set.** Not the nearest match with a low score attached, because a low score in a result set still anchors, and the failure this whole agent is built against is the confident wrong precedent. An empty set with `total_scoring_above_zero: 7` and `cleared_floor: 0` is a specific, auditable statement: seven passages touched the query and none was good enough. The agent then has nothing to ground a claim in, and its output contract does the rest.
 
 The floor's *value* is adapter configuration and does not transfer. Scores from term overlap, from cosine similarity and from a cross-encoder live on different scales, and a number tuned against one corpus means nothing against another. What transfers is the property, and this is the conformance requirement:
 
@@ -73,7 +83,9 @@ This is the call that makes a citation verifiable rather than decorative. A boar
 
 ### `coverage.describe`
 
-Request: none. Returns `source_families` (the categories ingested, e.g. prior incident records, runbook procedures, postmortems, vendor operational documentation), `date_range`, `document_count`, `passage_count`, `floor_applied`, and `corpus_current_to`.
+Request: `before`, **required**, the same bound `precedent.search` takes. Returns `as_of`, `source_families` (the categories ingested, e.g. prior incident records, runbook procedures, postmortems, vendor operational documentation), `date_range`, `document_count`, `passage_count`, `floor_applied`, and `corpus_current_to`, all computed over the documents that bound allows.
+
+**Coverage is bounded exactly like search, and for the same reason.** Unbounded, this call leaks what search refuses. A D+1 caller cannot retrieve the working note dated inside the incident window, but an unbounded `corpus_current_to` would still tell it the archive holds something recorded during the incident it is investigating. Search honest and coverage not is worse than either being wrong on its own, because coverage is the thing a refusal cites as proof it looked.
 
 It reports content, never implementation. Which chunker built the index, which store holds it and which model embedded it all stay behind the surface, for the same reason this document opens with. Those belong to the evals, which read the index directly.
 
@@ -106,7 +118,7 @@ Both the mock and its two chunkers are also what `corpus/eval.py` runs against, 
 - **No write call, of any shape.** Not ingest, not feedback, not a usefulness rating. The capability is structurally absent, the same way the incident record sink has no submit call.
 - **No synthesis.** No summarised answer, no merged passage, no generated explanation of why a passage matched. The agent reasons; the surface retrieves.
 - **No reading another agent's surface.** Precedent is retrieved from the archive, never assembled by querying telemetry or the change registry. One agent, one surface.
-- **No silent enrichment.** An adapter that fills a missing `heading_path` by inference, or that infers a `cause_claimed` a record never stated, fails conformance even though every field is populated.
+- **No silent enrichment.** An adapter that fills a missing `heading_path` by inference, or that infers a `document_cause_claimed` a record never stated, fails conformance even though every field is populated.
 
 ---
 
@@ -115,7 +127,7 @@ Both the mock and its two chunkers are also what `corpus/eval.py` runs against, 
 An adapter is conformant when, against the same corpus as the mock:
 
 1. Every returned passage carries a complete citation, and every returned `passage_id` resolves through `passage.get`.
-2. A query whose best candidate falls below the floor returns an empty passage set with `floor_applied` and `total_before_floor` populated, not a degraded match.
+2. A query whose best candidate falls below the floor returns an empty passage set with `floor_applied` and the three counts populated, not a degraded match.
 3. `coverage.describe` reports families and a date range that match what was actually ingested. An adapter reporting coverage it does not hold fails, and this is the failure that matters most: it makes every refusal unverifiable.
 4. The near-miss record in the corpus is retrievable for a query resembling it, and is returned with the qualifier fields that let the agent distinguish it. An adapter that returns the near miss with nothing marking it as a near miss has passed retrieval and failed the actual job.
 5. `before` is honoured. A passage recorded after the bound does not appear, whatever its score.

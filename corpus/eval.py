@@ -70,10 +70,11 @@ def case_novel_incident():
         "before": BRIDGE_BOUND})
     ok = (r["passages"] == []
           and r["candidates_considered"] > 0
+          and r["cleared_floor"] == 0
           and r["floor_applied"] > 0)
-    return ok, (f"passages={len(r['passages'])} "
-                f"considered={r['candidates_considered']} "
-                f"scored={r['total_scoring_above_zero']}")
+    return ok, (f"considered={r['candidates_considered']} "
+                f"scored={r['total_scoring_above_zero']} "
+                f"cleared={r['cleared_floor']}")
 
 
 def case_near_miss():
@@ -207,13 +208,34 @@ def case_identity_stripped_signature(index_path):
 
 def case_coverage_hides_chunker(index_path):
     """coverage.describe reports content, never implementation."""
-    c = rpc("coverage_describe", {})
+    c = rpc("coverage_describe", {"before": BRIDGE_BOUND})
     index = json.load(open(index_path))
     leaked = [k for k in ("chunker", "store", "embedding_model") if k in c]
     ok = (not leaked
           and c["document_count"] == index["document_count"]
           and c["passage_count"] == index["passage_count"])
-    return ok, f"leaked={leaked or 'nothing'} counts match index"
+    return ok, f"leaked={leaked or 'nothing'} counts match index at the bridge"
+
+
+def case_coverage_is_bounded():
+    """Coverage describes the archive the caller was allowed to see.
+
+    The leak this closes is specific: unbounded, corpus_current_to told a D+1
+    caller the archive holds a document dated during the incident, which is
+    exactly what the time bound stops search revealing. A refusal cites
+    coverage as proof it looked, so coverage that describes documents the
+    caller cannot retrieve makes the refusal a misdescription.
+    """
+    d1 = rpc("coverage_describe", {"before": D1_BOUND})
+    late = rpc("coverage_describe", {"before": "2026-03-31"})
+    unbounded = rpc("coverage_describe", {})
+    ok = (d1["corpus_current_to"] < D1_BOUND
+          and d1["document_count"] < late["document_count"]
+          and late["corpus_current_to"] == "2026-03-10"
+          and "_fault" in unbounded)
+    return ok, (f"D+1 current_to={d1['corpus_current_to']} docs={d1['document_count']}, "
+                f"late current_to={late['corpus_current_to']} docs={late['document_count']}, "
+                f"unbounded refused={'_fault' in unbounded}")
 
 
 def case_read_only_declared():
@@ -259,7 +281,7 @@ def main():
     try:
         for _ in range(50):
             try:
-                rpc("coverage_describe", {})
+                rpc("coverage_describe", {"before": BRIDGE_BOUND})
                 break
             except (urllib.error.URLError, ConnectionError, OSError):
                 time.sleep(0.1)
@@ -281,6 +303,7 @@ def main():
              lambda: case_identity_stripped_signature(args.index)),
             ("coverage hides implementation",
              lambda: case_coverage_hides_chunker(args.index)),
+            ("coverage is bounded like search", case_coverage_is_bounded),
             ("tools/list declares read-only and the real requirements",
              case_read_only_declared),
         ]

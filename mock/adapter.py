@@ -459,6 +459,7 @@ def precedent_search(args):
     # low score. A weak result in a result set still anchors, and the agent's
     # output contract cannot save it once a passage is in hand.
     above = [c for c in scored if c[0] >= FLOOR]
+    cleared = len(above)
 
     # No more than two passages from any one document. Four passages from a
     # single prior incident is not corroboration, it is the same record
@@ -477,15 +478,17 @@ def precedent_search(args):
     return {
         "passages": [_cite(p, s) for s, p in kept],
         "floor_applied": FLOOR,
-        # Three numbers rather than one, because one cannot distinguish the
-        # cases. An empty result with candidates_considered at 0 means the
-        # time bound emptied the archive; at 53 with total_scoring_above_zero
-        # at 0 it means nothing in the archive touches the query at all; at 53
-        # with 30 scoring means the archive was searched properly and nothing
-        # was good enough. Only the last is a precedent judgement.
+        # A ladder narrowing to the returned set, because one number cannot
+        # distinguish the cases. candidates_considered at 0 means the time
+        # bound emptied the archive; 59 considered with 0 scoring means
+        # nothing in the archive touches the query; 59 considered, 31 scoring,
+        # 0 clearing means the archive was searched properly and nothing was
+        # good enough. Only the last is a precedent judgement. Each count
+        # answers a question the others cannot, which is the test for whether
+        # another belongs: two names for one number is worse than one name.
         "candidates_considered": len(candidates),
         "total_scoring_above_zero": len(scored),
-        "total_before_floor": len(scored),
+        "cleared_floor": cleared,
         "excluded_by_before": len(INDEX.get("passages", [])) - len(candidates),
         "note": (
             "No passage met the relevance floor. This is a complete answer, "
@@ -512,22 +515,44 @@ def passage_get(args):
     )
 
 
-def coverage_describe(_args):
+def coverage_describe(args):
+    # Bounded exactly like search, and for the same reason. Unbounded, this
+    # call leaks what search refuses: after the D+8 working note joined the
+    # corpus, an unbounded corpus_current_to told a D+1 caller the archive
+    # holds something dated during the incident it is investigating. Search
+    # was honest and coverage was not, which is worse than either being
+    # wrong, because coverage is what a refusal cites as proof it looked.
+    before = args.get("before")
+    if not before:
+        raise ToolFault(
+            "before is required. Coverage is what a report of no applicable "
+            "precedent rests on, so it has to describe the archive the caller "
+            "was allowed to see, not the one that exists."
+        )
+    bound = str(before)[:10]
+
+    docs = [d for d in INDEX.get("documents", [])
+            if d.get("recorded_at", "") <= bound]
+    passages = [p for p in INDEX.get("passages", [])
+                if p.get("recorded_at", "") <= bound]
+    dates = sorted(d["recorded_at"] for d in docs)
+
     # No chunker here. Which chunker built the index is an implementation
     # choice behind the surface, exactly like the store and the embedding
     # model, and reporting it would leak the thing PRECEDENT.md opens by
     # forbidding. It matters to the evals, which read the index directly.
     return {
-        "source_families": INDEX.get("source_families", []),
-        "date_range": INDEX.get("date_range"),
-        "document_count": INDEX.get("document_count", 0),
-        "passage_count": INDEX.get("passage_count", 0),
-        "corpus_current_to": INDEX.get("corpus_current_to"),
+        "as_of": bound,
+        "source_families": sorted({d["source_family"] for d in docs}),
+        "date_range": f"{dates[0]} to {dates[-1]}" if dates else None,
+        "document_count": len(docs),
+        "passage_count": len(passages),
+        "corpus_current_to": dates[-1] if dates else None,
         "floor_applied": FLOOR,
         "note": (
-            "What the archive holds, so a report of no applicable precedent "
-            "can be checked. An archive whose date range starts after the "
-            "incident cannot hold precedent for it."
+            "What the archive held at as_of, so a report of no applicable "
+            "precedent can be checked. An archive whose date range starts "
+            "after the incident cannot hold precedent for it."
         ),
     }
 
@@ -682,10 +707,15 @@ TOOLS = {
         ),
         "coverage_describe": (
             coverage_describe,
-            "What the archive holds: source families, date range, document "
-            "and passage counts. Makes a report of no applicable precedent "
-            "checkable rather than unfalsifiable.",
-            _schema({}, []),
+            "What the archive held as at a date: source families, date range, "
+            "document and passage counts. Makes a report of no applicable "
+            "precedent checkable rather than unfalsifiable. Same time bound "
+            "as precedent_search, so coverage cannot describe documents the "
+            "caller was not allowed to retrieve.",
+            _schema({"before": {
+                "type": "string",
+                "description": "Required. Describe the archive as at this "
+                               "date. Pass the view's as_of."}}, ["before"]),
         ),
     },
     "change_registry": {
