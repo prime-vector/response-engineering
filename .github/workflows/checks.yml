@@ -23,6 +23,7 @@ jobs:
           python3 fixtures/generate.py --at d1 | diff -u fixtures/composite-incident.d1.json -
           python3 fixtures/generate.py --demo attribution | diff -u fixtures/composite-incident.attribution.json -
           python3 fixtures/generate.py --demo mitigation | diff -u fixtures/mitigation-directive.json -
+          python3 fixtures/generate.py --demo novel | diff -u fixtures/novel-incident.json -
 
       - name: Corpus documents match the generator
         run: |

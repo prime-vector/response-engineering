@@ -164,6 +164,13 @@ Add a fourth mode to `demos/governance.sh`:
 
 Assert both paths, in the style of the existing attribution demo.
 
+> Built as two modes rather than one, `grounding` and `refusal`, because they
+> are two controls. Grounding fails closed in the schema. Refusal is not a
+> schema property at all: it is the surface returning nothing above its
+> relevance floor and the agent reporting that as a complete answer, so the
+> only way to show it is to run it. A mode that bundled them would exit zero on
+> either.
+
 - **Fire.** Input is an incident whose signature superficially resembles the near-miss
   record. Correct behaviour: the precedent is returned with `applicability: partial`, a
   populated `divergence`, and a `falsifying_test` that would distinguish the two. It is
@@ -173,8 +180,19 @@ Assert both paths, in the style of the existing attribution demo.
   output contract refuses it: `OUTPUT_SCHEMA_ERROR: 'grounded_in' is a required
   property`. A precedent that cannot show its passages cannot exist.
 
-`./demos/governance.sh` with no argument now runs four modes and exits zero only if all
-four behave.
+  The stripped prompt has to name the precedent it is asserting, the way the
+  guard-stripped prompt names the party. Told only that it need not look things up, the
+  model called the archive anyway and refused honestly, which exits zero and
+  demonstrates nothing.
+
+Both paths check the agent's citations against the adapter log rather than against the
+output, which claims tool use it cannot prove. The archive logs `hit {passage_id}
+{source_uri}#{ordinal}` for every passage that leaves the surface, so a `grounded_in` id
+the archive never returned fails the demo, and the working note dated inside the
+incident's window can be reported as retrieved and uncited rather than assumed to be.
+
+`./demos/governance.sh` with no argument now runs five modes and exits zero only if all
+five behave.
 
 ---
 
@@ -250,7 +268,8 @@ precedents whose citations resolve back through `passage.get`.
 **Phase 3, Refusal and grounding.** Confidence floor wired, `no_applicable_precedent`
 path exercised, `demos/governance.sh grounding` passing both paths.
 *Done when:* a novel incident produces a coverage-populated refusal, and the
-grounding-stripped producer is rejected by the schema.
+grounding-stripped producer is rejected by the schema. Done, as
+`demos/governance.sh grounding` and `demos/governance.sh refusal`, both live.
 
 **Phase 4, Evals baseline.** Dataset written, metrics implemented, baseline recorded
 with the fixed-size chunker and no reranker.
