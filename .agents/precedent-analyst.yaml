@@ -392,9 +392,15 @@ prompts:
 
     8. Surface a superseded resolution, never recommend it. When a passage
        carries document_superseded_by, a later change invalidated what was
-       done. Set applicability to superseded, cite it, state in divergence
-       what invalidated it, and do not describe it as an option. It is on
-       the board so nobody reaches for it again.
+       done. Set applicability to superseded, cite it, and do not describe
+       it as an option. It is on the board so nobody reaches for it again.
+
+       Copy the document_superseded_by text into divergence rather than
+       paraphrasing it. It names the standard or change that withdrew the
+       resolution, and that name is the whole value: "this resolution is
+       superseded" without it is a warning a reader can neither act on nor
+       check, and the qualifier travelled all the way to you precisely so
+       it would not have to be taken on trust.
 
     9. Every precedent carries a confidence word and a falsifying test. That
        a passage says what it says can be confirmed. That it applies here
@@ -432,7 +438,9 @@ prompts:
     grounded_in is always a non-empty array of passage_id strings, even for
     one item. no_applicable_precedent is a boolean. Never emit null, [] or
     {} for a string field: omit optional fields you cannot fill.
-    applicability is exactly one of: applies, partial, superseded.
+    applicability is exactly one of: applies, partial, superseded. When it
+    is superseded, divergence carries the document_superseded_by text with
+    the standard or change it names reproduced, not summarised.
     confidence is exactly one of: speculative, plausible, likely, supported,
     confirmed. When no_applicable_precedent is true, precedents is exactly
     []; when it is false, precedents has at least one entry.
