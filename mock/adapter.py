@@ -45,6 +45,11 @@ DEFAULT_PORTS = {"telemetry": 8422, "change_registry": 8423, "host": 8424,
 DEFAULT_FIXTURE = "fixtures/composite-incident.json"
 DEFAULT_INDEX = "corpus/index.json"
 
+# Surfaces where every tool only reads. incident_record is excluded even
+# though it never mutates a real system: its calls are write-shaped, and
+# advertising them as read-only would misdescribe what a caller is doing.
+READ_ONLY_SURFACES = {"telemetry", "change_registry", "precedent_archive"}
+
 FIXTURE = {}
 SURFACE = ""
 
@@ -405,8 +410,13 @@ def _cite(passage, score=None):
         "source_family": passage.get("source_family"),
         "recorded_at": passage.get("recorded_at"),
         "record_status": passage.get("record_status", "filed"),
-        "cause_claimed": passage.get("cause_claimed"),
-        "superseded_by": passage.get("superseded_by"),
+        # Named for its scope. These are properties of the document, repeated
+        # on every passage cut from it, so two passages carrying the same
+        # claim are one source saying one thing twice. Called cause_claimed
+        # they read as two records agreeing.
+        "document_cause_claimed": passage.get("cause_claimed"),
+        "document_superseded_by": passage.get("superseded_by"),
+        "claim_scope": "document",
     }
     if score is not None:
         out["relevance"] = score
@@ -423,14 +433,22 @@ def precedent_search(args):
             "the whole archive is the anchoring failure with extra steps."
         )
 
+    # Required, not optional. An optional hindsight control is how hindsight
+    # gets in: a replay of what was knowable on day two that forgets the bound
+    # still looks correct, and nothing in the result says otherwise. Callers
+    # who genuinely want the whole archive pass the incident's own as_of.
     before = args.get("before")
+    if not before:
+        raise ToolFault(
+            "before is required. Precedent is time-ordered evidence, so every "
+            "search has to say what it was allowed to know. Pass the view's "
+            "as_of; there is no value meaning 'no bound'."
+        )
     limit = int(args.get("limit") or 5)
 
     candidates = []
     for passage in INDEX.get("passages", []):
-        # Precedent is time-ordered evidence. A replay of what was knowable
-        # on day two must not retrieve a record written on day fifteen.
-        if before and passage.get("recorded_at", "") > str(before)[:10]:
+        if passage.get("recorded_at", "") > str(before)[:10]:
             continue
         candidates.append((_score(terms, passage), passage))
 
@@ -459,15 +477,24 @@ def precedent_search(args):
     return {
         "passages": [_cite(p, s) for s, p in kept],
         "floor_applied": FLOOR,
+        # Three numbers rather than one, because one cannot distinguish the
+        # cases. An empty result with candidates_considered at 0 means the
+        # time bound emptied the archive; at 53 with total_scoring_above_zero
+        # at 0 it means nothing in the archive touches the query at all; at 53
+        # with 30 scoring means the archive was searched properly and nothing
+        # was good enough. Only the last is a precedent judgement.
+        "candidates_considered": len(candidates),
+        "total_scoring_above_zero": len(scored),
         "total_before_floor": len(scored),
-        "excluded_by_before": (
-            len(INDEX.get("passages", [])) - len(candidates) if before else 0),
+        "excluded_by_before": len(INDEX.get("passages", [])) - len(candidates),
         "note": (
             "No passage met the relevance floor. This is a complete answer, "
             "not an empty one: the archive was searched and nothing in it "
             "supports a precedent claim." if not kept else
-            "Passages are verbatim. cause_claimed is what a prior record "
-            "asserted, which is a signal and never evidence."
+            "Passages are verbatim. document_cause_claimed is what a prior "
+            "record asserted, which is a signal and never evidence, and it is "
+            "a property of the document: two passages carrying it are one "
+            "source, not two."
         ),
     }
 
@@ -486,13 +513,16 @@ def passage_get(args):
 
 
 def coverage_describe(_args):
+    # No chunker here. Which chunker built the index is an implementation
+    # choice behind the surface, exactly like the store and the embedding
+    # model, and reporting it would leak the thing PRECEDENT.md opens by
+    # forbidding. It matters to the evals, which read the index directly.
     return {
         "source_families": INDEX.get("source_families", []),
         "date_range": INDEX.get("date_range"),
         "document_count": INDEX.get("document_count", 0),
         "passage_count": INDEX.get("passage_count", 0),
         "corpus_current_to": INDEX.get("corpus_current_to"),
-        "chunker": INDEX.get("chunker"),
         "floor_applied": FLOOR,
         "note": (
             "What the archive holds, so a report of no applicable precedent "
@@ -619,18 +649,29 @@ TOOLS = {
             "verbatim passages, each with a complete citation and a relevance "
             "score. Below the relevance floor it returns no passages rather "
             "than the nearest match.",
-            _schema({
+            # anyOf rather than an empty required list: the runtime refuses a
+            # query with neither field, so tools/list has to say so. A schema
+            # that advertises everything as optional and then faults is a
+            # schema the model cannot plan against.
+            {**_schema({
                 "signature_terms": {
                     "type": "array", "items": {"type": "string"},
-                    "description": "Stable signature terms for the current incident"},
+                    "description": "Signature type terms for the current "
+                                   "incident. Pass the signature type, never "
+                                   "the entity id: the host is identity, not "
+                                   "symptom, and it does not belong in a "
+                                   "similarity query."},
                 "symptom_text": {
                     "type": "string",
                     "description": "Free text describing what is happening now"},
                 "before": {
                     "type": "string",
-                    "description": "Exclude anything recorded after this date"},
+                    "description": "Required. Exclude anything recorded after "
+                                   "this date. Pass the view's as_of."},
                 "limit": {"type": "integer", "default": 5},
-            }, []),
+            }, ["before"]),
+             "anyOf": [{"required": ["signature_terms"]},
+                       {"required": ["symptom_text"]}]},
         ),
         "passage_get": (
             passage_get,
@@ -669,12 +710,19 @@ TOOLS = {
 
 
 def _tools_list():
-    return {
-        "tools": [
-            {"name": name, "description": desc, "inputSchema": schema}
-            for name, (_, desc, schema) in TOOLS[SURFACE].items()
-        ]
-    }
+    tools = []
+    for name, (_, desc, schema) in TOOLS[SURFACE].items():
+        tool = {"name": name, "description": desc, "inputSchema": schema}
+        # MCP has an annotation for exactly this distinction, so the evidence
+        # surfaces should declare it rather than leaving a caller to infer
+        # read-only from the tool names. The host surface deliberately does
+        # not: every call on it is a production state change, and the sandbox
+        # is what stops it.
+        if SURFACE in READ_ONLY_SURFACES:
+            tool["annotations"] = {"readOnlyHint": True,
+                                   "destructiveHint": False}
+        tools.append(tool)
+    return {"tools": tools}
 
 
 def _tools_call(params):

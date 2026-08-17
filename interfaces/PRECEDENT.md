@@ -20,10 +20,12 @@ Every passage this surface returns carries, without exception:
 
 | Field | Meaning |
 | --- | --- |
-| `passage_id` | Stable identifier. Stable across re-ingest, so a citation in a board written today still resolves next month. |
+| `passage_id` | Stable identifier, derived from position rather than content. |
 | `source_uri` | Where the document lives. |
 | `heading_path` | The heading chain down to this passage, e.g. `Runbook > Memory pressure > Node eviction`. What makes a citation checkable by a human in about five seconds. |
 | `ordinal` | Position within the document, so a reader can find it even if the headings repeat. |
+
+**What `passage_id` stability actually guarantees**, stated narrowly because the broad version is not true: re-ingesting an unchanged document tree reproduces every id exactly, and editing the wording inside a passage does not move it. Renaming a heading, inserting a section, or changing chunker all reassign ids, because all three change position. Citations made against one index resolve against the next only while the document structure holds, and a chunker change orphans every citation in the archive by design. That is a smaller promise than "a citation still resolves next month", and it is the one the format can keep.
 
 **A passage that cannot produce a complete citation must not be retrievable.** Not returned with a null citation, not returned with a best guess: absent from the result set entirely. This is the retrieval equivalent of the incident record being written only through a provable tool call. An ungrounded claim should be impossible to construct, not merely discouraged, and the agent's output contract requires a `passage_id` in `grounded_in` for exactly this reason.
 
@@ -38,15 +40,30 @@ Request: `signature_terms` (the stable signature the Telemetry Analyst detects o
 Response: `passages`, each with its citation, the verbatim text, a `relevance` score, and:
 
 - `source_family`, one of the families `coverage.describe` reports, so the reader knows whether they are looking at vendor documentation or at this organisation's own history.
-- `cause_claimed`, where the passage comes from a prior incident record that states a cause. **Treated as a signal, never as evidence**, exactly as `root_cause_claimed` is on `problems.list`. A prior record asserting a cause is a record of what someone concluded, which is not the same as what happened.
+- `document_cause_claimed`, where the passage comes from a prior incident record that states a cause. **Treated as a signal, never as evidence**, exactly as `root_cause_claimed` is on `problems.list`. A prior record asserting a cause is a record of what someone concluded, which is not the same as what happened.
 - `record_status`, where the passage comes from a record this system produced. A Scribe draft is unsubmitted and unreviewed, and a passage retrieved from one must say so rather than borrowing the authority of a filed record.
-- `superseded_by`, where a later change invalidated the resolution described. This is what lets the agent return `applicability: superseded`: surfaced, cited, and not recommended.
+- `document_superseded_by`, where a later change invalidated the resolution described. This is what lets the agent return `applicability: superseded`: surfaced, cited, and not recommended.
+- `claim_scope`, always `document`.
 
-Plus, on the response envelope: `floor_applied` (the score threshold in force), `total_before_floor`, and `excluded_by_before` (how much the time bound removed, so a thin result set caused by the bound is distinguishable from a thin archive).
+The `document_` prefix is doing work. These are properties of the whole document, repeated on every passage cut from it, so two passages carrying the same claim are one source saying one thing twice. Named `cause_claimed` they read as two records agreeing, which is a corroboration the archive never offered.
+
+Plus, on the response envelope: `floor_applied`, `candidates_considered`, `total_scoring_above_zero`, `total_before_floor` and `excluded_by_before`.
+
+Four numbers rather than one, because one cannot separate the cases an empty result could mean. `candidates_considered: 0` means the time bound emptied the archive. Considered at 59 with nothing scoring means the archive holds nothing the query touches. Considered at 59 with 31 scoring and none above the floor means the archive was searched properly and nothing was good enough. Only the last is a precedent judgement, and a caller that cannot tell them apart will report the first two as though they were the third.
+
+**The bound is required.** There is no value meaning "no bound", and callers pass the view's `as_of`. An optional hindsight control is how hindsight gets in: a replay of what was knowable on day two that omits the bound still looks correct, and nothing in the result says otherwise.
 
 **No more than two passages come from any one document.** Four passages from a single prior incident is not corroboration, it is one record quoted four times, and a result set weighted that way reads as agreement. Capping the source is what leaves room for the thing an agent has to state a divergence against.
 
 **Below the floor, the surface returns an empty passage set.** Not the nearest match with a low score attached, because a low score in a result set still anchors, and the failure this whole agent is built against is the confident wrong precedent. An empty set with `total_before_floor: 7` is a specific, auditable statement: seven candidates were found and none was good enough. The agent then has nothing to ground a claim in, and its output contract does the rest.
+
+The floor's *value* is adapter configuration and does not transfer. Scores from term overlap, from cosine similarity and from a cross-encoder live on different scales, and a number tuned against one corpus means nothing against another. What transfers is the property, and this is the conformance requirement:
+
+> **A query whose distinctive terms are unseen in the archive must not clear the floor.**
+
+An adapter satisfies that however its scoring works. The mock does it by weighting an unseen term as maximally informative and unmatched, which is worth knowing but is not a requirement to reimplement.
+
+Be honest about what the floor is not. It is not a semantic guarantee, and it does not certify that a passage above it is relevant. A content-free query of ordinary words can clear it, which the conformance suite records as a measured observation rather than hiding.
 
 ### `passage.get`
 
@@ -56,7 +73,9 @@ This is the call that makes a citation verifiable rather than decorative. A boar
 
 ### `coverage.describe`
 
-Request: none. Returns `source_families` (the categories ingested, e.g. prior incident records, runbook procedures, postmortems, vendor operational documentation), `date_range`, `document_count`, `passage_count`, `chunker`, `floor_applied`, and `corpus_current_to`.
+Request: none. Returns `source_families` (the categories ingested, e.g. prior incident records, runbook procedures, postmortems, vendor operational documentation), `date_range`, `document_count`, `passage_count`, `floor_applied`, and `corpus_current_to`.
+
+It reports content, never implementation. Which chunker built the index, which store holds it and which model embedded it all stay behind the surface, for the same reason this document opens with. Those belong to the evals, which read the index directly.
 
 `corpus_current_to` is the date of the newest document held, not the time the index was built. Deliberately: a build timestamp changes on every ingest whether or not anything was ingested, which makes an unchanged archive look refreshed. What a responder needs to know is how current the content is.
 
@@ -76,7 +95,9 @@ It also states the archive's limits honestly. An archive whose `date_range` star
 
 Every column needs an index the source system does not provide, which is the honest position: none of these platforms exposes retrieval at the granularity a citation requires. The adapter owns the index. The interface owns the citation.
 
-The mock indexes the corpus with `corpus/ingest.py` and serves it from `corpus/index.json`, stdlib only, like every other surface. Its ranking is term overlap weighted by inverse document frequency, which is not what the real adapter does and is not meant to be: what the mock has to reproduce is the contract, not the retrieval. One property of it is load bearing, though, and any adapter needs the equivalent. A query term the archive has never seen must be weighted as maximally informative and unmatched, or a genuinely novel incident scores its way past the floor on the ordinary English it shares with the corpus, and the refusal path never fires.
+The mock indexes the corpus with `corpus/ingest.py` and serves it from `corpus/index.json`, stdlib only, like every other surface. Its ranking is term overlap weighted by inverse document frequency, which is not what the real adapter does and is not meant to be: what the mock has to reproduce is the contract, not the retrieval.
+
+Both the mock and its two chunkers are also what `corpus/eval.py` runs against, which is the point of keeping the fixed-size index alongside the heading-aware one. An adapter that passes the suite against one index and fails against the other has found a property of its chunking, not of the contract.
 
 ---
 
@@ -99,5 +120,9 @@ An adapter is conformant when, against the same corpus as the mock:
 4. The near-miss record in the corpus is retrievable for a query resembling it, and is returned with the qualifier fields that let the agent distinguish it. An adapter that returns the near miss with nothing marking it as a near miss has passed retrieval and failed the actual job.
 5. `before` is honoured. A passage recorded after the bound does not appear, whatever its score.
 6. Passages are byte-identical to the corpus text.
+
+7. A search with no `before` is refused, and the hindsight trap in the corpus is unreachable at the D+1 bound and reachable at a later one, from the same query.
+
+`corpus/eval.py` runs all of these against the mock and exits non-zero on failure. It is the executable form of this section, and an adapter is conformant when it passes the suite against both indexes.
 
 The near-miss case is the one to test first. Retrieval quality is measured in `evals/`; what is checked here is narrower and harder to fudge, that the surface hands the agent everything it needs to be wrong out loud rather than confidently.

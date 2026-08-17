@@ -733,6 +733,40 @@ PRIOR_RECORDS = [
         ],
     },
     {
+        # The hindsight trap. Dated inside the live incident's own window
+        # (D+8), and it names a cause the investigation never established.
+        # Nothing else in the corpus is recent enough to catch a search that
+        # forgets its time bound, so without this record an unbounded query
+        # looks correct and the archive quietly becomes a back door to a
+        # confirmed cause. The eval suite asserts it is unreachable at D+1.
+        "ref": "DRAFT-2601",
+        "title": "Working note on the current memory exhaustion",
+        "recorded_at": "2026-03-10",
+        "status": "draft",
+        "signature": "host.memory.exhaustion:intg-prod-a1",
+        "cause_claimed": (
+            "The endpoint compliance agent's scanning is generating the "
+            "denials that keep the analysis daemon resident."
+        ),
+        "summary": (
+            "Unsubmitted working note written during the incident it "
+            "describes. It states a cause that was never established, and it "
+            "is the reason precedent.search requires a time bound."
+        ),
+        "timeline": [
+            ("D+8, 11:20", "Note opened while the incident was still running, "
+                           "from bridge chat rather than from evidence.", "ITSM"),
+        ],
+        "resolution": (
+            "None. The note was never submitted and the cause in it was never "
+            "confirmed by any evidence recorded anywhere."
+        ),
+        "gaps": [
+            "The audit denial log naming the source domain was outstanding "
+            "when this note was written, and remained outstanding.",
+        ],
+    },
+    {
         "ref": "DRAFT-2508",
         "title": "Swap thrash during overlapping batch windows",
         "recorded_at": "2026-02-11",
