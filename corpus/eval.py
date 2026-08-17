@@ -1,0 +1,329 @@
+#!/usr/bin/env python3
+"""
+Conformance suite for the precedent_archive surface.
+
+Stdlib only. Starts the mock on a spare port, drives it over JSON-RPC, and
+asserts the contract from interfaces/PRECEDENT.md. Exits non-zero on failure,
+so it belongs in CI next to the index freshness check.
+
+    python3 corpus/eval.py
+    python3 corpus/eval.py --index corpus/index.fixed.json   # the baseline
+
+This is not retrieval quality measurement. That is Phase 4, it needs a scored
+dataset, and it belongs in evals/. What is checked here is narrower and harder
+to fudge: that a claim can only rest on something citable, that the time bound
+holds, and that the qualifiers which stop a passage being over-read survive
+the trip. Every case here was run by hand while building the surface, which is
+exactly why it is worth having a machine run them from now on.
+
+Cases marked OBSERVED are recorded rather than asserted. They are known
+limitations with a measured value, kept visible instead of tidied away.
+"""
+
+import argparse
+import json
+import subprocess
+import sys
+import time
+import urllib.error
+import urllib.request
+
+PORT = 8526          # not 8426: never contend with a running adapter
+D1_BOUND = "2026-03-03"      # act one, the D+1 view's as_of
+BRIDGE_BOUND = "2026-03-17"  # act two, the D+15 bridge
+
+
+def rpc(name, args):
+    body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+                       "params": {"name": name, "arguments": args}}).encode()
+    req = urllib.request.Request(f"http://127.0.0.1:{PORT}", data=body,
+                                 headers={"Content-Type": "application/json"})
+    payload = json.loads(urllib.request.urlopen(req, timeout=10).read())
+    result = payload["result"]
+    text = result["content"][0]["text"]
+    if result.get("isError"):
+        return {"_fault": text}
+    return json.loads(text)
+
+
+def tools_list():
+    body = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "tools/list"}).encode()
+    req = urllib.request.Request(f"http://127.0.0.1:{PORT}", data=body,
+                                 headers={"Content-Type": "application/json"})
+    return json.loads(urllib.request.urlopen(req, timeout=10).read())["result"]
+
+
+def uris(result):
+    return {p["source_uri"] for p in result.get("passages", [])}
+
+
+# Each case returns (ok, detail). Kept as functions rather than a declarative
+# table because the interesting assertions are relational: what came back
+# versus what the archive holds versus what the bound allowed.
+
+def case_novel_incident():
+    """A genuinely novel incident returns nothing, and says what it searched."""
+    r = rpc("precedent_search", {
+        "signature_terms": ["tls.certificate.expiry"],
+        "symptom_text": "mutual TLS handshake failures between two brokers "
+                        "after a certificate rotation",
+        "before": BRIDGE_BOUND})
+    ok = (r["passages"] == []
+          and r["candidates_considered"] > 0
+          and r["cleared_floor"] == 0
+          and r["floor_applied"] > 0)
+    return ok, (f"considered={r['candidates_considered']} "
+                f"scored={r['total_scoring_above_zero']} "
+                f"cleared={r['cleared_floor']}")
+
+
+def case_near_miss():
+    """The near miss comes back, carrying what makes it a near miss."""
+    r = rpc("precedent_search", {
+        "signature_terms": ["host.memory.exhaustion"],
+        "symptom_text": "memory exhaustion on a batch integration host, swap "
+                        "climbing, JVM resident",
+        "before": BRIDGE_BOUND})
+    hit = [p for p in r["passages"]
+           if p["source_uri"] == "corpus://incidents/INC-2411"]
+    ok = bool(hit) and all(p["document_cause_claimed"] and
+                           p["claim_scope"] == "document" for p in hit)
+    return ok, f"INC-2411 passages={len(hit)} of {len(r['passages'])}"
+
+
+def case_superseded():
+    """A precedent whose resolution was invalidated arrives saying so."""
+    r = rpc("precedent_search", {
+        "signature_terms": ["host.cpu.saturation"],
+        "symptom_text": "denial analysis daemon holding CPU sustained after "
+                        "denial volume rises",
+        "before": BRIDGE_BOUND})
+    hit = [p for p in r["passages"]
+           if p["source_uri"] == "corpus://incidents/INC-2288"]
+    ok = bool(hit) and any(p["document_superseded_by"] for p in hit)
+    return ok, f"INC-2288 passages={len(hit)}, superseded_by carried"
+
+
+def case_draft_status():
+    """A passage from an unsubmitted draft cannot pass as a filed record."""
+    r = rpc("precedent_search", {
+        "symptom_text": "swap thrash overlapping batch windows daylight "
+                        "saving schedule change",
+        "before": BRIDGE_BOUND})
+    drafts = [p for p in r["passages"] if p["record_status"] == "draft"]
+    ok = bool(drafts)
+    return ok, f"draft passages={len(drafts)} of {len(r['passages'])}"
+
+
+def case_time_bound_excludes():
+    """The bound removes later records and reports how many."""
+    early = rpc("precedent_search", {
+        "signature_terms": ["host.memory.exhaustion"],
+        "symptom_text": "memory exhaustion on a batch integration host",
+        "before": "2025-09-01"})
+    late = rpc("precedent_search", {
+        "signature_terms": ["host.memory.exhaustion"],
+        "symptom_text": "memory exhaustion on a batch integration host",
+        "before": BRIDGE_BOUND})
+    ok = (early["excluded_by_before"] > late["excluded_by_before"]
+          and early["candidates_considered"] < late["candidates_considered"]
+          and "corpus://incidents/INC-2411" not in uris(early))
+    return ok, (f"excluded early={early['excluded_by_before']} "
+                f"late={late['excluded_by_before']}")
+
+
+def case_hindsight_trap():
+    """The D+8 working note is unreachable from act one.
+
+    It is the only document recent enough to catch a search that forgets its
+    bound, and it names a cause the investigation never established. If this
+    passes at the D+1 bound, the archive has become a back door to a confirmed
+    cause and everything else in the demo is theatre.
+    """
+    # Same query both times. Only the bound changes, so a difference in the
+    # result is the bound and nothing else.
+    query = {"signature_terms": ["host.memory.exhaustion"],
+             "symptom_text": "audit denial log naming the source domain "
+                             "outstanding while the incident is running"}
+    d1 = rpc("precedent_search", {**query, "before": D1_BOUND})
+    later = rpc("precedent_search", {**query, "before": "2026-03-31"})
+    trap = "corpus://incidents/DRAFT-2601"
+    ok = trap not in uris(d1) and trap in uris(later)
+    return ok, (f"absent at {D1_BOUND}={trap not in uris(d1)}, "
+                f"reachable at 2026-03-31={trap in uris(later)}")
+
+
+def case_before_required():
+    """A search with no bound is refused, not silently unbounded."""
+    r = rpc("precedent_search", {"symptom_text": "memory exhaustion"})
+    ok = "_fault" in r and "before is required" in r["_fault"]
+    return ok, r.get("_fault", "NOT REFUSED")[:60]
+
+
+def case_citations_resolve():
+    """Every passage_id a search returns round-trips, verbatim."""
+    seeds = [
+        {"signature_terms": ["host.memory.exhaustion"], "before": BRIDGE_BOUND},
+        {"signature_terms": ["host.cpu.saturation"], "before": BRIDGE_BOUND},
+        {"symptom_text": "change correlation package history onset",
+         "before": BRIDGE_BOUND},
+    ]
+    checked = bad = 0
+    for args in seeds:
+        for p in rpc("precedent_search", args)["passages"]:
+            got = rpc("passage_get", {"passage_id": p["passage_id"]})
+            checked += 1
+            if got.get("text") != p["text"] or not got.get("heading_path"):
+                bad += 1
+    return bad == 0 and checked > 0, f"{checked} round-tripped, {bad} bad"
+
+
+def case_unresolvable_citation():
+    """A passage_id that does not exist is a fault, never an empty success."""
+    r = rpc("passage_get", {"passage_id": "p-notarealpassage"})
+    ok = "_fault" in r
+    return ok, r.get("_fault", "NOT REFUSED")[:60]
+
+
+def case_identity_stripped_signature(index_path):
+    """The signature type alone finds the family, without the host id.
+
+    Phase 2 has to pass the signature type and never the entity id, so the
+    surface has to work that way round. A retrieval that needs the host id to
+    find anything has made identity a similarity feature.
+    """
+    family = {"corpus://incidents/INC-2411", "corpus://incidents/INC-2350",
+              "corpus://incidents/INC-2419"}
+    r = rpc("precedent_search", {
+        "signature_terms": ["host.memory.exhaustion"],
+        "symptom_text": "memory exhaustion recurring on a production host",
+        "before": BRIDGE_BOUND})
+    found = uris(r) & family
+    # Family membership, not absence of the host id: at the bridge bound the
+    # archive legitimately holds a record about this host, so checking for the
+    # string would fail for the wrong reason.
+    ok = bool(found)
+    return ok, f"{len(found)} of {len(family)} family records without an entity id in the query"
+
+
+def case_coverage_hides_chunker(index_path):
+    """coverage.describe reports content, never implementation."""
+    c = rpc("coverage_describe", {"before": BRIDGE_BOUND})
+    index = json.load(open(index_path))
+    leaked = [k for k in ("chunker", "store", "embedding_model") if k in c]
+    ok = (not leaked
+          and c["document_count"] == index["document_count"]
+          and c["passage_count"] == index["passage_count"])
+    return ok, f"leaked={leaked or 'nothing'} counts match index at the bridge"
+
+
+def case_coverage_is_bounded():
+    """Coverage describes the archive the caller was allowed to see.
+
+    The leak this closes is specific: unbounded, corpus_current_to told a D+1
+    caller the archive holds a document dated during the incident, which is
+    exactly what the time bound stops search revealing. A refusal cites
+    coverage as proof it looked, so coverage that describes documents the
+    caller cannot retrieve makes the refusal a misdescription.
+    """
+    d1 = rpc("coverage_describe", {"before": D1_BOUND})
+    late = rpc("coverage_describe", {"before": "2026-03-31"})
+    unbounded = rpc("coverage_describe", {})
+    ok = (d1["corpus_current_to"] < D1_BOUND
+          and d1["document_count"] < late["document_count"]
+          and late["corpus_current_to"] == "2026-03-10"
+          and "_fault" in unbounded)
+    return ok, (f"D+1 current_to={d1['corpus_current_to']} docs={d1['document_count']}, "
+                f"late current_to={late['corpus_current_to']} docs={late['document_count']}, "
+                f"unbounded refused={'_fault' in unbounded}")
+
+
+def case_read_only_declared():
+    """tools/list tells the truth about the surface and about the query."""
+    listed = tools_list()["tools"]
+    annotated = all(t.get("annotations", {}).get("readOnlyHint") for t in listed)
+    search = next(t for t in listed if t["name"] == "precedent_search")
+    honest = ("before" in search["inputSchema"].get("required", [])
+              and "anyOf" in search["inputSchema"])
+    return annotated and honest, (
+        f"readOnlyHint on {len(listed)}/{len(listed)}, "
+        f"before required={'before' in search['inputSchema'].get('required', [])}, "
+        f"anyOf declared={'anyOf' in search['inputSchema']}")
+
+
+def observed_degenerate_query():
+    """OBSERVED, not asserted: the floor is not a semantic guarantee.
+
+    A query of ordinary English with no domain content still clears it, on a
+    corpus this small, because inverse document frequency over 59 passages
+    makes words like "record" look distinctive. Filtering by document
+    frequency was tried and made it worse: it refused the strongest query
+    (the bare signature type) while still passing this one.
+
+    The property that holds, and the one an adapter must reproduce, is
+    narrower: a query whose distinctive terms are unseen does not clear the
+    floor. The number 0.35 is mock configuration, not a law.
+    """
+    r = rpc("precedent_search", {
+        "symptom_text": "the record was written", "before": BRIDGE_BOUND})
+    return None, f"{len(r['passages'])} passages returned for a content-free query"
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--index", default="corpus/index.json")
+    args = parser.parse_args()
+
+    proc = subprocess.Popen(
+        [sys.executable, "mock/adapter.py", "--surface", "precedent_archive",
+         "--port", str(PORT), "--index", args.index],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        for _ in range(50):
+            try:
+                rpc("coverage_describe", {"before": BRIDGE_BOUND})
+                break
+            except (urllib.error.URLError, ConnectionError, OSError):
+                time.sleep(0.1)
+        else:
+            print("adapter did not come up")
+            return 2
+
+        cases = [
+            ("novel incident refuses", case_novel_incident),
+            ("near miss returned with its claim scoped", case_near_miss),
+            ("superseded precedent surfaced", case_superseded),
+            ("draft status survives retrieval", case_draft_status),
+            ("time bound excludes and reports", case_time_bound_excludes),
+            ("hindsight trap unreachable at D+1", case_hindsight_trap),
+            ("before is required", case_before_required),
+            ("citations round-trip verbatim", case_citations_resolve),
+            ("unresolvable citation faults", case_unresolvable_citation),
+            ("signature type works without entity id",
+             lambda: case_identity_stripped_signature(args.index)),
+            ("coverage hides implementation",
+             lambda: case_coverage_hides_chunker(args.index)),
+            ("coverage is bounded like search", case_coverage_is_bounded),
+            ("tools/list declares read-only and the real requirements",
+             case_read_only_declared),
+        ]
+
+        failures = 0
+        print(f"precedent_archive conformance, index {args.index}\n")
+        for name, fn in cases:
+            ok, detail = fn()
+            print(f"  {'pass' if ok else 'FAIL'}  {name}: {detail}")
+            failures += 0 if ok else 1
+
+        _, detail = observed_degenerate_query()
+        print(f"\n  obs   floor is not a semantic guarantee: {detail}")
+
+        print(f"\n{len(cases) - failures}/{len(cases)} passed")
+        return 1 if failures else 0
+    finally:
+        proc.terminate()
+        proc.wait(timeout=5)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

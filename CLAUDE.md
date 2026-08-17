@@ -88,6 +88,20 @@ python3 fixtures/generate.py --demo attribution > fixtures/composite-incident.at
 python3 fixtures/generate.py --demo mitigation > fixtures/mitigation-directive.json
 ```
 
+The corpus behind the `precedent_archive` surface is generated and indexed the same way, and the index is a build artefact, never hand-edited:
+
+```bash
+python3 fixtures/generate.py --corpus corpus/documents   # the synthetic prior incident records
+python3 corpus/ingest.py                                 # heading-aware, writes index.json and manifest.yaml
+python3 corpus/ingest.py --chunker fixed                 # the Phase 5 baseline index
+python3 corpus/ingest.py --check                         # non-zero if the index is stale
+python3 corpus/eval.py                                   # surface conformance, non-zero on failure
+```
+
+Re-ingesting unchanged sources writes nothing, so `--check` failing means a document changed without the index being rebuilt. Treat it exactly like a stale fixture. `corpus/eval.py` must pass against both `corpus/index.json` and `corpus/index.fixed.json`: a case that passes against one and fails against the other is a property of the chunker, not the contract, and belongs in the evals instead.
+
+The corpus carries a deliberate hindsight trap, `DRAFT-2601`, dated inside the live incident's window and naming a cause that was never established. It is the only document recent enough to catch a search that omits its time bound. Do not date it earlier, and do not remove it: without it an unbounded query looks correct and the archive becomes a back door to a confirmed cause.
+
 The bridge view embeds a scripted correlator output in `correlation`, shaped exactly to the correlate task's output contract, so standalone assess runs and the governance demos stay deterministic; `demos/investigate.sh` replaces it with a live correlator run. The raw rows in `changes` feed the mock registry and the Scribe's timeline only. The commander never sees them: the typed output is the handoff.
 
 The two `--demo` outputs are forcing inputs, not views of the incident: attribution is the bridge view plus scripted convergence pressure for the M4 governance demos (`demos/governance.sh`), mitigation is the directed production change the sandbox must block, and the same directive is the input the Scribe's `draft_change_record` task documents, which is why it carries an explicit empty `board`.

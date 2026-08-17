@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Mock MCP adapter for the telemetry, change_registry, host and
-incident_record surfaces.
+Mock MCP adapter for the telemetry, change_registry, host,
+incident_record and precedent_archive surfaces.
 
 Serves interfaces/TELEMETRY.md over JSON-RPC 2.0 on plain HTTP, backed
 entirely by a generated fixture view. Stdlib only, no dependencies.
@@ -19,7 +19,13 @@ data the view does not hold.
     python3 mock/adapter.py --surface change_registry                      # 8423
     python3 mock/adapter.py --surface host                                 # 8424
     python3 mock/adapter.py --surface incident_record                      # 8425
+    python3 mock/adapter.py --surface precedent_archive                    # 8426
     python3 mock/adapter.py --surface telemetry --fixture fixtures/composite-incident.d1.json
+
+The evidence surfaces are backed by a fixture view. precedent_archive is
+backed by the corpus index instead (corpus/ingest.py), because the archive
+holds what was recorded before the incident: it is the one surface whose
+content does not move with as_of.
 
 MCP tool names use underscores (problems_list) rather than the dotted
 interface names (problems.list): model-facing tool name constraints do not
@@ -29,12 +35,20 @@ allow dots.
 import argparse
 import hashlib
 import json
+import math
+import re
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 DEFAULT_PORTS = {"telemetry": 8422, "change_registry": 8423, "host": 8424,
-                 "incident_record": 8425}
+                 "incident_record": 8425, "precedent_archive": 8426}
 DEFAULT_FIXTURE = "fixtures/composite-incident.json"
+DEFAULT_INDEX = "corpus/index.json"
+
+# Surfaces where every tool only reads. incident_record is excluded even
+# though it never mutates a real system: its calls are write-shaped, and
+# advertising them as read-only would misdescribe what a caller is doing.
+READ_ONLY_SURFACES = {"telemetry", "change_registry", "precedent_archive"}
 
 FIXTURE = {}
 SURFACE = ""
@@ -313,6 +327,236 @@ def change_draft(args):
     }
 
 
+# --- precedent_archive surface -------------------------------------------------
+#
+# Read only, permanently: no ingest call, no feedback call, no usefulness
+# rating. Writing to the archive is a pipeline concern (corpus/ingest.py),
+# outside the incident window and outside any agent's reach.
+#
+# Retrieval here is term overlap with inverse document frequency, stdlib only
+# and deterministic. The real adapter uses a vector store and a reranker
+# (docs/precedent-analyst.md); none of that appears in the spec, which is the
+# whole point of interfaces/PRECEDENT.md. What the mock has to reproduce is
+# not the ranking, it is the contract: complete citations, a floor that
+# returns nothing rather than the nearest match, and the qualifier fields that
+# stop a passage being over-read.
+
+INDEX = {}
+FLOOR = 0.35
+MAX_PER_SOURCE = 2
+
+_WORD = re.compile(r"[a-z0-9]+")
+
+
+def _terms(text):
+    return _WORD.findall(str(text).lower())
+
+
+def _idf():
+    """Inverse document frequency over passages, computed once per process.
+
+    Also fixes the weight of a term the corpus has never seen. That weight is
+    the refusal mechanism: an unseen term is maximally informative and matches
+    nothing, so a genuinely novel incident cannot score its way past the floor
+    on the handful of ordinary English words it shares with the archive.
+    Weighting unknown terms at zero instead scores a query only on what the
+    corpus happens to contain, which reads every novel incident as familiar.
+    """
+    if "_idf" not in INDEX:
+        passages = INDEX.get("passages", [])
+        seen = {}
+        for passage in passages:
+            for term in set(_terms(passage["text"]) + _terms(passage["heading_path"])):
+                seen[term] = seen.get(term, 0) + 1
+        total = max(len(passages), 1)
+        INDEX["_idf"] = {t: math.log(1 + total / c) for t, c in seen.items()}
+        INDEX["_idf_unknown"] = math.log(1 + 2 * total)
+    return INDEX["_idf"]
+
+
+def _score(query_terms, passage):
+    """Fraction of the query's information content the passage matches.
+
+    Normalised to 0..1 deliberately: a floor is only meaningful if the score
+    means the same thing across queries of different lengths. A raw sum would
+    make the floor a function of how much the caller typed.
+    """
+    idf = _idf()
+    unknown = INDEX["_idf_unknown"]
+    weights = {t: idf.get(t, unknown) for t in set(query_terms)}
+    available = sum(weights.values())
+    if not available:
+        return 0.0
+    body = set(_terms(passage["text"]))
+    heading = set(_terms(passage["heading_path"]))
+    matched = 0.0
+    for term, weight in weights.items():
+        if term in body:
+            matched += weight
+        elif term in heading:
+            # A heading match is real but weaker: it says the passage is in
+            # the right section, not that it says the thing.
+            matched += weight * 0.5
+    return round(matched / available, 3)
+
+
+def _cite(passage, score=None):
+    out = {
+        "passage_id": passage["passage_id"],
+        "source_uri": passage["source_uri"],
+        "heading_path": passage["heading_path"],
+        "ordinal": passage["ordinal"],
+        "text": passage["text"],
+        "source_family": passage.get("source_family"),
+        "recorded_at": passage.get("recorded_at"),
+        "record_status": passage.get("record_status", "filed"),
+        # Named for its scope. These are properties of the document, repeated
+        # on every passage cut from it, so two passages carrying the same
+        # claim are one source saying one thing twice. Called cause_claimed
+        # they read as two records agreeing.
+        "document_cause_claimed": passage.get("cause_claimed"),
+        "document_superseded_by": passage.get("superseded_by"),
+        "claim_scope": "document",
+    }
+    if score is not None:
+        out["relevance"] = score
+    return out
+
+
+def precedent_search(args):
+    terms = _terms(" ".join(args.get("signature_terms") or []))
+    terms += _terms(args.get("symptom_text") or "")
+    if not terms:
+        raise ToolFault(
+            "Give signature_terms, symptom_text, or both. An empty query "
+            "returns nothing here rather than everything: a ranked list of "
+            "the whole archive is the anchoring failure with extra steps."
+        )
+
+    # Required, not optional. An optional hindsight control is how hindsight
+    # gets in: a replay of what was knowable on day two that forgets the bound
+    # still looks correct, and nothing in the result says otherwise. Callers
+    # who genuinely want the whole archive pass the incident's own as_of.
+    before = args.get("before")
+    if not before:
+        raise ToolFault(
+            "before is required. Precedent is time-ordered evidence, so every "
+            "search has to say what it was allowed to know. Pass the view's "
+            "as_of; there is no value meaning 'no bound'."
+        )
+    limit = int(args.get("limit") or 5)
+
+    candidates = []
+    for passage in INDEX.get("passages", []):
+        if passage.get("recorded_at", "") > str(before)[:10]:
+            continue
+        candidates.append((_score(terms, passage), passage))
+
+    scored = sorted([c for c in candidates if c[0] > 0],
+                    key=lambda c: (-c[0], c[1]["passage_id"]))
+
+    # Below the floor the surface returns nothing, not the nearest match at a
+    # low score. A weak result in a result set still anchors, and the agent's
+    # output contract cannot save it once a passage is in hand.
+    above = [c for c in scored if c[0] >= FLOOR]
+    cleared = len(above)
+
+    # No more than two passages from any one document. Four passages from a
+    # single prior incident is not corroboration, it is the same record
+    # quoted four times, and it reads as weight. Capping the source is what
+    # gives the agent something to state a divergence against.
+    kept, per_source = [], {}
+    for score, passage in above:
+        uri = passage["source_uri"]
+        if per_source.get(uri, 0) >= MAX_PER_SOURCE:
+            continue
+        per_source[uri] = per_source.get(uri, 0) + 1
+        kept.append((score, passage))
+        if len(kept) >= limit:
+            break
+
+    return {
+        "passages": [_cite(p, s) for s, p in kept],
+        "floor_applied": FLOOR,
+        # A ladder narrowing to the returned set, because one number cannot
+        # distinguish the cases. candidates_considered at 0 means the time
+        # bound emptied the archive; 59 considered with 0 scoring means
+        # nothing in the archive touches the query; 59 considered, 31 scoring,
+        # 0 clearing means the archive was searched properly and nothing was
+        # good enough. Only the last is a precedent judgement. Each count
+        # answers a question the others cannot, which is the test for whether
+        # another belongs: two names for one number is worse than one name.
+        "candidates_considered": len(candidates),
+        "total_scoring_above_zero": len(scored),
+        "cleared_floor": cleared,
+        "excluded_by_before": len(INDEX.get("passages", [])) - len(candidates),
+        "note": (
+            "No passage met the relevance floor. This is a complete answer, "
+            "not an empty one: the archive was searched and nothing in it "
+            "supports a precedent claim." if not kept else
+            "Passages are verbatim. document_cause_claimed is what a prior "
+            "record asserted, which is a signal and never evidence, and it is "
+            "a property of the document: two passages carrying it are one "
+            "source, not two."
+        ),
+    }
+
+
+def passage_get(args):
+    wanted = str(args.get("passage_id") or "").strip()
+    if not wanted:
+        raise ToolFault("passage_id is required.")
+    for passage in INDEX.get("passages", []):
+        if passage["passage_id"] == wanted:
+            return _cite(passage)
+    raise ToolFault(
+        f"No passage '{wanted}' in this archive. A citation that does not "
+        "resolve is not a citation; do not report a precedent that rests on it."
+    )
+
+
+def coverage_describe(args):
+    # Bounded exactly like search, and for the same reason. Unbounded, this
+    # call leaks what search refuses: after the D+8 working note joined the
+    # corpus, an unbounded corpus_current_to told a D+1 caller the archive
+    # holds something dated during the incident it is investigating. Search
+    # was honest and coverage was not, which is worse than either being
+    # wrong, because coverage is what a refusal cites as proof it looked.
+    before = args.get("before")
+    if not before:
+        raise ToolFault(
+            "before is required. Coverage is what a report of no applicable "
+            "precedent rests on, so it has to describe the archive the caller "
+            "was allowed to see, not the one that exists."
+        )
+    bound = str(before)[:10]
+
+    docs = [d for d in INDEX.get("documents", [])
+            if d.get("recorded_at", "") <= bound]
+    passages = [p for p in INDEX.get("passages", [])
+                if p.get("recorded_at", "") <= bound]
+    dates = sorted(d["recorded_at"] for d in docs)
+
+    # No chunker here. Which chunker built the index is an implementation
+    # choice behind the surface, exactly like the store and the embedding
+    # model, and reporting it would leak the thing PRECEDENT.md opens by
+    # forbidding. It matters to the evals, which read the index directly.
+    return {
+        "as_of": bound,
+        "source_families": sorted({d["source_family"] for d in docs}),
+        "date_range": f"{dates[0]} to {dates[-1]}" if dates else None,
+        "document_count": len(docs),
+        "passage_count": len(passages),
+        "corpus_current_to": dates[-1] if dates else None,
+        "floor_applied": FLOOR,
+        "note": (
+            "What the archive held at as_of, so a report of no applicable "
+            "precedent can be checked. An archive whose date range starts "
+            "after the incident cannot hold precedent for it."
+        ),
+    }
+
+
 # --- MCP plumbing -------------------------------------------------------------
 
 def _schema(props, required):
@@ -423,6 +667,57 @@ TOOLS = {
                     list(_DRAFT_REQUIRED)),
         ),
     },
+    "precedent_archive": {
+        "precedent_search": (
+            precedent_search,
+            "Search prior incident records and runbook procedures. Returns "
+            "verbatim passages, each with a complete citation and a relevance "
+            "score. Below the relevance floor it returns no passages rather "
+            "than the nearest match.",
+            # anyOf rather than an empty required list: the runtime refuses a
+            # query with neither field, so tools/list has to say so. A schema
+            # that advertises everything as optional and then faults is a
+            # schema the model cannot plan against.
+            {**_schema({
+                "signature_terms": {
+                    "type": "array", "items": {"type": "string"},
+                    "description": "Signature type terms for the current "
+                                   "incident. Pass the signature type, never "
+                                   "the entity id: the host is identity, not "
+                                   "symptom, and it does not belong in a "
+                                   "similarity query."},
+                "symptom_text": {
+                    "type": "string",
+                    "description": "Free text describing what is happening now"},
+                "before": {
+                    "type": "string",
+                    "description": "Required. Exclude anything recorded after "
+                                   "this date. Pass the view's as_of."},
+                "limit": {"type": "integer", "default": 5},
+            }, ["before"]),
+             "anyOf": [{"required": ["signature_terms"]},
+                       {"required": ["symptom_text"]}]},
+        ),
+        "passage_get": (
+            passage_get,
+            "Resolve a passage_id to its full passage and complete citation, "
+            "so a cited precedent can be checked without the search that "
+            "produced it.",
+            _schema({"passage_id": {"type": "string"}}, ["passage_id"]),
+        ),
+        "coverage_describe": (
+            coverage_describe,
+            "What the archive held as at a date: source families, date range, "
+            "document and passage counts. Makes a report of no applicable "
+            "precedent checkable rather than unfalsifiable. Same time bound "
+            "as precedent_search, so coverage cannot describe documents the "
+            "caller was not allowed to retrieve.",
+            _schema({"before": {
+                "type": "string",
+                "description": "Required. Describe the archive as at this "
+                               "date. Pass the view's as_of."}}, ["before"]),
+        ),
+    },
     "change_registry": {
         "changes_list": (
             changes_list,
@@ -445,12 +740,19 @@ TOOLS = {
 
 
 def _tools_list():
-    return {
-        "tools": [
-            {"name": name, "description": desc, "inputSchema": schema}
-            for name, (_, desc, schema) in TOOLS[SURFACE].items()
-        ]
-    }
+    tools = []
+    for name, (_, desc, schema) in TOOLS[SURFACE].items():
+        tool = {"name": name, "description": desc, "inputSchema": schema}
+        # MCP has an annotation for exactly this distinction, so the evidence
+        # surfaces should declare it rather than leaving a caller to infer
+        # read-only from the tool names. The host surface deliberately does
+        # not: every call on it is a production state change, and the sandbox
+        # is what stops it.
+        if SURFACE in READ_ONLY_SURFACES:
+            tool["annotations"] = {"readOnlyHint": True,
+                                   "destructiveHint": False}
+        tools.append(tool)
+    return {"tools": tools}
 
 
 def _tools_call(params):
@@ -536,19 +838,40 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
-    global FIXTURE, SURFACE
+    global FIXTURE, SURFACE, INDEX, FLOOR
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--surface", choices=sorted(DEFAULT_PORTS), required=True)
     parser.add_argument("--port", type=int, default=None)
     parser.add_argument("--fixture", default=DEFAULT_FIXTURE,
                         help="Which fixture view to serve (default: the D+15 bridge view)")
+    parser.add_argument("--index", default=DEFAULT_INDEX,
+                        help="precedent_archive only: which corpus index to serve")
+    parser.add_argument("--floor", type=float, default=FLOOR,
+                        help="precedent_archive only: relevance floor below "
+                             "which the surface returns no passages")
     args = parser.parse_args()
 
     SURFACE = args.surface
+    port = args.port or DEFAULT_PORTS[args.surface]
+
+    # The archive is not a view of the incident, so it does not take one. It
+    # holds what was recorded before, which is why it is the one surface whose
+    # content does not move with as_of.
+    if SURFACE == "precedent_archive":
+        FLOOR = args.floor
+        with open(args.index) as fh:
+            INDEX = json.load(fh)
+        server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+        print(f"mock-{SURFACE} serving {INDEX.get('document_count')} documents, "
+              f"{INDEX.get('passage_count')} passages "
+              f"(chunker {INDEX.get('chunker')}, floor {FLOOR}) "
+              f"on 127.0.0.1:{port}")
+        server.serve_forever()
+        return
+
     with open(args.fixture) as fh:
         FIXTURE = json.load(fh)
 
-    port = args.port or DEFAULT_PORTS[args.surface]
     server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     print(f"mock-{args.surface} serving view '{FIXTURE.get('view')}' "
           f"(as_of {FIXTURE.get('as_of')}) on 127.0.0.1:{port}")

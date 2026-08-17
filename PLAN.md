@@ -67,8 +67,8 @@ Full spec: `docs/precedent-analyst.md`
 
 The fifth agent. Owns a retrieval surface over prior incident records and runbook documentation, hands the commander typed precedent alongside findings and correlation. Headline risk is the confident wrong precedent, so refusal and divergence are contract requirements, not tuning targets.
 
-- [ ] `interfaces/PRECEDENT.md` written, no implementation named
-- [ ] Adapter serving `precedent_archive`, cited passages, corpus manifest populated
+- [x] `interfaces/PRECEDENT.md` written, no implementation named
+- [x] Adapter serving `precedent_archive`, cited passages, corpus manifest populated
 - [ ] `.agents/precedent-analyst.yaml` validates against OAS 1.6.0, runs standalone
 - [ ] `no_applicable_precedent` path and grounding guard both exercised
 - [ ] `demos/governance.sh grounding` passes fire and reject

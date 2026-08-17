@@ -1,0 +1,60 @@
+# The generated artefacts in this repo are only trustworthy if drift is a
+# test failure. Fixtures, the corpus index and the specs all have a check
+# that already existed as a command someone had to remember to run.
+name: checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  generated-artefacts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Fixture views match the generator
+        run: |
+          python3 fixtures/generate.py | diff -u fixtures/composite-incident.json -
+          python3 fixtures/generate.py --at d1 | diff -u fixtures/composite-incident.d1.json -
+          python3 fixtures/generate.py --demo attribution | diff -u fixtures/composite-incident.attribution.json -
+          python3 fixtures/generate.py --demo mitigation | diff -u fixtures/mitigation-directive.json -
+
+      - name: Corpus documents match the generator
+        run: |
+          python3 fixtures/generate.py --corpus corpus/documents
+          git diff --exit-code corpus/documents
+
+      - name: Corpus index is current
+        run: |
+          python3 corpus/ingest.py --check
+          python3 corpus/ingest.py --chunker fixed --check
+
+      - name: precedent_archive conformance, both chunkers
+        run: |
+          python3 corpus/eval.py
+          python3 corpus/eval.py --index corpus/index.fixed.json
+
+  specs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # The contracts extra matters: without it contract validation skips
+      # with a warning rather than failing, which is the fail-open behaviour
+      # CLAUDE.md warns about.
+      - name: Install the CLI
+        run: pip install "open-agent-spec[contracts]==1.6.0"
+
+      - name: Validate every spec
+        run: |
+          for spec in .agents/*.yaml; do
+            oa validate --spec "$spec"
+          done

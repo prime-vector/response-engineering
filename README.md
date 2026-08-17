@@ -36,7 +36,7 @@ Every arrow between agents is a typed output whose claims carry `confidence` and
 
 ## Status
 
-Early. Four of five agents written, mock adapters serving all four tool surfaces. All four agents verified live end to end against the mocks, and the handoffs between them are dataflow, not narration: `demos/investigate.sh` composes the three acts in one run, the correlator's typed output becoming the commander's `correlation` input and the commander's live board becoming the Scribe's timeline input, each stage producing contract-valid output. The three governance failure modes are scripted and verified live: `demos/governance.sh` exits zero only when the sandbox blocks, the contract rejects and the attribution guard fires.
+Early. Four of five agents written, mock adapters serving five tool surfaces. All four agents verified live end to end against the mocks, and the handoffs between them are dataflow, not narration: `demos/investigate.sh` composes the three acts in one run, the correlator's typed output becoming the commander's `correlation` input and the commander's live board becoming the Scribe's timeline input, each stage producing contract-valid output. The three governance failure modes are scripted and verified live: `demos/governance.sh` exits zero only when the sandbox blocks, the contract rejects and the attribution guard fires.
 
 | Artefact | State |
 | --- | --- |
@@ -47,7 +47,9 @@ Early. Four of five agents written, mock adapters serving all four tool surfaces
 | `.agents/scribe.yaml` | Written, validates against OAS 1.6.0 |
 | `interfaces/TELEMETRY.md` | Draft interface contract |
 | `fixtures/composite-incident*.json` | Generated, two views (D+1 and D+15) plus two demo forcing inputs, cadence needs tuning against reference |
-| `mock/adapter.py` | Written, smoke-tested against both fixture views, host and record-sink surfaces added |
+| `interfaces/PRECEDENT.md` | Draft interface contract, the `precedent_archive` surface |
+| `corpus/ingest.py`, `corpus/documents/` | Written, 11 documents indexed with both chunkers, re-ingest verified idempotent |
+| `mock/adapter.py` | Written, smoke-tested against both fixture views, host, record-sink and precedent surfaces added |
 | `demos/investigate.sh` | Written, the composed three-act pipeline verified live |
 | `demos/governance.sh` | Written, all three failure modes verified live |
 | Comms | Not started |
@@ -63,12 +65,17 @@ CLAUDE.md                          working rules for this repo
 .agents/change-correlator.yaml     correlates change history against onset
 .agents/scribe.yaml                files the timeline, drafts the change record
 interfaces/TELEMETRY.md            platform-agnostic tool surface
+interfaces/PRECEDENT.md            the precedent_archive surface
+docs/precedent-analyst.md          build spec for the fifth agent
+corpus/ingest.py                   chunks the corpus into the archive index
+corpus/documents/                  synthetic prior incident records and runbooks
+corpus/manifest.yaml               generated, provenance for everything ingested
 fixtures/generate.py               synthetic fixture generator, two views
 fixtures/composite-incident.json   generated, D+15 bridge view
 fixtures/composite-incident.d1.json  generated, D+1 view for act one
 fixtures/composite-incident.attribution.json  generated, bridge view plus convergence pressure
 fixtures/mitigation-directive.json  generated, the directed change the sandbox must block
-mock/adapter.py                    mock MCP adapter, all four surfaces, fixture-backed
+mock/adapter.py                    mock MCP adapter, all five surfaces
 demos/investigate.sh               the three acts composed: correlator into commander into Scribe
 demos/governance.sh                the three governance demos, on demand
 demos/caveats-stripped-system-prompt.txt  the degraded producer for the contract demo
