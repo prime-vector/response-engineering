@@ -324,8 +324,9 @@ each outcome rules in and rules out.
 ./demos/governance.sh                # all five; exits zero only if all behave
 ```
 
-Each governance mode has a fire path and a reject path, and the script asserts
-both. The reject paths run with the agent's system prompt deliberately replaced
+Attribution and grounding have both a fire path and a reject path, and the
+script asserts both. Sandbox and refusal are fire only, contract is reject
+only. The reject paths run with the agent's system prompt deliberately replaced
 by a degraded one, which is the honest test: schema pins survive an overridden
 prompt, prompt-dependent judgement does not.
 
