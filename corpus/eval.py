@@ -156,6 +156,33 @@ def case_hindsight_trap():
                 f"reachable at 2026-03-31={trap in uris(later)}")
 
 
+def case_trap_survives_competition():
+    """The trap is still reached at the bridge, under the query the spec uses.
+
+    case_hindsight_trap proves the bound excludes it at D+1 using a long,
+    targeted query. That is a property of the bound. It says nothing about
+    whether an agent issuing the query the prompt actually steers it to, the
+    signature type alone at the demo's limit, ever sees the record.
+
+    It has to. SCENARIO.md's fence is explicit that the time bound alone does
+    not handle this document, because it had genuinely been written by the
+    time the bridge opens: retrieval must reach it and then reject it on
+    record_status and the attribution guard. A trap nothing retrieves is not
+    a trap, and the grounding demo's assertion about it goes vacuous without
+    the demo failing.
+
+    This case exists because that happened. Five distractors widened the tie
+    band past the limit and the working note fell out of the returned set,
+    while this suite stayed green.
+    """
+    r = rpc("precedent_search", {"signature_terms": ["host.memory.exhaustion"],
+                                 "before": BRIDGE_BOUND, "limit": 8})
+    docs = {u.rsplit("/", 1)[-1] for u in uris(r)}
+    ok = "DRAFT-2601" in docs and "INC-2411" in docs
+    return ok, (f"trap={'DRAFT-2601' in docs} near miss={'INC-2411' in docs} "
+                f"in {len(docs)} documents at limit 8")
+
+
 def case_before_required():
     """A search with no bound is refused, not silently unbounded."""
     r = rpc("precedent_search", {"symptom_text": "memory exhaustion"})
@@ -355,6 +382,8 @@ def main():
             ("draft status survives retrieval", case_draft_status),
             ("time bound excludes and reports", case_time_bound_excludes),
             ("hindsight trap unreachable at D+1", case_hindsight_trap),
+            ("hindsight trap still reached at the bridge",
+             case_trap_survives_competition),
             ("before is required", case_before_required),
             ("citations round-trip verbatim", case_citations_resolve),
             ("unresolvable citation faults", case_unresolvable_citation),

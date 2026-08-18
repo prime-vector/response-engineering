@@ -73,6 +73,12 @@ The floor's *value* is adapter configuration and does not transfer. Scores from 
 
 An adapter satisfies that however its scoring works. The mock does it by weighting an unseen term as maximally informative and unmatched, which is worth knowing but is not a requirement to reimplement.
 
+There is a second requirement, on ordering rather than on the floor, and it is easy to miss because nothing fails loudly when it is broken:
+
+> **Where scores tie, the order must be decided by a property of the records, not by an artefact of the implementation.**
+
+A short signature query is a handful of the archive's most common terms, so a large band of passages score identically. Break that band on an identifier, a hash or insertion order and which precedent the caller is handed becomes arbitrary, and a record inside the bound that matches the query can sit permanently below `limit` for reasons nothing in the response explains. The counts still look healthy. The mock orders ties by recency, on the grounds that between two equally matching records the later one is the one whose practice is current, but any record property that a caller could reason about satisfies this.
+
 Be honest about what the floor is not. It is not a semantic guarantee, and it does not certify that a passage above it is relevant. A content-free query of ordinary words can clear it, which the conformance suite records as a measured observation rather than hiding.
 
 ### `passage.get`
