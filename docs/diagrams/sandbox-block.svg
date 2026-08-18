@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 268" width="960" height="268" role="img" aria-label="A directed production change reaches the commander's mitigate task, whose prompt cooperates fully, and is stopped at the runner allow list before dispatch. The host surface is never reached. The task's output schema pins implemented to false and authorisation required to true.">
+  <title>A directed production change reaches the commander's mitigate task, whose prompt cooperates fully, and is stopped at the runner allow list before dispatch. The host surface is never reached. The task's output schema pins implemented to false and authorisation required to true.</title>
+  <style>
+    text{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;fill:#131A1C}
+    .t{font-size:11px}
+    .t-b{font-size:11px;font-weight:600}
+    .t-s{font-size:9.5px;fill:#6E7D7C}
+    .t-e{font-size:9.5px;letter-spacing:.14em;fill:#6E7D7C}
+    .t-n{font-size:13px;font-weight:600}
+    .t-a{fill:#186B66}
+    .t-h{fill:#A9491A}
+    .box{fill:#FFFFFF;stroke:#C9D4D3;stroke-width:1.4}
+    .box-a{fill:#DDECEA;stroke:#186B66;stroke-width:1.4}
+    .box-h{fill:#F6E4D9;stroke:#A9491A;stroke-width:1.4}
+    .box-g{fill:none;stroke:#C9D4D3;stroke-width:1.4;stroke-dasharray:4 4}
+    .band{fill:#E6ECEB}
+    .panel{fill:none;stroke:#C9D4D3;stroke-width:1.4}
+    .ln{stroke:#6E7D7C;stroke-width:1.4;fill:none}
+    .ln-a{stroke:#186B66;stroke-width:1.6;fill:none}
+    .ln-h{stroke:#A9491A;stroke-width:1.6;fill:none}
+    .ln-r{stroke:#C9D4D3;stroke-width:1.4;fill:none}
+    .dash{stroke-dasharray:4 4}
+    .mk{fill:#6E7D7C}
+    .mk-a{fill:#186B66}
+    .mk-h{fill:#A9491A}
+    .faint{opacity:.42}
+  </style>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="mk"/></marker>
+    <marker id="ar-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="mk-a"/></marker>
+    <marker id="ar-h" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="mk-h"/></marker>
+  </defs>
+  <rect width="960" height="268" fill="#F7F9F9"/>
+
+
+        <text class="t-e" x="24" y="30">DIRECTED PRODUCTION CHANGE</text>
+
+        <rect class="box-h" x="24" y="56" width="188" height="70" rx="3"/>
+        <text class="t-b t-h" x="38" y="80">directive</text>
+        <text class="t-s" x="38" y="96">set SELinux permissive,</text>
+        <text class="t-s" x="38" y="108">disable dispatcher, kill pid</text>
+
+        <line class="ln" x1="212" y1="91" x2="248" y2="91" marker-end="url(#ar)"/>
+
+        <rect class="box" x="252" y="56" width="200" height="70" rx="3"/>
+        <text class="t-b" x="266" y="80">Commander, mitigate</text>
+        <text class="t-s" x="266" y="96">the prompt cooperates</text>
+        <text class="t-s" x="266" y="108">fully. this is deliberate.</text>
+
+        <line class="ln" x1="452" y1="91" x2="500" y2="91" marker-end="url(#ar)"/>
+
+        <line class="ln-h" x1="516" y1="24" x2="516" y2="170"/>
+        <line class="ln-h" x1="524" y1="24" x2="524" y2="170"/>
+        <text class="t-e t-h" x="472" y="16">RUNNER ALLOW LIST</text>
+        <line class="ln-h" x1="510" y1="82" x2="530" y2="102"/>
+        <line class="ln-h" x1="530" y1="82" x2="510" y2="102"/>
+        <text class="t t-h" x="440" y="188">no state-changing tool is listed, so the call dies pre-dispatch</text>
+        <text class="t-s" x="440" y="202">SANDBOX_TOOL_VIOLATION</text>
+
+        <g class="faint">
+          <line class="ln dash" x1="540" y1="91" x2="596" y2="91" marker-end="url(#ar)"/>
+          <rect class="box-g" x="600" y="56" width="212" height="70" rx="3"/>
+          <text class="t-b" x="614" y="80">host  8424</text>
+          <text class="t-s" x="614" y="96">selinux.setenforce</text>
+          <text class="t-s" x="614" y="108">audit.dispatcher_disable</text>
+        </g>
+        <text class="t t-s" x="824" y="94">never</text>
+        <text class="t t-s" x="824" y="108">reached</text>
+
+        <line class="ln-a" x1="352" y1="126" x2="352" y2="222" marker-end="url(#ar-a)"/>
+        <text class="t-e" x="24" y="214">THE RECORD IS PINNED TO MATCH</text>
+        <rect class="box-a" x="252" y="228" width="180" height="26" rx="13"/>
+        <text class="t t-a" x="268" y="245">implemented: false</text>
+        <rect class="box-a" x="444" y="228" width="238" height="26" rx="13"/>
+        <text class="t t-a" x="460" y="245">authorisation_required: true</text>
+
+      </svg>

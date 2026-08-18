@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 400" width="960" height="400" role="img" aria-label="Evidence surfaces reached over MCP, each owned by exactly one agent. The Telemetry Analyst, Change Correlator and Precedent Analyst each read one surface and hand typed output to the Incident Commander, whose live board goes to the Scribe, which writes to the incident record sink through a tool call. A crossed arc shows that raw registry rows never reach the commander.">
+  <title>Evidence surfaces reached over MCP, each owned by exactly one agent. The Telemetry Analyst, Change Correlator and Precedent Analyst each read one surface and hand typed output to the Incident Commander, whose live board goes to the Scribe, which writes to the incident record sink through a tool call. A crossed arc shows that raw registry rows never reach the commander.</title>
+  <style>
+    text{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;fill:#131A1C}
+    .t{font-size:11px}
+    .t-b{font-size:11px;font-weight:600}
+    .t-s{font-size:9.5px;fill:#6E7D7C}
+    .t-e{font-size:9.5px;letter-spacing:.14em;fill:#6E7D7C}
+    .t-n{font-size:13px;font-weight:600}
+    .t-a{fill:#186B66}
+    .t-h{fill:#A9491A}
+    .box{fill:#FFFFFF;stroke:#C9D4D3;stroke-width:1.4}
+    .box-a{fill:#DDECEA;stroke:#186B66;stroke-width:1.4}
+    .box-h{fill:#F6E4D9;stroke:#A9491A;stroke-width:1.4}
+    .box-g{fill:none;stroke:#C9D4D3;stroke-width:1.4;stroke-dasharray:4 4}
+    .band{fill:#E6ECEB}
+    .panel{fill:none;stroke:#C9D4D3;stroke-width:1.4}
+    .ln{stroke:#6E7D7C;stroke-width:1.4;fill:none}
+    .ln-a{stroke:#186B66;stroke-width:1.6;fill:none}
+    .ln-h{stroke:#A9491A;stroke-width:1.6;fill:none}
+    .ln-r{stroke:#C9D4D3;stroke-width:1.4;fill:none}
+    .dash{stroke-dasharray:4 4}
+    .mk{fill:#6E7D7C}
+    .mk-a{fill:#186B66}
+    .mk-h{fill:#A9491A}
+    .faint{opacity:.42}
+  </style>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="mk"/></marker>
+    <marker id="ar-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="mk-a"/></marker>
+    <marker id="ar-h" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="mk-h"/></marker>
+  </defs>
+  <rect width="960" height="400" fill="#F7F9F9"/>
+
+
+        <rect class="band" x="16" y="72" width="440" height="80" rx="3"/>
+        <rect class="band" x="16" y="172" width="440" height="80" rx="3"/>
+        <rect class="band" x="16" y="272" width="440" height="80" rx="3"/>
+
+        <text class="t-e" x="24" y="60">EVIDENCE SURFACE, ONE OWNER EACH</text>
+        <text class="t-e" x="512" y="60">TYPED HANDOFF</text>
+
+        <rect class="box" x="28" y="84" width="164" height="56" rx="3"/>
+        <text class="t-b" x="42" y="108">telemetry</text>
+        <text class="t-s" x="42" y="124">problems.list, metrics</text>
+
+        <rect class="box" x="28" y="184" width="164" height="56" rx="3"/>
+        <text class="t-b" x="42" y="208">change_registry</text>
+        <text class="t-s" x="42" y="224">packages.installed</text>
+
+        <rect class="box" x="28" y="284" width="164" height="56" rx="3"/>
+        <text class="t-b" x="42" y="308">precedent_archive</text>
+        <text class="t-s" x="42" y="324">search, passage.get</text>
+
+        <line class="ln" x1="192" y1="112" x2="248" y2="112" marker-end="url(#ar)"/>
+        <line class="ln" x1="192" y1="212" x2="248" y2="212" marker-end="url(#ar)"/>
+        <line class="ln" x1="192" y1="312" x2="248" y2="312" marker-end="url(#ar)"/>
+        <text class="t-s" x="196" y="106">tools/call</text>
+        <text class="t-s" x="196" y="206">tools/call</text>
+        <text class="t-s" x="196" y="306">tools/call</text>
+
+        <rect class="box" x="252" y="84" width="192" height="56" rx="3"/>
+        <text class="t-b" x="266" y="108">Telemetry Analyst</text>
+        <text class="t-s" x="266" y="124">detect recurrence</text>
+
+        <rect class="box" x="252" y="184" width="192" height="56" rx="3"/>
+        <text class="t-b" x="266" y="208">Change Correlator</text>
+        <text class="t-s" x="266" y="224">correlate against onset</text>
+
+        <rect class="box" x="252" y="284" width="192" height="56" rx="3"/>
+        <text class="t-b" x="266" y="308">Precedent Analyst</text>
+        <text class="t-s" x="266" y="324">recall prior records</text>
+
+        <path class="ln-a" d="M444 112 L478 112 L478 200 L506 200" marker-end="url(#ar-a)"/>
+        <path class="ln-a" d="M444 212 L506 212" marker-end="url(#ar-a)"/>
+        <path class="ln-a" d="M444 312 L478 312 L478 264 L506 264" marker-end="url(#ar-a)"/>
+        <text class="t-s" x="452" y="180">findings</text>
+        <text class="t-s" x="452" y="206">correlation</text>
+        <text class="t-s" x="452" y="296">precedent</text>
+
+        <rect class="box-a" x="512" y="176" width="176" height="112" rx="3"/>
+        <text class="t-b" x="526" y="204">Incident Commander</text>
+        <text class="t-s" x="526" y="222">hypothesis board</text>
+        <text class="t-s" x="526" y="240">confidence, evidence,</text>
+        <text class="t-s" x="526" y="252">falsifying_test</text>
+        <text class="t-s" x="526" y="272">convergence gate</text>
+
+        <path class="ln-a" d="M688 210 L720 210 L720 168 L748 168" marker-end="url(#ar-a)"/>
+        <text class="t-s" x="694" y="150">live board</text>
+
+        <rect class="box" x="752" y="140" width="184" height="56" rx="3"/>
+        <text class="t-b" x="766" y="164">Scribe</text>
+        <text class="t-s" x="766" y="180">timeline, change record</text>
+
+        <line class="ln" x1="844" y1="196" x2="844" y2="296" marker-end="url(#ar)"/>
+        <text class="t-s" x="752" y="230">tools/call, verified</text>
+        <text class="t-s" x="752" y="242">in the adapter log</text>
+
+        <rect class="box" x="752" y="300" width="184" height="56" rx="3"/>
+        <text class="t-b" x="766" y="324">incident_record sink</text>
+        <text class="t-s" x="766" y="340">draft only, no submit call</text>
+
+        <path class="ln-h dash" d="M512 184 C 440 34, 232 26, 112 178" marker-end="url(#ar-h)"/>
+        <line class="ln-h" x1="296" y1="30" x2="310" y2="44"/>
+        <line class="ln-h" x1="310" y1="30" x2="296" y2="44"/>
+        <text class="t t-h" x="326" y="42">raw registry rows never reach the commander</text>
+
+      </svg>

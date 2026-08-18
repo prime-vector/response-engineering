@@ -32,6 +32,8 @@ flowchart LR
 
 Every arrow between agents is a typed output whose claims carry `confidence` and `falsifying_test` as required fields: a claim cannot shed its caveats when it changes hands. No agent reads another's evidence surface, and the record is written only through a tool call the adapter log can prove.
 
+[**The Investigation Layer**](docs/investigation-layer.md) walks the whole thing through with diagrams: the fifteen days nobody consumed, what each of the five agents refuses to do, where the sandbox block actually lives, and why the retrieval surface returns an empty set rather than the nearest match.
+
 ---
 
 ## Status
@@ -69,6 +71,8 @@ CLAUDE.md                          working rules for this repo
 interfaces/TELEMETRY.md            platform-agnostic tool surface
 interfaces/PRECEDENT.md            the precedent_archive surface
 docs/precedent-analyst.md          build spec for the fifth agent
+docs/investigation-layer.md        the walkthrough: what each control is and why
+docs/diagrams/                     hand-authored SVG for that walkthrough
 corpus/ingest.py                   chunks the corpus into the archive index
 corpus/documents/                  synthetic prior incident records and runbooks
 corpus/manifest.yaml               generated, provenance for everything ingested
