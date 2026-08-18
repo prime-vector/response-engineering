@@ -11,12 +11,13 @@ It is a demonstration, not a platform. Success is a four minute video and a repo
 ## Milestones
 
 ### M1: Scenario locked
-**Done when:** `SCENARIO.md` is reviewed, the fixture cadence matches the reference chart, and no source material has entered the repo.
+**Done when:** `SCENARIO.md` is reviewed, the fixture satisfies the feed properties SCENARIO.md section 3 fixes, and no source material has entered the repo.
 
 - [x] Composite scenario drafted
 - [x] Fixture generator producing 13 problems across 15 days
-- [ ] Cadence tuned against reference chart
+- [x] Cadence fixed as asserted properties rather than against a reference chart. The chart was source material and could not enter the tree, so the item could never close as written. `fixtures/generate.py` now asserts the four properties section 3 owns: thirteen problems across fifteen days, all auto-closed, none acknowledged, uniform signature and severity.
 - [ ] Sanitisation review
+- [ ] Precedent copy read for cause creep
 
 ### M2: Specs written
 **Done when:** all five specs validate against OAS 1.6.0 and the role boundaries hold without overlap.
@@ -74,7 +75,7 @@ The fifth agent. Owns a retrieval surface over prior incident records and runboo
 - [x] `demos/governance.sh grounding` passes fire and reject
 - [ ] Evals baseline recorded
 - [ ] Measured improvement documented with before and after
-- [ ] `investigate.sh` composes four acts, precedent enters the board as supporting but never deciding evidence
+- [ ] `investigate.sh` composes three acts with recall in act one, typed precedent entering the board as supporting and never deciding evidence
 
 **Done when:** a board cites precedent by `passage_id`, convergence still blocks on outstanding deciding evidence, and the README carries a results table the runner can regenerate.
 

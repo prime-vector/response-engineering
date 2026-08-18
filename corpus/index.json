@@ -26,7 +26,7 @@
       "recorded_at": "2026-03-10",
       "record_status": "draft",
       "path": "corpus/documents/incidents/DRAFT-2601.md",
-      "sha256": "520144a5f69fbbcfe0e72b192c2334162d8c4262dd0756e66976c59e1512e74b"
+      "sha256": "1c8ca1c4ba6887f26f1e849d7c302fa741f42d23943d1fb337486149c19eb3e9"
     },
     {
       "source_uri": "corpus://incidents/INC-2288",
@@ -242,7 +242,7 @@
       "source_uri": "corpus://incidents/DRAFT-2601",
       "heading_path": "DRAFT-2601: Working note on the current memory exhaustion > Timeline",
       "ordinal": 3,
-      "text": "- **D+8, 11:20** Note opened while the incident was still running, from bridge chat rather than from evidence. Source: ITSM.",
+      "text": "- **D+8, 11:20** Note opened while the incident was still running, assembled from the auto-closed problem feed. Unsubmitted, never acknowledged, never assigned. Source: ITSM.",
       "source_family": "prior_incident_record",
       "record_status": "draft",
       "recorded_at": "2026-03-10",

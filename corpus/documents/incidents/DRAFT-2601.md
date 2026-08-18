@@ -24,7 +24,7 @@ This record is an unsubmitted draft. Nothing in it has been reviewed or filed, a
 
 ## Timeline
 
-- **D+8, 11:20** Note opened while the incident was still running, from bridge chat rather than from evidence. Source: ITSM.
+- **D+8, 11:20** Note opened while the incident was still running, assembled from the auto-closed problem feed. Unsubmitted, never acknowledged, never assigned. Source: ITSM.
 
 ## Resolution
 

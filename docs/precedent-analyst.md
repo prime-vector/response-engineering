@@ -281,7 +281,7 @@ heading-aware versus fixed chunking, and hybrid with versus without the reranker
 `precedent_hit_rate@5`, `groundedness` and `p95_latency_ms`, and the README states what
 you kept, what you rejected, and what latency you accepted for it.
 
-**Phase 6, Composition.** `demos/investigate.sh` becomes four acts: recall runs
+**Phase 6, Composition.** `demos/investigate.sh` stays three acts: recall runs
 alongside detect, and its typed output enters the commander's input as `precedent`
 next to `findings` and `correlation`. The commander's board must be able to cite a
 precedent as supporting evidence without it counting as deciding evidence.

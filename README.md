@@ -20,14 +20,14 @@ Early. Five agents written, mock adapters serving five tool surfaces. All of the
 
 | Artefact | State |
 | --- | --- |
-| `SCENARIO.md` | Draft, needs review |
+| `SCENARIO.md` | Written, cadence fixed as asserted properties, sanitisation review outstanding |
 | `.agents/incident-commander.yaml` | Written, validates against OAS 1.6.0 |
 | `.agents/telemetry-analyst.yaml` | Written, validates against OAS 1.6.0 |
 | `.agents/change-correlator.yaml` | Written, validates against OAS 1.6.0 |
 | `.agents/scribe.yaml` | Written, validates against OAS 1.6.0 |
 | `.agents/precedent-analyst.yaml` | Written, validates against OAS 1.6.0, recall verified live against the archive |
 | `interfaces/TELEMETRY.md` | Draft interface contract |
-| `fixtures/composite-incident*.json` | Generated, two views (D+1 and D+15) plus three demo forcing inputs, cadence needs tuning against reference |
+| `fixtures/composite-incident*.json` | Generated, two views (D+1 and D+15) plus three demo forcing inputs, feed properties asserted by the generator |
 | `interfaces/PRECEDENT.md` | Draft interface contract, the `precedent_archive` surface |
 | `corpus/ingest.py`, `corpus/documents/` | Written, 12 documents indexed with both chunkers, re-ingest verified idempotent |
 | `mock/adapter.py` | Written, smoke-tested against both fixture views, host, record-sink and precedent surfaces added |

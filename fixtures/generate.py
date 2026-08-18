@@ -3,8 +3,11 @@
 Generate the synthetic fixture for the composite scenario.
 
 Everything here is invented. See SCENARIO.md for the sanitisation rules.
-The shape is tunable: adjust ONSET, PROBLEM_DAYS and the memory profile to
-match the reference chart once it is available.
+The feed's shape is fixed by SCENARIO.md section 3: thirteen problems across
+fifteen days, every one auto-closed, none acknowledged, all carrying the same
+signature and the same severity. Those four properties are the scenario's.
+Which two days are quiet is a choice here so the feed is not tidy, and it is
+not a scenario fact.
 
 Two views, because evidence honesty is time-dependent (SCENARIO.md section 4).
 Each view contains only what had actually been collected by its `as_of` time,
@@ -74,7 +77,10 @@ def problems(as_of):
         out.append({
             "id": f"P-{4100 + i}",
             "title": "Memory exhaustion and elevated page fault rate",
-            # Stable signature is what makes recurrence detectable at all.
+            # Stable signature and uniform severity are what make recurrence
+            # detectable at all. Vary either for realism and the feed reads as
+            # an escalating situation rather than the same thing thirteen
+            # times, which is the signal act one turns on.
             "signature": "host.memory.exhaustion:intg-prod-a1",
             "severity": "error",
             "opened_at": iso(opened),
@@ -881,7 +887,9 @@ PRIOR_RECORDS = [
         ),
         "timeline": [
             ("D+8, 11:20", "Note opened while the incident was still running, "
-                           "from bridge chat rather than from evidence.", "ITSM"),
+                           "assembled from the auto-closed problem feed. "
+                           "Unsubmitted, never acknowledged, never assigned.",
+             "ITSM"),
         ],
         "resolution": (
             "None. The note was never submitted and the cause in it was never "
@@ -981,7 +989,27 @@ def write_corpus(directory):
     return written
 
 
+def assert_feed_shape():
+    """The feed properties SCENARIO.md section 3 owns.
+
+    Cadence used to be specified against an external reference chart, which
+    could never enter this repository. These four properties are the whole of
+    what "faithful" can mean here, so they are asserted rather than described.
+    Uniform signature and severity are the load-bearing pair: recurrence is
+    detectable because nothing about the problem changes, and varying either
+    for realism turns thirteen occurrences into an escalating situation.
+    """
+    feed = problems(VIEWS["d15"])
+    assert len(feed) == 13, f"13 problems across 15 days, got {len(feed)}"
+    assert max(PROBLEM_DAYS) - min(PROBLEM_DAYS) + 1 == 15, "span is 15 days"
+    assert all(p["auto_closed"] for p in feed), "every problem auto-closes"
+    assert not any(p["acknowledged_by"] for p in feed), "none are acknowledged"
+    assert len({p["signature"] for p in feed}) == 1, "one signature throughout"
+    assert len({p["severity"] for p in feed}) == 1, "one severity throughout"
+
+
 def main():
+    assert_feed_shape()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--at", choices=sorted(VIEWS), default="d15",
                         help="Which point in time the view represents (default: d15)")
