@@ -87,7 +87,7 @@ It is a property of the fiction, not a finding. No fixture exposes it, no agent 
 
 ### The archive's working note (fiction, never evidence)
 
-The corpus carries `DRAFT-2601`, an unsubmitted working note dated D+8, inside this incident's own window, naming a cause that was never established. It is the only record recent enough to catch a search that omits its time bound. Without it an unbounded query looks correct and the archive becomes a back door to a confirmed cause.
+The corpus carries `DRAFT-2601`, an unsubmitted working note dated D+8, inside this incident's own window, naming a cause that was never established. It is the only record recent enough to catch a search that omits its time bound. Without it an unbounded query looks correct and the archive becomes a back door to a cause this incident never confirmed.
 
 It belongs to the same class as the causal chain above: archive fiction, never evidence. **It is not an event on the timeline** and nothing in section 3 derives from it. Somebody reading an auto-closing feed and writing a note they never submit is what an empty room looks like from the inside, not a contradiction of it. No problem in the feed is acknowledged, assigned or actioned because that note exists, `acknowledged_by` stays null across all thirteen, and no bridge convenes before D+15.
 
@@ -143,14 +143,14 @@ Package history against onset is a lookup. Note the framing: the bridge does not
 Not "our model would have been right". The claim is structural: when confidence, supporting evidence and falsifying test are required fields on a typed output, a hypothesis cannot be quoted downstream stripped of its caveats. The lead about the observability agent still gets raised, because it was a reasonable lead. What changes is that it arrives labelled unconfirmed, with the deciding evidence marked blocking, so investigation does not converge on a vendor before the evidence that would exonerate them has been collected.
 
 **Precedent arrives cited, bounded and refusable.**
-Not "the agent remembered the fix". Prior incidents reach the board with a `passage_id` that resolves to the exact text, bounded by the same `as_of` as every other surface, and the honest answer is often that nothing applies. What is claimed is that a precedent cannot be asserted without a citation checkable in five seconds, that a near miss is labelled as one, `INC-2411` shares this signature and carries a resolution it would be actively wrong to repeat here, and that a superseded record names what superseded it. Precedent is supporting evidence and never becomes deciding evidence: a board citing three precedents still blocks on the audit denial log.
+Not "the agent remembered the fix". Prior incidents reach the board with a `passage_id` that resolves to the exact text, bounded by the same `as_of` as every other surface, and the honest answer is often that nothing applies. What is claimed is that a precedent cannot be asserted without a citation checkable in five seconds, that a near miss is labelled as one, `INC-2411` shares this signature type and carries a resolution it would be actively wrong to repeat here, and that a superseded record names what superseded it. Precedent is supporting evidence and never becomes deciding evidence: a board citing precedent still blocks on the audit denial log.
 
 ### Do not claim
 
 - **Root cause.** It was never confirmed in the source pattern and the demo must not invent one. The compliance agent is the leading hypothesis. It is not a finding.
 - **Autonomous remediation.** Every action that changes host state in this scenario is a security control change and requires human authorisation.
 - **That the outcome would have been perfect.** Claim earlier, better evidenced and honestly bounded. Not solved.
-- **That recall found the answer.** The archive holds no record of this incident's cause, because there is none to hold. A cited precedent is a place to look, not a finding. Recall against this incident does return precedent, three records, none of them deciding; the refusal path is demonstrated on a separate incident and neither result may be described as the archive having answered anything.
+- **That recall found the answer.** The archive holds no established cause for this incident, because none was ever established. A cited precedent is a place to look, not a finding. Recall against this incident does return precedent, none of it deciding; the refusal path is demonstrated on a separate incident. Neither result may be described as the archive having answered anything.
 
 ---
 
