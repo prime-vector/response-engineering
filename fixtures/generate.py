@@ -929,6 +929,147 @@ PRIOR_RECORDS = [
             "The third night was not observed before the draft was written.",
         ],
     },
+    # ---- Distractors -----------------------------------------------------
+    # Records that score on the same vocabulary as the live incident and are
+    # genuinely inapplicable to it. Without them almost every document in the
+    # archive is a plausible hit for the bridge query, which flatters recall
+    # and leaves the relevance floor with nothing to reject. They are not near
+    # misses: INC-2411 is the near miss, and its whole point is that it does
+    # apply until you read the divergence. These do not apply at all.
+    #
+    # Deliberately clear of the refusal inputs' vocabulary. Both the eval's
+    # novel query and fixtures/novel-incident.json turn on nothing in the
+    # archive scoring above the floor, so nothing here mentions certificates,
+    # handshakes, brokers or session establishment.
+    {
+        "ref": "INC-2305",
+        "title": "Container memory limit reached in an orchestrated service",
+        "recorded_at": "2025-09-08",
+        "status": "filed",
+        "signature": "container.memory.limit:svc-prod-k2",
+        "cause_claimed": (
+            "An in-process cache grew without a bound until the container's "
+            "memory limit was reached."
+        ),
+        "summary": (
+            "A service container was restarted repeatedly on reaching its "
+            "memory limit. The limit was the container's, not the host's: the "
+            "host it ran on held ample free memory throughout and never "
+            "entered exhaustion."
+        ),
+        "timeline": [
+            ("D0, 04:12", "Container reaches its memory limit and is "
+                          "restarted by the orchestrator.", "orchestrator"),
+            ("D0 to D+1", "Restart repeats eleven times. Host memory and swap "
+                          "stay flat throughout.", "OS metrics"),
+            ("D+1, 13:40", "Cache bounded and the limit raised to match the "
+                           "working set.", "change registry"),
+        ],
+        "resolution": (
+            "Bounded the cache and raised the container's memory limit. No "
+            "host-level change was made or needed."
+        ),
+        "gaps": [
+            "No host-level resource attribution was captured, because the "
+            "container limit bounded the consumer before the host could feel "
+            "it. A host under genuine pressure would need that attribution.",
+        ],
+    },
+    {
+        "ref": "INC-2407",
+        "title": "Sustained CPU saturation from a planned load increase",
+        "recorded_at": "2025-10-30",
+        "status": "filed",
+        "signature": "host.cpu.saturation:api-prod-d4",
+        "cause_claimed": (
+            "A scheduled migration moved a second consumer's request volume "
+            "onto the host, roughly doubling it."
+        ),
+        "summary": (
+            "CPU on api-prod-d4 sat near full utilisation for three days. The "
+            "load was expected and the change that caused it was recorded in "
+            "advance. Nothing anomalous was running."
+        ),
+        "timeline": [
+            ("D-1, 22:00", "Scheduled migration completes, moving a second "
+                           "consumer onto the host.", "change registry"),
+            ("D0 to D+2", "CPU sustained near full utilisation. No process "
+                          "present that was not present the week before.",
+             "OS metrics"),
+            ("D+2, 10:15", "Capacity added and the load rebalanced.",
+             "change registry"),
+        ],
+        "resolution": (
+            "Added capacity and rebalanced. The saturation was a sizing "
+            "question rather than a fault."
+        ),
+        "gaps": [
+            "The capacity plan was not attached to the change record, so for "
+            "a day the saturation read as unexplained to anyone who had not "
+            "been in the migration planning.",
+        ],
+    },
+    {
+        "ref": "INC-2446",
+        "title": "Disk exhaustion reported as memory exhaustion",
+        "recorded_at": "2025-12-18",
+        "status": "filed",
+        "signature": "host.disk.exhaustion:rep-prod-m7",
+        "cause_claimed": (
+            "A log rotation policy stopped applying after a package upgrade, "
+            "so a log directory grew until the filesystem filled."
+        ),
+        "summary": (
+            "Reported on the bridge as memory exhaustion on rep-prod-m7. The "
+            "exhausted resource was disk. Memory and swap were within their "
+            "normal range for the host throughout."
+        ),
+        "timeline": [
+            ("D0, 06:30", "Host reported as exhausted. The report names "
+                          "memory.", "ITSM"),
+            ("D0, 07:05", "Filesystem found full. Memory and swap confirmed "
+                          "normal for this host.", "host"),
+            ("D0, 07:40", "Logs rotated by hand and the rotation policy "
+                          "reapplied.", "host"),
+        ],
+        "resolution": (
+            "Rotated the logs and restored the rotation policy. The resource "
+            "was never memory."
+        ),
+        "gaps": [
+            "The resource named in the original report was never corrected in "
+            "this record, so a search for memory exhaustion still returns it. "
+            "That is what a wrong report costs a later reader.",
+        ],
+    },
+    {
+        "ref": "INC-2489",
+        "title": "Swap in use by design on an overcommitted cache host",
+        "recorded_at": "2026-01-22",
+        "status": "filed",
+        "signature": "host.memory.pressure:cache-prod-n3",
+        "summary": (
+            "Swap usage and an elevated page fault rate on cache-prod-n3, "
+            "both expected. The host is deliberately overcommitted and has "
+            "run this way since it was built. No incident occurred."
+        ),
+        "timeline": [
+            ("D0, 11:00", "Memory pressure problem opens on a threshold that "
+                          "does not account for the host's configuration.",
+             "observability platform"),
+            ("D0, 11:35", "Configuration confirmed intended. Page fault rate "
+                          "matches the host's baseline for the past year.",
+             "host"),
+        ],
+        "resolution": (
+            "No change to the host. The alert threshold was corrected to "
+            "match how the host is built."
+        ),
+        "gaps": [
+            "Nothing links the host's overcommit setting to the alert that "
+            "fired on it, so the next reader starts where this one did.",
+        ],
+    },
 ]
 
 
