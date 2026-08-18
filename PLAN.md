@@ -16,7 +16,7 @@ It is a demonstration, not a platform. Success is a four minute video and a repo
 - [x] Composite scenario drafted
 - [x] Fixture generator producing 13 problems across 15 days
 - [x] Cadence fixed as asserted properties rather than against a reference chart. The chart was source material and could not enter the tree, so the item could never close as written. `fixtures/generate.py` now asserts the four properties section 3 owns: thirteen problems across fifteen days, all auto-closed, none acknowledged, uniform signature and severity.
-- [x] Sanitisation review, first pass. Shape, figures and all twelve corpus documents read by the author; full-history mechanical sweep found one rule 5 break, fixed. The second pass by another person is M5.
+- [x] Sanitisation review, first pass. Shape, figures and the twelve corpus documents that existed then read by the author; full-history mechanical sweep found one rule 5 break, fixed. The five distractors postdate the pass and are not covered by it. The second pass by another person is M5.
 - [x] Precedent copy read for cause creep
 
 ### M2: Specs written
@@ -83,7 +83,7 @@ The fifth agent. Owns a retrieval surface over prior incident records and runboo
 
 Phases 0 and 1 are merged. The surface is live and honest enough to consume: `python3 mock/adapter.py --surface precedent_archive` on 8426, 17 documents, 82 heading-aware passages, `corpus/eval.py` green on both chunkers, CI running the lot.
 
-Phase 2 is written and runs, and is open as a pull request rather than merged. On the bridge view `recall` returns three precedents whose every cited `passage_id` resolves through `passage_get`, with citations byte-identical to the archive: `INC-2411` and `INC-2419` as `partial`, `INC-2288` as `superseded` with the `document_superseded_by` text reproduced so `SEC-STD-14 (2026-01-30)` is named. No draft passage is cited.
+Phase 2 is merged. On the bridge view `recall` returns three precedents whose every cited `passage_id` resolves through `passage_get`, with citations byte-identical to the archive: `INC-2411` and `INC-2419` as `partial`, `INC-2288` as `superseded` with the `document_superseded_by` text reproduced so `SEC-STD-14 (2026-01-30)` is named. No draft passage is cited.
 
 Four things the live runs settled, none of which `oa validate` or the conformance suite could have caught:
 
