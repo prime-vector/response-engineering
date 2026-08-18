@@ -20,7 +20,7 @@ Early. Five agents written, mock adapters serving five tool surfaces. All of the
 
 | Artefact | State |
 | --- | --- |
-| `SCENARIO.md` | Written, cadence fixed as asserted properties, sanitisation review outstanding |
+| `SCENARIO.md` | Reviewed, cadence fixed as asserted properties, first sanitisation pass done, second pass outstanding |
 | `.agents/incident-commander.yaml` | Written, validates against OAS 1.6.0 |
 | `.agents/telemetry-analyst.yaml` | Written, validates against OAS 1.6.0 |
 | `.agents/change-correlator.yaml` | Written, validates against OAS 1.6.0 |

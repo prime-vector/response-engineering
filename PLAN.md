@@ -16,8 +16,8 @@ It is a demonstration, not a platform. Success is a four minute video and a repo
 - [x] Composite scenario drafted
 - [x] Fixture generator producing 13 problems across 15 days
 - [x] Cadence fixed as asserted properties rather than against a reference chart. The chart was source material and could not enter the tree, so the item could never close as written. `fixtures/generate.py` now asserts the four properties section 3 owns: thirteen problems across fifteen days, all auto-closed, none acknowledged, uniform signature and severity.
-- [ ] Sanitisation review
-- [ ] Precedent copy read for cause creep
+- [x] Sanitisation review, first pass. Shape, figures and all twelve corpus documents read by the author; full-history mechanical sweep found one rule 5 break, fixed. The second pass by another person is M5.
+- [x] Precedent copy read for cause creep
 
 ### M2: Specs written
 **Done when:** all five specs validate against OAS 1.6.0 and the role boundaries hold without overlap.
