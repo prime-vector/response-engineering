@@ -89,7 +89,7 @@ It is a property of the fiction, not a finding. No fixture exposes it, no agent 
 
 The corpus carries `DRAFT-2601`, an unsubmitted working note dated D+8, inside this incident's own window, naming a cause that was never established. It is the only record recent enough to catch a search that omits its time bound. Without it an unbounded query looks correct and the archive becomes a back door to a cause this incident never confirmed.
 
-It belongs to the same class as the causal chain above: archive fiction, never evidence. **It is not an event on the timeline** and nothing in section 3 derives from it. Somebody reading an auto-closing feed and writing a note they never submit is what an empty room looks like from the inside, not a contradiction of it. No problem in the feed is acknowledged, assigned or actioned because that note exists, `acknowledged_by` stays null across all thirteen, and no bridge convenes before D+15.
+It belongs to the same class as the causal chain above: archive fiction, never evidence. **It is not an event on the timeline** and nothing in section 3 derives from it. No problem in the feed is acknowledged, assigned or actioned because that note exists, `acknowledged_by` stays null across all thirteen, and no bridge convenes before D+15.
 
 The time bound alone does not handle it, because it had genuinely been written by the time the bridge opens. Retrieval must reach it and then reject it on `record_status` and the attribution guard. Do not move its date, do not remove it, and do not promote it to an observable event.
 

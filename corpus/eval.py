@@ -140,8 +140,8 @@ def case_hindsight_trap():
 
     It is the only document recent enough to catch a search that forgets its
     bound, and it names a cause the investigation never established. If this
-    passes at the D+1 bound, the archive has become a back door to a confirmed
-    cause and everything else in the demo is theatre.
+    passes at the D+1 bound, the archive has become a back door to a cause this
+    incident never confirmed and everything else in the demo is theatre.
     """
     # Same query both times. Only the bound changes, so a difference in the
     # result is the bound and nothing else.

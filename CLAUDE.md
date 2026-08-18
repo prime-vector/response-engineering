@@ -104,7 +104,7 @@ python3 corpus/eval.py                                   # surface conformance, 
 
 Re-ingesting unchanged sources writes nothing, so `--check` failing means a document changed without the index being rebuilt. Treat it exactly like a stale fixture. `corpus/eval.py` must pass against both `corpus/index.json` and `corpus/index.fixed.json`: a case that passes against one and fails against the other is a property of the chunker, not the contract, and belongs in the evals instead.
 
-The corpus carries a deliberate hindsight trap, `DRAFT-2601`, dated inside the live incident's window and naming a cause that was never established. It is the only document recent enough to catch a search that omits its time bound. Do not date it earlier, and do not remove it: without it an unbounded query looks correct and the archive becomes a back door to a confirmed cause.
+The corpus carries a deliberate hindsight trap, `DRAFT-2601`, dated inside the live incident's window and naming a cause that was never established. It is the only document recent enough to catch a search that omits its time bound. Do not date it earlier, and do not remove it: without it an unbounded query looks correct and the archive becomes a back door to a cause this incident never confirmed.
 
 The bridge view embeds a scripted correlator output in `correlation`, shaped exactly to the correlate task's output contract, so standalone assess runs and the governance demos stay deterministic; `demos/investigate.sh` replaces it with a live correlator run. The raw rows in `changes` feed the mock registry and the Scribe's timeline only. The commander never sees them: the typed output is the handoff.
 

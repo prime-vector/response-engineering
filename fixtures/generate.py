@@ -869,8 +869,9 @@ PRIOR_RECORDS = [
         # (D+8), and it names a cause the investigation never established.
         # Nothing else in the corpus is recent enough to catch a search that
         # forgets its time bound, so without this record an unbounded query
-        # looks correct and the archive quietly becomes a back door to a
-        # confirmed cause. The eval suite asserts it is unreachable at D+1.
+        # looks correct and the archive quietly becomes a back door to a cause
+        # this incident never confirmed. The eval suite asserts it is
+        # unreachable at D+1.
         "ref": "DRAFT-2601",
         "title": "Working note on the current memory exhaustion",
         "recorded_at": "2026-03-10",
