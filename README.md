@@ -29,7 +29,7 @@ Early. Five agents written, mock adapters serving five tool surfaces. All of the
 | `interfaces/TELEMETRY.md` | Draft interface contract |
 | `fixtures/composite-incident*.json` | Generated, two views (D+1 and D+15) plus three demo forcing inputs, feed properties asserted by the generator |
 | `interfaces/PRECEDENT.md` | Draft interface contract, the `precedent_archive` surface |
-| `corpus/ingest.py`, `corpus/documents/` | Written, 12 documents indexed with both chunkers, re-ingest verified idempotent |
+| `corpus/ingest.py`, `corpus/documents/` | Written, 17 documents indexed with both chunkers, five of them distractors, re-ingest verified idempotent |
 | `mock/adapter.py` | Written, smoke-tested against both fixture views, host, record-sink and precedent surfaces added |
 | `demos/investigate.sh` | Written, the composed three-act pipeline verified live |
 | `demos/governance.sh` | Written, all five failure modes verified live |
