@@ -107,7 +107,7 @@ The demo is only honest if the agents are restricted to evidence that was genuin
 | Package and change history | Always | One command | D+15, 19:21 |
 | Recent change records | Always | Registry query | Never correlated |
 | Audit denial log, source domain | D0 | One command, needs host access | **Never** |
-| Prior incident records and runbooks | Always, bounded by `as_of` | Archive query | Never consulted |
+| Prior incident records and runbooks | Always, bounded by `as_of` | Archive query | Not recorded as consulted |
 | Non-prod comparison | n/a | Impossible, builds diverge | Attempted, abandoned |
 
 ---
