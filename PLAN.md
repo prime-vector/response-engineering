@@ -11,12 +11,13 @@ It is a demonstration, not a platform. Success is a four minute video and a repo
 ## Milestones
 
 ### M1: Scenario locked
-**Done when:** `SCENARIO.md` is reviewed, the fixture cadence matches the reference chart, and no source material has entered the repo.
+**Done when:** `SCENARIO.md` is reviewed, the fixture satisfies the feed properties SCENARIO.md section 3 fixes, and no source material has entered the repo.
 
 - [x] Composite scenario drafted
 - [x] Fixture generator producing 13 problems across 15 days
-- [ ] Cadence tuned against reference chart
-- [ ] Sanitisation review
+- [x] Cadence fixed as asserted properties rather than against a reference chart. The chart was source material and could not enter the tree, so the item could never close as written. `fixtures/generate.py` now asserts the four properties section 3 owns: thirteen problems across fifteen days, all auto-closed, none acknowledged, uniform signature and severity.
+- [x] Sanitisation review, first pass. Shape, figures and all twelve corpus documents read by the author; full-history mechanical sweep found one rule 5 break, fixed. The second pass by another person is M5.
+- [x] Precedent copy read for cause creep
 
 ### M2: Specs written
 **Done when:** all five specs validate against OAS 1.6.0 and the role boundaries hold without overlap.
@@ -74,20 +75,20 @@ The fifth agent. Owns a retrieval surface over prior incident records and runboo
 - [x] `demos/governance.sh grounding` passes fire and reject
 - [ ] Evals baseline recorded
 - [ ] Measured improvement documented with before and after
-- [ ] `investigate.sh` composes four acts, precedent enters the board as supporting but never deciding evidence
+- [ ] `investigate.sh` composes three acts with recall in act one, typed precedent entering the board as supporting and never deciding evidence
 
 **Done when:** a board cites precedent by `passage_id`, convergence still blocks on outstanding deciding evidence, and the README carries a results table the runner can regenerate.
 
 #### Where this is up to
 
-Phases 0 and 1 are merged. The surface is live and honest enough to consume: `python3 mock/adapter.py --surface precedent_archive` on 8426, 12 documents, 59 heading-aware passages, `corpus/eval.py` green on both chunkers, CI running the lot.
+Phases 0 and 1 are merged. The surface is live and honest enough to consume: `python3 mock/adapter.py --surface precedent_archive` on 8426, 17 documents, 82 heading-aware passages, `corpus/eval.py` green on both chunkers, CI running the lot.
 
 Phase 2 is written and runs, and is open as a pull request rather than merged. On the bridge view `recall` returns three precedents whose every cited `passage_id` resolves through `passage_get`, with citations byte-identical to the archive: `INC-2411` and `INC-2419` as `partial`, `INC-2288` as `superseded` with the `document_superseded_by` text reproduced so `SEC-STD-14 (2026-01-30)` is named. No draft passage is cited.
 
 Four things the live runs settled, none of which `oa validate` or the conformance suite could have caught:
 
 - **The provider rejects `anyOf` at the top level of a tool `input_schema`.** `precedent_search` declared one to express "at least one of `signature_terms` and `symptom_text`", and the runner passes the MCP schema through verbatim, so the request 400d before the model saw a tool. The either/or now lives in the tool description and `corpus/eval.py` asserts that instead. No conformance case could have found it: the suite never calls a provider.
-- **A verbose query returns nothing, and this is two separate measurements.** At the bridge bound, `limit 8`: the reported symptom used whole as `symptom_text` scores 56 of 59 passages above zero and clears the floor 0 times. The signature type added to that same whole symptom scores 57 and still clears 0. Those are the dilution measurements. The separate experiment is the signature type on its own, which scores 34, clears 21 and returns the near miss. Do not collapse the three into one sentence: the dilution figure and the near-miss figure come from different queries. Hence the prompt telling the agent to query distinctive terms and to query more than once, which is also what surfaces `INC-2288` on the denial-daemon axis.
+- **A verbose query returns nothing, and this is two separate measurements.** At the bridge bound, `limit 8`: the reported symptom used whole as `symptom_text` scores 79 of 82 passages above zero and clears the floor 0 times. The signature type added to that same whole symptom scores 80 and still clears 0. Those are the dilution measurements. The separate experiment is the signature type on its own, which scores 54, clears 35 and returns the near miss. Re-measured after the distractors and the recency tie-break; the finding is unchanged and the counts moved with the corpus. Do not collapse the three into one sentence: the dilution figure and the near-miss figure come from different queries. Hence the prompt telling the agent to query distinctive terms and to query more than once, which is also what surfaces `INC-2288` on the denial-daemon axis.
 - **A citation has to be copied, not retyped.** An early run truncated every `heading_path` to the document title and dropped the `> Summary` segment, which is the part that makes a citation checkable in five seconds. The prompt now pins the citation fields as verbatim.
 - **`superseded` without the name is not a warning.** A run that correctly set `applicability: superseded` then wrote "this resolution is superseded" and dropped `SEC-STD-14` entirely. The qualifier had travelled: `document_superseded_by` is copied onto every passage of that document. It was the model that dropped the name, the same class of failure as the truncated heading, so it is pinned the same way: copy `document_superseded_by` into `divergence`, do not paraphrase it.
 

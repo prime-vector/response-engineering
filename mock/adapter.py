@@ -430,6 +430,14 @@ def _cite(passage, score=None):
     return out
 
 
+def _recency(passage):
+    """A passage's recorded_at as a sortable integer, 0 when absent."""
+    try:
+        return int(str(passage.get("recorded_at", ""))[:10].replace("-", ""))
+    except ValueError:
+        return 0
+
+
 def precedent_search(args):
     terms = _terms(" ".join(args.get("signature_terms") or []))
     terms += _terms(args.get("symptom_text") or "")
@@ -459,8 +467,22 @@ def precedent_search(args):
             continue
         candidates.append((_score(terms, passage), passage))
 
+    # Ties are the common case, not the edge one. A short signature query is
+    # a handful of the corpus's most common terms, so every passage carrying
+    # all of them scores exactly 1.0: eleven of them did on the query the
+    # spec steers the agent to. Breaking that on passage_id ordered the band
+    # by content hash, which is to say arbitrarily, and which record an agent
+    # is handed is not a thing to decide by hash.
+    #
+    # Recency is the tie-break because precedent is time-ordered evidence.
+    # Practice moves, resolutions get superseded, and between two equally
+    # matching records the later one is the one whose advice is still current.
+    # It is also why the hindsight trap has to survive its own competition:
+    # DRAFT-2601 is the most recent record on this signature at the bridge,
+    # so a caller that forgets the bound meets it first, which is the whole
+    # point of it being there.
     scored = sorted([c for c in candidates if c[0] > 0],
-                    key=lambda c: (-c[0], c[1]["passage_id"]))
+                    key=lambda c: (-c[0], -_recency(c[1]), c[1]["passage_id"]))
 
     # Below the floor the surface returns nothing, not the nearest match at a
     # low score. A weak result in a result set still anchors, and the agent's

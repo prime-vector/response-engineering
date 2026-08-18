@@ -51,10 +51,10 @@ tools:
     type: mcp
     endpoint: http://localhost:8425
     description: >
-      Platform-agnostic record sink. ServiceNow, Jira Service Management or
-      a webhook implement the same surface. Drafts and record updates only;
-      the surface deliberately has no submit call. See
-      interfaces/TELEMETRY.md. Mock adapter at mock/adapter.py.
+      Platform-agnostic record sink. Drafts and record updates only; the
+      surface deliberately has no submit call. See interfaces/TELEMETRY.md.
+      Mock adapter at mock/adapter.py, vendor adapters implement the same
+      tool surface.
     timeout: 30
 
 tasks:
