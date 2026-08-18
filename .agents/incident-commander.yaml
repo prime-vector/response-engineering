@@ -38,26 +38,22 @@ intelligence:
     # is not enough for a full board at this output size.
     timeout: 300
 
-# Telemetry only. The change registry belongs to the Change Correlator; the
-# commander consumes its typed correlate output through the correlation input
-# field and never runs the query itself. One agent owns each evidence surface.
+# No evidence surface. The commander holds the board and reasons only over
+# what it is handed: signals, evidence, correlation and missing_evidence all
+# arrive as typed input. The change registry belongs to the Change Correlator
+# and telemetry to the Telemetry Analyst; a collection surface declared here
+# would let the commander read past the view it was given, which is the leak
+# missing_evidence exists to prevent. The one surface below actuates rather
+# than collects, and exists to be blocked.
 tools:
-  telemetry:
-    type: mcp
-    endpoint: http://localhost:8422
-    description: >
-      Platform-agnostic telemetry surface. Problem feed, metric series and
-      entity description. See interfaces/TELEMETRY.md. Mock adapter at
-      mock/adapter.py, vendor adapters implement the same tool surface.
-    timeout: 30
   host:
     type: mcp
     endpoint: http://localhost:8424
     description: >
       Host actuation surface: runtime security-control and process controls.
-      Bound only by the mitigate task and deliberately absent from the
-      sandbox allow list below, so every call to it is blocked pre-dispatch.
-      That block is the demo. See demos/governance.sh.
+      Bound only by the mitigate task, whose own sandbox allows no tool by
+      name, so every call to it is blocked pre-dispatch. That block is the
+      demo. See demos/governance.sh.
     timeout: 30
 
 
