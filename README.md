@@ -6,29 +6,7 @@ Operations is a software problem. We build the production agent layer: defined a
 
 Built on [Open Agent Spec](https://github.com/prime-vector/open-agent-spec).
 
-```mermaid
-flowchart LR
-    subgraph evidence["Evidence surfaces (one owning agent each)"]
-        TEL[("telemetry")]
-        CHG[("change_registry")]
-    end
-
-    subgraph agents["Specs on Open Agent Spec: sandboxed tools, contract-validated outputs"]
-        TA["Telemetry Analyst<br/>detect"]
-        CC["Change Correlator<br/>correlate"]
-        IC["Incident Commander<br/>assess"]
-        SCR["Scribe<br/>timeline, change record"]
-    end
-
-    REC[("incident_record sink")]
-
-    TEL --> TA
-    CHG --> CC
-    TA -- "typed findings" --> IC
-    CC -- "typed correlation" --> IC
-    IC -- "live board" --> SCR
-    SCR -- "tool call, verified in the adapter log" --> REC
-```
+![Three evidence surfaces, each read by exactly one agent. The Telemetry Analyst, Change Correlator and Precedent Analyst hand typed findings, correlation and precedent to the Incident Commander, whose live board goes to the Scribe, which writes to the incident record sink through a tool call.](docs/diagrams/architecture.svg)
 
 Every arrow between agents is a typed output whose claims carry `confidence` and `falsifying_test` as required fields: a claim cannot shed its caveats when it changes hands. No agent reads another's evidence surface, and the record is written only through a tool call the adapter log can prove.
 
@@ -72,7 +50,7 @@ interfaces/TELEMETRY.md            platform-agnostic tool surface
 interfaces/PRECEDENT.md            the precedent_archive surface
 docs/precedent-analyst.md          build spec for the fifth agent
 docs/investigation-layer.md        the walkthrough: what each control is and why
-docs/diagrams/                     hand-authored SVG for that walkthrough
+docs/diagrams/                     hand-authored SVG, for the walkthrough and this README
 corpus/ingest.py                   chunks the corpus into the archive index
 corpus/documents/                  synthetic prior incident records and runbooks
 corpus/manifest.yaml               generated, provenance for everything ingested
@@ -209,17 +187,6 @@ This exists because unstructured analysis loses its epistemics in transit. A wel
 
 ## Where this sits
 
-```mermaid
-flowchart TB
-    subgraph pv["Prime Vector, the standards home"]
-        OAS["Open Agent Spec<br/>the open standard: agents as code,<br/>typed contracts, sandboxing"]
-        RE["Response Engineering, this repo<br/>reference implementation:<br/>an agent-run investigation layer"]
-    end
-    GEN["Genai Pty Ltd<br/>the engineering practice"]
-
-    OAS -->|"base for"| RE
-    GEN -->|"built and maintains"| RE
-    GEN -.->|"co-maintains"| OAS
-```
+![Open Agent Spec and Response Engineering both sit under Prime Vector, the standards home, with the spec the base for the implementation. Genai Pty Ltd builds and maintains the implementation and co-maintains the standard.](docs/diagrams/where-this-sits.svg)
 
 The standard and its reference implementation live together under Prime Vector. The implementation is built and maintained by [Genai Pty Ltd](https://genai.com.au), the engineering practice of the same engineers who co-maintain Open Agent Spec; that dual role is stated here so nobody has to discover it. Genai takes this layer into production incident response engagements.

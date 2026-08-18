@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 392" width="560" height="392" role="img" aria-label="Open Agent Spec and Response Engineering both sit under Prime Vector, the standards home, with the spec the base for the implementation. Genai Pty Ltd builds and maintains the implementation and co-maintains the standard.">
+  <title>Open Agent Spec and Response Engineering sit under Prime Vector; Genai Pty Ltd builds the implementation and co-maintains the standard.</title>
+  <style>
+    text{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;fill:#131A1C}
+    .t{font-size:12px;font-weight:600}
+    .s{font-size:10.5px;fill:#6E7D7C}
+    .e{font-size:10px;letter-spacing:.13em;fill:#6E7D7C}
+    .a{fill:#186B66}
+    .box{fill:#FFFFFF;stroke:#C9D4D3;stroke-width:1.5}
+    .box-a{fill:#DDECEA;stroke:#186B66;stroke-width:1.5}
+    .panel{fill:none;stroke:#C9D4D3;stroke-width:1.5;stroke-dasharray:5 4}
+    .ln{stroke:#6E7D7C;stroke-width:1.5;fill:none}
+    .ln-a{stroke:#186B66;stroke-width:1.7;fill:none}
+    .dash{stroke-dasharray:4 4}
+  </style>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#6E7D7C"/></marker>
+    <marker id="ar-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#186B66"/></marker>
+  </defs>
+  <rect width="560" height="392" fill="#F7F9F9"/>
+
+  <rect class="panel" x="44" y="40" width="496" height="204" rx="4"/>
+  <text class="e" x="44" y="30">PRIME VECTOR, THE STANDARDS HOME</text>
+
+  <rect class="box" x="68" y="66" width="448" height="70" rx="3"/>
+  <text class="t" x="86" y="92">Open Agent Spec</text>
+  <text class="s" x="86" y="110">the open standard: agents as code,</text>
+  <text class="s" x="86" y="126">typed contracts, sandboxing</text>
+
+  <line class="ln-a" x1="292" y1="136" x2="292" y2="162" marker-end="url(#ar-a)"/>
+  <text class="s a" x="302" y="155">base for</text>
+
+  <rect class="box-a" x="68" y="168" width="448" height="60" rx="3"/>
+  <text class="t" x="86" y="192">Response Engineering, this repo</text>
+  <text class="s" x="86" y="210">reference implementation: an agent-run investigation layer</text>
+
+  <rect class="box" x="182" y="300" width="220" height="60" rx="3"/>
+  <text class="t" x="200" y="324">Genai Pty Ltd</text>
+  <text class="s" x="200" y="342">the engineering practice</text>
+
+  <line class="ln" x1="292" y1="300" x2="292" y2="234" marker-end="url(#ar)"/>
+  <text class="s" x="302" y="272">built and maintains</text>
+
+  <path class="ln dash" d="M182 330 H 28 V 101 H 62" marker-end="url(#ar)"/>
+  <text class="s" x="176" y="322" text-anchor="end">co-maintains</text>
+</svg>
