@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 296" width="960" height="296" role="img" aria-label="A narrowing count ladder: fifty nine candidates survived the time bound, thirty one scored above zero, none cleared the relevance floor. Below the floor the surface returns an empty passage set rather than the nearest match, and the output contract requires a non-empty grounded_in.">
+  <title>A narrowing count ladder: fifty nine candidates survived the time bound, thirty one scored above zero, none cleared the relevance floor. Below the floor the surface returns an empty passage set rather than the nearest match, and the output contract requires a non-empty grounded_in.</title>
+  <style>
+    text{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;fill:#131A1C}
+    .t{font-size:11px}
+    .t-b{font-size:11px;font-weight:600}
+    .t-s{font-size:9.5px;fill:#6E7D7C}
+    .t-e{font-size:9.5px;letter-spacing:.14em;fill:#6E7D7C}
+    .t-n{font-size:13px;font-weight:600}
+    .t-a{fill:#186B66}
+    .t-h{fill:#A9491A}
+    .box{fill:#FFFFFF;stroke:#C9D4D3;stroke-width:1.4}
+    .box-a{fill:#DDECEA;stroke:#186B66;stroke-width:1.4}
+    .box-h{fill:#F6E4D9;stroke:#A9491A;stroke-width:1.4}
+    .box-g{fill:none;stroke:#C9D4D3;stroke-width:1.4;stroke-dasharray:4 4}
+    .band{fill:#E6ECEB}
+    .panel{fill:none;stroke:#C9D4D3;stroke-width:1.4}
+    .ln{stroke:#6E7D7C;stroke-width:1.4;fill:none}
+    .ln-a{stroke:#186B66;stroke-width:1.6;fill:none}
+    .ln-h{stroke:#A9491A;stroke-width:1.6;fill:none}
+    .ln-r{stroke:#C9D4D3;stroke-width:1.4;fill:none}
+    .dash{stroke-dasharray:4 4}
+    .mk{fill:#6E7D7C}
+    .mk-a{fill:#186B66}
+    .mk-h{fill:#A9491A}
+    .faint{opacity:.42}
+  </style>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="mk"/></marker>
+    <marker id="ar-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="mk-a"/></marker>
+    <marker id="ar-h" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="mk-h"/></marker>
+  </defs>
+  <rect width="960" height="296" fill="#F7F9F9"/>
+
+
+        <text class="t-e" x="40" y="34">WHAT THE SEARCH ACTUALLY DID</text>
+
+        <text class="t-s" x="40" y="62">candidates_considered</text>
+        <rect class="box-g" x="40" y="70" width="420" height="26" rx="2"/>
+        <rect class="box-a" x="40" y="70" width="420" height="26" rx="2"/>
+        <text class="t-n t-a" x="472" y="88">59</text>
+        <text class="t-s" x="512" y="88">survived the time bound</text>
+
+        <text class="t-s" x="40" y="120">total_scoring_above_zero</text>
+        <rect class="box-g" x="40" y="128" width="420" height="26" rx="2"/>
+        <rect class="box-a" x="40" y="128" width="221" height="26" rx="2"/>
+        <text class="t-n t-a" x="472" y="146">31</text>
+        <text class="t-s" x="512" y="146">the query touched them at all</text>
+
+        <text class="t-s" x="40" y="178">cleared_floor</text>
+        <rect class="box-g" x="40" y="186" width="420" height="26" rx="2"/>
+        <text class="t-n t-h" x="472" y="204">0</text>
+        <text class="t-s" x="512" y="204">none was good enough</text>
+
+        <line class="ln-r" x1="40" y1="238" x2="920" y2="238"/>
+
+        <rect class="box-h" x="40" y="252" width="330" height="30" rx="3"/>
+        <text class="t t-h" x="56" y="272">passages: []   not the nearest match</text>
+
+        <line class="ln" x1="370" y1="267" x2="406" y2="267" marker-end="url(#ar)"/>
+
+        <rect class="box" x="410" y="252" width="510" height="30" rx="3"/>
+        <text class="t" x="426" y="272">grounded_in is required and non-empty, so no precedent can be constructed</text>
+
+      </svg>

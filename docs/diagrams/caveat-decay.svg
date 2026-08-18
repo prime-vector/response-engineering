@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 356" width="960" height="356" role="img" aria-label="Two lanes comparing the same claim in transit. Relayed as prose, the confidence and falsifying test fall away over three hops and the investigation converges on a third party. Relayed as a typed output, both fields are required at every hop, so convergence stays blocked while deciding evidence is outstanding.">
+  <title>Two lanes comparing the same claim in transit. Relayed as prose, the confidence and falsifying test fall away over three hops and the investigation converges on a third party. Relayed as a typed output, both fields are required at every hop, so convergence stays blocked while deciding evidence is outstanding.</title>
+  <style>
+    text{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;fill:#131A1C}
+    .t{font-size:11px}
+    .t-b{font-size:11px;font-weight:600}
+    .t-s{font-size:9.5px;fill:#6E7D7C}
+    .t-e{font-size:9.5px;letter-spacing:.14em;fill:#6E7D7C}
+    .t-n{font-size:13px;font-weight:600}
+    .t-a{fill:#186B66}
+    .t-h{fill:#A9491A}
+    .box{fill:#FFFFFF;stroke:#C9D4D3;stroke-width:1.4}
+    .box-a{fill:#DDECEA;stroke:#186B66;stroke-width:1.4}
+    .box-h{fill:#F6E4D9;stroke:#A9491A;stroke-width:1.4}
+    .box-g{fill:none;stroke:#C9D4D3;stroke-width:1.4;stroke-dasharray:4 4}
+    .band{fill:#E6ECEB}
+    .panel{fill:none;stroke:#C9D4D3;stroke-width:1.4}
+    .ln{stroke:#6E7D7C;stroke-width:1.4;fill:none}
+    .ln-a{stroke:#186B66;stroke-width:1.6;fill:none}
+    .ln-h{stroke:#A9491A;stroke-width:1.6;fill:none}
+    .ln-r{stroke:#C9D4D3;stroke-width:1.4;fill:none}
+    .dash{stroke-dasharray:4 4}
+    .mk{fill:#6E7D7C}
+    .mk-a{fill:#186B66}
+    .mk-h{fill:#A9491A}
+    .faint{opacity:.42}
+  </style>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="mk"/></marker>
+    <marker id="ar-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="mk-a"/></marker>
+    <marker id="ar-h" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="mk-h"/></marker>
+  </defs>
+  <rect width="960" height="356" fill="#F7F9F9"/>
+
+
+        <text class="t-e t-h" x="24" y="30">RELAYED AS PROSE</text>
+
+        <rect class="box" x="24" y="44" width="204" height="58" rx="3"/>
+        <text class="t-b" x="38" y="66">18:38  the analysis</text>
+        <text class="t-s" x="38" y="84">correct, and caveated</text>
+        <rect class="box-a" x="24" y="110" width="126" height="22" rx="11"/>
+        <text class="t-s t-a" x="36" y="125">confidence: low</text>
+        <rect class="box-a" x="24" y="138" width="204" height="22" rx="11"/>
+        <text class="t-s t-a" x="36" y="153">falsifying_test: denial log</text>
+
+        <line class="ln-h" x1="234" y1="73" x2="266" y2="73" marker-end="url(#ar-h)"/>
+
+        <rect class="box" x="270" y="44" width="204" height="58" rx="3"/>
+        <text class="t-b" x="284" y="66">hop one, the bridge</text>
+        <text class="t-s" x="284" y="84">the library is mapped in</text>
+        <g class="faint">
+          <rect class="box-g" x="270" y="110" width="126" height="22" rx="11"/>
+          <text class="t-s" x="282" y="125">confidence: ?</text>
+        </g>
+
+        <line class="ln-h" x1="480" y1="73" x2="512" y2="73" marker-end="url(#ar-h)"/>
+
+        <rect class="box" x="516" y="44" width="204" height="58" rx="3"/>
+        <text class="t-b" x="530" y="66">hop two, quoted on</text>
+        <text class="t-s" x="530" y="84">"AI indicates the platform</text>
+        <text class="t-s" x="530" y="96">is involved"</text>
+        <text class="t-s t-h" x="530" y="125">caveats gone</text>
+
+        <line class="ln-h" x1="726" y1="73" x2="758" y2="73" marker-end="url(#ar-h)"/>
+
+        <rect class="box-h" x="762" y="44" width="174" height="58" rx="3"/>
+        <text class="t-b t-h" x="776" y="66">vendor engaged</text>
+        <text class="t-s" x="776" y="84">convergence, no evidence</text>
+
+        <line class="ln-r" x1="24" y1="188" x2="936" y2="188"/>
+
+        <text class="t-e t-a" x="24" y="216">RELAYED AS A TYPED OUTPUT</text>
+
+        <rect class="box" x="24" y="230" width="204" height="58" rx="3"/>
+        <text class="t-b" x="38" y="252">Telemetry Analyst</text>
+        <text class="t-s" x="38" y="270">typed finding</text>
+        <rect class="box-a" x="24" y="296" width="126" height="22" rx="11"/>
+        <text class="t-s t-a" x="36" y="311">confidence: low</text>
+        <rect class="box-a" x="24" y="324" width="204" height="22" rx="11"/>
+        <text class="t-s t-a" x="36" y="339">falsifying_test: denial log</text>
+
+        <line class="ln-a" x1="234" y1="259" x2="266" y2="259" marker-end="url(#ar-a)"/>
+
+        <rect class="box" x="270" y="230" width="204" height="58" rx="3"/>
+        <text class="t-b" x="284" y="252">Commander input</text>
+        <text class="t-s" x="284" y="270">required fields, not prose</text>
+        <rect class="box-a" x="270" y="296" width="126" height="22" rx="11"/>
+        <text class="t-s t-a" x="282" y="311">confidence: low</text>
+        <rect class="box-a" x="270" y="324" width="204" height="22" rx="11"/>
+        <text class="t-s t-a" x="282" y="339">falsifying_test: denial log</text>
+
+        <line class="ln-a" x1="480" y1="259" x2="512" y2="259" marker-end="url(#ar-a)"/>
+
+        <rect class="box" x="516" y="230" width="204" height="58" rx="3"/>
+        <text class="t-b" x="530" y="252">board, Scribe, record</text>
+        <text class="t-s" x="530" y="270">the lead is still raised</text>
+        <rect class="box-a" x="516" y="296" width="126" height="22" rx="11"/>
+        <text class="t-s t-a" x="528" y="311">confidence: low</text>
+        <rect class="box-a" x="516" y="324" width="204" height="22" rx="11"/>
+        <text class="t-s t-a" x="528" y="339">falsifying_test: denial log</text>
+
+        <line class="ln-a" x1="726" y1="259" x2="758" y2="259" marker-end="url(#ar-a)"/>
+
+        <rect class="box-a" x="762" y="230" width="174" height="58" rx="3"/>
+        <text class="t-b t-a" x="776" y="252">convergence blocked</text>
+        <text class="t-s" x="776" y="270">deciding evidence</text>
+        <text class="t-s" x="776" y="282">outstanding</text>
+
+      </svg>

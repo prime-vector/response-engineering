@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 306" width="960" height="306" role="img" aria-label="A two by two grid of the recall output's two fields. No applicable precedent true with an empty precedent list is the valid refusal. False with at least one precedent is the valid claim. The other two combinations are rejected by the schema: refusing while hedging with a precedent, and denying precedent exists while listing none.">
+  <title>A two by two grid of the recall output's two fields. No applicable precedent true with an empty precedent list is the valid refusal. False with at least one precedent is the valid claim. The other two combinations are rejected by the schema: refusing while hedging with a precedent, and denying precedent exists while listing none.</title>
+  <style>
+    text{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;fill:#131A1C}
+    .t{font-size:11px}
+    .t-b{font-size:11px;font-weight:600}
+    .t-s{font-size:9.5px;fill:#6E7D7C}
+    .t-e{font-size:9.5px;letter-spacing:.14em;fill:#6E7D7C}
+    .t-n{font-size:13px;font-weight:600}
+    .t-a{fill:#186B66}
+    .t-h{fill:#A9491A}
+    .box{fill:#FFFFFF;stroke:#C9D4D3;stroke-width:1.4}
+    .box-a{fill:#DDECEA;stroke:#186B66;stroke-width:1.4}
+    .box-h{fill:#F6E4D9;stroke:#A9491A;stroke-width:1.4}
+    .box-g{fill:none;stroke:#C9D4D3;stroke-width:1.4;stroke-dasharray:4 4}
+    .band{fill:#E6ECEB}
+    .panel{fill:none;stroke:#C9D4D3;stroke-width:1.4}
+    .ln{stroke:#6E7D7C;stroke-width:1.4;fill:none}
+    .ln-a{stroke:#186B66;stroke-width:1.6;fill:none}
+    .ln-h{stroke:#A9491A;stroke-width:1.6;fill:none}
+    .ln-r{stroke:#C9D4D3;stroke-width:1.4;fill:none}
+    .dash{stroke-dasharray:4 4}
+    .mk{fill:#6E7D7C}
+    .mk-a{fill:#186B66}
+    .mk-h{fill:#A9491A}
+    .faint{opacity:.42}
+  </style>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="mk"/></marker>
+    <marker id="ar-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="mk-a"/></marker>
+    <marker id="ar-h" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="mk-h"/></marker>
+  </defs>
+  <rect width="960" height="306" fill="#F7F9F9"/>
+
+
+        <text class="t-e" x="395" y="46" text-anchor="middle">precedents: [ ]</text>
+        <text class="t-e" x="755" y="46" text-anchor="middle">precedents: [ one or more ]</text>
+
+        <text class="t-s" x="24" y="112">no_applicable</text>
+        <text class="t-s" x="24" y="124">_precedent</text>
+        <text class="t-b t-a" x="24" y="144">true</text>
+
+        <text class="t-s" x="24" y="222">no_applicable</text>
+        <text class="t-s" x="24" y="234">_precedent</text>
+        <text class="t-b t-a" x="24" y="254">false</text>
+
+        <rect class="box-a" x="230" y="62" width="330" height="96" rx="3"/>
+        <text class="t-e t-a" x="246" y="84">VALID  ·  THE REFUSAL</text>
+        <text class="t-s" x="246" y="106">search_coverage populated</text>
+        <text class="t-s" x="246" y="122">the archive was searched and</text>
+        <text class="t-s" x="246" y="136">nothing in it was good enough</text>
+        <text class="t-s" x="246" y="150">precedents: maxItems 0</text>
+
+        <rect class="box-h" x="590" y="62" width="330" height="96" rx="3"/>
+        <text class="t-e t-h" x="606" y="84">REJECTED</text>
+        <text class="t-s" x="606" y="106">report the refusal, then hedge</text>
+        <text class="t-s" x="606" y="122">with a precedent underneath it</text>
+        <line class="ln-h" x1="880" y1="76" x2="896" y2="92"/>
+        <line class="ln-h" x1="896" y1="76" x2="880" y2="92"/>
+
+        <rect class="box-h" x="230" y="172" width="330" height="96" rx="3"/>
+        <text class="t-e t-h" x="246" y="194">REJECTED</text>
+        <text class="t-s" x="246" y="216">deny that precedent exists</text>
+        <text class="t-s" x="246" y="232">while listing none: a refusal</text>
+        <text class="t-s" x="246" y="246">that will not say it is one</text>
+        <line class="ln-h" x1="520" y1="186" x2="536" y2="202"/>
+        <line class="ln-h" x1="536" y1="186" x2="520" y2="202"/>
+
+        <rect class="box-a" x="590" y="172" width="330" height="96" rx="3"/>
+        <text class="t-e t-a" x="606" y="194">VALID  ·  THE CLAIM</text>
+        <text class="t-s" x="606" y="216">grounded_in, divergence,</text>
+        <text class="t-s" x="606" y="232">applicability, confidence,</text>
+        <text class="t-s" x="606" y="246">falsifying_test, all required</text>
+        <text class="t-s" x="606" y="260">precedents: minItems 1</text>
+
+        <text class="t-s" x="24" y="294">the two valid cells are the whole answer space. neither rejected cell can be produced, whatever the prompt says.</text>
+
+      </svg>

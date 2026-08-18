@@ -32,6 +32,8 @@ flowchart LR
 
 Every arrow between agents is a typed output whose claims carry `confidence` and `falsifying_test` as required fields: a claim cannot shed its caveats when it changes hands. No agent reads another's evidence surface, and the record is written only through a tool call the adapter log can prove.
 
+[**The Investigation Layer**](docs/investigation-layer.md) walks the whole thing through with diagrams: the fifteen days nobody consumed, what each of the five agents refuses to do, where the sandbox block actually lives, and why the retrieval surface returns an empty set rather than the nearest match.
+
 ---
 
 ## Status
@@ -69,6 +71,8 @@ CLAUDE.md                          working rules for this repo
 interfaces/TELEMETRY.md            platform-agnostic tool surface
 interfaces/PRECEDENT.md            the precedent_archive surface
 docs/precedent-analyst.md          build spec for the fifth agent
+docs/investigation-layer.md        the walkthrough: what each control is and why
+docs/diagrams/                     hand-authored SVG for that walkthrough
 corpus/ingest.py                   chunks the corpus into the archive index
 corpus/documents/                  synthetic prior incident records and runbooks
 corpus/manifest.yaml               generated, provenance for everything ingested
@@ -89,13 +93,19 @@ demos/grounding-stripped-system-prompt.txt  the uncited producer for the groundi
 ## Run
 
 ```bash
-pipx install open-agent-spec
+# The contracts extra is not optional: without it the runner skips contract
+# validation with only a warning, and both demo drivers refuse to start. The
+# version is pinned because the specs declare 1.6.0 and CI tests against it.
+pipx install "open-agent-spec[contracts]==1.6.0"
+
 oa validate --spec .agents/incident-commander.yaml
 oa validate --spec .agents/telemetry-analyst.yaml
 oa validate --spec .agents/change-correlator.yaml
 oa validate --spec .agents/scribe.yaml
+oa validate --spec .agents/precedent-analyst.yaml
 
-# the mock adapters, one terminal each, fixture-backed
+# the mock adapters, one terminal each, fixture-backed. Only the agents that
+# own a surface need one: assess binds no tools and reaches nothing.
 python3 mock/adapter.py --surface telemetry                # 8422, D+15 bridge view
 python3 mock/adapter.py --surface change_registry          # 8423
 
@@ -111,10 +121,10 @@ patch "$(python3 -c 'import oas_cli.providers.anthropic_http as m; print(m.__fil
 # timeline. Manages its own adapters; stop yours first.
 ./demos/investigate.sh
 
-# or act two standalone, against the adapters above. The bridge view embeds
-# a scripted correlator output shaped to the correlate contract, so a
-# standalone assess receives the same typed handoff the driver composes
-# live. The commander never sees raw registry rows.
+# or act two standalone. The correlator needs 8423; assess needs no adapter at
+# all. The bridge view embeds a scripted correlator output shaped to the
+# correlate contract, so a standalone assess receives the same typed handoff
+# the driver composes live. The commander never sees raw registry rows.
 oa run --spec .agents/change-correlator.yaml --task correlate \
   --input "$(cat fixtures/composite-incident.json)" --quiet
 oa run --spec .agents/incident-commander.yaml --task assess \

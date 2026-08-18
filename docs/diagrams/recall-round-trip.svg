@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 380" width="960" height="380" role="img" aria-label="The recall task as a sequence of tool calls between the Precedent Analyst and the precedent archive. First coverage describe bounded at the view's as_of, then one search per distinct behaviour using the signature type with the entity id dropped, then a passage get for every citation the reply will make, then a single JSON reply.">
+  <title>The recall task as a sequence of tool calls between the Precedent Analyst and the precedent archive. First coverage describe bounded at the view's as_of, then one search per distinct behaviour using the signature type with the entity id dropped, then a passage get for every citation the reply will make, then a single JSON reply.</title>
+  <style>
+    text{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;fill:#131A1C}
+    .t{font-size:11px}
+    .t-b{font-size:11px;font-weight:600}
+    .t-s{font-size:9.5px;fill:#6E7D7C}
+    .t-e{font-size:9.5px;letter-spacing:.14em;fill:#6E7D7C}
+    .t-n{font-size:13px;font-weight:600}
+    .t-a{fill:#186B66}
+    .t-h{fill:#A9491A}
+    .box{fill:#FFFFFF;stroke:#C9D4D3;stroke-width:1.4}
+    .box-a{fill:#DDECEA;stroke:#186B66;stroke-width:1.4}
+    .box-h{fill:#F6E4D9;stroke:#A9491A;stroke-width:1.4}
+    .box-g{fill:none;stroke:#C9D4D3;stroke-width:1.4;stroke-dasharray:4 4}
+    .band{fill:#E6ECEB}
+    .panel{fill:none;stroke:#C9D4D3;stroke-width:1.4}
+    .ln{stroke:#6E7D7C;stroke-width:1.4;fill:none}
+    .ln-a{stroke:#186B66;stroke-width:1.6;fill:none}
+    .ln-h{stroke:#A9491A;stroke-width:1.6;fill:none}
+    .ln-r{stroke:#C9D4D3;stroke-width:1.4;fill:none}
+    .dash{stroke-dasharray:4 4}
+    .mk{fill:#6E7D7C}
+    .mk-a{fill:#186B66}
+    .mk-h{fill:#A9491A}
+    .faint{opacity:.42}
+  </style>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="mk"/></marker>
+    <marker id="ar-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="mk-a"/></marker>
+    <marker id="ar-h" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="mk-h"/></marker>
+  </defs>
+  <rect width="960" height="380" fill="#F7F9F9"/>
+
+
+        <text class="t-e" x="24" y="24">RECALL: MULTI-ROUND, EVERY ROUND A TOOL CALL</text>
+
+        <rect class="box-a" x="30" y="40" width="220" height="40" rx="3"/>
+        <text class="t-b" x="44" y="65">Precedent Analyst</text>
+
+        <rect class="box" x="610" y="40" width="250" height="40" rx="3"/>
+        <text class="t-b" x="624" y="65">precedent_archive  8426</text>
+
+        <line class="ln-r dash" x1="140" y1="80" x2="140" y2="336"/>
+        <line class="ln-r dash" x1="735" y1="80" x2="735" y2="336"/>
+
+        <line class="ln-a" x1="140" y1="112" x2="729" y2="112" marker-end="url(#ar-a)"/>
+        <text class="t-s t-a" x="150" y="106">coverage_describe( before = the view's as_of )</text>
+        <line class="ln" x1="735" y1="136" x2="146" y2="136" marker-end="url(#ar)"/>
+        <text class="t-s" x="725" y="130" text-anchor="end">source_families, date_range, document_count, corpus_current_to</text>
+        <text class="t-s t-h" x="150" y="158">no_applicable_precedent may not be reported until this call has been made</text>
+
+        <line class="ln-a" x1="140" y1="192" x2="729" y2="192" marker-end="url(#ar-a)"/>
+        <text class="t-s t-a" x="150" y="186">precedent_search( host.memory.exhaustion, before )   once per distinct behaviour</text>
+        <line class="ln" x1="735" y1="216" x2="146" y2="216" marker-end="url(#ar)"/>
+        <text class="t-s" x="725" y="210" text-anchor="end">passages, citations, floor_applied, the three counts</text>
+        <text class="t-s t-h" x="150" y="238">the signature reads host.memory.exhaustion:intg-prod-a1. the type is passed and</text>
+        <text class="t-s t-h" x="150" y="250">the entity id dropped: the host is identity, not symptom.</text>
+
+        <line class="ln-a" x1="140" y1="284" x2="729" y2="284" marker-end="url(#ar-a)"/>
+        <text class="t-s t-a" x="150" y="278">passage_get( passage_id )   one per citation the reply will make</text>
+        <line class="ln" x1="735" y1="308" x2="146" y2="308" marker-end="url(#ar)"/>
+        <text class="t-s" x="725" y="302" text-anchor="end">the passage verbatim, plus its complete citation</text>
+        <text class="t-s t-h" x="150" y="330">this is what makes a citation checkable without access to the search behind it</text>
+
+        <line class="ln-r" x1="24" y1="348" x2="936" y2="348"/>
+        <text class="t-s" x="24" y="368">reply: one JSON object. three kinds of round trip, one response budget between them, so headroom is a correctness setting rather than a comfort one.</text>
+
+      </svg>

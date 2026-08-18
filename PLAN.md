@@ -145,7 +145,7 @@ Three acts, four minutes, in this order:
 | Brand and org the repo lands under | Open. Blocks M5, nothing earlier. |
 | Whether act one is a separate invocation or the first turn of the pipeline | Resolved during M3: a separate invocation of the Telemetry Analyst against the D+1 view. |
 | Whether the mock adapter becomes its own package | The mock exists in-repo. Repackage only if a second consumer appears. |
-| Who owns the change registry | Resolved: the Change Correlator, exclusively. The commander consumes the correlator's typed output through its `correlation` input, never raw registry rows, and holds telemetry only. |
+| Who owns the change registry | Resolved: the Change Correlator, exclusively. The commander consumes the correlator's typed output through its `correlation` input, never raw registry rows, and declares no evidence surface at all. Its only surface is `host` actuation, bound by `mitigate` so the sandbox has something to block. |
 | Comms boundary against the commander's `brief` | Open. Blocks the Comms spec, nothing earlier. `brief` already renders the board for bridge, incident manager and executive audiences; either it narrows to investigation-internal audiences, or Comms owns external stakeholders only. Leaning: Comms owns outward stakeholder updates (business impact, expectations, no board detail), `brief` keeps the three internal audiences. |
 
 ---

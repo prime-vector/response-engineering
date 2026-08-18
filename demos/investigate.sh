@@ -126,7 +126,9 @@ PY
 
 act2() {
   echo "== Act two: the bridge. Correlation first, then the board =="
-  start_adapter telemetry 8422
+  # Only the correlator's surface. The commander binds no tools: it works from
+  # the view it is handed and the typed outputs composed into it, so an adapter
+  # on 8422 here would only be a surface it is not permitted to reach.
   start_adapter change_registry 8423
   local cor
   cor=$(oa run --spec .agents/change-correlator.yaml --task correlate \

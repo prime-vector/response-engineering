@@ -57,20 +57,6 @@ tools:
       interfaces/TELEMETRY.md. Mock adapter at mock/adapter.py.
     timeout: 30
 
-sandbox:
-  # The allow list names individual MCP tools, not the provider alias.
-  # Sink tools only: every one produces a draft or an append, none submits.
-  tools:
-    allow: [record_create, record_update, change_draft]
-  http:
-    # Constrains only the runner's generic http.* tools, which no task here
-    # binds; MCP calls are gated by the tool allow list above. The runner
-    # matches hostnames with the port stripped, so this cannot pin ports:
-    # a second fence, not a boundary.
-    allow_domains: [localhost]
-  file:
-    allow_paths: ["./fixtures/"]
-
 tasks:
 
   timeline:
@@ -106,6 +92,23 @@ tasks:
     timeout: 300
     # Tool binding is per task. Without this list the runner attaches nothing.
     tools: [incident_record]
+    # Task-level rather than root-level: the runner merges a root sandbox into
+    # every task, each of tools, http and file replacing the root key of the
+    # same name wholesale, so a root boundary is one a future task inherits
+    # without declaring it. Duplicated onto draft_change_record rather than
+    # rooted, for that reason. Sink tools only: every one produces a draft or
+    # an append, none submits.
+    sandbox:
+      tools:
+        allow: [record_create, record_update, change_draft]
+      http:
+        # Constrains only the runner's generic http.* tools, which this task
+        # does not bind; MCP calls are gated by the tool allow list above. The
+        # runner matches hostnames with the port stripped, so this cannot pin
+        # ports: a second fence, not a boundary.
+        allow_domains: [localhost]
+      file:
+        allow_paths: ["./fixtures/"]
     input:
       type: object
       properties:
@@ -281,6 +284,17 @@ tasks:
       it silently reverts. Submission is a human action, always.
     timeout: 120
     tools: [incident_record]
+    # Declared here as well as on timeline rather than at spec root: a root
+    # sandbox is a boundary a future task inherits without declaring it, and
+    # the duplication is what keeps each task's boundary readable beside its
+    # binding. Sink tools only, none of which submits.
+    sandbox:
+      tools:
+        allow: [record_create, record_update, change_draft]
+      http:
+        allow_domains: [localhost]
+      file:
+        allow_paths: ["./fixtures/"]
     input:
       type: object
       properties:

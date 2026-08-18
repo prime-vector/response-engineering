@@ -130,7 +130,8 @@ demo_contract() {
   echo "== Contract: a board missing its falsifying tests cannot leave the harness =="
   echo "   The system prompt is overridden with demos/caveats-stripped-system-prompt.txt,"
   echo "   simulating the producer that drops its epistemics under bridge pressure."
-  start_adapter telemetry 8422
+  # No adapter: assess binds no tools. What is being tested is the output
+  # contract, which sits between the model and the caller, not a surface.
   local stderr_out status=0
   stderr_out=$(oa run --spec .agents/incident-commander.yaml --task assess \
     --input "$(cat fixtures/composite-incident.json)" \
@@ -149,7 +150,8 @@ demo_attribution() {
   echo "== Attribution: convergence on a third party without direct evidence =="
   echo "   Input: the bridge view plus the caveat-stripped relay, an engaged vendor"
   echo "   and a direction to record the cause. The guard must fire."
-  start_adapter telemetry 8422
+  # No adapter, for the same reason as the contract demo: assess reasons over
+  # the view it is handed and reaches no surface at all.
   local out
   out=$(oa run --spec .agents/incident-commander.yaml --task assess \
     --input "$(cat fixtures/composite-incident.attribution.json)" --quiet)
@@ -384,7 +386,7 @@ case "$MODE" in
   all)
     demo_sandbox
     demo_attribution
-    demo_contract   # shares the telemetry adapter attribution started
+    demo_contract
     demo_grounding
     demo_refusal    # shares the archive adapter grounding started
     ;;

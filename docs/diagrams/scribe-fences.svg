@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 248" width="960" height="248" role="img" aria-label="The Scribe's draft change record passes its own output contract, then the sink's refusal of incomplete drafts, and reaches the incident record sink. Beyond the sink, a submit, approve or close call does not exist at all rather than being blocked.">
+  <title>The Scribe's draft change record passes its own output contract, then the sink's refusal of incomplete drafts, and reaches the incident record sink. Beyond the sink, a submit, approve or close call does not exist at all rather than being blocked.</title>
+  <style>
+    text{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;fill:#131A1C}
+    .t{font-size:11px}
+    .t-b{font-size:11px;font-weight:600}
+    .t-s{font-size:9.5px;fill:#6E7D7C}
+    .t-e{font-size:9.5px;letter-spacing:.14em;fill:#6E7D7C}
+    .t-n{font-size:13px;font-weight:600}
+    .t-a{fill:#186B66}
+    .t-h{fill:#A9491A}
+    .box{fill:#FFFFFF;stroke:#C9D4D3;stroke-width:1.4}
+    .box-a{fill:#DDECEA;stroke:#186B66;stroke-width:1.4}
+    .box-h{fill:#F6E4D9;stroke:#A9491A;stroke-width:1.4}
+    .box-g{fill:none;stroke:#C9D4D3;stroke-width:1.4;stroke-dasharray:4 4}
+    .band{fill:#E6ECEB}
+    .panel{fill:none;stroke:#C9D4D3;stroke-width:1.4}
+    .ln{stroke:#6E7D7C;stroke-width:1.4;fill:none}
+    .ln-a{stroke:#186B66;stroke-width:1.6;fill:none}
+    .ln-h{stroke:#A9491A;stroke-width:1.6;fill:none}
+    .ln-r{stroke:#C9D4D3;stroke-width:1.4;fill:none}
+    .dash{stroke-dasharray:4 4}
+    .mk{fill:#6E7D7C}
+    .mk-a{fill:#186B66}
+    .mk-h{fill:#A9491A}
+    .faint{opacity:.42}
+  </style>
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="mk"/></marker>
+    <marker id="ar-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="mk-a"/></marker>
+    <marker id="ar-h" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="mk-h"/></marker>
+  </defs>
+  <rect width="960" height="248" fill="#F7F9F9"/>
+
+
+        <text class="t-e" x="246" y="34" text-anchor="middle">FENCE ONE: OUTPUT CONTRACT</text>
+        <text class="t-e" x="534" y="34" text-anchor="middle">FENCE TWO: THE SINK REFUSES</text>
+
+        <rect class="box" x="24" y="56" width="196" height="124" rx="3"/>
+        <text class="t-b" x="38" y="80">Scribe</text>
+        <text class="t-s" x="38" y="98">draft_change_record</text>
+        <text class="t-s" x="38" y="120">documents the change</text>
+        <text class="t-s" x="38" y="134">the sandbox blocked,</text>
+        <text class="t-s" x="38" y="148">so the refusal itself</text>
+        <text class="t-s" x="38" y="162">leaves a record</text>
+
+        <line class="ln-a" x1="220" y1="118" x2="240" y2="118" marker-end="url(#ar-a)"/>
+        <line class="ln-a dash" x1="246" y1="46" x2="246" y2="196"/>
+        <line class="ln-a" x1="252" y1="118" x2="266" y2="118" marker-end="url(#ar-a)"/>
+
+        <rect class="box" x="272" y="56" width="236" height="124" rx="3"/>
+        <text class="t-b" x="286" y="78">seven required fields</text>
+        <text class="t-s" x="286" y="96">summary</text>
+        <text class="t-s" x="286" y="108">risk</text>
+        <text class="t-s" x="286" y="120">blast_radius</text>
+        <text class="t-s" x="286" y="132">implementation_plan</text>
+        <text class="t-s" x="286" y="144">backout_plan</text>
+        <text class="t-s" x="286" y="156">validation_plan</text>
+        <text class="t-s" x="286" y="168">authorisation_required</text>
+
+        <line class="ln-a" x1="508" y1="118" x2="528" y2="118" marker-end="url(#ar-a)"/>
+        <line class="ln-a dash" x1="534" y1="46" x2="534" y2="196"/>
+        <line class="ln-a" x1="540" y1="118" x2="554" y2="118" marker-end="url(#ar-a)"/>
+
+        <rect class="box-a" x="560" y="56" width="196" height="124" rx="3"/>
+        <text class="t-b" x="574" y="80">incident_record  8425</text>
+        <text class="t-s" x="574" y="98">record.create</text>
+        <text class="t-s" x="574" y="110">record.update</text>
+        <text class="t-s" x="574" y="122">change.draft</text>
+        <text class="t-s" x="574" y="144">returns draft_ref</text>
+        <text class="t-s" x="574" y="158">submitted: false</text>
+
+        <line class="ln-h" x1="772" y1="108" x2="788" y2="128"/>
+        <line class="ln-h" x1="788" y1="108" x2="772" y2="128"/>
+
+        <rect class="box-g" x="800" y="56" width="136" height="124" rx="3"/>
+        <text class="t-b t-h" x="814" y="80">submit</text>
+        <text class="t-b t-h" x="814" y="98">approve</text>
+        <text class="t-b t-h" x="814" y="116">close</text>
+        <text class="t-s" x="814" y="142">no such call</text>
+        <text class="t-s" x="814" y="156">exists. absent,</text>
+        <text class="t-s" x="814" y="170">not blocked.</text>
+
+        <text class="t-s" x="24" y="222">an incomplete draft is refused at both fences, and a vendor adapter carries the same refusals at its own layer. defence in depth is the design, not redundancy.</text>
+
+      </svg>
