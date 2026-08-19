@@ -243,7 +243,8 @@ The chunkers differ on both, in different places. At the budget it is 38/60
 against 36/60. On the ranking they are identical at k = 1, 3, 5 and 8, and
 differ at k = 2, where heading-aware reaches 25 of 60 pairs against fixed's 24:
 `b03`'s `INC-2446` is rank 2 under heading-aware and rank 3 under fixed, and
-the baseline's grid steps over the gap that lives in.
+the baseline's grid steps over the gap that lives in. Every one of those
+figures is measured by `results/chunker-comparison.md`, which CI diffs.
 
 This file said the ranking was **chunker-blind**, flatly, and that was wrong.
 Two failures produced it, and both are worth naming because neither was a
@@ -263,6 +264,15 @@ where they part rather than taking a grid, and writes
 `results/chunker-comparison.md` with its own `--check` in CI. Grok found the
 first in review of PR #16; the k = 2 figure was measured rather than argued
 about.
+
+The cross-check scores both indexes **at the passage budget too**, and that was
+a second round of the same mistake. The first fix measured the ranking across
+both indexes and left the budget comparison where it had always been: `38/60
+against 36/60` typed into three documents, with only the `38/60` half inside a
+checked artefact, because `latest.md` is the baseline index alone. Sol found it
+at the pre-merge gate. A cross-index claim needs a cross-index measurement
+whichever metric it is about, and fixing that for one metric while leaving the
+metric it is contrasted with unchecked is the fix stopping one line short.
 
 For Phase 5 the consequence is that both numbers get reported. Either alone
 answers a question it was not asked.

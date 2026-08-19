@@ -298,6 +298,9 @@ the generated baseline table where `--check` regenerated it identically whatever
 other index did. `--cross-check` scores both indexes at every k from 1 to the deepest
 rank any relevant document reaches, finds the k values where they part rather than
 taking a grid, and writes `evals/results/chunker-comparison.md`, which CI diffs.
+It scores both indexes at the passage budget as well: `latest.md` holds that figure
+for the baseline index only, so the other half of `38/60 against 36/60` was prose
+no check could falsify until the cross-check measured it.
 
 ---
 

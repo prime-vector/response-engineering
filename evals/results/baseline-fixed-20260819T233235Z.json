@@ -1,5 +1,5 @@
 {
-  "recorded_at": "2026-08-19T23:24:11Z",
+  "recorded_at": "2026-08-19T23:32:35Z",
   "label": "baseline-fixed",
   "mode": "retrieval",
   "index": "corpus/index.fixed.json",
@@ -295,8 +295,8 @@
   },
   "latency_ms": {
     "calls": 50,
-    "p50": 1.87,
-    "p95": 2.49,
+    "p50": 1.49,
+    "p95": 2.04,
     "note": "the mock surface over loopback JSON-RPC, and a mixture of two probes per case at two different passage limits. It measures this repo's fixture retriever, not a vector store, and is not a latency claim about anything deployable."
   },
   "not_measured": {

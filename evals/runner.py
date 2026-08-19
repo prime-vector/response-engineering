@@ -490,10 +490,11 @@ def markdown(result):
         "`precedent_hit_rate@limit` counts what survives inside the **passage "
         "budget the agent is actually run at**, where chunk size decides how "
         "many distinct documents fit. The first is a property of the ranking, "
-        "the second of the ranking and the chunker together. Which of them "
-        "separates two chunkers, and at which k, is measured in "
-        "`chunker-comparison.md` beside this file: a single-index run cannot "
-        "see it, so this table does not claim it.",
+        "the second of the ranking and the chunker together. How two chunkers "
+        "differ on either, and at which k, is measured in "
+        "`chunker-comparison.md` beside this file, which scores both indexes "
+        "on both. A single-index run cannot see any of that, so this table "
+        "does not claim it: the budget figure below is this index alone.",
         "",
         f"**At the run limit of {result['at_run_limit']['limit']} passages: "
         f"{pct(result['at_run_limit']['precedent_hit_rate'])} "
@@ -631,7 +632,7 @@ def cross_check(config):
         cases = yaml.safe_load(handle)["cases"]
     scored_cases = [c for c in cases if c["expect"].get("relevant")]
 
-    ranks = {}
+    ranks, budget = {}, {}
     for entry in config["cross_check"]:
         with open(entry["index"]) as handle:
             index = json.load(handle)
@@ -641,7 +642,7 @@ def cross_check(config):
                 f"{entry['index']} was built with {index.get('chunker')}")
         proc = start_adapter(entry["index"], config["port"])
         try:
-            found = {}
+            found, hits = {}, 0
             for case in scored_cases:
                 result, _ = probe(config["port"], case, RANK_LIMIT)
                 position = {uri: i + 1 for i, uri in
@@ -649,7 +650,19 @@ def cross_check(config):
                                                        or []))}
                 for uri in case["expect"]["relevant"]:
                     found[f"{case['id']}|{uri}"] = position.get(uri)
+
+                # The other half of the comparison, and the half that was
+                # hand-maintained in three documents. latest.md measures the
+                # passage budget for the baseline index only, so the other
+                # index's figure lived in prose that no check could falsify:
+                # the same defect as a ranking claim in a single-index table,
+                # in the measurement that claim was contrasted against.
+                budgeted, _ = probe(config["port"], case, config["run_limit"])
+                at_limit = set(ranked_documents(budgeted.get("passages") or []))
+                hits += sum(1 for uri in case["expect"]["relevant"]
+                            if uri in at_limit)
             ranks[entry["label"]] = found
+            budget[entry["label"]] = hits
         finally:
             proc.terminate()
             proc.wait(timeout=5)
@@ -677,6 +690,7 @@ def cross_check(config):
 
     return {"labels": labels, "pairs": len(pairs), "depth": depth,
             "moved": moved, "curve": curve, "disagree_at": disagree,
+            "at_run_limit": {"limit": config["run_limit"], "hits": budget},
             "dataset_fingerprint": dataset_fingerprint(DATASET),
             "corpus_fingerprint": fingerprint(load_corpus())}
 
@@ -722,7 +736,27 @@ def cross_markdown(result):
     else:
         lines.append("| _none_ | | | |")
 
+    limit = result["at_run_limit"]
+    ha, hb = limit["hits"][a], limit["hits"][b]
     lines += [
+        "",
+        f"## At the passage budget of {limit['limit']}",
+        "",
+        f"| index | relevant documents reached |",
+        "| --- | --- |",
+        f"| {a} | {ha}/{result['pairs']} |",
+        f"| {b} | {hb}/{result['pairs']} |",
+        "",
+        ("The two differ here as well as in the ranking, and the difference is "
+         "not the same one: the budget is where chunk size decides how many "
+         "distinct documents fit in a fixed number of passages."
+         if ha != hb else
+         "The two do not differ here, so the budget separates them no more "
+         "than the ranking does."),
+        "",
+        "Both figures are measured by this file. `latest.md` reports the "
+        "budget for the baseline index only, so quoting the other one from it "
+        "would be quoting something it does not contain.",
         "",
         "## Hits at every k",
         "",
@@ -889,9 +923,13 @@ def main():
             handle.write(table)
         where = (f"k = {', '.join(str(k) for k in result['disagree_at'])}"
                  if result["disagree_at"] else "no k")
-        print(f"{result['labels'][0]} against {result['labels'][1]}: "
-              f"{len(result['moved'])} of {result['pairs']} pairs moved rank, "
-              f"hits differ at {where}")
+        la, lb = result["labels"]
+        hits = result["at_run_limit"]["hits"]
+        print(f"{la} against {lb}: {len(result['moved'])} of "
+              f"{result['pairs']} pairs moved rank, hits differ at {where}")
+        print(f"  at the passage budget of "
+              f"{result['at_run_limit']['limit']}: {hits[la]}/"
+              f"{result['pairs']} against {hits[lb]}/{result['pairs']}")
         print(f"wrote {path}")
         return 0
 

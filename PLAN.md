@@ -180,15 +180,23 @@ of them, so Phase 5 has to report both the ranking and the budget rather than
 either alone. And a claim about two indexes cannot live in a table generated from
 one: `evals/results/chunker-comparison.md` scores both at every k from 1 to the
 deepest rank any relevant document reaches, the k values are found rather than
-chosen, and CI regenerates and diffs it.
+chosen, and CI regenerates and diffs it. It scores both indexes at the passage
+budget as well, which took a second pass to get right: the first fix moved the
+ranking comparison into a checked artefact and left `38/60 against 36/60` typed
+into three documents, with only the `38/60` half inside anything CI could
+falsify, because `latest.md` is the baseline index alone. Sol found that at the
+gate. Fixing a cross-index claim for one metric and leaving the metric it is
+contrasted with unchecked is the fix stopping one line short.
 
-The table is generated and CI checks it, so it carries no timestamp and no
-latency figure: it is a function of the dataset, the corpus and the config, and
-nothing else. The runner refuses to record a baseline when the corpus has moved
-off the dataset's pin or when the config's chunker disagrees with the index it
-names, and `--compare` refuses two runs measured against different corpora,
-because that delta would be the documents changing rather than retrieval
-improving.
+The tables are generated and CI checks them, so they carry no timestamp and no
+latency figure: they are a function of the dataset, the corpus and the config,
+and nothing else. The runner refuses to record a baseline when the corpus has
+moved off the dataset's pin, when the config's chunker disagrees with the index
+it names, or when something is already answering on the port it was told to use,
+and it proves the adapter it started is serving the index asked for by resolving
+a passage id from it. `--compare` refuses two runs that differ in corpus, ground
+truth, relevance floor, passage budget or k list, because each of those deltas
+is that input moving rather than retrieval improving.
 
 Judgement mode is designed and not written. `false_precedent_rate`,
 `no_precedent_accuracy`, `false_refusal_rate` and `divergence_quality` each need

@@ -12,6 +12,17 @@ Both indexes scored against the same 60 (case, document) pairs, at every k from 
 | --- | --- | --- | --- |
 | `b03` | incidents/INC-2446 | 3 | 2 |
 
+## At the passage budget of 8
+
+| index | relevant documents reached |
+| --- | --- |
+| fixed | 38/60 |
+| heading-aware | 36/60 |
+
+The two differ here as well as in the ranking, and the difference is not the same one: the budget is where chunk size decides how many distinct documents fit in a fixed number of passages.
+
+Both figures are measured by this file. `latest.md` reports the budget for the baseline index only, so quoting the other one from it would be quoting something it does not contain.
+
 ## Hits at every k
 
 | k | fixed | heading-aware |
