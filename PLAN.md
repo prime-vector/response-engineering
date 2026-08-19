@@ -20,13 +20,13 @@ It is a demonstration, not a platform. Success is a four minute video and a repo
 - [x] Precedent copy read for cause creep
 
 ### M2: Specs written
-**Done when:** all five specs validate against OAS 1.6.0 and the role boundaries hold without overlap.
+**Done when:** the five specs below validate against OAS 1.6.0 and the role boundaries hold without overlap. The Precedent Analyst is a sixth, tracked in M6.
 
 - [x] Incident Commander, holds the hypothesis board
 - [x] Telemetry Analyst, consumes the problem feed and detects recurrence
 - [x] Change Correlator, correlates change and package history against onset
 - [x] Scribe, produces the timeline and the draft change record
-- [ ] Comms, produces the stakeholder update
+- [x] Comms, produces the stakeholder update. Owns outward audiences only and is never given the board: no evidence, no hypotheses, no correlation, no precedent, and no dedicated cause field in the output. A narrowing rather than a fence, because prose still travels.
 
 Cost Guardrail is deliberately excluded. It does not fit this scenario and forcing it in would weaken the demo.
 
@@ -37,6 +37,7 @@ Cost Guardrail is deliberately excluded. It does not fit this scenario and forci
 - [x] Mock MCP adapter serving the `change_registry` surface on 8423
 - [x] `depends_on` chain wired commander to brief
 - [x] Pipeline driver composing the acts as dataflow: correlator output into the commander's `correlation` input, the live board into the Scribe's timeline (`demos/investigate.sh`)
+- [ ] `brief` has no prompt of its own. It inherits the root pair, which is written for `assess`: `{{ audience }}` is never substituted, the nine other placeholders are not inputs on this task so they reach the model as literal template text, and the prompt asks for `assess`'s output shape rather than `brief`'s. The task has never been run, which is why nobody noticed. Found while resolving the Comms boundary.
 - [ ] Deterministic enough to record without retakes
 
 ### M4: Governance visible
@@ -195,7 +196,7 @@ Three acts, four minutes, in this order:
 | Whether act one is a separate invocation or the first turn of the pipeline | Resolved during M3: a separate invocation of the Telemetry Analyst against the D+1 view. |
 | Whether the mock adapter becomes its own package | The mock exists in-repo. Repackage only if a second consumer appears. |
 | Who owns the change registry | Resolved: the Change Correlator, exclusively. The commander consumes the correlator's typed output through its `correlation` input, never raw registry rows, and declares no evidence surface at all. Its only surface is `host` actuation, bound by `mitigate` so the sandbox has something to block. |
-| Comms boundary against the commander's `brief` | Open. Blocks the Comms spec, nothing earlier. `brief` already renders the board for bridge, incident manager and executive audiences; either it narrows to investigation-internal audiences, or Comms owns external stakeholders only. Leaning: Comms owns outward stakeholder updates (business impact, expectations, no board detail), `brief` keeps the three internal audiences. |
+| Comms boundary against the commander's `brief` | Resolved 19 Aug 2026. Comms owns outward stakeholder updates; `brief` keeps its three internal audiences, now a real enum: `bridge`, `incident_manager`, `executive_sponsor`. Pulling that thread found `brief` has no prompt of its own and inherits one written for `assess`, so the audience never reaches the model and nine placeholders arrive as literal text. Tracked as its own item under M3, not fixed here. The line is what the output is derived from rather than who reads it: `brief` renders the hypothesis board, Comms renders impact and never sees the board. An unconfirmed hypothesis reaching people who cannot weigh it, in writing, is the failure this project criticises. Be exact about how much the schema buys: the board is structurally absent, and there is no dedicated cause field in the output, which is a real narrowing. It is not a fence. `impact` and `work_in_progress` carry prose, so a caller who writes a suspicion into an impact line has put one in front of the agent. Same class of control as the attribution guard, not a peer of the sandbox. |
 
 ---
 

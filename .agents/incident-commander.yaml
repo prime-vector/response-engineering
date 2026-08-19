@@ -354,8 +354,33 @@ tasks:
       properties:
         audience:
           type: string
-          description: One of - bridge, incident_manager, executive
-          default: bridge
+          description: >
+            Who the board is being rendered for. All three are inside the
+            response and all three get the epistemics. Outward stakeholder
+            updates are a different artefact and belong to the Comms agent,
+            which is not given the board at all.
+
+            The value does not currently reach the model. This task has no
+            prompts of its own, so it inherits the root pair, which is written
+            for assess: it never substitutes {{ audience }}, it asks for
+            assess's output shape rather than this one, and its nine other
+            placeholders are not inputs here, so they arrive as literal
+            template text. brief has never been run and this is why. Do not
+            describe the audience as changing anything until the task has a
+            prompt that reads it. Tracked separately.
+
+            executive_sponsor, not executive: the senior person accountable
+            for this incident, on the call. The shorter word reads as the
+            person who talks to customers, which is precisely the audience
+            this task must not be used for.
+          # An enum rather than a sentence. This was three values listed in a
+          # description on a free string, which constrains nothing: a caller
+          # could pass "customer" and the contract would accept it, on the
+          # one task whose whole job is rendering unconfirmed hypotheses.
+          enum: [bridge, incident_manager, executive_sponsor]
+      # No default. The runner does not apply input schema defaults, so one
+      # here is a comment that reads as behaviour, and the field is required
+      # in any case.
       required: [audience]
     output:
       type: object

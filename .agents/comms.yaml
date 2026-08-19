@@ -1,0 +1,355 @@
+# Comms
+#
+# The sixth agent. Produces the update that goes to people outside the
+# investigation: what is affected, what is being done, when they will hear
+# next.
+#
+# The boundary against the commander's brief is not seniority, it is what the
+# output is derived from. brief renders the hypothesis board for the bridge,
+# the incident manager and the executive sponsor, all of whom are inside the
+# response and need the epistemics. This agent renders impact, and it never
+# sees the board.
+#
+# That matters because an unconfirmed hypothesis reaching people who cannot
+# weigh it, in writing, is the failure this project criticises.
+#
+# Be precise about how much of that the schema buys, because the first draft of
+# this comment was not. There is no board input, no evidence, no hypotheses, no
+# correlation and no precedent, and no dedicated cause field in the output.
+# That is a real narrowing and it is where the design work is.
+#
+# It is not a fence. impact and work_in_progress carry prose, and prose can
+# carry a cause: an item reading "the compliance agent is consuming memory"
+# fits the schema. Their item schemas name their fields and forbid others, so
+# a hypothesis has no field of its own to travel in, but nothing here inspects
+# what a caller writes inside one.
+#
+# So: the board is structurally absent, and keeping a suspicion out of an
+# impact line is the model's judgement and the caller's discipline. This is the
+# same class of control as the attribution guard, not a peer of the sandbox.
+# Say it that way.
+#
+#   oa validate --spec .agents/comms.yaml
+#
+open_agent_spec: "1.6.0"
+
+agent:
+  name: comms
+  description: >
+    Produces stakeholder updates for audiences outside the investigation.
+    Reports impact, what is being done and when the next update is due. It is
+    given no board, so it has no cause to report; keeping one out of the prose
+    it is handed is the prompt's job rather than the schema's.
+  # 1.5.x enum value, still well-known under 1.6.0's free-form role. This
+  # agent produces an artefact from typed inputs, the same shape as the
+  # Scribe. It investigates nothing and decides nothing.
+  role: executor
+
+intelligence:
+  type: llm
+  engine: anthropic
+  # Explicit because the runner's fallback endpoint is OpenAI's even for the
+  # anthropic engine, which turns into a bodyless 404 at run time.
+  endpoint: https://api.anthropic.com/v1
+  model: claude-sonnet-4-6
+  config:
+    temperature: 0.2
+    # A stakeholder update is a few hundred tokens, so this is roughly five
+    # times what the output needs. Headroom rather than sizing: the runner
+    # fails open on a truncated JSON output by skipping schema and contract
+    # validation and exiting 0, so an undersized budget does not produce a
+    # short update, it produces an unvalidated one.
+    max_tokens: 4000
+    # Provider HTTP read timeout, matching the other specs.
+    timeout: 300
+
+# No tools, and no evidence surface. This agent owns nothing and queries
+# nothing: an update assembled from live signals is an update that can outrun
+# what the investigation has actually established.
+
+tasks:
+
+  update:
+    # Task-level rather than root-level: the runner merges a root contract
+    # into every task with arrays unioned, so a root contract would bind any
+    # future task on this spec to this task's required fields.
+    behavioural_contract:
+      version: "1.0"
+      description: >
+        Enforces that the state of the investigation is stated rather than
+        left to be inferred from its absence: cause_status is required, and an
+        update omitting it reads as though the cause is known and merely
+        unstated.
+
+        What this cannot enforce, and must not be read as enforcing: that the
+        prose is clean. headline and impact_statement are free strings, so an
+        update can say "not established" and name a product in the same
+        breath. A required-fields list cannot reach inside a string. That rule
+        lives in the prompt and it is the model's judgement.
+      role: "Incident communications"
+      behavioural_flags:
+        conservatism: "high"
+        verbosity: "concise"
+        temperature_control:
+          mode: "strict"
+          range: [0.0, 0.3]
+      response_contract:
+        output_format:
+          required_fields:
+            - headline
+            - impact_statement
+            - what_is_being_done
+            - cause_status
+            - next_update_at
+    description: >
+      Write the stakeholder update for the given audience from the impact
+      and the work in progress. Report what is affected and what is being
+      done about it. Do not report why: this task is not given a cause and
+      may not supply one.
+    timeout: 60
+    # No tool binding, and an explicit empty allow list rather than none: a
+    # task without a sandbox is allow-all, so the boundary is declared on the
+    # task that has nothing to bind for the same reason it is declared on the
+    # ones that do.
+    sandbox:
+      tools:
+        allow: []
+      http:
+        allow_domains: [localhost]
+      file:
+        allow_paths: ["./fixtures/"]
+    input:
+      type: object
+      properties:
+        as_of:
+          type: string
+          description: >
+            The moment this update speaks for. Nothing after this timestamp
+            has happened yet, however likely it looks.
+          minLength: 1
+        audience:
+          type: string
+          description: >
+            Who is being written to. All three are outside the investigation.
+            customer sees service impact, partner sees integration impact,
+            business_stakeholder sees operational impact. None of them
+            receives board detail, and the audience changes the framing
+            rather than the disclosure.
+          enum: [customer, partner, business_stakeholder]
+        impact:
+          type: array
+          description: >
+            What is affected and what people are actually seeing, in
+            observable terms. Not symptoms of the host, symptoms of the
+            service. An empty list is a valid input and means impact has not
+            been characterised yet, which the update has to say.
+          items:
+            type: object
+            properties:
+              description:
+                type: string
+                description: What is affected and what people are seeing.
+              since:
+                type: string
+                description: When it started, if known.
+            required: [description]
+            # Named fields and nothing else, so a hypothesis has no field of
+            # its own to arrive in. It does not stop one being written inside
+            # description, which is why the header says this narrows rather
+            # than fences.
+            additionalProperties: false
+        work_in_progress:
+          type: array
+          description: >
+            What the response is doing, described as activity rather than as
+            theory. "Collecting process-level attribution on the affected
+            host" is activity. "Investigating the compliance agent" names a
+            suspect and does not belong in an outward update.
+
+            An empty list is a valid input and means no activity has been
+            characterised yet, the same first-class state as an empty impact.
+            An early update that can only say "we know, and you will hear from
+            us at four" is a real update.
+          items:
+            type: object
+            properties:
+              activity:
+                type: string
+                description: The work under way, described without its theory.
+              started:
+                type: string
+                description: When it began, if known.
+            required: [activity]
+            additionalProperties: false
+        next_update_due:
+          type: string
+          description: >
+            When the next update will be issued. Required because an update
+            with no next commitment is the one that produces the chasing
+            emails this agent exists to prevent.
+          minLength: 1
+      # All five are required because the runner substitutes {{ placeholders }}
+      # only from keys present in the input. A missing key reaches the model
+      # as literal template text and the run degrades silently, and input
+      # schema defaults are not applied. Callers pass [] explicitly.
+      #
+      # What is deliberately absent is the point of this agent: no evidence,
+      # no hypotheses, no correlation, no precedent, no board. There is no
+      # field through which a hypothesis arrives. There is still prose, and a
+      # caller who writes a suspicion into an impact description has put one
+      # in front of this agent. See the header: a narrowing, not a fence.
+      required: [as_of, audience, impact, work_in_progress, next_update_due]
+    output:
+      type: object
+      properties:
+        headline:
+          type: string
+          description: >
+            One sentence a reader can act on. States impact, not activity and
+            not reassurance.
+          maxLength: 200
+        impact_statement:
+          type: string
+          description: >
+            What is affected and what the reader will notice, in their terms.
+            Where impact is empty, say that it is still being characterised
+            rather than implying there is none.
+          maxLength: 600
+        what_is_being_done:
+          type: array
+          description: >
+            Activity, not theory. Each entry describes work under way without
+            naming what it suspects.
+
+            Empty when work_in_progress is empty. This carried minItems 1
+            while the input treated an empty list as valid, which left the
+            model no way to be accurate about an update issued before any
+            activity had been characterised: it had to invent a line of work
+            to satisfy the schema, which is the opposite of the rule that says
+            report what is true.
+          items:
+            type: string
+        cause_status:
+          type: string
+          description: >
+            Required, and the anti-flattening rule for an outward update. An
+            update that omits this reads as though the cause is known and
+            merely unstated, which is how a suspicion becomes a fact by
+            travelling. There is no value here that asserts a cause, because
+            this agent is never given one and could not support it.
+
+            It stops the caveat being dropped. It does not stop it being
+            contradicted: headline and impact_statement are free strings, and
+            "not established" beside a headline naming a product is a
+            schema-valid output. That one is the prompt's job.
+          enum: [not established, under investigation]
+        next_update_at:
+          type: string
+          description: >
+            When the next update will be issued, from next_update_due. A
+            commitment, not an estimate.
+          minLength: 1
+        caveats:
+          type: array
+          description: >
+            What this update does not cover, where that matters to the
+            reader. Optional: an update with nothing to caveat should not
+            invent one.
+          items:
+            type: string
+      required:
+        - headline
+        - impact_statement
+        - what_is_being_done
+        - cause_status
+        - next_update_at
+
+prompts:
+  system: |
+    You write incident updates for people outside the investigation. You
+    answer three questions: what is affected, what is being done, and when
+    they will hear from us next.
+
+    You do not answer why. You are not given a cause, and you may not supply
+    one. This is the whole reason this role is separate from the briefing
+    that goes to the bridge.
+
+    Your operating rules, in priority order:
+
+    1. Never state or imply a cause. You have not been given evidence,
+       hypotheses or a hypothesis board, and that is deliberate. If you find
+       yourself with an explanation, it came from your own background
+       knowledge about the products involved, which is exactly the claim that
+       must not reach an outward audience. cause_status carries what is true:
+       the cause is not established.
+
+    2. Never name a third party, vendor or product. Not as a cause, not as a
+       suspicion, not as a line of enquiry, not to say one has been ruled
+       out. A named party in an outward update is a public accusation whoever
+       reads it cannot weigh, and the reader has no way to know how little it
+       rests on. Describe work as activity: "collecting host-level
+       diagnostics", never "investigating the compliance agent".
+
+    3. Report impact in the reader's terms. What they can see, what they
+       cannot do, which of their things are affected. Host names, signature
+       types, process names and internal ticket references mean nothing to
+       them and invite questions you cannot answer. If impact is empty, say
+       impact is still being characterised. Do not write that there is none.
+
+    4. Activity, not theory. Everything in what_is_being_done describes work
+       under way. A line that names what the work suspects has smuggled the
+       board into an outward update.
+
+       Where work_in_progress is empty, what_is_being_done is empty and
+       impact_statement says the work under way has not been characterised
+       yet. Do not invent activity to fill it. "We are treating this with
+       urgency" is not activity, and a reader can tell.
+
+    5. Commit to the next update. next_update_at is when they will hear from
+       you again, taken from next_update_due. An update that does not say
+       when the next one comes generates the chasing it exists to prevent.
+
+    6. Do not reassure. "We apologise for any inconvenience" and "we are
+       working hard to resolve this" carry no information and buy no
+       credibility. Say what is true, say what is being done, say when the
+       next update comes, and stop. Confidence a reader cannot check is
+       worth nothing to them.
+
+    7. Say what you do not cover. Where the reader would reasonably expect
+       something this update cannot address, put it in caveats. Do not invent
+       a caveat when there is nothing to say.
+
+    Your entire reply must be a single JSON object with exactly these
+    top-level keys: headline, impact_statement, what_is_being_done,
+    cause_status, next_update_at, and optionally caveats. No markdown fences,
+    no preamble, no text after the closing brace. Bare JSON numbers never
+    contain digit grouping; formatted figures belong inside strings.
+
+    cause_status is exactly one of: not established, under investigation.
+    what_is_being_done is an array of plain strings, and is [] when no
+    activity has been characterised. Never emit null, [] or {} for a string
+    field: omit optional fields you cannot fill.
+
+  user: |
+    Update as of: {{ as_of }}
+
+    Audience: {{ audience }}
+
+    Impact observed:
+    {{ impact }}
+
+    Work in progress:
+    {{ work_in_progress }}
+
+    Next update due: {{ next_update_due }}
+
+    Write the stakeholder update for this audience. Report impact and
+    activity. Do not report cause, and do not name any third party. Reply
+    with the JSON object only: the first character of your reply is the
+    opening brace. Do your analysis silently.
+
+logging:
+  level: INFO
+  format: json
+  include_prompts: true
+  include_outputs: true
