@@ -354,8 +354,25 @@ tasks:
       properties:
         audience:
           type: string
-          description: One of - bridge, incident_manager, executive
-          default: bridge
+          description: >
+            Who the board is being rendered for. All three are inside the
+            response and all three get the epistemics: the audience changes
+            the depth, never the disclosure. Outward stakeholder updates are
+            a different artefact and belong to the Comms agent, which is not
+            given the board at all.
+
+            executive_sponsor, not executive: the senior person accountable
+            for this incident, on the call. The shorter word reads as the
+            person who talks to customers, which is precisely the audience
+            this task must not be used for.
+          # An enum rather than a sentence. This was three values listed in a
+          # description on a free string, which constrains nothing: a caller
+          # could pass "customer" and the contract would accept it, on the
+          # one task whose whole job is rendering unconfirmed hypotheses.
+          enum: [bridge, incident_manager, executive_sponsor]
+      # No default. The runner does not apply input schema defaults, so one
+      # here is a comment that reads as behaviour, and the field is required
+      # in any case.
       required: [audience]
     output:
       type: object
