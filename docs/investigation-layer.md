@@ -48,7 +48,7 @@ each validated in CI, each owning one narrow job and one surface. That
 decomposition is what makes the rest possible: a single agent holding every
 capability has no seam to put a contract on.
 
-Read the roster as five refusals as much as five capabilities. What each agent
+Read the roster as six refusals as much as six capabilities. What each agent
 will *not* do is the load-bearing half.
 
 | Agent | Surface | Task | Emits | Will not |
@@ -58,13 +58,13 @@ will *not* do is the load-bearing half.
 | **Precedent Analyst** | `precedent_archive` 8426 | `recall` | `no_applicable_precedent`, `search_coverage`, `precedents[]` with `grounded_in`, `divergence`, `applicability` | Return the nearest-looking match. No applicable precedent, with coverage populated, is a complete answer. |
 | **Incident Commander** | none | `assess`, `brief`, `mitigate` | `hypotheses[]` with `statement`, `confidence`, `supporting_evidence`, `contradicting_evidence`, `falsifying_test`, `rules_in`; `blocking_evidence`; `attribution_guard`; `convergence_allowed` | Converge while deciding evidence is outstanding. A hypothesis omitted from the board cannot be raised downstream. |
 | **Scribe** | `incident_record` 8425 | `timeline`, `draft_change_record` | `entries[]`, `gaps[]`, `blast_radius`, `backout_plan`, `validation_plan`, `cause_status`, `submitted: false` | Submit, approve or close. Everything it writes is a draft or an append, and the sink has no call that would let it do otherwise. |
-| **Comms** | none | `update` | `headline`, `impact_statement`, `what_is_being_done`, `cause_status`, `next_update_at` | State a cause, or name a third party at all. It is given no evidence, no hypotheses and no board, so it has no cause to state and nothing to leak. |
+| **Comms** | none | `update` | `headline`, `impact_statement`, `what_is_being_done`, `cause_status`, `next_update_at` | State a cause, or name a third party at all. It is given no evidence, no hypotheses and no board, so a hypothesis has no field to arrive in. Prose still travels: this narrows, it does not fence. |
 
 ### The confidence vocabulary
 
 `speculative` &rsaquo; `plausible` &rsaquo; `likely` &rsaquo; `supported` &rsaquo; `confirmed`
 
-Five words, fixed, and the same five everywhere in the system. Nothing reaches
+Five words, fixed, and the same five wherever a claim is carried. Comms is the exception and the exception is the point: it reports impact to people outside the response, carries no hypothesis, and states `cause_status` instead. Investigator epistemics in a customer update would be the wrong artefact. Nothing reaches
 **confirmed** without direct evidence in the evidence array. Inference is never
 confirmation, and a hypothesis with no falsifying test is an opinion that must
 be labelled as one.

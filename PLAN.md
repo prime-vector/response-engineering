@@ -26,7 +26,7 @@ It is a demonstration, not a platform. Success is a four minute video and a repo
 - [x] Telemetry Analyst, consumes the problem feed and detects recurrence
 - [x] Change Correlator, correlates change and package history against onset
 - [x] Scribe, produces the timeline and the draft change record
-- [x] Comms, produces the stakeholder update. Owns outward audiences only and is never given the board: no evidence, no hypotheses, no correlation, no precedent, and no output field a cause could go in.
+- [x] Comms, produces the stakeholder update. Owns outward audiences only and is never given the board: no evidence, no hypotheses, no correlation, no precedent, and no output field a cause could go in. A narrowing rather than a fence, because prose still travels.
 
 Cost Guardrail is deliberately excluded. It does not fit this scenario and forcing it in would weaken the demo.
 
@@ -195,7 +195,7 @@ Three acts, four minutes, in this order:
 | Whether act one is a separate invocation or the first turn of the pipeline | Resolved during M3: a separate invocation of the Telemetry Analyst against the D+1 view. |
 | Whether the mock adapter becomes its own package | The mock exists in-repo. Repackage only if a second consumer appears. |
 | Who owns the change registry | Resolved: the Change Correlator, exclusively. The commander consumes the correlator's typed output through its `correlation` input, never raw registry rows, and declares no evidence surface at all. Its only surface is `host` actuation, bound by `mitigate` so the sandbox has something to block. |
-| Comms boundary against the commander's `brief` | Resolved 19 Aug 2026. Comms owns outward stakeholder updates; `brief` keeps its three internal audiences, now `bridge`, `incident_manager` and `executive_sponsor`. The line is what the output is derived from rather than who reads it: `brief` renders the hypothesis board, Comms renders impact and never sees the board. That is a safety property, not tidiness. An unconfirmed hypothesis reaching people who cannot weigh it, in writing, is the failure this project criticises, and denying Comms the board makes it structurally impossible rather than prompt-dependent. |
+| Comms boundary against the commander's `brief` | Resolved 19 Aug 2026. Comms owns outward stakeholder updates; `brief` keeps its three internal audiences, now `bridge`, `incident_manager` and `executive_sponsor`. The line is what the output is derived from rather than who reads it: `brief` renders the hypothesis board, Comms renders impact and never sees the board. An unconfirmed hypothesis reaching people who cannot weigh it, in writing, is the failure this project criticises. Be exact about how much the schema buys: the board is structurally absent, and no output field a cause could go in, which is a real narrowing. It is not a fence. `impact` and `work_in_progress` carry prose, so a caller who writes a suspicion into an impact line has put one in front of the agent. Same class of control as the attribution guard, not a peer of the sandbox. |
 
 ---
 

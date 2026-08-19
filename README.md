@@ -34,7 +34,6 @@ Early. Six agents written, mock adapters serving five tool surfaces. All of them
 | `mock/adapter.py` | Written, smoke-tested against both fixture views, host, record-sink and precedent surfaces added |
 | `demos/investigate.sh` | Written, the composed three-act pipeline verified live |
 | `demos/governance.sh` | Written, all five failure modes verified live |
-| Comms | Not started |
 
 ## Layout
 
@@ -47,6 +46,7 @@ CLAUDE.md                          working rules for this repo
 .agents/change-correlator.yaml     correlates change history against onset
 .agents/scribe.yaml                files the timeline, drafts the change record
 .agents/precedent-analyst.yaml     recalls prior incidents, cited and bounded
+.agents/comms.yaml                 writes outward, and is never given the board
 interfaces/TELEMETRY.md            platform-agnostic tool surface
 interfaces/PRECEDENT.md            the precedent_archive surface
 docs/precedent-analyst.md          build spec for the fifth agent
@@ -82,6 +82,7 @@ oa validate --spec .agents/telemetry-analyst.yaml
 oa validate --spec .agents/change-correlator.yaml
 oa validate --spec .agents/scribe.yaml
 oa validate --spec .agents/precedent-analyst.yaml
+oa validate --spec .agents/comms.yaml
 
 # the mock adapters, one terminal each, fixture-backed. Only the agents that
 # own a surface need one: assess binds no tools and reaches nothing.

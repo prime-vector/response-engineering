@@ -1,6 +1,6 @@
 # Comms
 #
-# The fifth agent. Produces the update that goes to people outside the
+# The sixth agent. Produces the update that goes to people outside the
 # investigation: what is affected, what is being done, when they will hear
 # next.
 #
@@ -10,12 +10,24 @@
 # response and need the epistemics. This agent renders impact, and it never
 # sees the board.
 #
-# That is a safety property rather than tidiness. An unconfirmed hypothesis
-# reaching people who cannot weigh it, in writing, is the failure this project
-# criticises. Denying this agent the board makes that structurally impossible
-# instead of prompt-dependent, for the same reason the sandbox owns the
-# boundary rather than the wording: there is no input carrying a hypothesis
-# and no output field a cause could go in.
+# That matters because an unconfirmed hypothesis reaching people who cannot
+# weigh it, in writing, is the failure this project criticises.
+#
+# Be precise about how much of that the schema buys, because the first draft of
+# this comment was not. There is no board input, no evidence, no hypotheses, no
+# correlation and no precedent, and no output field a cause could go in. That
+# is a real narrowing and it is where the design work is.
+#
+# It is not a fence. impact and work_in_progress carry prose, and prose can
+# carry a cause: an item reading "the compliance agent is consuming memory"
+# fits the schema. Their item schemas name their fields and forbid others, so
+# a hypothesis has no field of its own to travel in, but nothing here inspects
+# what a caller writes inside one.
+#
+# So: the board is structurally absent, and keeping a suspicion out of an
+# impact line is the model's judgement and the caller's discipline. This is the
+# same class of control as the attribution guard, not a peer of the sandbox.
+# Say it that way.
 #
 #   oa validate --spec .agents/comms.yaml
 #
@@ -63,10 +75,16 @@ tasks:
     behavioural_contract:
       version: "1.0"
       description: >
-        Enforces that an outward update reports impact and never cause. The
-        state of the investigation is a required field so that "we do not
-        know yet" is stated rather than left to be inferred from its absence,
-        and no third party may be named at all.
+        Enforces that the state of the investigation is stated rather than
+        left to be inferred from its absence: cause_status is required, and an
+        update omitting it reads as though the cause is known and merely
+        unstated.
+
+        What this cannot enforce, and must not be read as enforcing: that the
+        prose is clean. headline and impact_statement are free strings, so an
+        update can say "not established" and name a product in the same
+        breath. A required-fields list cannot reach inside a string. That rule
+        lives in the prompt and it is the model's judgement.
       role: "Incident communications"
       behavioural_flags:
         conservatism: "high"
@@ -126,6 +144,19 @@ tasks:
             been characterised yet, which the update has to say.
           items:
             type: object
+            properties:
+              description:
+                type: string
+                description: What is affected and what people are seeing.
+              since:
+                type: string
+                description: When it started, if known.
+            required: [description]
+            # Named fields and nothing else, so a hypothesis has no field of
+            # its own to arrive in. It does not stop one being written inside
+            # description, which is why the header says this narrows rather
+            # than fences.
+            additionalProperties: false
         work_in_progress:
           type: array
           description: >
@@ -135,6 +166,15 @@ tasks:
             suspect and does not belong in an outward update.
           items:
             type: object
+            properties:
+              activity:
+                type: string
+                description: The work under way, described without its theory.
+              started:
+                type: string
+                description: When it began, if known.
+            required: [activity]
+            additionalProperties: false
         next_update_due:
           type: string
           description: >
@@ -148,8 +188,10 @@ tasks:
       # schema defaults are not applied. Callers pass [] explicitly.
       #
       # What is deliberately absent is the point of this agent: no evidence,
-      # no hypotheses, no correlation, no precedent, no board. It cannot leak
-      # an unconfirmed attribution outward because it is never handed one.
+      # no hypotheses, no correlation, no precedent, no board. There is no
+      # field through which a hypothesis arrives. There is still prose, and a
+      # caller who writes a suspicion into an impact description has put one
+      # in front of this agent. See the header: a narrowing, not a fence.
       required: [as_of, audience, impact, work_in_progress, next_update_due]
     output:
       type: object
@@ -183,6 +225,11 @@ tasks:
             merely unstated, which is how a suspicion becomes a fact by
             travelling. There is no value here that asserts a cause, because
             this agent is never given one and could not support it.
+
+            It stops the caveat being dropped. It does not stop it being
+            contradicted: headline and impact_statement are free strings, and
+            "not established" beside a headline naming a product is a
+            schema-valid output. That one is the prompt's job.
           enum: [not established, under investigation]
         next_update_at:
           type: string
