@@ -21,7 +21,7 @@ the subtle version of fitting to the retriever: a (case, document) pair left out
 because the probe cannot reach it is never counted as a miss, and the published
 recall figure rises without retrieval improving. That is exactly what happened
 in the first version of this dataset, and it is why the observed figure moved
-from 36/41 to 36/51 with no change to the retriever.
+from 36/41 to 36/53 with no change to the retriever.
 
 **Consequence two: relevance still has to discriminate.** A document is relevant
 when it would change what the responder does or believes: the shape matches, or
@@ -32,6 +32,11 @@ measure nothing at all.
 So relevance is neither "everything that matches the signature" nor "what this
 case wants to talk about". It is what a responder holding this view would want
 in front of them.
+
+The first half is enforced rather than remembered: cases sharing a
+`relevance_group` are one incident seen one way, and `validate.py` asserts their
+`relevant` and `applicability` are identical. The second half cannot be
+mechanised, which is why the judgements below are written out.
 
 ## The judgements
 
@@ -76,10 +81,28 @@ and are listed in `unreachable_by_bound`.
 
 ### Everything else
 
-Single-axis cases where the shape decides it: `b01` to `b07` name the one prior
-record that matches and diverges, `c01` to `c08` name the record that transfers
-plus the procedure that covers it, `f03` names the one document in bound whose
-shape matches.
+Single-axis cases, where the shape decides it: the prior record that matches and
+diverges, plus the procedure that covers the failure in view.
+
+**Both halves, in every group.** An earlier version of this file said near
+misses name "the one prior record that matches and diverges", which contradicted
+the rule two sections above and was already false of five of the seven. It left
+`b01` without `memory-pressure` despite being a host swapping with attribution
+outstanding, which is what that runbook opens on and what `b03`, `b05` and `b06`
+all cite it for. It left `b04` without it too, even though the container
+runbook's own closing section is what sends a host with no runtime there.
+
+That was the scoring subset surviving in group B: both probes miss
+`memory-pressure`, and while it went unlisted those misses never reached the
+published figure. Grok's second review found it.
+
+The counter-pressure still holds and is what stops this collapsing into "every
+memory case lists every memory document". `INC-2350` on `b01` would be that
+collapse: a different shape that happens to share a signature type. The covering
+procedure is not.
+
+`b07` names no runbook because there is no CPU runbook in the corpus, which is
+an absence in the archive rather than a judgement.
 
 Runbooks are listed when the procedure covers the failure being investigated,
 not whenever the topic is adjacent. `container-resource-limits` appears on `b04`

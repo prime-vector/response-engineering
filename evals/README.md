@@ -125,8 +125,8 @@ At limit 8, on a single canonical query, that observation currently reads:
 
 | Index | Relevant documents reached |
 | --- | --- |
-| heading-aware | 36 / 51 |
-| fixed | 38 / 51 |
+| heading-aware | 36 / 53 |
+| fixed | 38 / 53 |
 
 **Read the denominator, not the ratio.** These are one query per case against
 relevance that is scoped to the incident, so a case probing one axis of a

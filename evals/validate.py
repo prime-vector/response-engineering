@@ -177,6 +177,35 @@ def check_must_not_cite_status(case, corpus):
     return out
 
 
+def check_relevance_groups(cases):
+    """Cases sharing a relevance_group are one incident seen one way, so their
+    ground truth has to be identical.
+
+    Grok's second review flagged this as residual: the rule was applied by hand
+    and nothing stopped a later edit letting a01 and d02 disagree again, which
+    is precisely how the first version of this dataset drifted. Making it
+    mechanical is cheaper than remembering it.
+    """
+    out = []
+    groups = {}
+    for case in cases:
+        name = case.get("relevance_group")
+        if name:
+            groups.setdefault(name, []).append(case)
+    for name, members in sorted(groups.items()):
+        first = members[0]
+        for other in members[1:]:
+            for field in ("relevant", "applicability"):
+                a = first["expect"].get(field)
+                b = other["expect"].get(field)
+                if isinstance(a, list):
+                    a, b = sorted(a or []), sorted(b or [])
+                if a != b:
+                    out.append(f"relevance_group {name}: {first['id']} and "
+                               f"{other['id']} disagree on {field}")
+    return out
+
+
 def check_floor(case, index_label):
     """Cases that turn on the floor state what it does, per index, because the
     two chunkers cross it differently and that difference is the measurement."""
@@ -332,6 +361,10 @@ def main():
                 print(f"  FAIL  composition: {got} {label}, the spec fixes a "
                       f"minimum of {want}")
                 failures += 1
+
+        for problem in check_relevance_groups(cases):
+            print(f"  FAIL  {problem}")
+            failures += 1
 
         ids = [c["id"] for c in cases]
         if len(ids) != len(set(ids)):

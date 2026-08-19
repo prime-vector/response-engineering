@@ -95,6 +95,13 @@
 #     obvious wrong move. Sharing a signature type is not sufficient. If every
 #     memory case listed every memory document, hit_rate would measure nothing.
 #
+#   relevance_group   optional. Cases sharing one are the same incident seen
+#                     the same way, and validate.py asserts their `relevant`
+#                     and `applicability` are identical. The rule above is
+#                     otherwise a thing a later edit has to remember, and the
+#                     first version of this dataset is what that looks like
+#                     when it is forgotten.
+#
 #   expect.must_not_cite_reason   why a FILED document cannot ground a claim,
 #                             per uri. Drafts need none: record_status already
 #                             says it. Anything else has to argue it here.
@@ -128,6 +135,7 @@ cases:
   # -------------------------------------------------------------------------
 
   - id: a01
+    relevance_group: composite-bridge-denial-axis
     group: composite
     intent: >
       The bridge view. The archive holds a near miss on the same signature
@@ -171,6 +179,7 @@ cases:
       queries_must_not_contain: ["intg-prod-a1"]
 
   - id: a02
+    relevance_group: composite-d1
     group: composite
     intent: >
       Act one, the D+1 view. The working note does not exist yet at this
@@ -207,6 +216,7 @@ cases:
       queries_must_not_contain: ["intg-prod-a1"]
 
   - id: a03
+    relevance_group: composite-bridge-denial-axis
     group: composite
     intent: >
       The second axis of the same incident. The evidence names a denial
@@ -245,6 +255,7 @@ cases:
       queries_must_not_contain: ["intg-prod-a1"]
 
   - id: a04
+    relevance_group: composite-bridge-denial-axis
     group: composite
     intent: >
       Query dilution, measured as a case rather than described. The reported
@@ -318,8 +329,10 @@ cases:
       precedent_exists: true
       relevant:
         - corpus://incidents/INC-2411
+        - corpus://runbooks/memory-pressure
       applicability:
         corpus://incidents/INC-2411: partial
+        corpus://runbooks/memory-pressure: applies
       divergence_names:
         - the prior incident had a heap change to revert and this one has no
           correlated change at all
@@ -407,9 +420,11 @@ cases:
       relevant:
         - corpus://incidents/INC-2305
         - corpus://runbooks/container-resource-limits
+        - corpus://runbooks/memory-pressure
       applicability:
         corpus://incidents/INC-2305: partial
         corpus://runbooks/container-resource-limits: partial
+        corpus://runbooks/memory-pressure: applies
       divergence_names:
         - the prior incident's host never entered exhaustion and stayed flat
         - there is no container limit on this host to raise or bound
@@ -758,6 +773,7 @@ cases:
         precedent_hit_rate is not scored on this case.
 
   - id: d02
+    relevance_group: composite-bridge-denial-axis
     group: record_status
     intent: >
       The hindsight trap at rank one. On the signature query at the demo's
@@ -801,6 +817,7 @@ cases:
         status and should fail rather than pass quietly.
 
   - id: d03
+    relevance_group: composite-d1
     group: record_status
     intent: >
       The same trap one bound earlier, where it does not exist yet. Nothing
@@ -1090,6 +1107,7 @@ cases:
         - corpus://incidents/INC-2350
       applicability:
         corpus://incidents/INC-2350: applies
+      queries_must_not_contain: ["etl-prod-c1"]
       unreachable_by_bound:
         - corpus://incidents/INC-2411
         - corpus://incidents/INC-2419
