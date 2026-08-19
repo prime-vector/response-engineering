@@ -285,12 +285,19 @@ table under a whole name.
 **Two hit rates, and the second is not a footnote.** `precedent_hit_rate@k` ranks
 documents with nothing truncating, which is a property of the ranking alone.
 `precedent_hit_rate@limit` counts what survives inside the passage budget the agent
-is run at, where chunk size decides how many distinct documents fit. On this corpus
-the ranking is chunker-blind: heading-aware and fixed give identical hits at every k
-and one document differing by a single rank. They differ only at the budget, 38/60
-against 36/60. Phase 5 is specified as a chunker comparison, so reporting it on the
-ranking alone would conclude that chunking does not matter and the conclusion would
-be an artefact of the metric.
+is run at, where chunk size decides how many distinct documents fit. They differ at
+the budget, 38/60 against 36/60, and at k = 2, where heading-aware reaches 25 of 60
+pairs against fixed's 24. They are identical at k = 1, 3, 5 and 8, which is the grid
+the baseline reads: the one relevant document that moves, `b03`'s `INC-2446`, sits
+between grid points. Phase 5 must report both, since either alone answers a question
+it was not asked.
+
+**A claim about two indexes may not live in a table generated from one.** An earlier
+version of this section said the ranking was chunker-blind, and the sentence sat in
+the generated baseline table where `--check` regenerated it identically whatever the
+other index did. `--cross-check` scores both indexes at every k from 1 to the deepest
+rank any relevant document reaches, finds the k values where they part rather than
+taking a grid, and writes `evals/results/chunker-comparison.md`, which CI diffs.
 
 ---
 

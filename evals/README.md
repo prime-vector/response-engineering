@@ -17,7 +17,7 @@ a refusal issued when the archive held something.
 | `validate.py` | Asserts every claim in the dataset the corpus can settle. Runs in CI against both indexes. |
 | `runner.py` | Measures retrieval against the dataset. Writes a timestamped JSON record and `results/latest.md`. |
 | `config.yaml` | The baseline configuration: fixed chunker, no reranker, the k values, the passage budget. |
-| `results/` | Timestamped run records, and `latest.md`, the generated table. |
+| `results/` | Timestamped run records, `latest.md` (the baseline table) and `chunker-comparison.md`. |
 
 The judgement metrics are not written. `runner.py --mode judgement` says so and
 exits rather than reporting a partial table under a whole name. See **Status**.
@@ -31,6 +31,8 @@ python3 evals/validate.py --repin                           # after a corpus cha
 
 python3 evals/runner.py --config evals/config.yaml          # record the baseline
 python3 evals/runner.py --config evals/config.yaml --check   # CI: has the table drifted
+python3 evals/runner.py --config evals/config.yaml --cross-check          # both indexes, every k
+python3 evals/runner.py --config evals/config.yaml --cross-check --check  # CI
 python3 evals/runner.py --index corpus/index.json --chunker heading --label heading-aware
 python3 evals/runner.py --compare evals/results/<a>.json evals/results/<b>.json
 ```
@@ -44,8 +46,19 @@ makes iterating on the dataset affordable.
 dataset's pin, and refuses if the config's `chunker` disagrees with the index
 it names. Recording a baseline against the wrong index is the one mistake that
 would make the Phase 5 comparison meaningless while looking entirely normal.
-`--compare` refuses two runs measured against different corpora for the same
-reason: the delta would be the documents changing, not retrieval improving.
+`--compare` refuses two runs that differ in corpus, ground truth, relevance
+floor, passage budget or k list, and refuses a record too old to state one of
+them. Each of those produces a plausible delta rather than an error, and the
+delta is that input moving rather than retrieval improving.
+
+Only a `--config` run writes `latest.md`. An exploratory `--index` run writes
+its JSON and leaves the committed table alone, because it used to overwrite it
+silently and the next `--check` reported drift that was the scratch run.
+
+`runner.py` also refuses to measure through an adapter it did not start, and
+proves the one it did start is serving the index that was asked for by
+resolving a passage id taken from that index file. A passage id carries the
+chunker name, so a leftover process serving the other index cannot pass it.
 
 ## The dataset
 
@@ -224,13 +237,35 @@ Phase 4 is done for retrieval and open for judgement.
 nothing truncating asks which prior records the surface orders highest.
 Counting what survives inside the passage budget the agent is actually run at
 asks what it is handed, and chunk size decides how many distinct documents fit
-in eight passages. On this corpus the first is **chunker-blind**: heading-aware
-and fixed produce identical hits at every k and one document differing by a
-single rank. They differ only at the budget, 38/60 against 36/60.
+in eight passages.
 
-That matters for Phase 5, which is specified as a chunker comparison. Reported
-on the document ranking alone it would conclude that chunking does not matter,
-and the conclusion would be an artefact of the metric rather than a result.
+The chunkers differ on both, in different places. At the budget it is 38/60
+against 36/60. On the ranking they are identical at k = 1, 3, 5 and 8, and
+differ at k = 2, where heading-aware reaches 25 of 60 pairs against fixed's 24:
+`b03`'s `INC-2446` is rank 2 under heading-aware and rank 3 under fixed, and
+the baseline's grid steps over the gap that lives in.
+
+This file said the ranking was **chunker-blind**, flatly, and that was wrong.
+Two failures produced it, and both are worth naming because neither was a
+retrieval mistake:
+
+- **A grid was mistaken for every k.** Four k values were chosen for the table,
+  the two indexes agreed on all four, and the conclusion drawn was about all k.
+- **The claim lived where nothing could falsify it.** It was a hardcoded
+  sentence in `runner.py`'s table generator, and `--check` regenerates the
+  baseline against one index. Both sides of the diff carried the same sentence
+  whatever the other index did, so CI certified it while being structurally
+  unable to test it.
+
+The fix for the second is `--cross-check`, which scores both indexes at every k
+from 1 to the deepest rank any relevant document reaches, reports the k values
+where they part rather than taking a grid, and writes
+`results/chunker-comparison.md` with its own `--check` in CI. Grok found the
+first in review of PR #16; the k = 2 figure was measured rather than argued
+about.
+
+For Phase 5 the consequence is that both numbers get reported. Either alone
+answers a question it was not asked.
 
 ### Notes for the runner
 

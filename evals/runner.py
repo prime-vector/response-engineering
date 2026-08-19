@@ -50,6 +50,7 @@ That is plumbing, not the measurement. k is the bound the numbers are read at.
 """
 
 import argparse
+import hashlib
 import json
 import math
 import os
@@ -92,6 +93,12 @@ DEFAULTS = {
     "port": DEFAULT_PORT,
     "run_limit": RUN_LIMIT,
     "label": "baseline-fixed",
+    "cross_check": [
+        {"index": "corpus/index.fixed.json", "chunker": "fixed",
+         "label": "fixed"},
+        {"index": "corpus/index.json", "chunker": "heading",
+         "label": "heading-aware"},
+    ],
 }
 
 # Named here rather than in the table writer so an unimplemented metric cannot
@@ -101,13 +108,13 @@ JUDGEMENT_METRICS = [
     ("false_precedent_rate",
      "judgement mode: one live oa run per case, scored against expect.applicability"),
     ("no_precedent_accuracy",
-     "judgement mode: 13 no-precedent cases, scored on no_applicable_precedent"),
+     "judgement mode: {no_precedent} no-precedent cases, scored on no_applicable_precedent"),
     ("false_refusal_rate",
-     "judgement mode: 25 answerable cases, scored on the same field"),
+     "judgement mode: {answerable} answerable cases, scored on the same field"),
     ("groundedness",
      "judgement mode plus a judge prompt at temperature 0, which is not written"),
     ("divergence_quality",
-     "judgement mode: 7 near-miss cases, scored against expect.divergence_names"),
+     "judgement mode: {near_miss} near-miss cases, scored against expect.divergence_names"),
     ("cost_per_recall_usd",
      "judgement mode: no model runs in retrieval mode, so the cost is zero and "
      "measures nothing"),
@@ -131,19 +138,69 @@ def rpc(port, name, args):
     return json.loads(text)
 
 
+def answering(port):
+    try:
+        rpc(port, "coverage_describe", {"before": "2026-03-17"})
+        return True
+    except (urllib.error.URLError, ConnectionError, OSError):
+        return False
+
+
 def start_adapter(index, port):
+    """Start the surface, and prove it is the one we asked for.
+
+    Two failures this closes, both of which produce numbers rather than an
+    error. A process left over from an earlier run answers on the port and is
+    serving a different index, so the table's header names one index while the
+    figures come from another. And a spawn that fails after something else has
+    claimed the port looks exactly like a healthy start.
+
+    A passage id encodes the chunker name, so resolving one taken from the
+    index file we intended proves which index is actually being served. That
+    is the only check here that a leftover process cannot pass.
+    """
+    if answering(port):
+        raise SystemExit(
+            f"something is already serving on port {port}. Retrieval figures "
+            f"from an adapter this run did not start are not figures about "
+            f"{index}: stop it, or pass --port.")
+
     proc = subprocess.Popen(
         [sys.executable, "mock/adapter.py", "--surface", "precedent_archive",
          "--port", str(port), "--index", index],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     for _ in range(50):
-        try:
-            rpc(port, "coverage_describe", {"before": "2026-03-17"})
-            return proc
-        except (urllib.error.URLError, ConnectionError, OSError):
-            time.sleep(0.1)
-    proc.terminate()
-    raise SystemExit("adapter did not come up")
+        if answering(port):
+            break
+        time.sleep(0.1)
+    else:
+        proc.terminate()
+        raise SystemExit("adapter did not come up")
+
+    with open(index) as handle:
+        want = json.load(handle)["passages"][0]["passage_id"]
+    try:
+        got = rpc(port, "passage_get", {"passage_id": want})
+    except SystemExit:
+        got = {}
+    if got.get("passage_id") != want:
+        proc.terminate()
+        raise SystemExit(
+            f"the surface on port {port} does not resolve a passage id from "
+            f"{index}, so it is serving a different index")
+    return proc
+
+
+def dataset_fingerprint(path):
+    """The ground truth these figures were scored against, by content.
+
+    The corpus pin says the documents have not moved. It says nothing about
+    the judgements over them, and a comparison across two datasets is the
+    truth moving rather than retrieval improving, which is the same lie the
+    corpus refusal exists to stop.
+    """
+    with open(path, "rb") as handle:
+        return hashlib.sha256(handle.read()).hexdigest()
 
 
 def ranked_documents(passages):
@@ -290,6 +347,17 @@ def run(config, stamp):
 
     ks = sorted(config["k"])
     port = config["port"]
+    composition = {
+        "by_group": {},
+        "no_precedent": sum(1 for c in cases
+                            if not c["expect"]["precedent_exists"]),
+        "near_miss": sum(1 for c in cases if c["group"] == "near_miss"),
+        "answerable": sum(1 for c in cases if c["expect"]["precedent_exists"]),
+    }
+    for case in cases:
+        composition["by_group"][case["group"]] = (
+            composition["by_group"].get(case["group"], 0) + 1)
+
     proc = start_adapter(config["index"], port)
     try:
         scored, latencies = {}, []
@@ -303,13 +371,12 @@ def run(config, stamp):
             scored[case["id"]] = score_case(case, ranked, ks)
 
             # The second measurement, and not a footnote to the first. The
-            # ranking above is chunker-neutral by construction: it asks which
-            # documents the surface orders highest with nothing truncating.
-            # This one asks what the agent is handed inside a fixed passage
-            # budget, where chunk size decides how many distinct documents
-            # fit. On this corpus that is the only place the two chunkers
-            # differ at all, so a comparison that reported only the ranking
-            # would conclude chunking does not matter.
+            # ranking above asks which documents the surface orders highest
+            # with nothing truncating. This one asks what the agent is handed
+            # inside a fixed passage budget, where chunk size decides how many
+            # distinct documents fit. They are different questions and the
+            # chunkers answer them differently, which --cross-check measures
+            # at every k rather than at the four this config reads.
             budgeted, ms = probe(port, case, config["run_limit"])
             latencies.append(ms)
             at_limit = set(ranked_documents(budgeted.get("passages") or []))
@@ -321,6 +388,13 @@ def run(config, stamp):
                         f"{case['id']}:{uri.replace('corpus://', '')}")
 
         silence = floor_silence(port, cases, config["run_limit"])
+
+        # The floor is a property of the surface, configurable on the adapter
+        # and invisible in the figures it produces. Two runs at different
+        # floors are two experiments, and nothing else in this record would
+        # say so.
+        sample, _ = probe(port, cases[0], 1)
+        floor = sample.get("floor_applied")
     finally:
         proc.terminate()
         proc.wait(timeout=5)
@@ -340,7 +414,10 @@ def run(config, stamp):
             "scored_cases": len(scored),
             "pairs": pairs,
             "path": DATASET,
+            "fingerprint": dataset_fingerprint(DATASET),
+            "composition": composition,
         },
+        "surface": {"floor_applied": floor, "rank_limit": RANK_LIMIT},
         "retrieval": aggregate(scored, ks),
         "by_group": {str(k): by_group(cases, scored, k) for k in ks},
         "floor_silence": silence,
@@ -369,7 +446,8 @@ def run(config, stamp):
                     "store, and is not a latency claim about anything "
                     "deployable.",
         },
-        "not_measured": {name: why for name, why in JUDGEMENT_METRICS},
+        "not_measured": {name: why.format(**composition)
+                         for name, why in JUDGEMENT_METRICS},
         "per_case": scored,
     }
 
@@ -384,6 +462,11 @@ def pct(value):
 
 def markdown(result):
     ks = result["k"]
+    # 5 is the k docs/precedent-analyst.md fixes for the Phase 5 comparison.
+    # Falling back to the largest k rather than failing kept the heading and
+    # the column disagreeing about which k they showed.
+    group_k = 5 if 5 in ks else ks[-1]
+    composition = result["dataset"]["composition"]
     lines = [
         "# Precedent Analyst, retrieval baseline",
         "",
@@ -407,9 +490,10 @@ def markdown(result):
         "`precedent_hit_rate@limit` counts what survives inside the **passage "
         "budget the agent is actually run at**, where chunk size decides how "
         "many distinct documents fit. The first is a property of the ranking, "
-        "the second of the ranking and the chunker together. Phase 5's "
-        "chunker comparison turns on the second, because on this corpus the "
-        "first cannot tell the two chunkers apart at all.",
+        "the second of the ranking and the chunker together. Which of them "
+        "separates two chunkers, and at which k, is measured in "
+        "`chunker-comparison.md` beside this file: a single-index run cannot "
+        "see it, so this table does not claim it.",
         "",
         f"**At the run limit of {result['at_run_limit']['limit']} passages: "
         f"{pct(result['at_run_limit']['precedent_hit_rate'])} "
@@ -438,12 +522,12 @@ def markdown(result):
         "contribute more than three pairs at k=3. Attainment is the rate "
         "against what k allows.",
         "",
-        "## By group, at k=5",
+        f"## By group, at k={group_k}",
         "",
-        "| group | cases | pairs | precedent_hit_rate@5 |",
+        f"| group | cases | pairs | precedent_hit_rate@{group_k} |",
         "| --- | --- | --- | --- |",
     ]
-    groups = result["by_group"].get("5") or result["by_group"][str(ks[-1])]
+    groups = result["by_group"][str(group_k)]
     for name in sorted(groups):
         row = groups[name]
         lines.append(f"| {name} | {row['cases']} | {row['pairs']} | "
@@ -452,9 +536,10 @@ def markdown(result):
 
     lines += [
         "",
-        "Only cases with relevant documents are scored, so the counts here "
-        "are below the dataset's group sizes: the 13 no-precedent cases have "
-        "nothing to hit and are measured in the next section instead.",
+        f"Only cases with relevant documents are scored, so the counts here "
+        f"are below the dataset's group sizes: the "
+        f"{composition['no_precedent']} no-precedent cases have nothing to "
+        f"hit and are measured in the next section instead.",
     ]
 
     silence = result["floor_silence"]
@@ -486,12 +571,9 @@ def markdown(result):
         "| --- | --- |",
     ]
     for name, why in JUDGEMENT_METRICS:
-        lines.append(f"| `{name}` | {why} |")
+        lines.append(f"| `{name}` | {why.format(**composition)} |")
 
-    lines += [
-        "",
-        "Three limits that survive judgement mode being written:",
-        "",
+    limits = [
         "- **Section-level citation is unmeasured, not mitigated.** Ground "
         "truth names documents, so nothing here distinguishes a citation of "
         "the right document's `Resolution` from its `Gaps`. Adapter-log "
@@ -501,14 +583,17 @@ def markdown(result):
         "so a case probing one axis of a multi-axis incident is counted here "
         "as missing what its other axis would reach. These numbers are a "
         "floor on the surface, not an estimate of the agent.",
-        f"- **The document ranking is chunker-blind on this corpus.** Run "
-        f"against both indexes it produces identical hits at every k, and one "
-        f"document differing by a single rank. The two chunkers differ only "
-        f"inside the passage budget, which is where "
-        f"`precedent_hit_rate@limit` measures them. A Phase 5 comparison "
-        f"reported on the ranking alone would conclude that chunking does not "
-        f"matter, and it would be an artefact of the metric. Measured, not "
-        f"asserted: `--compare` over the two results files beside this one.",
+        "- **This table is one index.** Whether a chunker changes retrieval "
+        "is not visible from it at all, and a sentence here saying so would "
+        "be regenerated identically whatever the other index did. "
+        "`chunker-comparison.md` measures that, and CI checks it.",
+    ]
+
+    lines += [
+        "",
+        f"{len(limits)} limits that survive judgement mode being written:",
+        "",
+        *limits,
         "",
         "This table is a function of the dataset, the corpus and the config "
         "named above, and nothing else. It carries no timestamp and no "
@@ -524,22 +609,183 @@ def markdown(result):
     return "\n".join(lines)
 
 
+# --------------------------------------------------------------------------
+# Cross-index comparison
+# --------------------------------------------------------------------------
+
+def cross_check(config):
+    """Whether the chunker moves the document ranking, measured at every k.
+
+    This exists because the claim it settles used to be a sentence in the
+    baseline table. A single-index run cannot see the other index, so that
+    sentence was regenerated identically whatever the other index did, and the
+    --check certifying the table could not falsify it. The claim was also
+    wrong: the ranking is identical at k in {1,3,5,8} and differs at k=2,
+    which is the gap the configured grid happens to straddle.
+
+    So the grid is not a parameter here. Every k from 1 to the deepest rank
+    any relevant document reaches is scored, and the k values where the two
+    disagree are reported rather than chosen.
+    """
+    with open(DATASET) as handle:
+        cases = yaml.safe_load(handle)["cases"]
+    scored_cases = [c for c in cases if c["expect"].get("relevant")]
+
+    ranks = {}
+    for entry in config["cross_check"]:
+        with open(entry["index"]) as handle:
+            index = json.load(handle)
+        if index.get("chunker") != entry["chunker"]:
+            raise SystemExit(
+                f"cross_check says chunker {entry['chunker']}, "
+                f"{entry['index']} was built with {index.get('chunker')}")
+        proc = start_adapter(entry["index"], config["port"])
+        try:
+            found = {}
+            for case in scored_cases:
+                result, _ = probe(config["port"], case, RANK_LIMIT)
+                position = {uri: i + 1 for i, uri in
+                            enumerate(ranked_documents(result.get("passages")
+                                                       or []))}
+                for uri in case["expect"]["relevant"]:
+                    found[f"{case['id']}|{uri}"] = position.get(uri)
+            ranks[entry["label"]] = found
+        finally:
+            proc.terminate()
+            proc.wait(timeout=5)
+
+    labels = [e["label"] for e in config["cross_check"]]
+    a, b = ranks[labels[0]], ranks[labels[1]]
+    pairs = sorted(a)
+
+    moved = []
+    for key in pairs:
+        if a[key] != b[key]:
+            case, uri = key.split("|")
+            moved.append({"case": case, "document": uri.replace("corpus://", ""),
+                          labels[0]: a[key], labels[1]: b[key]})
+
+    depth = max((r for r in list(a.values()) + list(b.values())
+                 if r is not None), default=0)
+    curve, disagree = [], []
+    for k in range(1, depth + 1):
+        ha = sum(1 for key in pairs if a[key] is not None and a[key] <= k)
+        hb = sum(1 for key in pairs if b[key] is not None and b[key] <= k)
+        curve.append({"k": k, labels[0]: ha, labels[1]: hb})
+        if ha != hb:
+            disagree.append(k)
+
+    return {"labels": labels, "pairs": len(pairs), "depth": depth,
+            "moved": moved, "curve": curve, "disagree_at": disagree,
+            "dataset_fingerprint": dataset_fingerprint(DATASET),
+            "corpus_fingerprint": fingerprint(load_corpus())}
+
+
+def cross_markdown(result):
+    a, b = result["labels"]
+    lines = [
+        "# Does the chunker move the document ranking?",
+        "",
+        "Generated by `evals/runner.py --cross-check`. Do not hand-edit.",
+        "",
+        f"Both indexes scored against the same {result['pairs']} (case, "
+        f"document) pairs, at every k from 1 to {result['depth']}, which is "
+        f"the deepest rank any relevant document reaches. The k values are "
+        f"not chosen here: choosing them is how this was got wrong the first "
+        f"time.",
+        "",
+    ]
+    if result["disagree_at"]:
+        ks = ", ".join(str(k) for k in result["disagree_at"])
+        lines += [
+            f"**The two disagree at k = {ks}.** They agree at every other k, "
+            f"which is why a grid that skips these values reports them as "
+            f"identical.",
+        ]
+    else:
+        lines += [
+            "**The two agree at every k.** No relevant document lands at a "
+            "different rank under either chunker.",
+        ]
+
+    lines += [
+        "",
+        "## Relevant documents whose rank moved",
+        "",
+        f"| case | document | {a} | {b} |",
+        "| --- | --- | --- | --- |",
+    ]
+    if result["moved"]:
+        for row in result["moved"]:
+            lines.append(f"| `{row['case']}` | {row['document']} | "
+                         f"{row[a]} | {row[b]} |")
+    else:
+        lines.append("| _none_ | | | |")
+
+    lines += [
+        "",
+        "## Hits at every k",
+        "",
+        f"| k | {a} | {b} |",
+        "| --- | --- | --- |",
+    ]
+    for row in result["curve"]:
+        mark = "  **differs**" if row["k"] in result["disagree_at"] else ""
+        lines.append(f"| {row['k']} | {row[a]}/{result['pairs']} | "
+                     f"{row[b]}/{result['pairs']}{mark} |")
+
+    lines += [
+        "",
+        "Hits over (case, document) pairs, ranked over distinct documents "
+        "with nothing truncating. This is the ranking alone: what each "
+        "chunker delivers inside the passage budget the agent is run at is "
+        "`precedent_hit_rate@limit` in `latest.md`, and the two answer "
+        "different questions.",
+        "",
+        f"Corpus `{result['corpus_fingerprint'][:16]}`, ground truth "
+        f"`{result['dataset_fingerprint'][:16]}`. Regenerate and diff with "
+        f"`python3 evals/runner.py --config evals/config.yaml --cross-check "
+        f"--check`.",
+        "",
+    ]
+    return "\n".join(lines)
+
+
 def compare(path_a, path_b):
     with open(path_a) as handle:
         a = json.load(handle)
     with open(path_b) as handle:
         b = json.load(handle)
 
-    if a["corpus"]["fingerprint"] != b["corpus"]["fingerprint"]:
-        print("FAIL  these runs measured different corpora, so the delta is "
-              "the documents changing and not retrieval improving:")
-        print(f"        {path_a}  {a['corpus']['fingerprint'][:16]}")
-        print(f"        {path_b}  {b['corpus']['fingerprint'][:16]}")
-        return 1
+    # Everything a delta silently absorbs if it moved between two runs. The
+    # corpus was checked from the start; the rest were not, and each of them
+    # produces a plausible number rather than an error.
+    for label, path, get in (
+            ("corpus", "corpus.fingerprint",
+             lambda r: r["corpus"]["fingerprint"]),
+            ("ground truth", "dataset.fingerprint",
+             lambda r: r.get("dataset", {}).get("fingerprint")),
+            ("relevance floor", "surface.floor_applied",
+             lambda r: r.get("surface", {}).get("floor_applied")),
+            ("passage budget", "at_run_limit.limit",
+             lambda r: r["at_run_limit"]["limit"]),
+            ("k list", "k", lambda r: r["k"])):
+        va, vb = get(a), get(b)
+        if va != vb:
+            print(f"FAIL  these runs used a different {label}, so the delta "
+                  f"is that changing and not retrieval improving:")
+            print(f"        {path_a}  {path} = {va}")
+            print(f"        {path_b}  {path} = {vb}")
+            return 1
+        if va is None:
+            print(f"FAIL  neither run records its {label} ({path}). A record "
+                  f"written before that was recorded cannot be compared: "
+                  f"re-run both.")
+            return 1
 
     print(f"{a['label']} ({a['chunker']}, reranker {a['reranker']})  ->  "
           f"{b['label']} ({b['chunker']}, reranker {b['reranker']})\n")
-    ks = [k for k in a["k"] if str(k) in b["retrieval"]]
+    ks = a["k"]
     print("  k    hit_rate@k              mrr@k")
     for k in ks:
         ra, rb = a["retrieval"][str(k)], b["retrieval"][str(k)]
@@ -550,16 +796,21 @@ def compare(path_a, path_b):
               f"{ra['mrr']:.3f} -> {rb['mrr']:.3f}  {dmrr:+.3f}")
 
     la, lb = a["at_run_limit"], b["at_run_limit"]
-    if la["limit"] != lb["limit"]:
-        print(f"\n  FAIL  different passage budgets, {la['limit']} against "
-              f"{lb['limit']}: the run-limit figures are not comparable")
-        return 1
     print(f"\n  @limit {la['limit']}  {pct(la['precedent_hit_rate'])} -> "
           f"{pct(lb['precedent_hit_rate'])}  "
           f"{(lb['precedent_hit_rate'] - la['precedent_hit_rate']) * 100:+.1f}pp"
           f"   ({la['hits']}/{la['pairs']} -> {lb['hits']}/{lb['pairs']})")
-    print("          The passage budget is where chunking shows. The document "
-          "ranking above is chunker-blind on this corpus.")
+    # This used to end "the document ranking above is chunker-blind on this
+    # corpus", which is a claim about k values the caller did not necessarily
+    # ask for. Two runs on a grid that skips the k where they differ print
+    # zeroes, and the sentence turned that into a finding.
+    flat = all(a["retrieval"][str(k)]["precedent_hit_rate"] ==
+               b["retrieval"][str(k)]["precedent_hit_rate"] for k in ks)
+    if flat:
+        print(f"          Identical at k = "
+              f"{', '.join(str(k) for k in ks)}, which is this run's grid and "
+              f"not every k. --cross-check scores every k and reports where "
+              f"they part.")
 
     print()
     for label, key in (("p50", "p50"), ("p95", "p95")):
@@ -594,6 +845,9 @@ def main():
                              "pass one to reproduce a results file byte for "
                              "byte.")
     parser.add_argument("--compare", nargs=2, metavar=("A", "B"))
+    parser.add_argument("--cross-check", action="store_true",
+                        help="Score both indexes in config.cross_check at "
+                             "every k and write chunker-comparison.md.")
     parser.add_argument("--check", action="store_true",
                         help="Regenerate latest.md and fail if it differs. "
                              "Writes nothing, so CI can run it.")
@@ -616,6 +870,31 @@ def main():
                                        "chunker": args.chunker,
                                        "label": args.label,
                                        "port": args.port})
+
+    if args.cross_check:
+        result = cross_check(config)
+        table = cross_markdown(result)
+        path = os.path.join(RESULTS, "chunker-comparison.md")
+        if args.check:
+            current = open(path).read() if os.path.exists(path) else ""
+            if current == table:
+                print(f"{path} is current")
+                return 0
+            print(f"{path} does not match a fresh cross-check. Re-record it:\n"
+                  f"  python3 evals/runner.py --config evals/config.yaml "
+                  f"--cross-check")
+            return 1
+        os.makedirs(RESULTS, exist_ok=True)
+        with open(path, "w") as handle:
+            handle.write(table)
+        where = (f"k = {', '.join(str(k) for k in result['disagree_at'])}"
+                 if result["disagree_at"] else "no k")
+        print(f"{result['labels'][0]} against {result['labels'][1]}: "
+              f"{len(result['moved'])} of {result['pairs']} pairs moved rank, "
+              f"hits differ at {where}")
+        print(f"wrote {path}")
+        return 0
+
     stamp = args.stamp or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     result = run(config, stamp)
     table = markdown(result)
@@ -638,8 +917,14 @@ def main():
     with open(out, "w") as handle:
         json.dump(result, handle, indent=2, sort_keys=False)
         handle.write("\n")
-    with open(latest, "w") as handle:
-        handle.write(table)
+
+    # latest.md is the committed baseline table, so only the baseline run may
+    # write it. An exploratory --index run used to overwrite it silently, and
+    # the next --check reported drift that was the scratch run rather than the
+    # corpus.
+    if args.config:
+        with open(latest, "w") as handle:
+            handle.write(table)
 
     top = result["retrieval"][str(sorted(config["k"])[-1])]
     print(f"{result['label']}: {result['dataset']['scored_cases']} scored "
@@ -658,7 +943,11 @@ def main():
     print(f"  floor silence {result['floor_silence']['silent_at_the_floor']}/"
           f"{result['floor_silence']['novel_cases']} no-precedent cases")
     print(f"\nwrote {out}")
-    print(f"wrote {latest}")
+    if args.config:
+        print(f"wrote {latest}")
+    else:
+        print(f"left {latest} alone: it is the baseline table, and this run "
+              f"did not use --config")
     return 0 if top["pairs"] else 1
 
 

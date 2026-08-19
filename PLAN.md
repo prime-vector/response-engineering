@@ -164,12 +164,23 @@ reports two hit rates, because the dataset supports two different questions.
 Ranking documents with nothing truncating asks which prior records the surface
 orders highest; counting what survives inside the eight-passage budget the agent
 is actually run at asks what it is handed, and chunk size decides how many
-distinct documents fit. **The ranking is chunker-blind on this corpus**: both
-indexes give identical hits at every k, 17/60 at k=1 rising to 41/60 at k=8, and
-one document differing by a single rank. The 38 against 36 is entirely the
-budget. Phase 5 is specified as a chunker comparison, so it has to be reported at
-the budget: on the ranking alone it would conclude that chunking does not matter,
-and that conclusion would be an artefact of the metric rather than a result.
+distinct documents fit.
+
+**The first version of this paragraph said the ranking was chunker-blind, and
+that was wrong.** Both indexes do give identical hits at k = 1, 3, 5 and 8, which
+is the grid the baseline reads. They differ at k = 2: heading-aware reaches 25 of
+60 pairs against fixed's 24, because `b03`'s `INC-2446` is rank 2 under
+heading-aware and rank 3 under fixed. The configured grid steps over the gap that
+difference lives in. Grok found the overstatement in review; the k = 2 figure was
+then measured rather than argued.
+
+Two things follow. The narrower claim is that the chunkers are indistinguishable
+at the k values this baseline reads and distinguishable one rank above the first
+of them, so Phase 5 has to report both the ranking and the budget rather than
+either alone. And a claim about two indexes cannot live in a table generated from
+one: `evals/results/chunker-comparison.md` scores both at every k from 1 to the
+deepest rank any relevant document reaches, the k values are found rather than
+chosen, and CI regenerates and diffs it.
 
 The table is generated and CI checks it, so it carries no timestamp and no
 latency figure: it is a function of the dataset, the corpus and the config, and

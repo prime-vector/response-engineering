@@ -1,5 +1,5 @@
 {
-  "recorded_at": "2026-08-19T08:29:51Z",
+  "recorded_at": "2026-08-19T23:24:11Z",
   "label": "heading-aware",
   "mode": "retrieval",
   "index": "corpus/index.json",
@@ -19,7 +19,26 @@
     "cases": 38,
     "scored_cases": 25,
     "pairs": 60,
-    "path": "evals/dataset.yaml"
+    "path": "evals/dataset.yaml",
+    "fingerprint": "6a1014659711a8c33b8cae0be08bf8618805fc7afd60c86dd92017ff65fb1661",
+    "composition": {
+      "by_group": {
+        "composite": 4,
+        "near_miss": 7,
+        "applies": 8,
+        "record_status": 3,
+        "novel": 10,
+        "time_bound": 4,
+        "identity": 2
+      },
+      "no_precedent": 13,
+      "near_miss": 7,
+      "answerable": 25
+    }
+  },
+  "surface": {
+    "floor_applied": 0.35,
+    "rank_limit": 1000
   },
   "retrieval": {
     "1": {
@@ -278,7 +297,7 @@
   },
   "latency_ms": {
     "calls": 50,
-    "p50": 1.86,
+    "p50": 1.81,
     "p95": 2.37,
     "note": "the mock surface over loopback JSON-RPC, and a mixture of two probes per case at two different passage limits. It measures this repo's fixture retriever, not a vector store, and is not a latency claim about anything deployable."
   },
