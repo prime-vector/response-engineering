@@ -42,7 +42,7 @@ Needs PyYAML. Neither an API key nor the `patches/` provider patch is required:
 | `time_bound` | 4 | An archive that held nothing yet, against one that held nothing relevant |
 | `identity` | 2 | The entity id is not a similarity feature |
 
-14 cases have no applicable precedent, against a specified minimum of eight.
+13 cases have no applicable precedent, against a specified minimum of eight.
 Seven are near misses, against a minimum of four. `validate.py` asserts both
 minima, so the composition cannot drift below what the spec fixes.
 
@@ -125,8 +125,8 @@ At limit 8, on a single canonical query, that observation currently reads:
 
 | Index | Relevant documents reached |
 | --- | --- |
-| heading-aware | 36 / 54 |
-| fixed | 38 / 54 |
+| heading-aware | 36 / 55 |
+| fixed | 38 / 55 |
 
 **Read the denominator, not the ratio.** These are one query per case against
 relevance that is scoped to the incident, so a case probing one axis of a

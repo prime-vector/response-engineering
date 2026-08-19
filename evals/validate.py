@@ -82,6 +82,10 @@ def named_uris(case):
     return out
 
 
+def covering_runbooks():
+    return sorted(set(COVERING_PROCEDURE.values()))
+
+
 # --------------------------------------------------------------------------
 # Checks. Each returns a list of failure strings, empty when the case holds.
 # --------------------------------------------------------------------------
@@ -204,6 +208,48 @@ def check_relevance_groups(cases):
                     out.append(f"relevance_group {name}: {first['id']} and "
                                f"{other['id']} disagree on {field}")
     return out
+
+
+# A runbook covers a signature type when the procedure is about that failure.
+# Stated here rather than inferred, because the corpus does not encode it and
+# guessing it from title words would be a checker that agrees with whoever
+# named the file.
+COVERING_PROCEDURE = {
+    "host.memory.exhaustion": "corpus://runbooks/memory-pressure",
+    "host.memory.pressure": "corpus://runbooks/memory-pressure",
+    "container.memory.limit": "corpus://runbooks/container-resource-limits",
+}
+
+
+def check_covering_procedure(case, corpus):
+    """Every case whose failure has a procedure in the archive either names it
+    or argues why not.
+
+    This check exists because the same defect was found in four consecutive
+    reviews, one group at a time: the composite cluster, then the near misses,
+    then the applies group, then record status. Each fix was correct and each
+    was applied only where somebody happened to be looking. A rule enforced by
+    attention gets exactly as far as the attention does.
+
+    The worst instance was d01, which omitted the procedure AND declared
+    precedent_exists false, so an agent citing the runbook correctly scored as
+    a false precedent while a refusal scored as correct. A gold set can be
+    wrong in the direction of over-refusal too, and nothing else here would
+    have caught that.
+    """
+    signature = case["signature"].split(":")[0]
+    runbook = COVERING_PROCEDURE.get(signature)
+    if not runbook:
+        return []
+    if str(corpus[runbook]["recorded_at"]) > str(case["as_of"])[:10]:
+        return []                      # not written yet at this bound
+    if runbook in (case["expect"].get("relevant") or []):
+        return []
+    if str(case["expect"].get("covering_procedure_waived", "")).strip():
+        return []
+    return [f"{signature} is covered by {runbook}, which is in reach at this "
+            f"bound and is neither named relevant nor waived in "
+            f"covering_procedure_waived"]
 
 
 def check_floor(case, index_label):
@@ -370,6 +416,7 @@ def main():
             problems += check_unreachable_by_bound(case, corpus)
             problems += check_reachable(case, corpus)
             problems += check_must_not_cite_status(case, corpus)
+            problems += check_covering_procedure(case, corpus)
             problems += check_floor(case, index_label)
             problems += check_candidates(case)
             problems += check_must_be_retrieved(case)

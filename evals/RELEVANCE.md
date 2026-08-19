@@ -21,7 +21,7 @@ the subtle version of fitting to the retriever: a (case, document) pair left out
 because the probe cannot reach it is never counted as a miss, and the published
 recall figure rises without retrieval improving. That is exactly what happened
 in the first version of this dataset, and it is why the observed figure moved
-from 36/41 to 36/54 with no change to the retriever.
+from 36/41 to 36/55 with no change to the retriever.
 
 **Consequence two: relevance still has to discriminate.** A document is relevant
 when it would change what the responder does or believes: the shape matches, or
@@ -128,6 +128,60 @@ investigative work on a host where nothing is wrong. The right answer is
 
 So the test is not "does the signature type have a runbook". It is whether the
 procedure's guidance is the right thing to do here. `c06` yes, `c08` no.
+
+`validate.py` now enforces this rather than trusting it. Any case whose
+signature type has a covering procedure in reach must either name it or fill
+`covering_procedure_waived`, which is what `c08` does.
+
+### Record status (`d01`, `d02`, `d03`)
+
+`d01` is the case this whole rule cost the most to get right, and it is worth
+recording why rather than just correcting it.
+
+It was written as a refusal: the best-matching record is `DRAFT-2508`, a draft
+cannot ground a claim, so `no_applicable_precedent` looked correct. That was
+true of the incident records and false of the archive. `memory-pressure` opens
+on a host reported as swapping, `d01` is a host swapping with the working set
+unmeasured, and the runbook is in reach at this bound.
+
+The consequence was not a missed document. It was a gold set teaching the wrong
+answer: with `precedent_exists: false`, an agent that correctly cited the
+procedure scored as a **false precedent**, and one that refused scored as
+correct. A dataset can be wrong in the direction of over-refusal, and this one
+was. Refusal is a feature of this agent, which is exactly why a case that
+rewards it wrongly is expensive.
+
+`d01` now expects the procedure cited and `DRAFT-2508` refused. That is a
+sharper test than the original: it separates "will not ground a claim on an
+unreviewed note" from "will not answer".
+
+`d02` and `d03` are the composite incident and are covered above.
+
+### Novel (`e01` to `e10`)
+
+`relevant` is empty, and this needs no waiver: these are TLS, DNS, deadlock,
+clock skew and quota failures. No procedure in this corpus covers any of them,
+and the corpus holds no counterpart record. The refusal is the relevance floor
+working, not a judgement call.
+
+### The time bound (`f01` to `f04`)
+
+Relevance is whatever survives the bound, which is what these cases are for.
+`f01` at 2025-09-01 and `f02` at 2025-08-01 are genuinely empty for their
+failure. `f03` at 2025-10-01 names `INC-2350` alone: the runbooks are not
+recorded until 2026-01-12, so the covering procedure does not exist yet.
+Likewise `f04` at 2026-01-01, eleven days early.
+
+That is the honest reason those cases carry no runbook, and it is checkable
+against `recorded_at` rather than argued.
+
+### Identity (`g01`, `g02`)
+
+`g01` is the composite incident in a thinner view and is covered above. `g02` is
+a disk latency incident: no procedure in the corpus covers disk latency, and its
+only listed document is the one it must **not** cite, `INC-2446`, which is about
+the same host and a different failure. That is the identity collapse in its
+purest form, the right machine and the wrong incident.
 
 Runbooks are listed when the procedure covers the failure being investigated,
 not whenever the topic is adjacent. `container-resource-limits` appears on `b04`

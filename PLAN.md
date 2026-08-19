@@ -115,7 +115,7 @@ Two things the reject path settled. A soft stripped prompt does not force the fa
 
 Phase 4 is in progress. The dataset is written and the baseline table is not.
 
-`evals/dataset.yaml` holds 38 cases against the 17-document corpus: 14 where no
+`evals/dataset.yaml` holds 38 cases against the 17-document corpus: 13 where no
 applicable precedent exists, 7 near misses, and the rest split across precedent
 that genuinely transfers, draft record status, the time bound and identity.
 `evals/validate.py` asserts every claim the corpus can settle, against both
@@ -146,7 +146,7 @@ Two things the dataset settled, both of which change what the spec asked for:
   widened the scoring band.
 
 One early figure, and it is a floor rather than a baseline: on a single canonical
-query per case at limit 8, the surface reaches 36 of 54 relevant documents under
+query per case at limit 8, the surface reaches 36 of 55 relevant documents under
 heading-aware and 38 under fixed. One query per case where the spec tells the
 agent to issue several, so a case probing one axis of a multi-axis incident is
 counted as missing what its other axis reaches. That fixed currently edges
@@ -160,7 +160,7 @@ the incident, so a document a case's probe could not reach was often not listed
 and never counted as a miss: four cases probing one incident disagreed about
 which documents mattered. Relevance is now a property of (`as_of`, `symptom`,
 `evidence`, `missing_evidence`), the judgements are recorded in
-`evals/RELEVANCE.md`, and the figure moved from 36/41 to 36/54 across three rounds of review, with no
+`evals/RELEVANCE.md`, and the figure moved from 36/41 to 36/55 across four rounds of review, with no
 change to the retriever. The bookkeeping moved, not the retrieval.
 
 ---

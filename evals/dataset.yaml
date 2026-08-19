@@ -102,6 +102,13 @@
 #                     first version of this dataset is what that looks like
 #                     when it is forgotten.
 #
+#   expect.covering_procedure_waived   why a runbook that covers this case's
+#                     signature type, and is in reach at its bound, is
+#                     nonetheless not relevant. Required whenever one is
+#                     omitted, because omitting it silently is how the same
+#                     defect reached four groups in a row: the rule was applied
+#                     where someone was looking and not where they were not.
+#
 #   expect.must_not_cite_reason   why a FILED document cannot ground a claim,
 #                             per uri. Drafts need none: record_status already
 #                             says it. Anything else has to argue it here.
@@ -737,6 +744,13 @@ cases:
         - corpus://incidents/INC-2489
       applicability:
         corpus://incidents/INC-2489: applies
+      covering_procedure_waived: >
+        memory-pressure is in reach and covers this signature type, and it is
+        deliberately not relevant. It sends a responder to snapshot and
+        attribute the memory before changing anything, which is investigative
+        work on a host where nothing is wrong: the overcommit is intended and
+        the page fault rate is inside the host's own baseline. The right answer
+        is INC-2489, correct the threshold and change nothing on the host.
       divergence_names:
         - nothing links the overcommit setting to the alert that fired, here
           as there
@@ -749,10 +763,11 @@ cases:
   - id: d01
     group: record_status
     intent: >
-      The only retrievable match is a draft. Nothing filed touches this
-      shape, so no_applicable_precedent is correct even though the archive
-      returns a passage that matches well. A precedent here is a precedent
-      resting on an unreviewed note.
+      The best-matching record is a draft and cannot ground a claim, but a
+      filed runbook covers the failure. So the correct answer is the procedure
+      cited and the draft refused, not a refusal: an agent that declines
+      outright has over-refused, and one that cites the working note has
+      grounded a claim on something unreviewed.
     as_of: "2026-03-17T19:30:00+00:00"
     symptom: >
       Swap climbing overnight since two batch schedules began starting in the
@@ -764,15 +779,28 @@ cases:
       - Peak working set of each batch job.
     query: overlapping batch schedules swap thrash nightly
     expect:
-      precedent_exists: false
-      relevant: []
+      precedent_exists: true
+      relevant:
+        - corpus://runbooks/memory-pressure
+      applicability:
+        corpus://runbooks/memory-pressure: applies
       must_not_cite:
         - corpus://incidents/DRAFT-2508
+      divergence_names:
+        - the peak working set of each batch job has not been measured, so the
+          standing condition the procedure asks for is not established
       note: >
-        Retrieval is working: DRAFT-2508 clears the floor on this query and is
-        the right document to have found. The refusal is a record_status
-        judgement made after retrieval, not a retrieval failure, so
-        precedent_hit_rate is not scored on this case.
+        DRAFT-2508 clears the floor on this query and is the right document to
+        have found. What it cannot do is ground a claim.
+
+        An earlier version of this case set precedent_exists false, on the
+        reasoning that nothing filed touched this shape. That was true of the
+        incident records and false of the archive: the memory-pressure runbook
+        opens on a host reported as swapping and is in reach at this bound. The
+        effect was that an agent correctly citing the procedure scored as a
+        false precedent while a refusal scored as correct, which is the dataset
+        teaching over-refusal. That is the opposite failure to the one this
+        agent is built against and no less wrong.
 
   - id: d02
     relevance_group: composite-bridge-denial-axis

@@ -226,7 +226,7 @@ reference and the design notes in `evals/README.md`.
 ```
 
 At least eight entries with `precedent_exists: false`, and at least four near-miss cases.
-The dataset carries 14 and 7, and `evals/validate.py` asserts both minima.
+The dataset carries 13 and 7, and `evals/validate.py` asserts both minima.
 
 **Ground truth names documents, not passages.** This section previously specified
 `expected_passages: [<passage_id>, ...]`, which cannot work. `corpus/ingest.py`
