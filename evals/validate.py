@@ -308,6 +308,46 @@ def check_floor(case, index_label):
     return []
 
 
+def check_scoring(case, index_label):
+    """Figures a case states about its own probe: how much scored at all, and
+    where a document landed in the returned order.
+
+    These were prose in the intent text, which the header promised was checked
+    and which nothing read. One had already rotted: g01 claimed the unstripped
+    query clears the floor seven times, which is the fixed index's figure,
+    while heading-aware gives nine. A number in a comment is a number nobody
+    is holding to anything.
+    """
+    out = []
+    expect = case["expect"]
+
+    stated = expect.get("scoring_above_zero")
+    if stated and index_label in stated:
+        got = search(case)["total_scoring_above_zero"]
+        if got != stated[index_label]:
+            out.append(f"total_scoring_above_zero is {got} against "
+                       f"{index_label}, case states {stated[index_label]}")
+
+    for uri, rank in (expect.get("rank_of") or {}).items():
+        returned = uris(search(case))
+        if uri not in returned:
+            out.append(f"rank_of names {uri}, which the probe does not return")
+        elif returned.index(uri) + 1 != rank:
+            out.append(f"{uri} is at rank {returned.index(uri) + 1} against "
+                       f"{index_label}, case states {rank}")
+
+    probe = expect.get("identity_probe")
+    if probe and index_label in (probe.get("floor_cleared") or {}):
+        got = rpc("precedent_search", {"symptom_text": probe["query"],
+                                       "before": case["as_of"], "limit": 8})
+        want = probe["floor_cleared"][index_label]
+        if got["cleared_floor"] != want:
+            out.append(f"identity probe clears the floor "
+                       f"{got['cleared_floor']} times against {index_label}, "
+                       f"case states {want}")
+    return out
+
+
 def check_candidates(case):
     stated = case["expect"].get("candidates_considered")
     if stated is None:
@@ -469,6 +509,7 @@ def main():
             problems += check_must_not_cite_status(case, corpus)
             problems += check_covering_procedure(case, corpus)
             problems += check_coverage(case)
+            problems += check_scoring(case, index_label)
             problems += check_floor(case, index_label)
             problems += check_candidates(case)
             problems += check_must_be_retrieved(case)

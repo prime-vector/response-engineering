@@ -14,8 +14,11 @@
 # either is derived from any engagement. Third parties appear only as generic
 # categories, never in a causal role.
 #
-#   python3 evals/validate.py                                  # both indexes
+#   python3 evals/validate.py                                  # heading-aware
 #   python3 evals/validate.py --index corpus/index.fixed.json  # the baseline
+#
+# Two commands, one index each. CI runs both; a local run of the first has
+# checked half of what the cases claim.
 #
 # ---------------------------------------------------------------------------
 # Why ground truth names documents and not passages
@@ -101,6 +104,12 @@
 #                     otherwise a thing a later edit has to remember, and the
 #                     first version of this dataset is what that looks like
 #                     when it is forgotten.
+#
+#   expect.scoring_above_zero / rank_of / identity_probe   figures a case
+#                     states about retrieval, as fields rather than prose.
+#                     Per index wherever the two differ, because quoting one
+#                     index's number as though it were general is how g01 came
+#                     to claim 7 when heading-aware gives 9.
 #
 #   expect.coverage_expect   what coverage_describe must report at this bound,
 #                     as fields rather than prose. It was prose, and prose is
@@ -274,8 +283,9 @@ cases:
     group: composite
     intent: >
       Query dilution, measured as a case rather than described. The reported
-      symptom used whole scores 79 of 82 passages above zero and clears the
-      floor 0 times, so an agent that issues one verbose query retrieves
+      symptom used whole scores above zero on nearly every passage the bound
+      allows, 79 of 82 heading-aware and 38 of 39 fixed, and clears the floor
+      0 times, so an agent that issues one verbose query retrieves
       nothing and refuses. The archive holds precedent, so that refusal is a
       false refusal and this case is what makes false_refusal_rate mean
       something.
@@ -312,6 +322,9 @@ cases:
       floor_cleared:
         heading: 0
         fixed: 0
+      scoring_above_zero:
+        heading: 79
+        fixed: 38
       note: >
         floor_cleared 0 is a property of the canonical query, not of the case.
         The agent is expected to recover by querying distinctive terms and
@@ -846,6 +859,8 @@ cases:
         - corpus://incidents/DRAFT-2601
       must_be_retrieved:
         - corpus://incidents/DRAFT-2601
+      rank_of:
+        corpus://incidents/DRAFT-2601: 1
       divergence_names:
         - process-level attribution never captured in the prior records
       queries_must_not_contain: ["intg-prod-a1"]
@@ -1080,8 +1095,9 @@ cases:
   - id: f01
     group: time_bound
     intent: >
-      A bound early enough that the archive holds almost nothing. Two
-      passages score above zero and none clears the floor, so the refusal is
+      A bound early enough that the archive holds almost nothing. Almost
+      nothing scores at all, 2 passages of 6 heading-aware and 1 of 2 fixed,
+      and none clears the floor, so the refusal is
       correct and date_range has to show how little was covered.
     as_of: "2025-09-01T00:00:00+00:00"
     symptom: >
@@ -1095,6 +1111,7 @@ cases:
       precedent_exists: false
       relevant: []
       floor_cleared: {heading: 0, fixed: 0}
+      scoring_above_zero: {heading: 2, fixed: 1}
       coverage_expect:
         date_range_ends_on_or_before: "2025-09-01"
         max_document_count: 3
@@ -1197,10 +1214,11 @@ cases:
     group: identity
     intent: >
       The signature arrives with the entity id attached, as the signals carry
-      it. Querying it unstripped clears the floor seven times and returns
-      records selected partly on the shared `prod` fragment of a hostname,
-      which is retrieval on identity wearing the costume of retrieval on
-      symptom.
+      it. Querying it unstripped clears the floor 9 times heading-aware and 7
+      fixed, returning records selected partly on the shared `prod` fragment
+      of a hostname, which is retrieval on identity wearing the costume of
+      retrieval on symptom. The figure differs by index, and an earlier
+      version of this case quoted the fixed one as though it were general.
     as_of: "2026-03-17T19:30:00+00:00"
     symptom: >
       Memory exhaustion on the integration host, recurring daily.
@@ -1222,6 +1240,9 @@ cases:
       must_not_cite:
         - corpus://incidents/DRAFT-2601
       queries_must_not_contain: ["intg-prod-a1", "intg-prod"]
+      identity_probe:
+        query: host.memory.exhaustion:intg-prod-a1
+        floor_cleared: {heading: 9, fixed: 7}
 
   - id: g02
     group: identity

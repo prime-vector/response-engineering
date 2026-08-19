@@ -104,6 +104,9 @@ index:
 - a case whose failure has a covering procedure in the archive, in reach at its
   bound, either names it or argues the omission in `covering_procedure_waived`
 - what `coverage_describe` reports at a case's bound matches `coverage_expect`
+- the retrieval figures a case states, per index: how much scored above zero,
+  where a named document lands in the returned order, and what an identity
+  probe clears
 - stated `cleared_floor` and `candidates_considered` figures still hold
 - `must_be_retrieved` documents are still returned, so a case about rejecting
   the hindsight trap fails rather than passing vacuously if the trap stops
@@ -115,6 +118,12 @@ index:
 
 Negative-tested: each of those checks was confirmed to fail on a deliberately
 broken case before being relied on.
+
+The last three of those exist because figures kept living in prose. A number in
+an `intent` paragraph is a comment, and one had already rotted before anyone
+noticed: `g01` claimed its identity probe clears the floor seven times, which is
+the fixed index's figure, while heading-aware gives nine. Anything a case
+asserts about retrieval is a field now.
 
 ### What validate.py deliberately does not check
 
