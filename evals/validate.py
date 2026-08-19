@@ -27,8 +27,10 @@ than an import of its internals.
 """
 
 import argparse
+import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -63,6 +65,57 @@ def search(case, limit=8):
 
 def uris(result):
     return [p["source_uri"] for p in result.get("passages", [])]
+
+
+def fingerprint(corpus):
+    """sha256 over every (source_uri, sha256) pair, sorted.
+
+    Contents, not names. A document can be rewritten under the same uri, or a
+    new one added, and every name a case cites still resolves while the
+    judgement behind it no longer describes what is there.
+    """
+    pairs = sorted((uri, doc["sha256"]) for uri, doc in corpus.items())
+    body = "\n".join(f"{uri} {sha}" for uri, sha in pairs)
+    return hashlib.sha256(body.encode()).hexdigest()
+
+
+def check_corpus_fingerprint(dataset, corpus):
+    """The corpus this ground truth was judged against, exactly.
+
+    Deliberately a failure rather than a warning. Re-reading the judgements is
+    the work; --repin is the two seconds afterwards.
+    """
+    want = dataset.get("corpus_fingerprint")
+    if not want:
+        return ["the dataset names no corpus_fingerprint, so ground truth is "
+                "pinned to nothing"]
+    got = fingerprint(corpus)
+    if got == want:
+        return []
+    out = [f"corpus fingerprint is {got[:16]}, dataset pinned to "
+           f"{want[:16]}: the documents these judgements were made against "
+           f"have changed"]
+    count = dataset.get("corpus_document_count")
+    if count is not None and count != len(corpus):
+        out.append(f"document count is {len(corpus)}, dataset pinned to "
+                   f"{count}")
+    out.append("re-read the affected judgements in evals/RELEVANCE.md, then "
+               "re-pin with: python3 evals/validate.py --repin")
+    return out
+
+
+def repin(dataset_path, corpus):
+    """Rewrite the pin in place. Deliberately a separate, explicit act."""
+    with open(dataset_path) as handle:
+        text = handle.read()
+    text = re.sub(r"^corpus_fingerprint: .*$",
+                  f"corpus_fingerprint: {fingerprint(corpus)}",
+                  text, count=1, flags=re.M)
+    text = re.sub(r"^corpus_document_count: .*$",
+                  f"corpus_document_count: {len(corpus)}",
+                  text, count=1, flags=re.M)
+    with open(dataset_path, "w") as handle:
+        handle.write(text)
 
 
 def load_corpus():
@@ -495,6 +548,10 @@ def observe_hit_coverage(cases):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--index", default="corpus/index.json")
+    parser.add_argument("--repin", action="store_true",
+                        help="Re-pin corpus_fingerprint to the corpus as it "
+                             "is now. Do this after re-reading the judgements "
+                             "a corpus change affects, not instead of it.")
     args = parser.parse_args()
     index_label = "fixed" if "fixed" in args.index else "heading"
 
@@ -502,6 +559,12 @@ def main():
         dataset = yaml.safe_load(handle)
     cases = dataset["cases"]
     corpus = load_corpus()
+
+    if args.repin:
+        repin(DATASET, corpus)
+        print(f"re-pinned to {fingerprint(corpus)[:16]}, "
+              f"{len(corpus)} documents")
+        return 0
 
     proc = subprocess.Popen(
         [sys.executable, "mock/adapter.py", "--surface", "precedent_archive",
@@ -522,6 +585,11 @@ def main():
               f"({index_label})\n")
 
         failures = 0
+        for problem in check_corpus_fingerprint(dataset, corpus):
+            print(f"  FAIL  corpus: {problem}")
+        if check_corpus_fingerprint(dataset, corpus):
+            failures += 1
+
         for case in cases:
             problems = []
             problems += check_uris_exist(case, corpus)

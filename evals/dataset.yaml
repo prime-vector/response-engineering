@@ -148,9 +148,25 @@
 #                             differently and the difference is the point.
 
 dataset_version: 1
-corpus_sha_note: >
-  Written against the 17-document corpus, date range 2025-08-19 to 2026-03-10.
-  validate.py fails if a case names a source_uri the corpus no longer holds.
+
+# The exact corpus this ground truth was judged against: sha256 over every
+# (source_uri, sha256) pair in corpus/manifest.yaml, sorted.
+#
+# Checking that named documents still exist is not enough, which is what this
+# used to be. A relevant document can be rewritten, or a new one added that
+# changes what a responder would want, and every uri a case names still
+# resolves while the judgements behind them have quietly gone stale. Ground
+# truth is a judgement about particular documents, so it is pinned to their
+# contents.
+#
+# A corpus change is meant to fail here. It is not a chore: it means somebody
+# has to re-read the affected judgements in evals/RELEVANCE.md and decide
+# whether they still hold. Once they have:
+#
+#   python3 evals/validate.py --repin
+#
+corpus_fingerprint: 90d95cfdd67ed1a2133e57c9f367176131ef8dcfb600627a130741f547c284df
+corpus_document_count: 17
 
 cases:
 

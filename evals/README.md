@@ -23,6 +23,7 @@ The runner and the metrics are not written yet. See **Status** below.
 ```bash
 python3 evals/validate.py                                   # heading-aware index
 python3 evals/validate.py --index corpus/index.fixed.json   # the Phase 4 baseline
+python3 evals/validate.py --repin                           # after a corpus change
 ```
 
 Needs PyYAML. Neither an API key nor the `patches/` provider patch is required:
@@ -94,6 +95,12 @@ agrees with itself.
 The cases are made checkable instead. `validate.py` asserts, per case and per
 index:
 
+- the corpus is the one this ground truth was judged against, by a fingerprint
+  over every document's sha256. Names existing is not enough: a document can be
+  rewritten under the same uri, or a new one added, and every citation still
+  resolves while the judgement behind it has gone stale. A corpus change fails
+  here on purpose, and `--repin` is what you run after re-reading the affected
+  judgements rather than instead of it
 - every `source_uri` named still exists in the corpus
 - a document claimed unreachable at a bound really is recorded after it
 - a document named relevant is not one the bound puts out of reach
