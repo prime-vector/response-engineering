@@ -578,10 +578,18 @@ cases:
         - corpus://incidents/INC-2350
         - corpus://runbooks/memory-pressure
       applicability:
-        corpus://incidents/INC-2350: applies
+        # partial, not applies. INC-2350 was settled by a process snapshot
+        # attributing 6 GiB to the shipper, and that attribution is this
+        # case's outstanding evidence. A prior incident settled by evidence
+        # nobody has here yet does not transfer, which is the agent's own
+        # rule 5, and this case's divergence says as much while the truth
+        # used to say otherwise.
+        corpus://incidents/INC-2350: partial
         corpus://runbooks/memory-pressure: applies
       divergence_names:
-        - the buffering process here has not been identified yet
+        - the prior incident was settled by a process snapshot attributing the
+          memory, and that attribution is outstanding here, so the unreachable
+          destination is correlation rather than an established cause
 
   - id: c02
     group: applies
@@ -1167,14 +1175,18 @@ cases:
       relevant:
         - corpus://incidents/INC-2350
       applicability:
-        corpus://incidents/INC-2350: applies
+        # partial for the same reason as c01: INC-2350 was settled by a
+        # process snapshot attributing the memory, and that attribution is
+        # outstanding here too.
+        corpus://incidents/INC-2350: partial
       queries_must_not_contain: ["etl-prod-c1"]
       unreachable_by_bound:
         - corpus://incidents/INC-2411
         - corpus://incidents/INC-2419
         - corpus://runbooks/memory-pressure
       divergence_names:
-        - the buffering process has not been identified here
+        - the prior incident was settled by a process snapshot attributing the
+          memory, and that attribution is outstanding here
 
   - id: f04
     group: time_bound

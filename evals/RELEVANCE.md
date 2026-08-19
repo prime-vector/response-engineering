@@ -188,6 +188,45 @@ not whenever the topic is adjacent. `container-resource-limits` appears on `b04`
 and `c02` because a container limit is genuinely in question; it does not appear
 on host-exhaustion cases that mention no container runtime.
 
+## Applicability, which no check can settle
+
+`relevant` says a document belongs in front of the responder. `applicability`
+says how far it transfers, and that is a judgement about evidence rather than a
+property of the corpus. Nothing in `validate.py` can decide it.
+
+The test is the agent's own rule 5: **a prior incident settled by evidence
+nobody has here yet does not transfer.** So the question for every `applies` is
+whether the deciding evidence of the prior record exists in this case.
+
+`c01` failed that test and read as `applies` for five rounds. `INC-2350` was
+settled by a process snapshot attributing 6 GiB to the log shipper, and that
+attribution is `c01`'s outstanding evidence. The case's own `divergence_names`
+said the buffering process had not been identified, while the truth beside it
+said the precedent applied. It is `partial`.
+
+`c02` looks like the same shape and is not, which is why both are written here.
+It also lacks a detail, "what grew without a bound", but it has **confirmed the
+mechanism**: host memory and swap flat throughout, container terminated on its
+own limit. That is the discriminating fact `INC-2305` turns on, and it is
+established rather than inferred. What is missing is which consumer to bound,
+a detail of the remedy rather than of whether the precedent transfers.
+
+The line is confirmed mechanism against inferred one. `c01` has a correlation,
+an unreachable destination, and no attribution tying it to the memory. `c02` has
+the mechanism in hand.
+
+`f03` carried the same defect as `c01`, on the same document, and was not
+reported: it cites `INC-2350` with the attribution equally outstanding. The gate
+named `c01`; checking every remaining `applies` on a prior incident record
+against its case's `missing_evidence` found `f03` too. Both are `partial`.
+
+The remaining four hold. `c03` has the recorded migration and an unchanged
+process inventory, which is what `INC-2407` turns on; the missing capacity plan
+is a remedy detail. `c04` has confirmed the parity gap, which is the whole of
+`INC-2377`. `c05` has the newest change named with nothing distinguishing it,
+which is exactly `INC-2402`, and the evidence it lacks is the evidence that
+incident also lacked. `c08` is missing nothing.
+
 ## What is deliberately not judged here
 
 Section-level relevance: which part of a relevant document a citation should
