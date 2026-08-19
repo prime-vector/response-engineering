@@ -165,6 +165,11 @@ tasks:
             theory. "Collecting process-level attribution on the affected
             host" is activity. "Investigating the compliance agent" names a
             suspect and does not belong in an outward update.
+
+            An empty list is a valid input and means no activity has been
+            characterised yet, the same first-class state as an empty impact.
+            An early update that can only say "we know, and you will hear from
+            us at four" is a real update.
           items:
             type: object
             properties:
@@ -215,9 +220,15 @@ tasks:
           description: >
             Activity, not theory. Each entry describes work under way without
             naming what it suspects.
+
+            Empty when work_in_progress is empty. This carried minItems 1
+            while the input treated an empty list as valid, which left the
+            model no way to be accurate about an update issued before any
+            activity had been characterised: it had to invent a line of work
+            to satisfy the schema, which is the opposite of the rule that says
+            report what is true.
           items:
             type: string
-          minItems: 1
         cause_status:
           type: string
           description: >
@@ -289,6 +300,11 @@ prompts:
        under way. A line that names what the work suspects has smuggled the
        board into an outward update.
 
+       Where work_in_progress is empty, what_is_being_done is empty and
+       impact_statement says the work under way has not been characterised
+       yet. Do not invent activity to fill it. "We are treating this with
+       urgency" is not activity, and a reader can tell.
+
     5. Commit to the next update. next_update_at is when they will hear from
        you again, taken from next_update_due. An update that does not say
        when the next one comes generates the chasing it exists to prevent.
@@ -310,8 +326,9 @@ prompts:
     contain digit grouping; formatted figures belong inside strings.
 
     cause_status is exactly one of: not established, under investigation.
-    what_is_being_done is a non-empty array of plain strings. Never emit
-    null, [] or {} for a string field: omit optional fields you cannot fill.
+    what_is_being_done is an array of plain strings, and is [] when no
+    activity has been characterised. Never emit null, [] or {} for a string
+    field: omit optional fields you cannot fill.
 
   user: |
     Update as of: {{ as_of }}

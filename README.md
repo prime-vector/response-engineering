@@ -16,7 +16,7 @@ Every arrow between agents is a typed output whose claims carry `confidence` and
 
 ## Status
 
-Early. Six agents written, mock adapters serving five tool surfaces. All of them verified live against the mocks, and the handoffs between them are dataflow, not narration: `demos/investigate.sh` composes the three acts in one run, the correlator's typed output becoming the commander's `correlation` input and the commander's live board becoming the Scribe's timeline input, each stage producing contract-valid output. The Precedent Analyst runs standalone against the archive; composing it into the investigation is next. The five governance failure modes are scripted and verified live: `demos/governance.sh` exits zero only when the sandbox blocks, the contract rejects, the attribution guard fires, an ungrounded precedent is refused and a novel incident returns no applicable precedent with its coverage.
+Early. Six agents written, mock adapters serving five tool surfaces. The five investigation agents verified live against the mocks, and the handoffs between them are dataflow, not narration: `demos/investigate.sh` composes the three acts in one run, the correlator's typed output becoming the commander's `correlation` input and the commander's live board becoming the Scribe's timeline input, each stage producing contract-valid output. The Precedent Analyst runs standalone against the archive; composing it into the investigation is next. The five governance failure modes are scripted and verified live: `demos/governance.sh` exits zero only when the sandbox blocks, the contract rejects, the attribution guard fires, an ungrounded precedent is refused and a novel incident returns no applicable precedent with its coverage.
 
 | Artefact | State |
 | --- | --- |
