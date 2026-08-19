@@ -196,6 +196,8 @@ cases:
         corpus://runbooks/denial-log-collection: applies
       must_not_cite:
         - corpus://incidents/DRAFT-2601
+      must_be_retrieved:
+        - corpus://incidents/DRAFT-2601
       divergence_names:
         - no heap or tuning change on this host
         - process-level attribution never captured
@@ -739,6 +741,8 @@ cases:
         corpus://incidents/INC-2288: superseded
       must_not_cite:
         - corpus://incidents/DRAFT-2601
+      must_be_retrieved:
+        - corpus://incidents/DRAFT-2601
       divergence_names:
         - suppressing before collecting removes the evidence permanently
       queries_must_not_contain: ["intg-prod-a1"]
@@ -806,6 +810,8 @@ cases:
       applicability:
         corpus://runbooks/memory-pressure: applies
       must_not_cite:
+        - corpus://incidents/DRAFT-2508
+      must_be_retrieved:
         - corpus://incidents/DRAFT-2508
       divergence_names:
         - the peak working set of each batch job has not been measured, so the
@@ -1238,6 +1244,8 @@ cases:
         corpus://incidents/INC-2419: partial
         corpus://runbooks/memory-pressure: applies
       must_not_cite:
+        - corpus://incidents/DRAFT-2601
+      must_be_retrieved:
         - corpus://incidents/DRAFT-2601
       queries_must_not_contain: ["intg-prod-a1", "intg-prod"]
       identity_probe:

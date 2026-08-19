@@ -111,6 +111,11 @@ index:
 - `must_be_retrieved` documents are still returned, so a case about rejecting
   the hindsight trap fails rather than passing vacuously if the trap stops
   being reachable
+- a document a case bars from grounding a claim, and which that case's own
+  probe returns, is guarded by `must_be_retrieved`. Three cases bar a document
+  their probe does not reach, because the agent issues queries this dataset
+  does not; `d02` holds the trap's reachability for those, and if it ever stops
+  returning it, that fails
 - a no-precedent case retrieves nothing it does not explicitly allow, so a
   refusal case cannot decay into a judgement call
 - the canonical query obeys the rule the agent is scored against, carrying no

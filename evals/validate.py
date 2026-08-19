@@ -359,6 +359,34 @@ def check_candidates(case):
     return []
 
 
+def check_barred_is_guarded(case):
+    """A case that bars a document from grounding a claim, and whose own probe
+    returns that document, has to say so in must_be_retrieved.
+
+    Without it the case passes when the document stops being retrieved, and a
+    test of "retrieved and correctly rejected" quietly becomes a test of
+    nothing. d02 had this guard and the others did not, which is the same
+    "applied where somebody was looking" pattern as the covering procedure.
+
+    Limits, stated rather than papered over: this can only guard documents the
+    canonical probe actually reaches. a03, a04 and g02 bar a document their own
+    probe does not return, because the agent issues queries this dataset does
+    not, and d02 is the case that holds the trap's reachability for all of
+    them. If d02 ever stops returning it, that fails here and the others are
+    known to be resting on it.
+    """
+    barred = set(case["expect"].get("must_not_cite") or [])
+    if not barred:
+        return []
+    exempt = set(case["expect"].get("unreachable_by_bound") or [])
+    guarded = set(case["expect"].get("must_be_retrieved") or [])
+    returned = set(uris(search(case)))
+    gap = sorted((barred & returned) - guarded - exempt)
+    return [f"{u} is barred and returned by this case's own probe, but is not "
+            f"in must_be_retrieved, so the case passes if it stops being "
+            f"retrieved" for u in gap]
+
+
 def check_must_be_retrieved(case):
     """Guards against a case going vacuous. If the trap stops being returned,
     a case about rejecting it proves nothing and should fail loudly rather
@@ -513,6 +541,7 @@ def main():
             problems += check_floor(case, index_label)
             problems += check_candidates(case)
             problems += check_must_be_retrieved(case)
+            problems += check_barred_is_guarded(case)
             problems += check_novel_refuses(case)
             problems += check_query_hygiene(case)
             if problems:
