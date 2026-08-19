@@ -51,6 +51,7 @@ That is plumbing, not the measurement. k is the bound the numbers are read at.
 
 import argparse
 import json
+import math
 import os
 import statistics
 import subprocess
@@ -358,10 +359,15 @@ def run(config, stamp):
         "latency_ms": {
             "calls": len(latencies),
             "p50": round(statistics.median(latencies), 2),
-            "p95": round(sorted(latencies)[int(len(latencies) * 0.95) - 1], 2),
-            "note": "the mock surface over loopback JSON-RPC. It measures this "
-                    "repo's fixture retriever, not a vector store, and is not "
-                    "a latency claim about anything deployable.",
+            # Nearest rank, ceiling not truncation: int() puts p95 of 50
+            # calls on the 47th value rather than the 48th.
+            "p95": round(sorted(latencies)[math.ceil(len(latencies) * 0.95) - 1],
+                         2),
+            "note": "the mock surface over loopback JSON-RPC, and a mixture of "
+                    "two probes per case at two different passage limits. It "
+                    "measures this repo's fixture retriever, not a vector "
+                    "store, and is not a latency claim about anything "
+                    "deployable.",
         },
         "not_measured": {name: why for name, why in JUDGEMENT_METRICS},
         "per_case": scored,
