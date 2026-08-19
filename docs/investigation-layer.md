@@ -44,7 +44,9 @@ automated detection went into an empty room.
 ## The layer: six agents, six contracts, one job each
 
 This is not one agent with many tools. It is six specs, each declared as code,
-each validated in CI, each owning one narrow job and one surface. That
+each validated in CI, each owning one narrow job. The rule about surfaces is
+that every surface has exactly one owner, not that every agent has one: the
+Incident Commander and Comms own none, which is the point of both. That
 decomposition is what makes the rest possible: a single agent holding every
 capability has no seam to put a contract on.
 
@@ -69,7 +71,7 @@ Five words, fixed, and the same five wherever a claim is carried. Comms is the e
 confirmation, and a hypothesis with no falsifying test is an opinion that must
 be labelled as one.
 
-### How the five compose into a run
+### How the five are meant to compose, and what runs today
 
 One command runs the lot. Each stage's typed output becomes the next stage's
 input, and the driver parses every stage before using it rather than trusting

@@ -15,8 +15,8 @@
 #
 # Be precise about how much of that the schema buys, because the first draft of
 # this comment was not. There is no board input, no evidence, no hypotheses, no
-# correlation and no precedent, and no output field a cause could go in. That
-# is a real narrowing and it is where the design work is.
+# correlation and no precedent, and no dedicated cause field in the output.
+# That is a real narrowing and it is where the design work is.
 #
 # It is not a fence. impact and work_in_progress carry prose, and prose can
 # carry a cause: an item reading "the compliance agent is consuming memory"
