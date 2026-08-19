@@ -10,13 +10,13 @@ Built on [Open Agent Spec](https://github.com/prime-vector/open-agent-spec).
 
 Every arrow between agents is a typed output whose claims carry `confidence` and `falsifying_test` as required fields: a claim cannot shed its caveats when it changes hands. No agent reads another's evidence surface, and the record is written only through a tool call the adapter log can prove.
 
-[**The Investigation Layer**](docs/investigation-layer.md) walks the whole thing through with diagrams: the fifteen days nobody consumed, what each of the five agents refuses to do, where the sandbox block actually lives, and why the retrieval surface returns an empty set rather than the nearest match.
+[**The Investigation Layer**](docs/investigation-layer.md) walks the whole thing through with diagrams: the fifteen days nobody consumed, what each of the six agents refuses to do, where the sandbox block actually lives, and why the retrieval surface returns an empty set rather than the nearest match.
 
 ---
 
 ## Status
 
-Early. Five agents written, mock adapters serving five tool surfaces. All of them verified live against the mocks, and the handoffs between them are dataflow, not narration: `demos/investigate.sh` composes the three acts in one run, the correlator's typed output becoming the commander's `correlation` input and the commander's live board becoming the Scribe's timeline input, each stage producing contract-valid output. The Precedent Analyst runs standalone against the archive; composing it into the investigation is next. The five governance failure modes are scripted and verified live: `demos/governance.sh` exits zero only when the sandbox blocks, the contract rejects, the attribution guard fires, an ungrounded precedent is refused and a novel incident returns no applicable precedent with its coverage.
+Early. Six agents written, mock adapters serving five tool surfaces. All of them verified live against the mocks, and the handoffs between them are dataflow, not narration: `demos/investigate.sh` composes the three acts in one run, the correlator's typed output becoming the commander's `correlation` input and the commander's live board becoming the Scribe's timeline input, each stage producing contract-valid output. The Precedent Analyst runs standalone against the archive; composing it into the investigation is next. The five governance failure modes are scripted and verified live: `demos/governance.sh` exits zero only when the sandbox blocks, the contract rejects, the attribution guard fires, an ungrounded precedent is refused and a novel incident returns no applicable precedent with its coverage.
 
 | Artefact | State |
 | --- | --- |
@@ -26,6 +26,7 @@ Early. Five agents written, mock adapters serving five tool surfaces. All of the
 | `.agents/change-correlator.yaml` | Written, validates against OAS 1.6.0 |
 | `.agents/scribe.yaml` | Written, validates against OAS 1.6.0 |
 | `.agents/precedent-analyst.yaml` | Written, validates against OAS 1.6.0, recall verified live against the archive |
+| `.agents/comms.yaml` | Written, validates against OAS 1.6.0. Outward audiences only, and never given the board |
 | `interfaces/TELEMETRY.md` | Draft interface contract |
 | `fixtures/composite-incident*.json` | Generated, two views (D+1 and D+15) plus three demo forcing inputs, feed properties asserted by the generator |
 | `interfaces/PRECEDENT.md` | Draft interface contract, the `precedent_archive` surface |

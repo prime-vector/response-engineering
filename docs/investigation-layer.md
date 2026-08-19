@@ -7,7 +7,7 @@ This is a walkthrough of what this repository builds and why each control is
 shaped the way it is. `SCENARIO.md` is the source of truth for the incident it
 works from; this document is the argument that incident supports.
 
-Response Engineering is five agents with typed contracts. MCP is how they reach
+Response Engineering is six agents with typed contracts. MCP is how they reach
 evidence. Retrieval is how they reach memory. Neither is the point on its own:
 the point is what a standard seam lets you enforce across it.
 
@@ -41,9 +41,9 @@ automated detection went into an empty room.
 
 ---
 
-## The layer: five agents, five contracts, one job each
+## The layer: six agents, six contracts, one job each
 
-This is not one agent with many tools. It is five specs, each declared as code,
+This is not one agent with many tools. It is six specs, each declared as code,
 each validated in CI, each owning one narrow job and one surface. That
 decomposition is what makes the rest possible: a single agent holding every
 capability has no seam to put a contract on.
@@ -58,6 +58,7 @@ will *not* do is the load-bearing half.
 | **Precedent Analyst** | `precedent_archive` 8426 | `recall` | `no_applicable_precedent`, `search_coverage`, `precedents[]` with `grounded_in`, `divergence`, `applicability` | Return the nearest-looking match. No applicable precedent, with coverage populated, is a complete answer. |
 | **Incident Commander** | none | `assess`, `brief`, `mitigate` | `hypotheses[]` with `statement`, `confidence`, `supporting_evidence`, `contradicting_evidence`, `falsifying_test`, `rules_in`; `blocking_evidence`; `attribution_guard`; `convergence_allowed` | Converge while deciding evidence is outstanding. A hypothesis omitted from the board cannot be raised downstream. |
 | **Scribe** | `incident_record` 8425 | `timeline`, `draft_change_record` | `entries[]`, `gaps[]`, `blast_radius`, `backout_plan`, `validation_plan`, `cause_status`, `submitted: false` | Submit, approve or close. Everything it writes is a draft or an append, and the sink has no call that would let it do otherwise. |
+| **Comms** | none | `update` | `headline`, `impact_statement`, `what_is_being_done`, `cause_status`, `next_update_at` | State a cause, or name a third party at all. It is given no evidence, no hypotheses and no board, so it has no cause to state and nothing to leak. |
 
 ### The confidence vocabulary
 
@@ -73,6 +74,13 @@ be labelled as one.
 One command runs the lot. Each stage's typed output becomes the next stage's
 input, and the driver parses every stage before using it rather than trusting
 an exit code.
+
+Comms is the one agent that does not appear in the acts below. It writes
+outward, to people who are not on the bridge, and the investigation does not
+wait on it. It is in the table because the boundary is the point: the briefing
+that goes to the bridge and the update that goes to a customer are different
+artefacts derived from different inputs, and only one of them is allowed near
+a hypothesis.
 
 ![Three acts. Act one at D+1 runs the Telemetry Analyst detect task and the Precedent Analyst recall task. Act two at the D+15 bridge runs the Change Correlator, whose correlation feeds the Incident Commander assess task alongside the findings and precedent from act one. Act three runs the commander's mitigate task, which is blocked pre-dispatch, and the Scribe, which drafts the change record and files the timeline.](diagrams/three-acts.svg)
 
