@@ -37,8 +37,9 @@ agent:
   name: comms
   description: >
     Produces stakeholder updates for audiences outside the investigation.
-    Reports impact, what is being done and when the next update is due.
-    Never reports a cause, because it is never given one.
+    Reports impact, what is being done and when the next update is due. It is
+    given no board, so it has no cause to report; keeping one out of the prose
+    it is handed is the prompt's job rather than the schema's.
   # 1.5.x enum value, still well-known under 1.6.0's free-form role. This
   # agent produces an artefact from typed inputs, the same shape as the
   # Scribe. It investigates nothing and decides nothing.

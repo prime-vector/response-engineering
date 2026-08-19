@@ -356,10 +356,18 @@ tasks:
           type: string
           description: >
             Who the board is being rendered for. All three are inside the
-            response and all three get the epistemics: the audience changes
-            the depth, never the disclosure. Outward stakeholder updates are
-            a different artefact and belong to the Comms agent, which is not
-            given the board at all.
+            response and all three get the epistemics. Outward stakeholder
+            updates are a different artefact and belong to the Comms agent,
+            which is not given the board at all.
+
+            The value does not currently reach the model. This task has no
+            prompts of its own, so it inherits the root pair, which is written
+            for assess: it never substitutes {{ audience }}, it asks for
+            assess's output shape rather than this one, and its nine other
+            placeholders are not inputs here, so they arrive as literal
+            template text. brief has never been run and this is why. Do not
+            describe the audience as changing anything until the task has a
+            prompt that reads it. Tracked separately.
 
             executive_sponsor, not executive: the senior person accountable
             for this incident, on the call. The shorter word reads as the
