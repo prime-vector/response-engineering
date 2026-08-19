@@ -21,7 +21,7 @@ the subtle version of fitting to the retriever: a (case, document) pair left out
 because the probe cannot reach it is never counted as a miss, and the published
 recall figure rises without retrieval improving. That is exactly what happened
 in the first version of this dataset, and it is why the observed figure moved
-from 36/41 to 36/53 with no change to the retriever.
+from 36/41 to 36/54 with no change to the retriever.
 
 **Consequence two: relevance still has to discriminate.** A document is relevant
 when it would change what the responder does or believes: the shape matches, or
@@ -103,6 +103,31 @@ procedure is not.
 
 `b07` names no runbook because there is no CPU runbook in the corpus, which is
 an absence in the archive rather than a judgement.
+
+### The applies group, and where the covering-procedure rule stops
+
+Group C was the next place the carve-out hid, because this file described group
+B and then stopped. Writing the C judgements out is what would have caught it.
+
+`c06` is `host.memory.exhaustion` with a restore proposed before onset is known.
+It names `recovery-point-selection`, which answers the question being asked, and
+`memory-pressure`, which covers the failure in view: its closing section is
+exactly "do not restart the workload as a first step, it resolves the symptom
+and destroys the evidence in the same action", and a restore is that move. It
+does not name `INC-2411` or `INC-2419`. Those would be the collapse: a different
+shape that happens to share a signature type.
+
+`c08` is the case that shows the rule is not mechanical. It is
+`host.memory.pressure` on a host that is deliberately overcommitted, with the
+page fault rate inside its own baseline and nothing outstanding. A scan by
+signature type flags it as missing `memory-pressure` exactly as it flagged
+`c06`, and it is correct to leave out. That runbook tells a responder to take a
+process snapshot and attribute the memory before changing anything, which is
+investigative work on a host where nothing is wrong. The right answer is
+`INC-2489`: correct the threshold, change nothing on the host.
+
+So the test is not "does the signature type have a runbook". It is whether the
+procedure's guidance is the right thing to do here. `c06` yes, `c08` no.
 
 Runbooks are listed when the procedure covers the failure being investigated,
 not whenever the topic is adjacent. `container-resource-limits` appears on `b04`

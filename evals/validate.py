@@ -278,6 +278,36 @@ def check_query_hygiene(case):
     return out
 
 
+def observe_ungrouped_clusters(cases):
+    """Cases that look like one incident but carry no relevance_group.
+
+    Reported, never asserted. The grouping check only guards clusters somebody
+    remembered to tag, which Grok's third review flagged as the residual: it
+    cannot discover a cluster that was never tagged. Asserting on
+    (as_of, signature) would be wrong, because a01 and g01 legitimately differ
+    on the same bound and host when the evidence in view differs. So this
+    surfaces candidates for a human to judge rather than deciding for them.
+    """
+    seen = {}
+    for case in cases:
+        if not case["expect"].get("relevant"):
+            continue
+        key = (str(case["as_of"])[:10], case["signature"])
+        seen.setdefault(key, []).append(case)
+    out = []
+    for (bound, signature), members in sorted(seen.items()):
+        if len(members) < 2:
+            continue
+        groups = {c.get("relevance_group") for c in members}
+        sets = {tuple(sorted(c["expect"]["relevant"])) for c in members}
+        if len(sets) > 1 and (None in groups or len(groups) > 1):
+            out.append(f"{signature} at {bound}: "
+                       + ", ".join(f"{c['id']}"
+                                   f"{'' if c.get('relevance_group') else ' (untagged)'}"
+                                   for c in members))
+    return out
+
+
 def observe_hit_coverage(cases):
     """Reported, never asserted. See the module docstring: this is the number
     the runner measures, and enforcing it here would let a retrieval failure
@@ -374,6 +404,16 @@ def main():
             print(f"  FAIL  composition: {len(cases)} cases, the spec fixes "
                   f"30 to 50")
             failures += 1
+
+        clusters = observe_ungrouped_clusters(cases)
+        if clusters:
+            print("\n  obs   same bound and signature, different relevant sets:")
+            for line in clusters:
+                print(f"          {line}")
+            print("        Legitimate when the evidence in view differs. "
+                  "Checked by a human, not asserted:")
+            print("        the grouping check cannot discover a cluster "
+                  "nobody tagged.")
 
         hits, total, misses = observe_hit_coverage(cases)
         print(f"\n  obs   canonical probe reaches {hits}/{total} relevant "

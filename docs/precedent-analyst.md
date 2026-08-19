@@ -214,8 +214,13 @@ reference and the design notes in `evals/README.md`.
   query: heap resize tuning change swap            # canonical probe, retrieval-only mode
   expect:
     precedent_exists: true
-    relevant: [corpus://incidents/INC-2411]
-    applicability: {corpus://incidents/INC-2411: partial}
+    # The diverging record AND the procedure that covers the failure in view.
+    # Both halves, always: omitting the procedure is how a case quietly stops
+    # counting a miss its probe cannot reach. See evals/RELEVANCE.md.
+    relevant: [corpus://incidents/INC-2411, corpus://runbooks/memory-pressure]
+    applicability:
+      corpus://incidents/INC-2411: partial
+      corpus://runbooks/memory-pressure: applies
     divergence_names: ["the prior incident had a change to revert and this one has none"]
     queries_must_not_contain: ["intg-prod-b7"]
 ```

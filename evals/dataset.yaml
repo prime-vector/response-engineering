@@ -678,8 +678,10 @@ cases:
       precedent_exists: true
       relevant:
         - corpus://runbooks/recovery-point-selection
+        - corpus://runbooks/memory-pressure
       applicability:
         corpus://runbooks/recovery-point-selection: applies
+        corpus://runbooks/memory-pressure: applies
       divergence_names:
         - onset is unknown here, so every point after the first unexplained
           symptom is suspect
