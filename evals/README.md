@@ -15,8 +15,12 @@ a refusal issued when the archive held something.
 | `dataset.yaml` | 38 cases with ground truth. Hand-authored. |
 | `RELEVANCE.md` | How `expect.relevant` is judged, and why it is not scoped to the case. |
 | `validate.py` | Asserts every claim in the dataset the corpus can settle. Runs in CI against both indexes. |
+| `runner.py` | Measures retrieval against the dataset. Writes a timestamped JSON record and `results/latest.md`. |
+| `config.yaml` | The baseline configuration: fixed chunker, no reranker, the k values, the passage budget. |
+| `results/` | Timestamped run records, and `latest.md`, the generated table. |
 
-The runner and the metrics are not written yet. See **Status** below.
+The judgement metrics are not written. `runner.py --mode judgement` says so and
+exits rather than reporting a partial table under a whole name. See **Status**.
 
 ## Running it
 
@@ -24,10 +28,24 @@ The runner and the metrics are not written yet. See **Status** below.
 python3 evals/validate.py                                   # heading-aware index
 python3 evals/validate.py --index corpus/index.fixed.json   # the Phase 4 baseline
 python3 evals/validate.py --repin                           # after a corpus change
+
+python3 evals/runner.py --config evals/config.yaml          # record the baseline
+python3 evals/runner.py --config evals/config.yaml --check   # CI: has the table drifted
+python3 evals/runner.py --index corpus/index.json --chunker heading --label heading-aware
+python3 evals/runner.py --compare evals/results/<a>.json evals/results/<b>.json
 ```
 
-Needs PyYAML. Neither an API key nor the `patches/` provider patch is required:
-`validate.py` drives the mock surface directly and never calls a model.
+Needs PyYAML. Neither an API key nor the `patches/` provider patch is required
+by either script in retrieval mode: both drive the mock surface directly and
+never call a model. That is the point of splitting the modes, and it is what
+makes iterating on the dataset affordable.
+
+`runner.py` refuses to run if the corpus fingerprint has moved off the
+dataset's pin, and refuses if the config's `chunker` disagrees with the index
+it names. Recording a baseline against the wrong index is the one mistake that
+would make the Phase 5 comparison meaningless while looking entirely normal.
+`--compare` refuses two runs measured against different corpora for the same
+reason: the delta would be the documents changing, not retrieval improving.
 
 ## The dataset
 
@@ -152,6 +170,12 @@ At limit 8, on a single canonical query, that observation currently reads:
 | heading-aware | 36 / 60 |
 | fixed | 38 / 60 |
 
+`runner.py` reports the same two numbers as `precedent_hit_rate@limit`, from
+the same probes. Deliberately the same figure in two places rather than two
+figures: this one is printed as an observation the dataset must not be edited
+to satisfy, and the runner's is the measurement. If they ever disagree, one of
+them has changed what it counts.
+
 **Read the denominator, not the ratio.** These are one query per case against
 relevance that is scoped to the incident, so a case probing one axis of a
 multi-axis incident is counted as missing the documents its other axis reaches.
@@ -179,13 +203,34 @@ advance.
 
 ## Status
 
-Phase 4 is partly done.
+Phase 4 is done for retrieval and open for judgement.
 
 - [x] Dataset written, 38 cases, composition asserted
 - [x] Integrity check, both indexes, in CI
-- [ ] Metrics implemented
-- [ ] Runner, `--compare`, `results/latest.md`
-- [ ] Baseline recorded against the fixed chunker with no reranker
+- [x] Retrieval metrics implemented: `precedent_hit_rate@k`, `mrr@k`, and the
+      hit rate at the passage budget the agent is run at
+- [x] Runner, `--compare`, `--check`, `results/latest.md`, drift checked in CI
+- [x] Baseline recorded against the fixed chunker with no reranker
+- [ ] Judgement metrics: `false_precedent_rate`, `no_precedent_accuracy`,
+      `false_refusal_rate`, `divergence_quality`
+- [ ] `groundedness`, which needs a judge prompt at temperature 0 that is not
+      designed yet, and which does not close the section-level gap above
+
+### What the baseline says, and the finding in it
+
+`results/latest.md` has the table. The one result worth carrying forward:
+
+**Two hit rates, because there are two questions.** Ranking documents with
+nothing truncating asks which prior records the surface orders highest.
+Counting what survives inside the passage budget the agent is actually run at
+asks what it is handed, and chunk size decides how many distinct documents fit
+in eight passages. On this corpus the first is **chunker-blind**: heading-aware
+and fixed produce identical hits at every k and one document differing by a
+single rank. They differ only at the budget, 38/60 against 36/60.
+
+That matters for Phase 5, which is specified as a chunker comparison. Reported
+on the document ranking alone it would conclude that chunking does not matter,
+and the conclusion would be an artefact of the metric rather than a result.
 
 ### Notes for the runner
 

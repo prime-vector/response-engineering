@@ -74,7 +74,10 @@ The fifth agent. Owns a retrieval surface over prior incident records and runboo
 - [x] `.agents/precedent-analyst.yaml` validates against OAS 1.6.0, runs standalone
 - [x] `no_applicable_precedent` path and grounding guard both exercised
 - [x] `demos/governance.sh grounding` passes fire and reject
-- [ ] Evals baseline recorded
+- [ ] Evals baseline recorded. Retrieval half done: `evals/runner.py`,
+      `evals/config.yaml`, the fixed-chunker baseline in `evals/results/`, and
+      a `--check` in CI. The judgement half needs a live `oa run` per case
+      and is listed as unmeasured rather than left out
 - [ ] Measured improvement documented with before and after
 - [ ] `investigate.sh` composes three acts with recall in act one, typed precedent entering the board as supporting and never deciding evidence
 
@@ -114,7 +117,8 @@ Phase 3 is done, and both halves of it are live runs rather than surface behavio
 
 Two things the reject path settled. A soft stripped prompt does not force the failure: told only that it need not look things up, the model called the archive anyway, issued verbose queries, got nothing above the floor and correctly refused, and the run exited zero with no precedent to be ungrounded. The prompt has to name the precedent it is asserting from recall, exactly as the guard-stripped prompt names the party. And the override replaces the whole system prompt, so the retrieval guidance goes with it: a stripped run is not a plain run minus one rule.
 
-Phase 4 is in progress. The dataset is written and the baseline table is not.
+Phase 4 is in progress. The dataset and the retrieval baseline are written;
+the judgement metrics are not.
 
 `evals/dataset.yaml` holds 38 cases against the 17-document corpus: 13 where no
 applicable precedent exists, 7 near misses, and the rest split across precedent
@@ -154,6 +158,40 @@ counted as missing what its other axis reaches. That fixed currently edges
 heading-aware is worth carrying into Phase 5 rather than explaining away: larger
 chunks match more query terms, and whether heading-aware wins on the metrics that
 matter is not settled in advance.
+
+The runner turned that observation into a measurement and found the reason. It
+reports two hit rates, because the dataset supports two different questions.
+Ranking documents with nothing truncating asks which prior records the surface
+orders highest; counting what survives inside the eight-passage budget the agent
+is actually run at asks what it is handed, and chunk size decides how many
+distinct documents fit. **The ranking is chunker-blind on this corpus**: both
+indexes give identical hits at every k, 17/60 at k=1 rising to 41/60 at k=8, and
+one document differing by a single rank. The 38 against 36 is entirely the
+budget. Phase 5 is specified as a chunker comparison, so it has to be reported at
+the budget: on the ranking alone it would conclude that chunking does not matter,
+and that conclusion would be an artefact of the metric rather than a result.
+
+The table is generated and CI checks it, so it carries no timestamp and no
+latency figure: it is a function of the dataset, the corpus and the config, and
+nothing else. The runner refuses to record a baseline when the corpus has moved
+off the dataset's pin or when the config's chunker disagrees with the index it
+names, and `--compare` refuses two runs measured against different corpora,
+because that delta would be the documents changing rather than retrieval
+improving.
+
+Judgement mode is designed and not written. `false_precedent_rate`,
+`no_precedent_accuracy`, `false_refusal_rate` and `divergence_quality` each need
+one live `oa run` per case, an API key and the `patches/` provider patch, and
+they have to score the agent on the queries it recorded in
+`search_coverage.queries_issued` rather than on the dataset's canonical probe:
+case `a04`'s probe is the reported symptom used whole, which clears the floor
+zero times, so an agent that copies it refuses where the archive held precedent
+and that refusal is a real false refusal. `groundedness` needs a judge prompt at
+temperature 0 that is not designed, and writing it would not close the
+section-level gap: document-level truth cannot tell a citation of `Resolution`
+from one of `Gaps`, and neither can the adapter log. Every one of them appears
+in the results table as unmeasured with what it needs, rather than being left
+out, because a table listing only what was measured reads as a complete one.
 
 Grok's review of the dataset (PR #14) found the first version of that figure
 inflated. Relevance had been scoped to what each case was testing rather than to
