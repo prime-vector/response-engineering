@@ -34,11 +34,26 @@
 # better. Ground truth is `source_uri`, which both chunkers agree on, and
 # precedent_hit_rate@k is measured over documents.
 #
-# This costs real resolution: it cannot tell a citation of the right document's
-# Resolution section from its Gaps section. That is a genuine limit of this
-# dataset and it belongs in the results table, not in a footnote. What still
-# catches a citation landing in the wrong part of a document is groundedness,
-# which checks the cited passage against the adapter log's `hit` lines.
+# This costs real resolution, and the cost is larger than it first looks. It is
+# not only that document-level truth cannot tell a citation of the right
+# document's Resolution section from its Gaps section. Nothing else measures it
+# either:
+#
+#   - Adapter-log groundedness proves only that a cited passage_id was in the
+#     set the surface returned. A precedent citing Gaps passes that check
+#     whenever Gaps was among the hits, which the 2-passages-per-document cap
+#     makes common.
+#   - The `groundedness` in the metrics table is a different check again, an
+#     LLM judge at temperature 0, and neither it nor the log check is written.
+#
+# So the section-level gap is unmeasured, not mitigated. It belongs in the
+# results table as such. Do not let a later edit quietly promote either check
+# into a claim that it is covered.
+#
+# If section quality has to be measured before Phase 5, the way in is an
+# optional heading-level expectation scored against the heading-aware index
+# only, and never folded into the cross-chunker hit_rate comparison, which is
+# the one number the fixed baseline has to be able to share.
 #
 # ---------------------------------------------------------------------------
 # Fields
@@ -61,6 +76,28 @@
 #                             correct and complete answer
 #   expect.relevant           documents a responder would want. Judged, not
 #                             retrieved. Empty when precedent_exists is false.
+#
+#     Relevance is a property of the incident as the case states it, meaning
+#     (as_of, symptom, evidence, missing_evidence). It is NOT scoped to what
+#     the case happens to be testing, and NOT to what the canonical query can
+#     reach. Two cases describing the same incident, at the same bound, with
+#     the same evidence, must name the same documents: a01, a03, a04 and d02
+#     are four probes of one incident and carry one relevance set between them.
+#
+#     Scoping it to the case is the subtle way this dataset would grade itself.
+#     A (case, document) pair left out because the probe cannot reach it is not
+#     counted as a miss, and the published recall figure rises without
+#     retrieval improving.
+#
+#     The counter-pressure is that relevance must stay sharp enough to
+#     discriminate. A document is relevant when it would change what the
+#     responder does or believes: the shape matches, or it warns against the
+#     obvious wrong move. Sharing a signature type is not sufficient. If every
+#     memory case listed every memory document, hit_rate would measure nothing.
+#
+#   expect.must_not_cite_reason   why a FILED document cannot ground a claim,
+#                             per uri. Drafts need none: record_status already
+#                             says it. Anything else has to argue it here.
 #   expect.applicability      truth per document. A document offered as
 #                             `applies` where this says partial or superseded
 #                             is a false precedent, which is the headline
@@ -118,11 +155,13 @@ cases:
         - corpus://incidents/INC-2419
         - corpus://incidents/INC-2288
         - corpus://runbooks/memory-pressure
+        - corpus://runbooks/denial-log-collection
       applicability:
         corpus://incidents/INC-2411: partial
         corpus://incidents/INC-2419: partial
         corpus://incidents/INC-2288: superseded
         corpus://runbooks/memory-pressure: applies
+        corpus://runbooks/denial-log-collection: applies
       must_not_cite:
         - corpus://incidents/DRAFT-2601
       divergence_names:
@@ -187,10 +226,16 @@ cases:
     expect:
       precedent_exists: true
       relevant:
+        - corpus://incidents/INC-2411
+        - corpus://incidents/INC-2419
         - corpus://incidents/INC-2288
+        - corpus://runbooks/memory-pressure
         - corpus://runbooks/denial-log-collection
       applicability:
+        corpus://incidents/INC-2411: partial
+        corpus://incidents/INC-2419: partial
         corpus://incidents/INC-2288: superseded
+        corpus://runbooks/memory-pressure: applies
         corpus://runbooks/denial-log-collection: applies
       must_not_cite:
         - corpus://incidents/DRAFT-2601
@@ -227,12 +272,17 @@ cases:
         - corpus://incidents/INC-2411
         - corpus://incidents/INC-2419
         - corpus://incidents/INC-2288
+        - corpus://runbooks/memory-pressure
+        - corpus://runbooks/denial-log-collection
       applicability:
         corpus://incidents/INC-2411: partial
         corpus://incidents/INC-2419: partial
         corpus://incidents/INC-2288: superseded
+        corpus://runbooks/memory-pressure: applies
+        corpus://runbooks/denial-log-collection: applies
       must_not_cite:
         - corpus://incidents/DRAFT-2601
+      queries_must_not_contain: ["intg-prod-a1"]
       floor_cleared:
         heading: 0
         fixed: 0
@@ -729,9 +779,15 @@ cases:
       relevant:
         - corpus://incidents/INC-2411
         - corpus://incidents/INC-2419
+        - corpus://incidents/INC-2288
+        - corpus://runbooks/memory-pressure
+        - corpus://runbooks/denial-log-collection
       applicability:
         corpus://incidents/INC-2411: partial
         corpus://incidents/INC-2419: partial
+        corpus://incidents/INC-2288: superseded
+        corpus://runbooks/memory-pressure: applies
+        corpus://runbooks/denial-log-collection: applies
       must_not_cite:
         - corpus://incidents/DRAFT-2601
       must_be_retrieved:
@@ -763,9 +819,11 @@ cases:
       relevant:
         - corpus://incidents/INC-2411
         - corpus://incidents/INC-2419
+        - corpus://runbooks/memory-pressure
       applicability:
         corpus://incidents/INC-2411: partial
         corpus://incidents/INC-2419: partial
+        corpus://runbooks/memory-pressure: applies
       unreachable_by_bound:
         - corpus://incidents/DRAFT-2601
       must_not_cite:
@@ -1057,8 +1115,10 @@ cases:
     expect:
       precedent_exists: true
       relevant:
+        - corpus://incidents/INC-2411
         - corpus://incidents/INC-2419
       applicability:
+        corpus://incidents/INC-2411: partial
         corpus://incidents/INC-2419: partial
       unreachable_by_bound:
         - corpus://runbooks/memory-pressure
@@ -1099,9 +1159,11 @@ cases:
       relevant:
         - corpus://incidents/INC-2411
         - corpus://incidents/INC-2419
+        - corpus://runbooks/memory-pressure
       applicability:
         corpus://incidents/INC-2411: partial
         corpus://incidents/INC-2419: partial
+        corpus://runbooks/memory-pressure: applies
       must_not_cite:
         - corpus://incidents/DRAFT-2601
       queries_must_not_contain: ["intg-prod-a1", "intg-prod"]
@@ -1127,6 +1189,11 @@ cases:
       relevant: []
       must_not_cite:
         - corpus://incidents/INC-2446
+      must_not_cite_reason:
+        corpus://incidents/INC-2446: >
+          Filed, and about this exact host. It is a disk exhaustion record and
+          this is a latency incident, so identity is the only thing that would
+          retrieve it: the right machine and the wrong incident.
       queries_must_not_contain: ["rep-prod-m7"]
       note: >
         INC-2446 is about this exact host and is a disk exhaustion record, not

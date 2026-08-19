@@ -232,13 +232,22 @@ against the fixed chunker and Phase 5 compares heading-aware against it,
 passage-level ground truth would score zero on whichever index it was not written
 against, and the measured improvement would be the id scheme changing rather than
 retrieval getting better. Ground truth is `source_uri`; the cost is that document-level
-truth cannot tell a citation of the right document's `Resolution` from its `Gaps`,
-which is left to `groundedness` against the adapter log.
+truth cannot tell a citation of the right document's `Resolution` from its `Gaps`.
+That cost is unmeasured rather than mitigated. Adapter-log groundedness proves only
+that a cited passage was in the returned set, so a citation of `Gaps` passes whenever
+`Gaps` was a hit, and the `groundedness` in the metrics table below is a separate
+LLM-judge check. Neither is written yet, and the limit belongs in the results table.
 
 The dataset is hand-authored and has no generator, because ground truth generated
 from the retriever measures only that the retriever agrees with itself. It is made
 checkable instead: `evals/validate.py` asserts every claim the corpus can settle,
 against both indexes, in CI.
+
+`expect.relevant` is a property of the incident as a case states it, meaning
+(`as_of`, `symptom`, `evidence`, `missing_evidence`), never of what the case is
+testing or what its query can reach. Scoping it to the case is the subtle way the
+dataset would grade itself: a pair the probe cannot reach goes unlisted and is
+never counted as a miss. The judgements are recorded in `evals/RELEVANCE.md`.
 
 ### Metrics
 

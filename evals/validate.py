@@ -78,6 +78,7 @@ def named_uris(case):
     out += list((expect.get("applicability") or {}).keys())
     for key in ("must_not_cite", "must_be_retrieved", "unreachable_by_bound"):
         out += list(expect.get(key) or [])
+    out += list((expect.get("must_not_cite_reason") or {}).keys())
     return out
 
 
@@ -148,21 +149,31 @@ def check_reachable(case, corpus):
 
 
 def check_must_not_cite_status(case, corpus):
-    """A document is barred from grounding a claim for a reason, and the
-    reason has to be visible in the corpus: it is a draft, or it is a record
-    of the incident under investigation. A filed document listed here with
-    neither property is a case asserting a rule the archive does not carry."""
+    """A document is barred from grounding a claim for a reason. Either the
+    corpus shows it, meaning the record is a draft, or the case has to argue
+    it in must_not_cite_reason.
+
+    This used to accept any `expect.note` as the argument, which let a note
+    written about something else waive the check entirely: a filed document
+    could be added to the barred list and pass on the strength of a comment
+    that never mentioned it. The reason is now per-uri and cannot be borrowed.
+    """
     out = []
-    for uri in case["expect"].get("must_not_cite") or []:
-        doc = corpus[uri]
-        if doc.get("record_status") == "draft":
+    barred = case["expect"].get("must_not_cite") or []
+    reasons = case["expect"].get("must_not_cite_reason") or {}
+    for uri in barred:
+        if corpus[uri].get("record_status") == "draft":
             continue
-        # The other sanctioned reason: same entity, different failure. The
-        # case has to say so, because nothing in the corpus marks it.
-        if case["expect"].get("note"):
+        if str(reasons.get(uri, "")).strip():
             continue
-        out.append(f"{uri} is filed and the case gives no reason it cannot "
-                   f"ground a claim")
+        out.append(f"{uri} is filed, and must_not_cite_reason does not say "
+                   f"why it cannot ground a claim")
+    stray = sorted(set(reasons) - set(barred))
+    if stray:
+        # A reason outliving the entry it justified means the list moved and
+        # the argument did not.
+        out.append(f"must_not_cite_reason argues for documents that are not "
+                   f"barred: {stray}")
     return out
 
 

@@ -13,6 +13,7 @@ a refusal issued when the archive held something.
 | File | What it is |
 | --- | --- |
 | `dataset.yaml` | 38 cases with ground truth. Hand-authored. |
+| `RELEVANCE.md` | How `expect.relevant` is judged, and why it is not scoped to the case. |
 | `validate.py` | Asserts every claim in the dataset the corpus can settle. Runs in CI against both indexes. |
 
 The runner and the metrics are not written yet. See **Status** below.
@@ -63,12 +64,24 @@ retrieval getting better.
 Ground truth is `source_uri`, which both chunkers agree on, and
 `precedent_hit_rate@k` is measured over documents.
 
-**What this costs.** It cannot tell a citation of the right document's
-`Resolution` section from its `Gaps` section. That is a real limit of this
-dataset and it belongs in the results table rather than in a footnote. What
-still catches a citation landing in the wrong part of a document is
-`groundedness`, which checks the cited passage against the adapter log's `hit`
-lines rather than against the output's own word.
+**What this costs, and it is more than it first looks.** Document-level truth
+cannot tell a citation of the right document's `Resolution` section from its
+`Gaps` section. Nothing else measures it either:
+
+- Adapter-log groundedness proves only that a cited `passage_id` was in the set
+  the surface returned. A precedent citing `Gaps` passes whenever `Gaps` was
+  among the hits, which the two-passages-per-document cap makes common.
+- The `groundedness` in the metrics table is a different check again, an LLM
+  judge at temperature 0. Neither it nor the log check is written yet.
+
+So the section-level gap is **unmeasured, not mitigated**, and it belongs in the
+results table as such. An earlier draft of this file claimed groundedness
+covered it; that was using the weaker check to wave away the cost.
+
+If section quality has to be measured before Phase 5, the way in is an optional
+heading-level expectation scored against the heading-aware index only, never
+folded into the cross-chunker `hit_rate` comparison, which is the one number the
+fixed baseline has to be able to share.
 
 ### Why it is hand-authored
 
@@ -86,6 +99,8 @@ index:
 - a document named relevant is not one the bound puts out of reach
 - every relevant document carries an applicability truth, so
   `false_precedent_rate` cannot silently skip one
+- a filed document barred from grounding a claim argues why, per uri, in
+  `must_not_cite_reason`, and a reason cannot outlive the entry it justified
 - stated `cleared_floor` and `candidates_considered` figures still hold
 - `must_be_retrieved` documents are still returned, so a case about rejecting
   the hindsight trap fails rather than passing vacuously if the trap stops
@@ -110,19 +125,25 @@ At limit 8, on a single canonical query, that observation currently reads:
 
 | Index | Relevant documents reached |
 | --- | --- |
-| heading-aware | 36 / 41 |
-| fixed | 37 / 41 |
+| heading-aware | 36 / 51 |
+| fixed | 38 / 51 |
 
-Both numbers are from one query per case. The spec tells the agent to query
-more than once, and the five documents a single probe misses are mostly the
-ones that need the second axis: `INC-2288` on the bridge case is reached by the
-denial-daemon query, not by the signature. Do not read these as the retrieval
-baseline. They are the floor under it.
+**Read the denominator, not the ratio.** These are one query per case against
+relevance that is scoped to the incident, so a case probing one axis of a
+multi-axis incident is counted as missing the documents its other axis reaches.
+`a03` searches the denial-daemon axis and is marked down for not returning the
+memory-exhaustion records, which is correct: the spec tells the agent to query
+more than once, and this observation deliberately does not.
 
-That fixed currently edges heading-aware on this probe is worth noting rather
-than explaining away: larger chunks match more query terms. Whether
-heading-aware wins on the metrics that matter is Phase 5's question, and it is
-not settled in advance.
+An earlier version of this file published 36 / 41. The denominator was smaller
+because relevance was scoped per case, so a document a case's probe could not
+reach was often simply not listed and never counted as a miss. The retrieval did
+not change. The bookkeeping did.
+
+That fixed edges heading-aware on this probe is worth noting rather than
+explaining away: larger chunks match more query terms. Whether heading-aware
+wins on the metrics that matter is Phase 5's question, and it is not settled in
+advance.
 
 ## Status
 

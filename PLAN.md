@@ -131,7 +131,11 @@ Two things the dataset settled, both of which change what the spec asked for:
   score zero on whichever index it was not written against and the whole Phase 5
   improvement would be the id scheme changing. Truth is `source_uri`. It costs
   the ability to distinguish a citation of the right document's `Resolution`
-  from its `Gaps`, which `groundedness` is left to catch against the adapter log.
+  from its `Gaps`, and that cost is unmeasured rather than mitigated: adapter-log
+  groundedness proves only that a cited passage was in the returned set, so a
+  citation of `Gaps` passes whenever `Gaps` was a hit, and the `groundedness` in
+  the metrics table is a separate LLM-judge check that is not written yet. It
+  belongs in the results table as a stated limit.
 - **The dataset is hand-authored and has no generator.** Every other artefact
   derived from the corpus has a `--check` that fails on drift, so generating this
   one is the obvious move and it is wrong: ground truth generated from the
@@ -142,12 +146,22 @@ Two things the dataset settled, both of which change what the spec asked for:
   widened the scoring band.
 
 One early figure, and it is a floor rather than a baseline: on a single canonical
-query per case at limit 8, the surface reaches 36 of 41 relevant documents under
-heading-aware and 37 under fixed. Both are one query per case, where the spec tells
-the agent to issue several, so the misses are mostly documents that need a second
-axis. That fixed currently edges heading-aware is worth carrying into Phase 5
-rather than explaining away: larger chunks match more query terms, and whether
-heading-aware wins on the metrics that matter is not settled in advance.
+query per case at limit 8, the surface reaches 36 of 51 relevant documents under
+heading-aware and 38 under fixed. One query per case where the spec tells the
+agent to issue several, so a case probing one axis of a multi-axis incident is
+counted as missing what its other axis reaches. That fixed currently edges
+heading-aware is worth carrying into Phase 5 rather than explaining away: larger
+chunks match more query terms, and whether heading-aware wins on the metrics that
+matter is not settled in advance.
+
+Grok's review of the dataset (PR #14) found the first version of that figure
+inflated. Relevance had been scoped to what each case was testing rather than to
+the incident, so a document a case's probe could not reach was often not listed
+and never counted as a miss: four cases probing one incident disagreed about
+which documents mattered. Relevance is now a property of (`as_of`, `symptom`,
+`evidence`, `missing_evidence`), the judgements are recorded in
+`evals/RELEVANCE.md`, and the figure moved from 36/41 to 36/51 with no change to
+the retriever. The bookkeeping moved, not the retrieval.
 
 ---
 
