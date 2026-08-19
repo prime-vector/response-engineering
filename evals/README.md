@@ -101,6 +101,9 @@ index:
   `false_precedent_rate` cannot silently skip one
 - a filed document barred from grounding a claim argues why, per uri, in
   `must_not_cite_reason`, and a reason cannot outlive the entry it justified
+- a case whose failure has a covering procedure in the archive, in reach at its
+  bound, either names it or argues the omission in `covering_procedure_waived`
+- what `coverage_describe` reports at a case's bound matches `coverage_expect`
 - stated `cleared_floor` and `candidates_considered` figures still hold
 - `must_be_retrieved` documents are still returned, so a case about rejecting
   the hindsight trap fails rather than passing vacuously if the trap stops
@@ -125,8 +128,8 @@ At limit 8, on a single canonical query, that observation currently reads:
 
 | Index | Relevant documents reached |
 | --- | --- |
-| heading-aware | 36 / 55 |
-| fixed | 38 / 55 |
+| heading-aware | 36 / 60 |
+| fixed | 38 / 60 |
 
 **Read the denominator, not the ratio.** These are one query per case against
 relevance that is scoped to the incident, so a case probing one axis of a
@@ -135,10 +138,18 @@ multi-axis incident is counted as missing the documents its other axis reaches.
 memory-exhaustion records, which is correct: the spec tells the agent to query
 more than once, and this observation deliberately does not.
 
-An earlier version of this file published 36 / 41. The denominator was smaller
-because relevance was scoped per case, so a document a case's probe could not
-reach was often simply not listed and never counted as a miss. The retrieval did
-not change. The bookkeeping did.
+`a04` is included, and that is deliberate. Its canonical query is the reported
+symptom used whole, it reaches none of its five relevant documents, and it was
+excluded from this figure on the reasoning that a probe designed to retrieve
+nothing should not be mixed with probes designed to retrieve. That was the
+fitting move in miniature: five real misses of a real query, uncounted because
+the query cannot reach them.
+
+Earlier versions of this file published 36/41, then 36/51, 36/53, 36/54 and
+36/55. The denominator moved five times and the retriever never changed once.
+Each step was a set of misses the bookkeeping had been hiding: relevance scoped
+per case, then a rule applied to one group and not the next, then a case whose
+gold set told an agent to refuse, then this exclusion.
 
 That fixed edges heading-aware on this probe is worth noting rather than
 explaining away: larger chunks match more query terms. Whether heading-aware

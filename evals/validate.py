@@ -252,6 +252,46 @@ def check_covering_procedure(case, corpus):
             f"covering_procedure_waived"]
 
 
+def check_coverage(case):
+    """What coverage_describe reports at this case's bound.
+
+    A refusal cites coverage as proof it looked, so a case asserting the
+    archive was nearly empty has to be able to show it. These were prose in
+    `coverage_must_show` for three rounds, which meant nothing read them while
+    the README claimed every corpus-settleable claim was asserted. Prose in a
+    dataset is a comment; the field is now structured and checked.
+    """
+    expect = case["expect"].get("coverage_expect")
+    if not expect:
+        return []
+    got = rpc("coverage_describe", {"before": case["as_of"]})
+    out = []
+
+    if "source_families" in expect:
+        want = sorted(expect["source_families"])
+        have = sorted(got.get("source_families") or [])
+        if want != have:
+            out.append(f"coverage source_families {have}, case expects {want}")
+    if "document_count" in expect and got.get("document_count") != expect["document_count"]:
+        out.append(f"coverage document_count {got.get('document_count')}, "
+                   f"case expects {expect['document_count']}")
+    if "max_document_count" in expect:
+        count = got.get("document_count")
+        if count is None or count > expect["max_document_count"]:
+            out.append(f"coverage document_count {count}, case expects at "
+                       f"most {expect['max_document_count']}")
+    if expect.get("date_range_is_null") and got.get("date_range") is not None:
+        out.append(f"coverage date_range is {got.get('date_range')!r}, case "
+                   f"expects the bound to leave no documents")
+    if "date_range_ends_on_or_before" in expect:
+        rng = got.get("date_range") or ""
+        end = rng.split(" to ")[-1] if rng else ""
+        if not end or end > expect["date_range_ends_on_or_before"]:
+            out.append(f"coverage date_range ends {end!r}, case expects on or "
+                       f"before {expect['date_range_ends_on_or_before']}")
+    return out
+
+
 def check_floor(case, index_label):
     """Cases that turn on the floor state what it does, per index, because the
     two chunkers cross it differently and that difference is the measurement."""
@@ -358,8 +398,19 @@ def observe_hit_coverage(cases):
     """Reported, never asserted. See the module docstring: this is the number
     the runner measures, and enforcing it here would let a retrieval failure
     be repaired by editing the ground truth."""
-    scored = [c for c in cases if c["expect"].get("relevant")
-              and not c["expect"].get("floor_cleared")]
+    # Every case with relevant documents, including a04 whose canonical query
+    # is the reported symptom used whole and clears the floor zero times.
+    #
+    # a04 was excluded here, on the reasoning that a probe designed to retrieve
+    # nothing should not be mixed with probes designed to retrieve. That was
+    # the same fitting move this dataset spent four review rounds removing
+    # elsewhere: a (case, document) pair goes uncounted because the query
+    # cannot reach it, and the published figure rises without retrieval
+    # improving. Its five misses are real misses of a real query. The
+    # iterative reviewer endorsed the exclusion four times because the review
+    # thread carried the justification for it; the pre-merge gate, reading
+    # cold, called it what it was.
+    scored = [c for c in cases if c["expect"].get("relevant")]
     hits = total = 0
     misses = []
     for case in scored:
@@ -417,6 +468,7 @@ def main():
             problems += check_reachable(case, corpus)
             problems += check_must_not_cite_status(case, corpus)
             problems += check_covering_procedure(case, corpus)
+            problems += check_coverage(case)
             problems += check_floor(case, index_label)
             problems += check_candidates(case)
             problems += check_must_be_retrieved(case)
@@ -471,6 +523,12 @@ def main():
               "the runner measures it,")
         print("        and enforcing it here would let the ground truth be "
               "edited to match a miss.")
+        print("        Includes a04, whose canonical query is the reported "
+              "symptom used whole and")
+        print("        reaches none of its five: a deliberate demonstration of "
+              "dilution, and still")
+        print("        five real misses. Excluding it would be the fitting "
+              "move in miniature.")
 
         print(f"\n{len(cases) - failures}/{len(cases)} cases intact"
               if failures else f"\n{len(cases)}/{len(cases)} cases intact")

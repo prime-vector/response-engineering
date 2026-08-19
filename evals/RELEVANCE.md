@@ -21,7 +21,7 @@ the subtle version of fitting to the retriever: a (case, document) pair left out
 because the probe cannot reach it is never counted as a miss, and the published
 recall figure rises without retrieval improving. That is exactly what happened
 in the first version of this dataset, and it is why the observed figure moved
-from 36/41 to 36/55 with no change to the retriever.
+from 36/41 to 36/60 with no change to the retriever.
 
 **Consequence two: relevance still has to discriminate.** A document is relevant
 when it would change what the responder does or believes: the shape matches, or

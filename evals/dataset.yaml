@@ -102,6 +102,14 @@
 #                     first version of this dataset is what that looks like
 #                     when it is forgotten.
 #
+#   expect.coverage_expect   what coverage_describe must report at this bound,
+#                     as fields rather than prose. It was prose, and prose is
+#                     not checkable, so for three rounds it sat in the file
+#                     unread while the README claimed every corpus-settleable
+#                     claim was asserted. Keys: source_families,
+#                     document_count, max_document_count,
+#                     date_range_ends_on_or_before, date_range_is_null.
+#
 #   expect.covering_procedure_waived   why a runbook that covers this case's
 #                     signature type, and is in reach at its bound, is
 #                     nonetheless not relevant. Required whenever one is
@@ -1087,9 +1095,9 @@ cases:
       precedent_exists: false
       relevant: []
       floor_cleared: {heading: 0, fixed: 0}
-      coverage_must_show: >
-        A date range ending on or before 2025-09-01 and covering only the
-        earliest records, not the whole corpus.
+      coverage_expect:
+        date_range_ends_on_or_before: "2025-09-01"
+        max_document_count: 3
       queries_must_not_contain: ["intg-prod-a1"]
 
   - id: f02
@@ -1111,9 +1119,9 @@ cases:
       precedent_exists: false
       relevant: []
       candidates_considered: 0
-      coverage_must_show: >
-        That the bound left no documents at all. An archive whose range starts
-        after the incident cannot hold precedent for it.
+      coverage_expect:
+        document_count: 0
+        date_range_is_null: true
 
   - id: f03
     group: time_bound
@@ -1174,9 +1182,8 @@ cases:
         - corpus://runbooks/denial-log-collection
         - corpus://runbooks/change-correlation
         - corpus://runbooks/recovery-point-selection
-      coverage_must_show: >
-        Prior incident records only. No runbook procedure existed at this
-        bound.
+      coverage_expect:
+        source_families: [prior_incident_record]
       queries_must_not_contain: ["intg-prod-a1"]
 
   # -------------------------------------------------------------------------
