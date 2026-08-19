@@ -40,6 +40,16 @@ jobs:
           python3 corpus/eval.py
           python3 corpus/eval.py --index corpus/index.fixed.json
 
+      # The eval dataset is hand-authored, which is the one artefact here with
+      # no generator to diff against. Its claims about the corpus are checked
+      # instead, so a document moving under it fails rather than leaving a
+      # case that passes while testing nothing.
+      - name: Eval dataset integrity, both chunkers
+        run: |
+          pip install pyyaml
+          python3 evals/validate.py
+          python3 evals/validate.py --index corpus/index.fixed.json
+
   specs:
     runs-on: ubuntu-latest
     steps:

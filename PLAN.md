@@ -113,7 +113,55 @@ Phase 3 is done, and both halves of it are live runs rather than surface behavio
 
 Two things the reject path settled. A soft stripped prompt does not force the failure: told only that it need not look things up, the model called the archive anyway, issued verbose queries, got nothing above the floor and correctly refused, and the run exited zero with no precedent to be ungrounded. The prompt has to name the precedent it is asserting from recall, exactly as the guard-stripped prompt names the party. And the override replaces the whole system prompt, so the retrieval guidance goes with it: a stripped run is not a plain run minus one rule.
 
-Phase 4 is next: the evals dataset and the baseline table. Nothing in it is done.
+Phase 4 is in progress. The dataset is written and the baseline table is not.
+
+`evals/dataset.yaml` holds 38 cases against the 17-document corpus: 13 where no
+applicable precedent exists, 7 near misses, and the rest split across precedent
+that genuinely transfers, draft record status, the time bound and identity.
+`evals/validate.py` asserts every claim the corpus can settle, against both
+indexes, and runs in CI.
+
+Two things the dataset settled, both of which change what the spec asked for:
+
+- **Ground truth names documents, not passages.** `docs/precedent-analyst.md`
+  specified `expected_passages: [<passage_id>, ...]`. Passage ids key on the
+  chunker name, so the two indexes share none: 82 passages under heading-aware,
+  39 under fixed, disjoint. The baseline is recorded against the fixed chunker
+  and Phase 5 compares heading-aware against it, so passage-level truth would
+  score zero on whichever index it was not written against and the whole Phase 5
+  improvement would be the id scheme changing. Truth is `source_uri`. It costs
+  the ability to distinguish a citation of the right document's `Resolution`
+  from its `Gaps`, and that cost is unmeasured rather than mitigated: adapter-log
+  groundedness proves only that a cited passage was in the returned set, so a
+  citation of `Gaps` passes whenever `Gaps` was a hit, and the `groundedness` in
+  the metrics table is a separate LLM-judge check that is not written yet. It
+  belongs in the results table as a stated limit.
+- **The dataset is hand-authored and has no generator.** Every other artefact
+  derived from the corpus has a `--check` that fails on drift, so generating this
+  one is the obvious move and it is wrong: ground truth generated from the
+  retriever measures only that the retriever agrees with itself. The cases are
+  made checkable instead, including the ones that could go vacuous. A case about
+  rejecting the hindsight trap now fails if the trap stops being retrieved, which
+  is the failure mode that hollowed out the grounding demo once the distractors
+  widened the scoring band.
+
+One early figure, and it is a floor rather than a baseline: on a single canonical
+query per case at limit 8, the surface reaches 36 of 60 relevant documents under
+heading-aware and 38 under fixed. One query per case where the spec tells the
+agent to issue several, so a case probing one axis of a multi-axis incident is
+counted as missing what its other axis reaches. That fixed currently edges
+heading-aware is worth carrying into Phase 5 rather than explaining away: larger
+chunks match more query terms, and whether heading-aware wins on the metrics that
+matter is not settled in advance.
+
+Grok's review of the dataset (PR #14) found the first version of that figure
+inflated. Relevance had been scoped to what each case was testing rather than to
+the incident, so a document a case's probe could not reach was often not listed
+and never counted as a miss: four cases probing one incident disagreed about
+which documents mattered. Relevance is now a property of (`as_of`, `symptom`,
+`evidence`, `missing_evidence`), the judgements are recorded in
+`evals/RELEVANCE.md`, and the figure moved from 36/41 to 36/60 across five rounds of review, with no
+change to the retriever. The bookkeeping moved, not the retrieval.
 
 ---
 

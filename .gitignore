@@ -2,3 +2,8 @@
 # neither the key nor pipeline detail may ever enter history.
 .env
 CLAUDE.local.md
+
+# Python bytecode. The mock and the corpus tools get imported by anything
+# that drives them, and a committed cache is a stale copy of a generator.
+__pycache__/
+*.pyc

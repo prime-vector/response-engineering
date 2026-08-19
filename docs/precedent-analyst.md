@@ -202,27 +202,57 @@ New directory `evals/`. This is the part that turns a plausible agent into a mea
 
 ### Dataset (`evals/dataset.yaml`)
 
-30 to 50 entries against the actual corpus:
+30 to 50 entries against the actual corpus. Written: 38 cases, with the field
+reference and the design notes in `evals/README.md`.
 
 ```yaml
-- id: p001
-  incident_signature: "sustained pod evictions following a node pool upgrade"
-  expected_passages: ["<passage_id>", "<passage_id>"]
-  expected_applicability: applies
-  precedent_exists: true
-
-- id: p017
-  incident_signature: "<the near-miss signature>"
-  expected_applicability: partial
-  must_state_divergence: true
-  precedent_exists: true
-
-- id: p031
-  incident_signature: "<a genuinely novel failure>"
-  precedent_exists: false          # correct answer is no_applicable_precedent
+- id: b01
+  group: near_miss
+  as_of: "2026-03-17T19:30:00+00:00"
+  symptom: "<what was reported, in the words it was reported in>"
+  signature: host.memory.exhaustion:intg-prod-b7   # entity id attached, as the signals carry it
+  query: heap resize tuning change swap            # canonical probe, retrieval-only mode
+  expect:
+    precedent_exists: true
+    # The diverging record AND the procedure that covers the failure in view.
+    # Both halves, always: omitting the procedure is how a case quietly stops
+    # counting a miss its probe cannot reach. See evals/RELEVANCE.md.
+    relevant: [corpus://incidents/INC-2411, corpus://runbooks/memory-pressure]
+    applicability:
+      corpus://incidents/INC-2411: partial
+      corpus://runbooks/memory-pressure: applies
+    divergence_names: ["the prior incident had a change to revert and this one has none"]
+    queries_must_not_contain: ["intg-prod-b7"]
 ```
 
 At least eight entries with `precedent_exists: false`, and at least four near-miss cases.
+The dataset carries 13 and 7, and `evals/validate.py` asserts both minima.
+
+**Ground truth names documents, not passages.** This section previously specified
+`expected_passages: [<passage_id>, ...]`, which cannot work. `corpus/ingest.py`
+derives a passage id from `chunker|source_uri|heading_path|ordinal`, so the chunker
+name is inside the key and the two indexes share no id: 82 passages under
+heading-aware, 39 under fixed, disjoint id spaces. Since the baseline is recorded
+against the fixed chunker and Phase 5 compares heading-aware against it,
+passage-level ground truth would score zero on whichever index it was not written
+against, and the measured improvement would be the id scheme changing rather than
+retrieval getting better. Ground truth is `source_uri`; the cost is that document-level
+truth cannot tell a citation of the right document's `Resolution` from its `Gaps`.
+That cost is unmeasured rather than mitigated. Adapter-log groundedness proves only
+that a cited passage was in the returned set, so a citation of `Gaps` passes whenever
+`Gaps` was a hit, and the `groundedness` in the metrics table below is a separate
+LLM-judge check. Neither is written yet, and the limit belongs in the results table.
+
+The dataset is hand-authored and has no generator, because ground truth generated
+from the retriever measures only that the retriever agrees with itself. It is made
+checkable instead: `evals/validate.py` asserts every claim the corpus can settle,
+against both indexes, in CI.
+
+`expect.relevant` is a property of the incident as a case states it, meaning
+(`as_of`, `symptom`, `evidence`, `missing_evidence`), never of what the case is
+testing or what its query can reach. Scoping it to the case is the subtle way the
+dataset would grade itself: a pair the probe cannot reach goes unlisted and is
+never counted as a miss. The judgements are recorded in `evals/RELEVANCE.md`.
 
 ### Metrics
 
@@ -231,8 +261,8 @@ At least eight entries with `precedent_exists: false`, and at least four near-mi
 | `false_precedent_rate` | precedents offered as `applies` where truth is `partial`, `superseded` or none ÷ total | the headline; this is the anchoring failure |
 | `no_precedent_accuracy` | correct `no_applicable_precedent` ÷ total novel | refusal is a feature |
 | `false_refusal_rate` | refusals where a precedent existed ÷ total answerable | the cost of the above |
-| `precedent_hit_rate@k` | expected passage in top-k retrieved | retrieval quality proper |
-| `mrr@k` | mean reciprocal rank of first expected passage | |
+| `precedent_hit_rate@k` | expected document in top-k retrieved | retrieval quality proper |
+| `mrr@k` | mean reciprocal rank of first expected document | |
 | `groundedness` | fraction of precedent claims traceable to a cited passage, judged at temperature 0 with the judge prompt committed | |
 | `divergence_quality` | near-miss cases where `divergence` names the actual distinguishing factor | the near-miss guard, measured |
 | `p50` / `p95_latency_ms`, `cost_per_recall_usd` | per stage and end to end | |
@@ -274,6 +304,8 @@ grounding-stripped producer is rejected by the schema. Done, as
 **Phase 4, Evals baseline.** Dataset written, metrics implemented, baseline recorded
 with the fixed-size chunker and no reranker.
 *Done when:* `latest.md` holds a complete baseline table.
+Dataset and its integrity check are done and in CI. Metrics, runner and the
+baseline table are not started.
 
 **Phase 5, Measured improvement.** At least two experiments:
 heading-aware versus fixed chunking, and hybrid with versus without the reranker.
