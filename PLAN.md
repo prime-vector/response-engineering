@@ -74,11 +74,15 @@ The fifth agent. Owns a retrieval surface over prior incident records and runboo
 - [x] `.agents/precedent-analyst.yaml` validates against OAS 1.6.0, runs standalone
 - [x] `no_applicable_precedent` path and grounding guard both exercised
 - [x] `demos/governance.sh grounding` passes fire and reject
-- [ ] Evals baseline recorded. Retrieval half done: `evals/runner.py`,
+- [x] Evals baseline recorded, both halves. Retrieval: `evals/runner.py`,
       `evals/config.yaml`, the fixed-chunker baseline in `evals/results/`, and
-      a `--check` in CI. The judgement half needs a live `oa run` per case
-      and is listed as unmeasured rather than left out
-- [ ] Measured improvement documented with before and after
+      a `--check` in CI. Judgement: `evals/judgement.py`, one live `oa run`
+      per case, the deterministic rates read off the typed output and the
+      adapter log, and `groundedness_judge` and `divergence_quality` judged at
+      temperature 0 with the prompts committed in `evals/judges/`
+- [ ] Measured improvement documented with before and after. One arm of three
+      recorded: the shipped configuration. The chunker arm and the
+      query-strategy arm are each a live sweep away
 - [ ] `investigate.sh` composes three acts with recall in act one, typed precedent entering the board as supporting and never deciding evidence
 
 **Done when:** a board cites precedent by `passage_id`, convergence still blocks on outstanding deciding evidence, and the README carries a results table the runner can regenerate.
@@ -117,8 +121,8 @@ Phase 3 is done, and both halves of it are live runs rather than surface behavio
 
 Two things the reject path settled. A soft stripped prompt does not force the failure: told only that it need not look things up, the model called the archive anyway, issued verbose queries, got nothing above the floor and correctly refused, and the run exited zero with no precedent to be ungrounded. The prompt has to name the precedent it is asserting from recall, exactly as the guard-stripped prompt names the party. And the override replaces the whole system prompt, so the retrieval guidance goes with it: a stripped run is not a plain run minus one rule.
 
-Phase 4 is in progress. The dataset and the retrieval baseline are written;
-the judgement metrics are not.
+Phase 4 is done, both halves. The dataset and the retrieval baseline came
+first; the judgement metrics followed and are described after them.
 
 `evals/dataset.yaml` holds 38 cases against the 17-document corpus: 13 where no
 applicable precedent exists, 7 near misses, and the rest split across precedent
@@ -223,6 +227,88 @@ which documents mattered. Relevance is now a property of (`as_of`, `symptom`,
 `evidence`, `missing_evidence`), the judgements are recorded in
 `evals/RELEVANCE.md`, and the figure moved from 36/41 to 36/60 across five rounds of review, with no
 change to the retriever. The bookkeeping moved, not the retrieval.
+
+`evals/judgement.py` is the other half, and it measures the agent rather than
+the surface: one live `oa run` of `recall` per case, the arm's index, the arm's
+system prompt. Nothing it writes is regenerable, so nothing in CI diffs it. The
+record carries a timestamp, the spec, the prompt, the model and the case ids,
+because those are what a reader would otherwise take on trust.
+
+Two kinds of number, never in one table. Deterministic:
+`false_precedent_rate`, `no_precedent_accuracy`, `false_refusal_rate`,
+`groundedness_log` and `agent_reach`, every one of them a consequence of the
+typed output, the adapter's audit log and the ground truth. Judged, by a
+different and more capable model at temperature 0 with the prompts committed in
+`evals/judges/`: `groundedness_judge` and `divergence_quality`. Putting a
+judged figure beside a deterministic one makes it read as the same kind of
+fact.
+
+`agent_reach` is the figure neither mode had. Retrieval mode issues one
+canonical probe per case, which the eval documents are careful to call a floor
+on the surface rather than an estimate of the agent. This counts relevant
+documents the archive actually returned across the queries the agent chose, so
+the one-query limit does not apply to it, and it is not comparable to
+`precedent_hit_rate@k`: no rank truncates it.
+
+**The identity rule was checkable only from the agent's own report, and now is
+not.** `queries_must_not_contain` is about what the agent asked the archive,
+and the only record of that was `search_coverage.queries_issued`, which is the
+agent's account of its own conduct. The archive now logs `args <tool>
+<arguments>` beside every call. Caller text, never archive text. On the sweep
+below, 182 searches were issued and 182 reported, no entity id in any of them,
+and both halves of that are now measurements rather than one measurement and
+one assurance.
+
+**The shipped configuration, recorded.** Heading-aware index, the spec's own
+prompt, 38 cases, `claude-sonnet-4-6` at temperature 0.2, zero runs rejected or
+unparseable. `false_precedent_rate` 0 of 52 claims, `no_precedent_accuracy` 13
+of 13, `false_refusal_rate` 0 of 25, `groundedness_log` 190 of 190 cited
+passage ids in the set the surface returned, `agent_reach` 54 of 60 pairs, p50
+26.9s and p95 52.8s per recall. The full table is
+`evals/results/judgement-heading.md`.
+
+Read the two things the deterministic rates cannot say by themselves. Ten of
+the 52 claims are offered as `partial` where the truth is `applies`, so the
+zero false precedent rate is a partly cautious agent rather than a calibrated
+one, and the table says so beside it. And `groundedness_judge` is 71.2%: 37 of
+52 claims are supported by the passages they cite, and most of the other 15 are
+the same move, an absence asserted from silence. "INC-2411 shows no audit
+daemon" is a claim about a document from passages that simply do not mention
+one. It is a divergence in the shape the prompt asks for, resting on something
+the archive never said. The log check cannot see this at all: every one of
+those citations is a passage the surface really returned.
+
+**Two cases cited a draft, and the interesting part is how.** `d01` cited
+`DRAFT-2508` and `g01` cited `DRAFT-2601`, both as `applicability: partial`,
+`confidence: speculative`, with a `divergence` that says in words that the
+document is unsubmitted, cannot be the basis of a precedent claim, and is
+surfaced only to flag that it exists. That is an agent trying to be transparent
+and having nowhere to put it: `precedents[]` has no entry meaning retrieved and
+rejected, so the choice is to drop the draft, which makes the trap invisible,
+or to type it as precedent and carry the caveat in prose. Prose is exactly
+where this project says a caveat must not live. It is a gap in the output
+contract rather than a tuning problem, it is on the board rather than fixed
+here, and it was found by measuring, which is the argument for judgement mode
+in one line.
+
+Phase 5 is in progress. One arm of three is recorded, the shipped
+configuration above, and the two comparisons are each a live sweep away:
+`judgement-fixed` changes the index to the Phase 4 baseline, and
+`judgement-single-query` changes rule 4 of the system prompt to one verbose
+query. `--compare` refuses two records that differ in more than one thing, and
+says in its own output that one sweep is one sample of a stochastic system.
+
+**The second experiment is no longer the reranker, and the reason is written
+down rather than quietly dropped.** `docs/precedent-analyst.md` named "hybrid
+with versus without the reranker", and there is none in this repo to switch
+off: the mock ranks by term overlap and the runner refuses a config that
+declares one. A local cross-encoder would put a model dependency inside a
+directory whose retrieval half deliberately runs on stdlib and PyYAML. The
+retrieval guidance is the configuration this project actually decided, on a
+measurement, so it is the one worth testing. Its arm's prompt is derived from
+the spec with that one paragraph replaced, and CI fails when the spec moves
+under it: an override replaces the whole system prompt, so a hand-maintained
+one drifts into being a second prompt and the delta then belongs to nothing.
 
 ---
 

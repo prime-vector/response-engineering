@@ -63,6 +63,16 @@ jobs:
       - name: Chunker comparison is current
         run: python3 evals/runner.py --config evals/config.yaml --cross-check --check
 
+      # Judgement mode itself cannot run here: it needs an API key and one
+      # live model run per case, and its output is a record of one run rather
+      # than a regenerable artefact. What can be checked is the one input it
+      # derives. The query-strategy arm is the shipped system prompt with a
+      # single paragraph replaced, and it is only an experiment while that
+      # stays true, so the derivation is diffed like every other generated
+      # file here.
+      - name: Derived judgement prompts are current
+        run: python3 evals/judgement.py --check-prompts
+
   specs:
     runs-on: ubuntu-latest
     steps:

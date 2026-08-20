@@ -1,6 +1,7 @@
 # Evals
 
-Measured retrieval quality for the Precedent Analyst. `docs/precedent-analyst.md`
+Measured quality for the Precedent Analyst, in two halves: what the retrieval
+surface returns, and what the agent does with it. `docs/precedent-analyst.md`
 section 7 specifies it; this directory implements it.
 
 The agent's headline risk is not the missed precedent, it is the confident
@@ -17,10 +18,16 @@ a refusal issued when the archive held something.
 | `validate.py` | Asserts every claim in the dataset the corpus can settle. Runs in CI against both indexes. |
 | `runner.py` | Measures retrieval against the dataset. Writes a timestamped JSON record and `results/latest.md`. |
 | `config.yaml` | The baseline configuration: fixed chunker, no reranker, the k values, the passage budget. |
-| `results/` | Timestamped run records, `latest.md` (the baseline table) and `chunker-comparison.md`. |
+| `judgement.py` | Measures the agent: one live `oa run` per case, scored against the dataset and the adapter log. |
+| `config.judgement.yaml` | The judgement arms, the judge model and the prompts it runs. |
+| `judges/` | The judge prompts, committed. A judged number whose prompt is not readable is an assertion. |
+| `prompts/` | System prompts derived from the spec for an arm that changes one rule. Generated, checked in CI. |
+| `results/` | Timestamped run records, `latest.md` (the baseline table), `chunker-comparison.md` and the judgement tables. |
 
-The judgement metrics are not written. `runner.py --mode judgement` says so and
-exits rather than reporting a partial table under a whole name. See **Status**.
+Both halves are written. Retrieval measures the surface with no model in the
+loop and re-runs for free; judgement measures the agent and costs one live
+model run per case. What each can and cannot see is the whole reason they are
+separate, and it is set out under **Judgement mode** below.
 
 ## Running it
 
@@ -35,12 +42,33 @@ python3 evals/runner.py --config evals/config.yaml --cross-check          # both
 python3 evals/runner.py --config evals/config.yaml --cross-check --check  # CI
 python3 evals/runner.py --index corpus/index.json --chunker heading --label heading-aware
 python3 evals/runner.py --compare evals/results/<a>.json evals/results/<b>.json
+
+python3 evals/judgement.py --list-arms                    # what an arm changes
+python3 evals/judgement.py --dry-run                      # spends nothing
+python3 evals/judgement.py --cases a01,b01,e01            # a cheap smoke run
+python3 evals/judgement.py --arm judgement-heading        # a full sweep, live
+python3 evals/judgement.py --check-prompts                # CI: derived arm prompts
+python3 evals/judgement.py --rescore evals/results/<record>.json
 ```
+
+`evals/runner.py --mode judgement -- <flags>` reaches the same entry point,
+which is the command `docs/precedent-analyst.md` names; everything after `--`
+is passed through rather than mirrored in two argument parsers.
 
 Needs PyYAML. Neither an API key nor the `patches/` provider patch is required
 by either script in retrieval mode: both drive the mock surface directly and
 never call a model. That is the point of splitting the modes, and it is what
-makes iterating on the dataset affordable.
+makes iterating on the dataset affordable. Judgement mode needs both, plus the
+`behavioural-contracts` extra, which it checks for rather than measuring a
+harness with contract validation silently switched off.
+
+`--rescore` recomputes the deterministic figures of a recorded sweep with the
+current scoring, from what the record already holds. The runs are the half
+that costs money and the scoring is the half that gets edited, so a scoring
+change does not mean paying for the sweep again. It refuses a record whose
+ground truth has moved, keeps the judged verdicts as recorded, and stamps the
+record with what rescored it: a file whose numbers changed after it was
+written has to say so.
 
 `runner.py` refuses to run if the corpus fingerprint has moved off the
 dataset's pin, and refuses if the config's `chunker` disagrees with the index
@@ -214,9 +242,110 @@ explaining away: larger chunks match more query terms. Whether heading-aware
 wins on the metrics that matter is Phase 5's question, and it is not settled in
 advance.
 
+## Judgement mode
+
+`judgement.py` runs the agent. One live `oa run` of the recall task per case,
+against the arm's index, with the arm's system prompt, and then scores what
+came back. It needs `ANTHROPIC_API_KEY` and the `patches/` provider patch: a
+stock install 400s the moment the model calls a tool.
+
+**Nothing here is regenerable and nothing in CI diffs it.** Every other table
+in this directory is a function of the corpus, the dataset and a config, and
+drift is a failure. A judgement table has a model in it. Re-running an arm
+gives different numbers, so the record carries a timestamp, the spec, the
+system prompt, the model and the case ids, and the only thing CI checks is
+the one input that is derived rather than measured: the query-strategy arm's
+prompt.
+
+### Two kinds of number, never one table
+
+Deterministic, read off the typed output, the adapter's audit log and the
+ground truth. Anyone can recheck them from the JSON record:
+
+| Metric | What it counts |
+|---|---|
+| `false_precedent_rate` | precedent claims offered as `applies` where truth is `partial`, `superseded` or not relevant, over every claim offered |
+| `no_precedent_accuracy` | correct `no_applicable_precedent` over cases where none exists |
+| `false_refusal_rate` | refusals over cases where the archive held applicable precedent |
+| `groundedness_log` | cited `passage_id`s that were in the set the surface returned |
+| `agent_reach` | relevant documents the archive returned across the queries the agent chose |
+
+Judged, by a separate model at temperature 0 with the prompt committed in
+`judges/`. This is a model's opinion of a model:
+
+| Metric | What it asks |
+|---|---|
+| `groundedness_judge` | do the cited passages support what the claim says |
+| `divergence_quality` | does the stated divergence name a factor that actually distinguishes the two incidents |
+
+The two never share a table. `groundedness_log` is the stronger check and the
+weaker question: it proves a citation was not invented and says nothing about
+whether the claim rests on the passage. The judge asks the question that
+matters and answers it the way a model does.
+
+`agent_reach` is the figure retrieval mode cannot produce. Retrieval mode
+issues one canonical probe per case, which the README above is careful to call
+a floor on the surface rather than an estimate of the agent. This counts what
+the archive actually returned across the queries the agent issued, so the
+"one query per case" limit does not apply to it. It is not comparable to
+`precedent_hit_rate@k`: no rank truncates it, and the queries are the agent's.
+
+### What is read from the log and never from the output
+
+The OAS runner does not bind tool results into outputs, so a `passage_id` in a
+citation is a string the model wrote either way, and a claim of the form "the
+trap was retrieved and rejected" cannot be checked from an output that asserts
+it. The archive logs `hit {passage_id} {source_uri}#{ordinal}` for every
+passage that leaves the surface. Groundedness, reach, whether
+`coverage_describe` was called before a refusal, and how many searches were
+issued all come from that log.
+
+### Arms
+
+`config.judgement.yaml` holds them. Each changes exactly one thing against the
+first, and `--compare` refuses two records that differ in more than one:
+
+| Arm | What it changes |
+|---|---|
+| `judgement-heading` | nothing. The shipped configuration: heading-aware index, the spec's own prompt |
+| `judgement-fixed` | the index, to the Phase 4 fixed-chunker baseline |
+| `judgement-single-query` | rule 4 of the system prompt, to one verbose query instead of several distinctive ones |
+
+The third replaces the reranker experiment `docs/precedent-analyst.md` names
+for Phase 5. There is no reranker in this repo to switch off: the mock ranks
+by term overlap and `runner.py` refuses a config that declares one. The
+retrieval guidance is the configuration this project actually made a decision
+about, on a measurement (a whole reported symptom scores 79 of 82 passages
+above zero and clears the floor 0 times, while the signature type alone
+clears 35), so whether that decision is worth its words is the experiment that
+was available.
+
+Its prompt is **derived from the spec**, not written beside it. `--system-prompt`
+replaces the whole system prompt rather than editing it, which the Phase 3
+stripped-prompt work settled: a stripped run is not a plain run minus one
+rule. So `judgement.py --write-prompts` regenerates
+`prompts/single-query.system.txt` from the spec with one paragraph
+substituted, `--check-prompts` fails when the spec moves under it, and a run
+of that arm re-derives and refuses if the file is stale. A hand-maintained
+override would drift into being a second prompt rather than one changed rule,
+and every delta after that would be unattributable.
+
+### What judgement mode still does not measure
+
+- **Section-level citation.** Ground truth names documents. Neither the log
+  check nor the judge distinguishes a citation of the right document's
+  `Resolution` from its `Gaps`. Unmeasured, not mitigated, in both modes.
+- **`cost_per_recall_usd`.** `oa` reports no token usage, so a per-recall cost
+  from this runner would be a price list times an estimate. The judge's own
+  usage is recorded, because the API returns it.
+- **Whether a difference between two arms is real.** One sweep is one sample
+  of a stochastic system. `--compare` prints deltas and says so; 38 cases
+  would not support much of a significance test, and nothing here attempts
+  one.
+
 ## Status
 
-Phase 4 is done for retrieval and open for judgement.
+Phase 4 is done. Phase 5 is in progress.
 
 - [x] Dataset written, 38 cases, composition asserted
 - [x] Integrity check, both indexes, in CI
@@ -224,10 +353,46 @@ Phase 4 is done for retrieval and open for judgement.
       hit rate at a fixed passage budget
 - [x] Runner, `--compare`, `--check`, `results/latest.md`, drift checked in CI
 - [x] Baseline recorded against the fixed chunker with no reranker
-- [ ] Judgement metrics: `false_precedent_rate`, `no_precedent_accuracy`,
-      `false_refusal_rate`, `divergence_quality`
-- [ ] `groundedness`, which needs a judge prompt at temperature 0 that is not
-      designed yet, and which does not close the section-level gap above
+- [x] Judgement metrics: `false_precedent_rate`, `no_precedent_accuracy`,
+      `false_refusal_rate`, `groundedness_log`, `agent_reach`, deterministic
+- [x] `groundedness_judge` and `divergence_quality`, judged at temperature 0
+      with the prompts in `judges/`. Neither closes the section-level gap
+      above, and the tables say so
+- [x] `judgement-heading` recorded, the shipped configuration
+- [ ] `judgement-fixed` and `judgement-single-query` recorded, and the two
+      Phase 5 comparisons written up
+
+### What the first judgement sweep says
+
+`results/judgement-heading.md` has the table: 38 cases, no run rejected or
+unparseable, `false_precedent_rate` 0 of 52 claims, `no_precedent_accuracy` 13
+of 13, `false_refusal_rate` 0 of 25, `groundedness_log` 190 of 190,
+`agent_reach` 54 of 60 pairs, p50 26.9s and p95 52.8s.
+
+Three things in it are worth more than the headline rates.
+
+**A zero false precedent rate beside ten understated claims.** Ten of the 52
+claims are offered as `partial` where the ground truth says the document
+applies. An agent that never says `applies` cannot offer a false precedent, so
+the two figures have to be read together, and the table prints them together
+for that reason.
+
+**`groundedness_judge` at 71.2%, and the failures have one shape.** Most of the
+15 unsupported claims assert an absence: "the prior incident shows no audit
+daemon", from passages that simply do not mention one. It is a divergence of
+exactly the kind rule 5 asks for, resting on something the archive never said.
+`groundedness_log` cannot see it: every one of those citations is a passage the
+surface really returned. This is the case for having both checks and for never
+adding them together.
+
+**Two cases cited a draft, and how they did it is the finding.** `d01` cited
+`DRAFT-2508` and `g01` cited `DRAFT-2601`, both as `partial` and
+`speculative`, with a `divergence` saying in words that the document is
+unsubmitted and cannot ground a precedent claim. `precedents[]` has no entry
+meaning retrieved and rejected, so an agent that wants to report the trap has
+to type it as precedent and put the caveat in prose. That is a gap in the
+output contract rather than a tuning problem, and it belongs on the board
+rather than in a prompt tweak.
 
 ### What the baseline says, and the finding in it
 

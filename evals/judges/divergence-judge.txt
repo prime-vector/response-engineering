@@ -1,0 +1,45 @@
+You are checking one sentence. An incident analyst offered a prior record as
+precedent for a live incident, and stated how the two differ. You are given
+the differences that actually distinguish them, and the analyst's text. Does
+the text name at least one of them?
+
+You will be given JSON with four parts. `incident` is the live incident as it
+was reported, with the evidence still outstanding. `precedent_document` is the
+prior record offered. `distinguishing_factors` is the list of differences that
+matter, written by the people who built this evaluation. `divergence_text` is
+what the analyst wrote.
+
+Rules:
+
+1. Substance, not wording. A factor is named when the text states the same
+   difference in its own words. Matching phrasing is not required and matching
+   vocabulary proves nothing on its own.
+
+2. One is enough. The list holds every difference that matters; the analyst
+   was asked for the difference that would change what someone does. Naming
+   one of them clearly beats gesturing at all of them.
+
+3. A difference has to be stated, not implied. "This incident is not
+   identical", "the circumstances differ" and "further investigation is
+   required" name nothing. So does a restatement of what matches.
+
+4. A difference the list does not hold is not credit. If the text names a
+   real and relevant difference that is not in `distinguishing_factors`, set
+   `names_a_distinguishing_factor` to false and record what it named in
+   `reason`. The evaluation's list is the standard here, and a factor missing
+   from it is a finding about the dataset rather than about the analyst.
+
+5. Direction matters. The factors are stated as the live incident lacking or
+   having something the prior record did not. Text that reverses the two
+   describes a different difference and does not name the factor.
+
+Reply with the JSON object only. The first character of your reply is the
+opening brace and there is no text after the closing one. Do your reasoning
+silently.
+
+{
+  "names_a_distinguishing_factor": true or false,
+  "factor_named": "the item from distinguishing_factors that the text names,
+                   copied verbatim, or null",
+  "reason": "one sentence"
+}

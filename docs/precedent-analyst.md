@@ -263,9 +263,19 @@ never counted as a miss. The judgements are recorded in `evals/RELEVANCE.md`.
 | `false_refusal_rate` | refusals where a precedent existed ÷ total answerable | the cost of the above |
 | `precedent_hit_rate@k` | expected document in top-k retrieved | retrieval quality proper |
 | `mrr@k` | mean reciprocal rank of first expected document | |
-| `groundedness` | fraction of precedent claims traceable to a cited passage, judged at temperature 0 with the judge prompt committed | |
+| `groundedness_log` | cited `passage_id`s that were in the set the adapter returned, read from the audit log | a citation that was never returned is invented |
+| `groundedness_judge` | precedent claims whose cited passages support what the claim says, judged at temperature 0 with the judge prompt committed | the log check cannot ask this |
+| `agent_reach` | relevant documents the archive returned across the queries the agent chose | retrieval measured on the agent's queries rather than the canonical probe |
 | `divergence_quality` | near-miss cases where `divergence` names the actual distinguishing factor | the near-miss guard, measured |
-| `p50` / `p95_latency_ms`, `cost_per_recall_usd` | per stage and end to end | |
+| `p50` / `p95_latency_ms` | per stage and end to end | |
+| `cost_per_recall_usd` | unmeasured: `oa` reports no token usage, so this would be a price list times an estimate. The judge's own usage is recorded, because the API returns it | |
+
+Everything above except `groundedness_judge` and `divergence_quality` is
+deterministic: it follows from the typed output, the adapter's audit log and the
+ground truth, and anyone can recheck it from the JSON record. Those two are a
+model's opinion of a model. They are reported in a separate table, never beside
+the deterministic ones, because a judged number in a deterministic table reads as
+the same kind of fact.
 
 ### Runner
 
@@ -279,8 +289,26 @@ Writes timestamped JSON plus `evals/results/latest.md` as a table ready for the 
 Written, for retrieval. `--check` regenerates the table and fails if it has drifted,
 which is why the table carries no timestamp and no latency figure: it is a function
 of the dataset, the corpus and the config, and CI treats it like any other generated
-artefact. Judgement mode exits with what it would need rather than reporting a partial
-table under a whole name.
+artefact. Its table still lists every judgement metric as unmeasured, with where each
+one is measured instead, because a table listing only what it measured reads as the
+whole result.
+
+Judgement mode is written and lives in `evals/judgement.py`:
+
+```bash
+python3 evals/judgement.py --list-arms
+python3 evals/judgement.py --dry-run                 # spends nothing
+python3 evals/judgement.py --cases a01,b01,e01       # a cheap smoke run
+python3 evals/judgement.py --arm judgement-heading   # a full sweep, live
+python3 evals/judgement.py --check-prompts           # CI: derived arm prompts
+```
+
+One live `oa run` per case, an API key and the provider patch. Its output is a
+record of one run rather than a regenerable artefact, so it carries a
+timestamp, the spec, the prompt, the model and the case ids, and nothing in CI
+diffs it. `--compare` on two judgement records refuses two arms that differ in
+more than one thing, refuses two records of the same arm, and says in the
+output that one sweep is one sample of a stochastic system.
 
 **Two hit rates, and the second is not a footnote.** `precedent_hit_rate@k` ranks
 documents with nothing truncating, which is a property of the ranking alone.
@@ -332,19 +360,40 @@ grounding-stripped producer is rejected by the schema. Done, as
 **Phase 4, Evals baseline.** Dataset written, metrics implemented, baseline recorded
 with the fixed-size chunker and no reranker.
 *Done when:* `latest.md` holds a complete baseline table.
-Done for retrieval, open for judgement. The dataset, its integrity check, the runner,
-the retrieval metrics and the fixed-chunker baseline are all in, and CI fails if the
-table drifts off the corpus or the dataset. `false_precedent_rate`,
-`no_precedent_accuracy`, `false_refusal_rate` and `divergence_quality` need one live
-`oa run` per case and are listed in the table as unmeasured with what each needs.
-`groundedness` needs a judge prompt at temperature 0 that is not designed, and it
-would not close the section-level gap either way.
+Done. The dataset, its integrity check, the runner, the retrieval metrics and the
+fixed-chunker baseline went in first, with CI failing if the table drifts off the
+corpus or the dataset. The judgement metrics followed: `false_precedent_rate`,
+`no_precedent_accuracy`, `false_refusal_rate` and `groundedness_log` are read off the
+typed output and the adapter's audit log, and `groundedness_judge` and
+`divergence_quality` are judged at temperature 0 with the prompts committed in
+`evals/judges/`. Neither groundedness check closes the section-level gap, and both
+tables say so.
 
 **Phase 5, Measured improvement.** At least two experiments:
-heading-aware versus fixed chunking, and hybrid with versus without the reranker.
+heading-aware versus fixed chunking, and the retrieval guidance the spec's rule 4
+fixes versus one verbose query.
 *Done when:* `--compare` shows the delta on `false_precedent_rate`,
-`precedent_hit_rate@5`, `groundedness` and `p95_latency_ms`, and the README states what
+`precedent_hit_rate@5`, groundedness and `p95_latency_ms`, and the README states what
 you kept, what you rejected, and what latency you accepted for it.
+
+**The second experiment used to say "hybrid with versus without the reranker", and
+there is no reranker in this repo to switch off.** Section 4 describes one for a real
+adapter; the mock ranks by term overlap and takes none, and `evals/runner.py` now
+refuses a config declaring one rather than recording a configuration nothing produced.
+A local cross-encoder would also put a model dependency inside a directory whose
+retrieval half deliberately runs on stdlib and PyYAML. The retrieval guidance is the
+configuration this project actually decided, on a measurement, so it is the one worth
+testing: at the bridge bound the reported symptom used whole scores 79 of 82 passages
+above zero and clears the floor 0 times, while the signature type alone scores 54 and
+clears 35. The arm is the shipped system prompt with that paragraph replaced by the
+instruction someone would plausibly have written without the measurement, derived from
+the spec so the two differ in one rule and nothing else.
+
+Read the deltas across both modes, because neither mode can produce all four numbers.
+`precedent_hit_rate@5` is retrieval mode and a property of the surface;
+`false_precedent_rate`, both groundedness figures and the agent's `p95` are judgement
+mode. `agent_reach` is the bridge between them: retrieval on the queries the agent
+chose rather than on the dataset's canonical probe.
 
 **Phase 6, Composition.** `demos/investigate.sh` stays three acts: recall runs
 alongside detect, and its typed output enters the commander's input as `precedent`
