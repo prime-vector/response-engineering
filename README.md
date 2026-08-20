@@ -195,9 +195,11 @@ shape. `evals/` measures it in two modes: retrieval, which scores the surface
 with no model in the loop and re-runs for free, and judgement, which runs the
 agent live, one `oa run` per case over 38 hand-authored cases. Deterministic
 figures come from the typed output, the adapter's audit log and the ground
-truth. Two more are scored by a separate model at temperature 0, with the judge
-prompts committed, and they are reported in their own table so they cannot be
-read as the same kind of number.
+truth. Two more are scored by a separate model with the judge prompts
+committed, and they are reported in their own table so they cannot be read as
+the same kind of number. How much that separation matters is measured rather
+than asserted: the same claims scored 73% under one judge family and 29% under
+another, while the ordering between arms survived both.
 
 Three configurations, one live sweep each, 38 cases, nothing rejected or
 unparseable in any of them. The grid below is generated from the three
@@ -221,10 +223,10 @@ that drifts:
 
 Applicability offered: judgement-heading `partial` 44, `superseded` 8; judgement-fixed `partial` 48, `superseded` 8; judgement-single-query `partial` 21, `superseded` 1. `false_precedent_rate` fires only on `applies`.
 
-| judged at temperature 0 | judgement-heading | judgement-fixed | judgement-single-query |
+| judged by cursor-grok-4.6-high | judgement-heading | judgement-fixed | judgement-single-query |
 | --- | --- | --- | --- |
-| `groundedness_judge` | 38/52 | 48/56 | 21/22 |
-| `divergence_quality` | 6/6 | 6/7 | 6/7 |
+| `groundedness_judge` | 15/52 | 18/56 | 10/22 |
+| `divergence_quality` | 6/6 | 6/7 | 5/7 |
 
 Both judged rates are scored over what each run offered, so offering less can raise them: judgement-heading never offered the diverging record on `b04`.
 
@@ -263,13 +265,14 @@ prompt as one knob.
 
 **Rejected: reading the chunker off these numbers.** Heading-aware and
 fixed-size chunking reach the same 54 of 60 pairs and omit 14 and 13 of 23
-applying documents. They part on the judged half, 38 of 52 claims supported
-against 48 of 56, and heading came out below fixed in all four judgings, each
-of which judged both arms with the same code, prompts and model. So the
-ordering is repeatable across four matched comparisons. Its size is not: the
-arms move by two to four claims between rounds, and those rounds are not
-equivalent to each other, so the spread is not a clean measurement of judge
-variance. Not nothing, and not enough to choose a chunker on. Heading-aware is kept for something no metric here scores: its
+applying documents. They part on the judged half, 15 of 52 claims supported
+against 18 of 56, and heading came out below fixed in every judging: four
+rounds under one judge family and one under another, each of which judged both
+arms with the same code, prompts and model. So the ordering is repeatable
+across five matched comparisons and two families. Its size is not: within one
+family the arms move by two to four claims between rounds, and across families
+the level moves by forty-five points. Not nothing, and not enough to choose a
+chunker on. Heading-aware is kept for something no metric here scores: its
 citations carry the heading chain, `INC-2411: … > Resolution`, where fixed
 chunks carry only the document title. That is the part that makes a citation
 checkable in five seconds, and it is a property rather than a result.
@@ -285,8 +288,19 @@ Section 4 of `docs/precedent-analyst.md` describes a reranker for a real
 adapter. There is none in this repo, so the runner refuses a config that
 declares one rather than recording a configuration nothing produced.
 
-Read the judged table with care. `groundedness_judge` is higher in both
-alternatives. For the single-query arm the explanation is selection: 22 claims
+**Read the judged table as a comparison, never as a score.** Those figures come
+from `cursor-grok-4.6-high`. The same claims judged by `claude-opus-4-6` at
+temperature 0 scored 38 of 52, 48 of 56 and 21 of 22, forty-five points higher,
+with the arms in the same order. Almost all of the difference is one rule: the
+prompt says a claim that the prior record lacked something is unsupported
+unless a passage states the absence, and the two families hold that rule with
+very different strictness. `divergence_quality` hardly moved between them,
+because that judge is handed the dataset's list of distinguishing factors and
+asked whether the text names one. A judged metric is portable to the degree the
+question is closed.
+
+Read the judged table with care in one more way. `groundedness_judge` is higher
+in both alternatives. For the single-query arm the explanation is selection: 22 claims
 against 52, and the failure the judge catches is a divergence asserting an
 absence the passages never state, so there is more of it where there is more
 divergence text. That explanation does not cover the fixed arm, which made
@@ -305,6 +319,36 @@ patch produced them is an assertion rather than something the record carries.
 The patch itself is evidenced by the runs, since an unpatched install fails the
 first tool call and these made hundreds; the version is not. Later sweeps pin
 both, and `evals/judgement.py --check-records` reports the gap per arm.
+
+### What a responder waits for
+
+The eval harness is slow and that is fine, because none of it is in the
+incident path. The judge scores recorded outputs after the fact, in CI or on a
+laptop; a model grading another model is not something anyone waits on during
+an incident, and putting it in the path would be a design error rather than a
+tuning problem.
+
+What an operator waits for is one recall. Measured across the shipped arm's 38
+runs, p50 26.9s and p95 52.8s, provider time included. The retrieval surface
+itself answers in about two milliseconds, so essentially all of that is the
+model. The baseline this project is built against is a change correlation that
+was available for fifteen days and got run two hours and twenty-one minutes
+into the bridge call.
+
+**The contract is what makes a slow recall survivable, not a timeout.**
+Precedent is supporting evidence and can never be deciding evidence, so a
+recall that is slow, fails, or refuses does not block the board: convergence
+blocks while deciding evidence is outstanding, which is a different field. An
+agent that never answers costs the board its precedent column and nothing else.
+In the three-act composition recall runs alongside detection rather than after
+it, so its latency overlaps rather than accumulates.
+
+If latency ever does bind, the levers are measured rather than guessed. One
+query instead of several halves it, p95 27.1s against 52.8s, and reaches 22 of
+60 relevant documents instead of 54: half the latency for a third of the reach,
+which argues for tiering by severity rather than choosing once. Retrieval with
+no agent at all is two milliseconds and gives up applicability, divergence and
+refusal, which is most of the point. A cheaper model is untested here.
 
 The retrieval tables regenerate with `python3 evals/runner.py --config
 evals/config.yaml` and are checked for drift in CI. On the judgement side the

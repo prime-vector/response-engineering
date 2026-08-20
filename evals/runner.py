@@ -1071,6 +1071,10 @@ JUDGEMENT_PINS = [
      lambda r: (r.get("scorer") or {}).get("fingerprint")),
     ("judge model", "judged.model",
      lambda r: (r.get("judged") or {}).get("model")),
+    ("judge transport", "judged.transport",
+     lambda r: (r.get("judged") or {}).get("transport", "anthropic")),
+    ("judge sampling", "judged.sampling",
+     lambda r: (r.get("judged") or {}).get("sampling")),
     ("judge temperature", "judged.temperature",
      lambda r: (r.get("judged") or {}).get("temperature")),
     # Truncation decides whether a verdict is a judge error or a scored

@@ -75,9 +75,37 @@ narrower question than the metric's own description, which is the reason to
 re-judge rather than to restate. The two after that changed nothing the judge
 sees, and measured something worth having.
 
-**Same claims, same prompts, same payload, same model at temperature 0, and the
-verdicts moved every time.** Four judgings of the identical claims, all of them
-in the records:
+**The judged level is a property of the judge, not of the agent.** The same
+claims have now been scored by two model families. Under `claude-opus-4-6` at
+temperature 0, and under `cursor-grok-4.6-high` through the CLI:
+
+| arm | opus, four rounds | grok |
+| --- | --- | --- |
+| `judgement-heading` | 39, 37, 39, 38 of 52 | 15 of 52 |
+| `judgement-fixed` | 48, 45, 49, 48 of 56 | 18 of 56 |
+| `judgement-single-query` | 20, 19, 21, 21 of 22 | 10 of 22 |
+
+Forty-five points of level, and the ordering survived intact: heading below
+fixed below single-query under both. So `groundedness_judge` is readable as a
+comparison and not as a score. A published figure of 73% or 29% says as much
+about which judge ran as about the agent, and the arms' order says something
+about the arms.
+
+**The difference is one rule doing almost all the work.** Both judges apply the
+prompt's instruction that a claim about the prior record lacking something is
+unsupported unless a passage states the absence. Opus applies it to about a
+quarter of claims; Grok applies it to nearly all of them, because most
+divergence text asserts an absence somewhere. The rule is the metric's opinion
+and the judge is how strictly that opinion is held.
+
+**`divergence_quality` barely moved: 6/6, 6/7, 5/7 against 6/6, 6/7, 6/7.**
+That judge is handed the dataset's list of distinguishing factors and asked
+whether the text names one. The constrained question ported across families
+almost perfectly; the open one did not. If a judged metric has to be comparable
+across models, give the judge the answer key and ask it to match.
+
+**Within one judge, the verdicts still move.** Four judgings of the identical
+claims under Opus, all of them in the records:
 
 | arm | first | second | third | fourth |
 | --- | --- | --- | --- | --- |
@@ -362,8 +390,8 @@ ground truth. Anyone can recheck them from the JSON record:
 | `groundedness_log` | cited `passage_id`s that were in the set the surface returned |
 | `agent_reach` | relevant documents the archive returned across the queries the agent chose |
 
-Judged, by a separate model at temperature 0 with the prompt committed in
-`judges/`. This is a model's opinion of a model:
+Judged, by a separate model with the prompt committed in `judges/`. This is a
+model's opinion of a model, and how much that matters is measured below:
 
 | Metric | What it asks |
 |---|---|
@@ -465,9 +493,9 @@ Phase 4 and Phase 5 are done.
 - [x] Baseline recorded against the fixed chunker with no reranker
 - [x] Judgement metrics: `false_precedent_rate`, `no_precedent_accuracy`,
       `false_refusal_rate`, `groundedness_log`, `agent_reach`, deterministic
-- [x] `groundedness_judge` and `divergence_quality`, judged at temperature 0
-      with the prompts in `judges/`. Neither closes the section-level gap
-      above, and the tables say so
+- [x] `groundedness_judge` and `divergence_quality`, with the prompts in
+      `judges/` and whatever sampling the transport pins. Neither closes the
+      section-level gap above, and the tables say so
 - [x] `judgement-heading` recorded, the shipped configuration
 - [x] `judgement-fixed` and `judgement-single-query` recorded, both
       comparisons run, and the result written up in the top-level README
@@ -504,10 +532,10 @@ The grid is generated from the three records and diffed in CI:
 
 Applicability offered: judgement-heading `partial` 44, `superseded` 8; judgement-fixed `partial` 48, `superseded` 8; judgement-single-query `partial` 21, `superseded` 1. `false_precedent_rate` fires only on `applies`.
 
-| judged at temperature 0 | judgement-heading | judgement-fixed | judgement-single-query |
+| judged by cursor-grok-4.6-high | judgement-heading | judgement-fixed | judgement-single-query |
 | --- | --- | --- | --- |
-| `groundedness_judge` | 38/52 | 48/56 | 21/22 |
-| `divergence_quality` | 6/6 | 6/7 | 6/7 |
+| `groundedness_judge` | 15/52 | 18/56 | 10/22 |
+| `divergence_quality` | 6/6 | 6/7 | 5/7 |
 
 Both judged rates are scored over what each run offered, so offering less can raise them: judgement-heading never offered the diverging record on `b04`.
 
@@ -533,8 +561,8 @@ delta is the paragraph, not query count in isolation, and `--compare` cannot
 see the difference because a system prompt is one knob to it.
 
 **The chunker is not choosable off one sweep each.** Same reach, 54 of 60, and
-14 against 13 omissions. The judged half parts by 38/52 against 48/56, and
-heading came out below fixed in all four judgings, so the gap is repeatable
+14 against 13 omissions. The judged half parts by 15/52 against 18/56, and
+heading came out below fixed in every judging, so the gap is repeatable
 even though its size moves by several points between rounds. That is a real
 difference nobody should choose a chunker on: one sweep each, a judge scoring a
 model, and no account of why.
@@ -567,8 +595,9 @@ applies. An agent that never says `applies` cannot offer a false precedent, so
 the two figures have to be read together, and the table prints them together
 for that reason.
 
-**`groundedness_judge` at 73.1%, and the failures have one shape.** Most of the
-14 unsupported claims assert an absence: "the prior incident shows no audit
+**`groundedness_judge` at 28.8% under the judge now configured, and the
+failures have one shape.** Nearly all of the 37 unsupported claims assert an
+absence: "the prior incident shows no audit
 daemon", from passages that simply do not mention one. It is a divergence of
 exactly the kind rule 5 asks for, resting on something the archive never said.
 `groundedness_log` cannot see it: every one of those citations is a passage the

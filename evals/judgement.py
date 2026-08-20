@@ -44,8 +44,12 @@ Deterministic and judged metrics are reported apart, always. false_precedent_
 rate, no_precedent_accuracy, false_refusal_rate and groundedness_log are read
 off the typed output and the adapter log by code: they are as reliable as the
 ground truth. groundedness_judge and divergence_quality are a model's opinion
-of a model, scored at temperature 0 with the prompt committed beside this
-file. Mixing them into one table would launder the second as the first.
+of a model, scored with the prompt committed beside this file and whatever
+sampling the transport can pin, which the record states rather than assumes.
+Mixing them into one table would launder the second as the first. Their level
+is judge-relative and measured to be so: the same claims score 73% under one
+judge family and 29% under another, while the ordering between arms survives
+both.
 
 Stdlib plus PyYAML, like runner.py and validate.py. The judge calls the
 Messages API over raw HTTP rather than through the anthropic SDK, so that
@@ -54,6 +58,7 @@ through `oa`, which brings its own.
 """
 
 import argparse
+import concurrent.futures
 import hashlib
 import inspect
 import json
@@ -63,6 +68,7 @@ import shutil
 import statistics
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.error
 import urllib.parse
@@ -890,8 +896,8 @@ def judge_code_fingerprint():
     temperature are fingerprinted separately in the record.
     """
     source = "".join(inspect.getsource(fn)
-                     for fn in (judge_run, call_judge, extract_json,
-                                offered_claim, cited_ids, rpc))
+                     for fn in (judge_run, call_judge, judge_via_cursor,
+                                extract_json, offered_claim, cited_ids, rpc))
     # Values, not only code. The endpoint and the API version shape every
     # request, and rpc is what resolves a cited passage to the text the judge
     # is shown. Hashing the functions alone left all three able to move
@@ -900,7 +906,63 @@ def judge_code_fingerprint():
         (source + API_URL + API_VERSION).encode()).hexdigest()
 
 
+def cursor_version():
+    """The CLI that judged, by version. Same reason the agent runtime is
+    pinned: two installs behave differently and a record should not need a
+    reader to assume which one ran."""
+    probe = subprocess.run(["agent", "--version"], capture_output=True,
+                           text=True)
+    return probe.stdout.strip() or None
+
+
+def judge_via_cursor(judge, system, payload):
+    """Judge through the Cursor CLI, on the subscription rather than metered.
+
+    Two things this has to get right, and the second is not about cost.
+
+    The harness is an agent with workspace access, and the judge's whole job
+    is to answer from the passages it is handed. Given the repository it would
+    be able to open corpus/documents and confirm a claim from the document
+    rather than from the citation, which is precisely the check being run. So
+    it runs in an empty directory: there is nothing to read, and read-only
+    mode is a second lock rather than the only one.
+
+    Sampling cannot be set here. The CLI takes a model and effort, not a
+    temperature, so a run through this transport cannot claim temperature 0.
+    That is a real reduction in what the harness pins, and the documents say
+    so rather than carrying the old phrase. It costs less than it reads:
+    four judgings at temperature 0 through the metered API moved two to four
+    claims per arm, so the determinism the phrase implied was not there.
+    """
+    prompt = system + "\n\n" + json.dumps(payload, indent=2)
+    with tempfile.TemporaryDirectory(prefix="judge-") as empty:
+        proc = subprocess.run(
+            ["agent", "-p", prompt, "--model", judge["model"],
+             "--output-format", "json", "--mode", "ask", "--trust",
+             "--workspace", empty],
+            capture_output=True, text=True, timeout=judge.get("timeout", 300),
+            cwd=empty)
+    if proc.returncode != 0:
+        return {"error": f"agent exited {proc.returncode}: "
+                         f"{(proc.stderr or proc.stdout)[-300:]}"}, {}
+    try:
+        envelope = json.loads(proc.stdout)
+    except json.JSONDecodeError as exc:
+        return {"error": f"agent output did not parse ({exc}): "
+                         f"{proc.stdout[:200]}"}, {}
+    if envelope.get("is_error"):
+        return {"error": f"agent reported an error: {str(envelope)[:300]}"}, {}
+    usage = envelope.get("usage") or {}
+    verdict = extract_json(envelope.get("result", ""))
+    if verdict is None:
+        return {"error": "judge output did not parse: "
+                         f"{str(envelope.get('result'))[:300]}"}, usage
+    return verdict, usage
+
+
 def call_judge(judge, system, payload, key):
+    if judge.get("transport", "anthropic") == "cursor":
+        return judge_via_cursor(judge, system, payload)
     body = json.dumps({
         "model": judge["model"],
         "max_tokens": judge.get("max_tokens", 1500),
@@ -1016,10 +1078,30 @@ def judge_run(config, records, scores, cases, port, key):
     usage_total = {"input_tokens": 0, "output_tokens": 0, "calls": 0}
 
     def account(usage):
+        # The two transports name these differently: the Messages API returns
+        # input_tokens, the CLI envelope returns inputTokens. Reading one
+        # spelling recorded zeros for the other and made a real cost look free.
         usage_total["calls"] += 1
-        usage_total["input_tokens"] += usage.get("input_tokens", 0)
-        usage_total["output_tokens"] += usage.get("output_tokens", 0)
+        usage_total["input_tokens"] += (usage.get("input_tokens")
+                                        or usage.get("inputTokens") or 0)
+        usage_total["output_tokens"] += (usage.get("output_tokens")
+                                         or usage.get("outputTokens") or 0)
+        for extra in ("cacheReadTokens", "cacheWriteTokens"):
+            if usage.get(extra):
+                usage_total[extra] = usage_total.get(extra, 0) + usage[extra]
 
+    # Every judgement is independent by construction: a claim is scored
+    # against the passages it cites and nothing else, which is what makes the
+    # metric mean anything. So they are built as a list first and then run
+    # concurrently. Sequentially, one arm took the better part of an hour
+    # through the CLI transport, where about half of each call is process
+    # spawn and preamble rather than the model thinking.
+    #
+    # The two speedups not taken, because both trade the measurement for the
+    # clock: reusing one session across claims would remove the spawn and let
+    # claims see each other, and batching several claims into one call would
+    # change what the judge is answering.
+    tasks = []
     for record in records:
         if record["failure"]:
             continue
@@ -1031,8 +1113,28 @@ def judge_run(config, records, scores, cases, port, key):
                 # Nothing to judge: every id it cited is one the archive never
                 # returned, which groundedness_log has already counted.
                 continue
+            tasks.append({"kind": "groundedness", "case": record["case"],
+                          "document": claim["source_uri"], "claim": claim,
+                          "grounded": grounded, "as_of": case["as_of"],
+                          "symptom": case["symptom"].strip()})
+        if case["group"] != "near_miss":
+            continue
+        for claim in scores[record["case"]]["claims"]:
+            if claim["truth"] not in ("partial", "superseded"):
+                continue
+            tasks.append({"kind": "divergence", "case": record["case"],
+                          "document": claim["source_uri"], "claim": claim,
+                          "symptom": case["symptom"].strip(),
+                          "missing_evidence": case.get("missing_evidence")
+                          or [],
+                          "wanted": case["expect"].get("divergence_names")
+                          or []})
+
+    def run_task(task):
+        claim = task["claim"]
+        if task["kind"] == "groundedness":
             passages = []
-            for passage_id in grounded:
+            for passage_id in task["grounded"]:
                 try:
                     # The passage as the archive returned it, whole. An
                     # earlier version sent text and heading_path only, and
@@ -1052,35 +1154,33 @@ def judge_run(config, records, scores, cases, port, key):
             # citations support: an invented resolution_taken or
             # signature_overlap scored as grounded because the judge was
             # never shown it. Sol found that at the gate.
-            verdict, usage = call_judge(judge, grounding_system, {
-                "incident": {"symptom": case["symptom"].strip(),
-                             "as_of": case["as_of"]},
+            return call_judge(judge, grounding_system, {
+                "incident": {"symptom": task["symptom"],
+                             "as_of": task["as_of"]},
                 "precedent_claim": claim["offered_claim"],
                 "cited_passages": passages,
             }, key)
-            account(usage)
-            verdicts["groundedness"].append({
-                "case": record["case"], "document": claim["source_uri"],
-                "verdict": verdict})
+        return call_judge(judge, divergence_system, {
+            "incident": {"symptom": task["symptom"],
+                         "missing_evidence": task["missing_evidence"]},
+            "precedent_document": task["document"],
+            "distinguishing_factors": task["wanted"],
+            "divergence_text": claim["divergence"],
+        }, key)
 
-        if case["group"] != "near_miss":
-            continue
-        wanted = case["expect"].get("divergence_names") or []
-        for claim in scores[record["case"]]["claims"]:
-            if claim["truth"] not in ("partial", "superseded"):
-                continue
-            verdict, usage = call_judge(judge, divergence_system, {
-                "incident": {"symptom": case["symptom"].strip(),
-                             "missing_evidence": case.get("missing_evidence")
-                             or []},
-                "precedent_document": claim["source_uri"],
-                "distinguishing_factors": wanted,
-                "divergence_text": claim["divergence"],
-            }, key)
-            account(usage)
-            verdicts["divergence"].append({
-                "case": record["case"], "document": claim["source_uri"],
-                "verdict": verdict})
+    # Ordered results, whatever order they complete in: a record that changes
+    # its verdict order between runs would show a diff that is not a finding.
+    lanes = max(1, int(judge.get("concurrency", 4)))
+    if tasks:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=lanes) as pool:
+            outcomes = list(pool.map(run_task, tasks))
+    else:
+        outcomes = []
+    for task, (verdict, usage) in zip(tasks, outcomes):
+        account(usage)
+        verdicts[task["kind"]].append({
+            "case": task["case"], "document": task["document"],
+            "verdict": verdict})
 
     def rate(entries, field):
         # A reply that parsed but does not carry the boolean this metric is
@@ -1104,13 +1204,23 @@ def judge_run(config, records, scores, cases, port, key):
 
     near_miss_cases = [c["id"] for c in cases if c["group"] == "near_miss"]
     judged_cases = {e["case"] for e in verdicts["divergence"]}
+    transport = judge.get("transport", "anthropic")
     return {
         "model": judge["model"],
-        "temperature": judge.get("temperature", 0),
-        # Recorded because it truncates: a verdict cut off mid-object is a
-        # judge error rather than an unsupported claim, and which of those a
-        # reader is looking at depends on this number.
-        "max_tokens": judge.get("max_tokens", 1500),
+        "transport": transport,
+        # What the harness can pin, per transport, said as itself. The metered
+        # API takes a temperature and a token limit; the CLI takes a model and
+        # an effort and neither of the other two. A record that carried
+        # "temperature: 0" from a transport that cannot set one would be
+        # asserting a control nobody exercised.
+        "temperature": (judge.get("temperature", 0)
+                        if transport == "anthropic" else None),
+        "max_tokens": (judge.get("max_tokens", 1500)
+                       if transport == "anthropic" else None),
+        "sampling": ("temperature 0" if transport == "anthropic"
+                     else "not settable through this transport: the CLI takes "
+                          "a model and an effort, not a temperature"),
+        "cli_version": (cursor_version() if transport == "cursor" else None),
         # The code that built these payloads and read these verdicts, and
         # only that code. Not the record's top-level scorer fingerprint,
         # which covers this whole file and moves on any edit: that one is
@@ -1426,8 +1536,9 @@ def markdown(result):
         lines += [
             "## Judged by a model",
             "",
-            f"A separate judge, {judged['model']} at temperature "
-            f"{judged['temperature']}, scored by "
+            f"A separate judge, {judged['model']} through the "
+            f"{judged.get('transport', 'anthropic')} transport, "
+            f"{judged.get('sampling') or 'sampling unstated'}, scored by "
             + (f"`{judged['scorer_fingerprint'][:16]}`"
                if judged.get("scorer_fingerprint")
                else "a scorer this record does not fingerprint, because it "
@@ -1477,8 +1588,8 @@ def markdown(result):
                 f"{current['denominator']} | {current_div['numerator']}/"
                 f"{current_div['denominator']} |",
                 "",
-                ("Same claims, same prompts, same payload, same model at the "
-                 "temperature above. What moves between rounds is the judge."
+                ("Same claims, same prompts and same payload. What moves "
+                 "between rounds is the judge."
                  if all(entry.get("scorer_fingerprint")
                         == judged.get("scorer_fingerprint")
                         and entry.get("model") == judged.get("model")
@@ -1868,14 +1979,22 @@ def record_drift(config, arm, record):
         if judged.get("model") != judge["model"]:
             rejudge_owed.append(f"the config judges with {judge['model']}, "
                                 f"the recording used {judged.get('model')}")
-        if judged.get("max_tokens") != judge.get("max_tokens", 1500):
-            rejudge_owed.append(f"the config allows the judge "
-                                f"{judge.get('max_tokens', 1500)} tokens, the "
-                                f"recording allowed {judged.get('max_tokens')}")
-        if judged.get("temperature") != judge.get("temperature", 0):
-            rejudge_owed.append(f"the config judges at temperature "
-                                f"{judge.get('temperature', 0)}, the "
-                                f"recording used {judged.get('temperature')}")
+        transport = judge.get("transport", "anthropic")
+        if judged.get("transport", "anthropic") != transport:
+            rejudge_owed.append(f"the config judges through {transport}, the "
+                                f"recording used "
+                                f"{judged.get('transport', 'anthropic')}")
+        elif transport == "anthropic":
+            if judged.get("max_tokens") != judge.get("max_tokens", 1500):
+                rejudge_owed.append(
+                    f"the config allows the judge "
+                    f"{judge.get('max_tokens', 1500)} tokens, the recording "
+                    f"allowed {judged.get('max_tokens')}")
+            if judged.get("temperature") != judge.get("temperature", 0):
+                rejudge_owed.append(
+                    f"the config judges at temperature "
+                    f"{judge.get('temperature', 0)}, the recording used "
+                    f"{judged.get('temperature')}")
         for name in ("groundedness", "divergence"):
             path = judge[f"{name}_prompt"]
             stored = judged.get("prompts", {}).get(name, {})
@@ -2060,9 +2179,11 @@ def main():
         print(f"arm {arm['label']}: {len(cases)} case(s) against "
               f"{arm['index']}, agent {spec['intelligence']['model']}, "
               f"prompt {arm.get('system_prompt') or config['spec']}")
+        judge = config["judge"]
         print(f"adapter on port {spec_port(spec, config['spec'])}, "
-              f"judge {config['judge']['model']} at temperature "
-              f"{config['judge'].get('temperature', 0)}")
+              f"judge {judge['model']} through "
+              f"{judge.get('transport', 'anthropic')}, "
+              f"{judge.get('concurrency', 4)} lanes")
         for case in cases:
             expects = ("precedent exists"
                        if case["expect"]["precedent_exists"]
@@ -2187,7 +2308,8 @@ def comparison_grid(records):
             for label, d in zip(labels, dets))
         + ". `false_precedent_rate` fires only on `applies`.",
         "",
-        "| judged at temperature 0 | " + head + " |",
+        "| judged by " + (judged[0].get("model") or "a model") + " | "
+        + head + " |",
         "| --- | " + " | ".join("---" for _ in labels) + " |",
         "| `groundedness_judge` | "
         + " | ".join(_fraction(j.get("groundedness_judge")) for j in judged)
