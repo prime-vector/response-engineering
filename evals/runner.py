@@ -1057,6 +1057,16 @@ JUDGEMENT_PINS = [
     ("agent spec", "agent.spec_fingerprint",
      lambda r: r["agent"]["spec_fingerprint"]),
     ("agent model", "agent.model", lambda r: r["agent"]["model"]),
+    ("agent task", "agent.task", lambda r: r["agent"].get("task")),
+    # What ran the agent, by CLI version and by the content of the provider
+    # module the patch edits in place. Two installs reporting one version
+    # behave differently when only one is patched, and tool calling is the
+    # whole task. Records made before this was pinned carry None, which
+    # compares equal to each other and refuses against a pinned one.
+    ("agent runtime", "agent.runtime",
+     lambda r: (r["agent"].get("runtime") or {}).get("cli_version")),
+    ("provider module", "agent.runtime.provider_fingerprint",
+     lambda r: (r["agent"].get("runtime") or {}).get("provider_fingerprint")),
     ("scorer", "scorer.fingerprint",
      lambda r: (r.get("scorer") or {}).get("fingerprint")),
     ("judge model", "judged.model",

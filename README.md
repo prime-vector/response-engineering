@@ -298,6 +298,12 @@ rejected, so an agent trying to report the trap has to put its caveat where the
 contract does not carry it. That is an open gap in the output contract, and it
 is recorded rather than tuned away.
 
+These three records predate the runtime pin, so which CLI and which provider
+patch produced them is an assertion rather than something the record carries.
+The patch itself is evidenced by the runs, since an unpatched install fails the
+first tool call and these made hundreds; the version is not. Later sweeps pin
+both, and `evals/judgement.py --check-records` reports the gap per arm.
+
 The retrieval tables regenerate with `python3 evals/runner.py --config
 evals/config.yaml` and are checked for drift in CI. The judgement tables do not
 regenerate: they are records of one live run, a fresh sweep of the same arm

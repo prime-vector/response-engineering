@@ -326,6 +326,14 @@ knob to it, and two instructions inside one paragraph are one knob to
 needs a fourth arm that keeps the breadth instruction and changes only the
 repeat instruction; it is not run.
 
+**The three records do not pin the runtime that produced them.** They were made
+before the CLI version and the provider module were recorded, so "one install,
+one session, one input changed per arm" is an assertion by the author rather
+than something the artefact establishes. `--check-records` reports it per arm
+and calls for a fresh sweep, which is the only remedy. The provider patch is
+evidenced by the runs themselves, because an unpatched install fails the first
+tool call and these made 388 successful ones; the CLI version is not.
+
 **The chunker is not choosable off these numbers, and saying so is the result.**
 Heading-aware and fixed reach the same 54 of 60 pairs and omit 14 and 13 of the
 23 applying documents the archive handed over. The judged half parts by more

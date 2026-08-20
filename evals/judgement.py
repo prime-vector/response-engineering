@@ -79,6 +79,7 @@ from validate import (  # noqa: E402
 
 API_URL = "https://api.anthropic.com/v1/messages"
 args_config_path = "evals/config.judgement.yaml"
+_RUNTIME = None
 API_VERSION = "2023-06-01"
 
 # The paragraph of the spec's system prompt the query-strategy arm replaces,
@@ -270,6 +271,43 @@ def require_contracts():
 # One case, live
 # --------------------------------------------------------------------------
 
+def agent_runtime(oa):
+    """What actually ran the agent, by version and by content.
+
+    The CLI version alone is not enough here. Tool calling needs the provider
+    patch in patches/, which edits an installed file in place, so two installs
+    reporting the same version can behave differently: one 400s the moment the
+    model calls a tool and the other does not. The provider module is
+    fingerprinted for that reason. Sol asked for this at the gate, and the
+    reason it blocks a claim rather than a run is that an arm recorded before
+    an upgrade and one recorded after would otherwise compare as differing in
+    one input.
+    """
+    with open(oa) as handle:
+        shebang = handle.readline().strip()
+    interpreter = shebang[2:].strip() if shebang.startswith("#!") else None
+    probe = subprocess.run(
+        [interpreter or sys.executable, "-c",
+         "import importlib.metadata as m, hashlib, json\n"
+         "import oas_cli.providers.anthropic_http as provider\n"
+         "print(json.dumps({\n"
+         "  'cli_version': m.version('open-agent-spec'),\n"
+         "  'provider_module': provider.__file__,\n"
+         "  'provider_fingerprint': hashlib.sha256(\n"
+         "      open(provider.__file__, 'rb').read()).hexdigest(),\n"
+         "}))"],
+        capture_output=True, text=True)
+    if probe.returncode != 0:
+        raise SystemExit(
+            f"cannot establish what would run the agent: {probe.stderr[-300:]}"
+            f"\nA sweep that cannot say which CLI and which provider produced "
+            f"it cannot support a one-input comparison.")
+    runtime = json.loads(probe.stdout)
+    runtime["oa"] = oa
+    runtime["interpreter"] = interpreter
+    return runtime
+
+
 def case_input(case):
     """The recall task's input, built from the case.
 
@@ -313,6 +351,24 @@ def parse_log(lines):
     text = "".join(lines)
     hits = dict(re.findall(r"^\[mock-precedent_archive\] hit (\S+) (\S+)$",
                            text, re.M))
+
+    # Which call each passage came back from. The adapter logs a call line and
+    # then the passages that left the surface on it, so the attribution is the
+    # log's order rather than an inference. It matters because a passage the
+    # agent fetched by id to check a citation is not a passage its queries
+    # found, and agent_reach is a claim about what the queries reached. Sol
+    # found the two collapsed into one set at the gate.
+    by_call, current = {}, None
+    for line in lines:
+        call = re.match(r"^\[mock-precedent_archive\] tools/call (\S+)$",
+                        line.strip())
+        if call:
+            current = call.group(1)
+            continue
+        hit = re.match(r"^\[mock-precedent_archive\] hit (\S+) (\S+)$",
+                       line.strip())
+        if hit and current:
+            by_call.setdefault(current, {})[hit.group(1)] = hit.group(2)
     calls = re.findall(r"^\[mock-precedent_archive\] tools/call (\S+)$",
                        text, re.M)
     # What the agent asked for, from the surface's own record of it. The
@@ -331,6 +387,7 @@ def parse_log(lines):
         r"floor \((\d+) considered, (\d+) scoring\)$", text, re.M)
     return {
         "hits": hits,
+        "hits_by_tool": by_call,
         "calls": calls,
         "asked": asked,
         "searches": [{"returned": int(a), "above_floor": int(b),
@@ -420,7 +477,14 @@ def score_run(case, record):
     truth = expect.get("applicability") or {}
     relevant = set(expect.get("relevant") or [])
     hits = record["surface"]["hits"]
-    reached = {uri.split("#")[0] for uri in hits.values()}
+    # Everything the surface returned, by whatever call. Used for citation
+    # membership, where the question is only whether the agent was ever handed
+    # the passage it cites.
+    searched = (record["surface"].get("hits_by_tool") or {}).get(
+        "precedent_search", {})
+    # Reach is a claim about the queries the agent chose, so it counts only
+    # what came back from precedent_search.
+    reached = {uri.split("#")[0] for uri in searched.values()}
 
     out = {
         "precedent_exists": bool(expect["precedent_exists"]),
@@ -788,8 +852,13 @@ def judge_code_fingerprint():
     """
     source = "".join(inspect.getsource(fn)
                      for fn in (judge_run, call_judge, extract_json,
-                                score_run, cited_ids))
-    return hashlib.sha256(source.encode()).hexdigest()
+                                score_run, cited_ids, rpc))
+    # Values, not only code. The endpoint and the API version shape every
+    # request, and rpc is what resolves a cited passage to the text the judge
+    # is shown. Hashing the functions alone left all three able to move
+    # without the record noticing.
+    return hashlib.sha256(
+        (source + API_URL + API_VERSION).encode()).hexdigest()
 
 
 def call_judge(judge, system, payload, key):
@@ -999,6 +1068,10 @@ def judge_run(config, records, scores, cases, port, key):
     return {
         "model": judge["model"],
         "temperature": judge.get("temperature", 0),
+        # Recorded because it truncates: a verdict cut off mid-object is a
+        # judge error rather than an unsupported claim, and which of those a
+        # reader is looking at depends on this number.
+        "max_tokens": judge.get("max_tokens", 1500),
         # The code that built these payloads and read these verdicts, and
         # only that code. Not the record's top-level scorer fingerprint,
         # which covers this whole file and moves on any edit: that one is
@@ -1118,6 +1191,7 @@ def run_arm(config, arm, cases, stamp, judged=True):
         "index_fingerprint": file_fingerprint(arm["index"]),
         "chunker": arm["chunker"],
         "agent": {
+            "runtime": agent_runtime(oa),
             "spec": config["spec"],
             "spec_fingerprint": file_fingerprint(config["spec"]),
             "task": config["task"],
@@ -1302,6 +1376,36 @@ def markdown(result):
             metric_row("divergence_quality", judged["divergence_quality"]),
             "",
         ]
+        rounds = result.get("judgings") or []
+        if rounds:
+            lines += [
+                "This arm has been judged "
+                + f"{len(rounds) + 1} times over the same claims. Earlier "
+                  "rounds, kept because the spread is part of the result:",
+                "",
+                "| judged at | groundedness_judge | divergence_quality |",
+                "| --- | --- | --- |",
+            ]
+            for entry in rounds:
+                grounded = entry["groundedness_judge"]
+                diverged = entry["divergence_quality"]
+                lines.append(
+                    f"| {entry['at']} | {grounded['numerator']}/"
+                    f"{grounded['denominator']} | {diverged['numerator']}/"
+                    f"{diverged['denominator']} |")
+            current = judged["groundedness_judge"]
+            current_div = judged["divergence_quality"]
+            lines += [
+                f"| {result.get('rejudged_at', result['recorded_at'])} "
+                f"(current) | {current['numerator']}/"
+                f"{current['denominator']} | {current_div['numerator']}/"
+                f"{current_div['denominator']} |",
+                "",
+                "Same claims, same prompts, same payload, same model at the "
+                "temperature above. What moves between rounds is the judge.",
+                "",
+            ]
+
         divergence = judged["divergence_quality"]
         not_offered = (", ".join(f"`{c}`" for c in divergence["not_offered"])
                        or "none")
@@ -1561,6 +1665,19 @@ def fingerprint_or_none(path):
         return None
 
 
+def current_runtime():
+    """The installed runtime, read once per process.
+
+    record_drift asks about it per arm, and shelling out to the CLI's
+    interpreter three times to learn the same thing is waste.
+    """
+    global _RUNTIME
+    if _RUNTIME is None:
+        oa = shutil.which("oa")
+        _RUNTIME = agent_runtime(oa) if oa else {}
+    return _RUNTIME
+
+
 def record_drift(config, arm, record):
     """What has moved under a recording since it was made.
 
@@ -1575,6 +1692,27 @@ def record_drift(config, arm, record):
     # arms that do not override it, the system prompt. One fingerprint over
     # the file covers all three.
     agent = record.get("agent", {})
+    if agent.get("task") != config["task"]:
+        rerun.append(f"the config runs task {config['task']}, the recording "
+                     f"ran {agent.get('task')}")
+    runtime = agent.get("runtime") or {}
+    if not runtime:
+        # A provenance gap rather than a moved input, and worth saying as
+        # that: nothing about this recording has changed, it was made before
+        # the runtime was pinned. Only a re-run can close it, so it is listed
+        # with the re-runs, and it is the one entry there that does not mean
+        # something under the record has moved.
+        rerun.append("the recording does not pin the CLI and provider that "
+                     "ran it, so which runtime produced it is an assertion "
+                     "rather than a property of the record. Only a fresh "
+                     "sweep can close that")
+    elif runtime.get("cli_version") != current_runtime().get("cli_version"):
+        rerun.append(f"the recording ran CLI {runtime.get('cli_version')}, "
+                     f"this tree has {current_runtime().get('cli_version')}")
+    elif (runtime.get("provider_fingerprint")
+          != current_runtime().get("provider_fingerprint")):
+        rerun.append("the provider module has changed since the recording, so "
+                     "tool calling is not the behaviour that was measured")
     if agent.get("spec") != config["spec"]:
         rerun.append(f"the config names spec {config['spec']}, the recording "
                      f"ran {agent.get('spec')}")
@@ -2161,6 +2299,26 @@ def rejudge(record_path, config):
         print(f"  {name}: {pct(was.get('value'))} "
               f"({was.get('numerator')}/{was.get('denominator')}) -> "
               f"{pct(now['value'])} ({now['numerator']}/{now['denominator']})")
+    # Every judging this record has had, kept. Overwriting in place left the
+    # published claim that re-judging moves two to four claims resting on
+    # prose and commit messages, because only the last round survived in the
+    # artefact. A rate whose variance is part of the finding has to carry its
+    # own rounds. Sol found that at the gate.
+    history = list(result.get("judgings") or [])
+    if before:
+        history.append({
+            "at": result.get("rejudged_at") or result.get("recorded_at"),
+            "scorer_fingerprint": before.get("scorer_fingerprint"),
+            "model": before.get("model"),
+            "temperature": before.get("temperature"),
+            "groundedness_judge": {
+                k: (before.get("groundedness_judge") or {}).get(k)
+                for k in ("value", "numerator", "denominator")},
+            "divergence_quality": {
+                k: (before.get("divergence_quality") or {}).get(k)
+                for k in ("value", "numerator", "denominator")},
+        })
+    result["judgings"] = history
     result["judged"] = fresh
     result["rejudged_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     # Rejudging recomputes the deterministic half as well, because the claims

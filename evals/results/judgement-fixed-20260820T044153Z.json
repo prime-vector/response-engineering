@@ -76,7 +76,7 @@
   },
   "scorer": {
     "path": "evals/judgement.py",
-    "fingerprint": "6cc3beec53030e1323e7fa44e0392ec850496fa1c98f554f36f06053ad7e7e35",
+    "fingerprint": "032634f91fcc635804ec8ffa4db644fdbcc0d4319be7fa686eb7b0c400eef66d",
     "scope": "the deterministic figures. The judged half carries its own fingerprint under judged."
   },
   "deterministic": {
@@ -961,7 +961,25 @@
             "considered": 39,
             "scoring": 21
           }
-        ]
+        ],
+        "hits_by_tool": {
+          "precedent_search": {
+            "p-1bfd3666f422": "corpus://incidents/DRAFT-2601#0",
+            "p-5ff983b32091": "corpus://runbooks/container-resource-limits#0",
+            "p-fd95aef0d16e": "corpus://runbooks/container-resource-limits#2",
+            "p-0d7cde0a14ac": "corpus://incidents/INC-2446#0",
+            "p-e5bdd7198bcc": "corpus://incidents/INC-2419#0",
+            "p-2978a1380a0d": "corpus://incidents/INC-2411#0",
+            "p-ba71e1a2b64a": "corpus://incidents/INC-2350#0",
+            "p-8701b4fabe21": "corpus://incidents/INC-2305#0",
+            "p-13b0c0432e17": "corpus://incidents/INC-2288#0",
+            "p-378514460c22": "corpus://incidents/INC-2288#1",
+            "p-9adc3ac80a81": "corpus://runbooks/denial-log-collection#0",
+            "p-382d9078e2d3": "corpus://incidents/DRAFT-2601#1",
+            "p-d81e4a80c0e6": "corpus://runbooks/denial-log-collection#1"
+          }
+        },
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": false,
@@ -1267,7 +1285,28 @@
             "considered": 37,
             "scoring": 29
           }
-        ]
+        ],
+        "hits_by_tool": {
+          "precedent_search": {
+            "p-5ff983b32091": "corpus://runbooks/container-resource-limits#0",
+            "p-fd95aef0d16e": "corpus://runbooks/container-resource-limits#2",
+            "p-0d7cde0a14ac": "corpus://incidents/INC-2446#0",
+            "p-e5bdd7198bcc": "corpus://incidents/INC-2419#0",
+            "p-2978a1380a0d": "corpus://incidents/INC-2411#0",
+            "p-ba71e1a2b64a": "corpus://incidents/INC-2350#0",
+            "p-8701b4fabe21": "corpus://incidents/INC-2305#0",
+            "p-47e336490a61": "corpus://runbooks/memory-pressure#1",
+            "p-e06c78522c44": "corpus://runbooks/container-resource-limits#1",
+            "p-dfbb74f0fcc9": "corpus://runbooks/memory-pressure#0",
+            "p-fa68ddf757b2": "corpus://runbooks/memory-pressure#2",
+            "p-0b2d395d47a7": "corpus://incidents/INC-2419#1",
+            "p-b5386e8a3c6f": "corpus://incidents/INC-2411#1"
+          },
+          "passage_get": {
+            "p-2978a1380a0d": "corpus://incidents/INC-2411#0"
+          }
+        },
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": false,
@@ -1588,7 +1627,29 @@
             "considered": 39,
             "scoring": 29
           }
-        ]
+        ],
+        "hits_by_tool": {
+          "precedent_search": {
+            "p-1bfd3666f422": "corpus://incidents/DRAFT-2601#0",
+            "p-5ff983b32091": "corpus://runbooks/container-resource-limits#0",
+            "p-fd95aef0d16e": "corpus://runbooks/container-resource-limits#2",
+            "p-0d7cde0a14ac": "corpus://incidents/INC-2446#0",
+            "p-e5bdd7198bcc": "corpus://incidents/INC-2419#0",
+            "p-2978a1380a0d": "corpus://incidents/INC-2411#0",
+            "p-ba71e1a2b64a": "corpus://incidents/INC-2350#0",
+            "p-8701b4fabe21": "corpus://incidents/INC-2305#0",
+            "p-13b0c0432e17": "corpus://incidents/INC-2288#0",
+            "p-378514460c22": "corpus://incidents/INC-2288#1",
+            "p-382d9078e2d3": "corpus://incidents/DRAFT-2601#1",
+            "p-9adc3ac80a81": "corpus://runbooks/denial-log-collection#0",
+            "p-5a71352a801a": "corpus://runbooks/denial-log-collection#2"
+          },
+          "passage_get": {
+            "p-2978a1380a0d": "corpus://incidents/INC-2411#0",
+            "p-9adc3ac80a81": "corpus://runbooks/denial-log-collection#0"
+          }
+        },
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": false,
@@ -1900,7 +1961,23 @@
             "considered": 39,
             "scoring": 30
           }
-        ]
+        ],
+        "hits_by_tool": {
+          "precedent_search": {
+            "p-1bfd3666f422": "corpus://incidents/DRAFT-2601#0",
+            "p-5ff983b32091": "corpus://runbooks/container-resource-limits#0",
+            "p-fd95aef0d16e": "corpus://runbooks/container-resource-limits#2",
+            "p-0d7cde0a14ac": "corpus://incidents/INC-2446#0",
+            "p-e5bdd7198bcc": "corpus://incidents/INC-2419#0",
+            "p-2978a1380a0d": "corpus://incidents/INC-2411#0",
+            "p-ba71e1a2b64a": "corpus://incidents/INC-2350#0",
+            "p-8701b4fabe21": "corpus://incidents/INC-2305#0",
+            "p-13b0c0432e17": "corpus://incidents/INC-2288#0",
+            "p-378514460c22": "corpus://incidents/INC-2288#1",
+            "p-b5386e8a3c6f": "corpus://incidents/INC-2411#1"
+          }
+        },
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": false,
@@ -2225,7 +2302,31 @@
             "considered": 39,
             "scoring": 30
           }
-        ]
+        ],
+        "hits_by_tool": {
+          "precedent_search": {
+            "p-1bfd3666f422": "corpus://incidents/DRAFT-2601#0",
+            "p-5ff983b32091": "corpus://runbooks/container-resource-limits#0",
+            "p-fd95aef0d16e": "corpus://runbooks/container-resource-limits#2",
+            "p-0d7cde0a14ac": "corpus://incidents/INC-2446#0",
+            "p-e5bdd7198bcc": "corpus://incidents/INC-2419#0",
+            "p-2978a1380a0d": "corpus://incidents/INC-2411#0",
+            "p-ba71e1a2b64a": "corpus://incidents/INC-2350#0",
+            "p-8701b4fabe21": "corpus://incidents/INC-2305#0",
+            "p-dfbb74f0fcc9": "corpus://runbooks/memory-pressure#0",
+            "p-b5386e8a3c6f": "corpus://incidents/INC-2411#1",
+            "p-ba41ea63c75c": "corpus://runbooks/change-correlation#1",
+            "p-fa68ddf757b2": "corpus://runbooks/memory-pressure#2",
+            "p-47e336490a61": "corpus://runbooks/memory-pressure#1",
+            "p-6300fa23d75c": "corpus://runbooks/change-correlation#0",
+            "p-e06c78522c44": "corpus://runbooks/container-resource-limits#1",
+            "p-13b0c0432e17": "corpus://incidents/INC-2288#0"
+          },
+          "passage_get": {
+            "p-ba71e1a2b64a": "corpus://incidents/INC-2350#0"
+          }
+        },
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": false,
@@ -2516,7 +2617,19 @@
             "considered": 39,
             "scoring": 24
           }
-        ]
+        ],
+        "hits_by_tool": {
+          "precedent_search": {
+            "p-516cf417bbb1": "corpus://incidents/INC-2407#0",
+            "p-13b0c0432e17": "corpus://incidents/INC-2288#0",
+            "p-1ffe3e430dc4": "corpus://incidents/INC-2407#1",
+            "p-d81e4a80c0e6": "corpus://runbooks/denial-log-collection#1",
+            "p-378514460c22": "corpus://incidents/INC-2288#1",
+            "p-382d9078e2d3": "corpus://incidents/DRAFT-2601#1",
+            "p-9adc3ac80a81": "corpus://runbooks/denial-log-collection#0"
+          }
+        },
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": false,
@@ -2820,7 +2933,30 @@
             "considered": 39,
             "scoring": 24
           }
-        ]
+        ],
+        "hits_by_tool": {
+          "precedent_search": {
+            "p-1bfd3666f422": "corpus://incidents/DRAFT-2601#0",
+            "p-5ff983b32091": "corpus://runbooks/container-resource-limits#0",
+            "p-fd95aef0d16e": "corpus://runbooks/container-resource-limits#2",
+            "p-0d7cde0a14ac": "corpus://incidents/INC-2446#0",
+            "p-e5bdd7198bcc": "corpus://incidents/INC-2419#0",
+            "p-2978a1380a0d": "corpus://incidents/INC-2411#0",
+            "p-ba71e1a2b64a": "corpus://incidents/INC-2350#0",
+            "p-8701b4fabe21": "corpus://incidents/INC-2305#0",
+            "p-6e576ef75ce5": "corpus://incidents/INC-2489#0",
+            "p-dfbb74f0fcc9": "corpus://runbooks/memory-pressure#0",
+            "p-13b0c0432e17": "corpus://incidents/INC-2288#0"
+          },
+          "passage_get": {
+            "p-ba71e1a2b64a": "corpus://incidents/INC-2350#0",
+            "p-e5bdd7198bcc": "corpus://incidents/INC-2419#0",
+            "p-2978a1380a0d": "corpus://incidents/INC-2411#0",
+            "p-6e576ef75ce5": "corpus://incidents/INC-2489#0",
+            "p-dfbb74f0fcc9": "corpus://runbooks/memory-pressure#0"
+          }
+        },
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": false,
@@ -3241,7 +3377,29 @@
             "considered": 39,
             "scoring": 23
           }
-        ]
+        ],
+        "hits_by_tool": {
+          "precedent_search": {
+            "p-1bfd3666f422": "corpus://incidents/DRAFT-2601#0",
+            "p-5ff983b32091": "corpus://runbooks/container-resource-limits#0",
+            "p-fd95aef0d16e": "corpus://runbooks/container-resource-limits#2",
+            "p-0d7cde0a14ac": "corpus://incidents/INC-2446#0",
+            "p-e5bdd7198bcc": "corpus://incidents/INC-2419#0",
+            "p-2978a1380a0d": "corpus://incidents/INC-2411#0",
+            "p-ba71e1a2b64a": "corpus://incidents/INC-2350#0",
+            "p-8701b4fabe21": "corpus://incidents/INC-2305#0",
+            "p-e06c78522c44": "corpus://runbooks/container-resource-limits#1",
+            "p-dfbb74f0fcc9": "corpus://runbooks/memory-pressure#0",
+            "p-47e336490a61": "corpus://runbooks/memory-pressure#1",
+            "p-fa68ddf757b2": "corpus://runbooks/memory-pressure#2"
+          },
+          "passage_get": {
+            "p-2978a1380a0d": "corpus://incidents/INC-2411#0",
+            "p-ba71e1a2b64a": "corpus://incidents/INC-2350#0",
+            "p-e5bdd7198bcc": "corpus://incidents/INC-2419#0"
+          }
+        },
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": false,
@@ -3623,7 +3781,32 @@
             "considered": 39,
             "scoring": 29
           }
-        ]
+        ],
+        "hits_by_tool": {
+          "precedent_search": {
+            "p-278c9731e31d": "corpus://incidents/DRAFT-2508#0",
+            "p-6e576ef75ce5": "corpus://incidents/INC-2489#0",
+            "p-2e2e7ec5af74": "corpus://incidents/INC-2305#1",
+            "p-fa68ddf757b2": "corpus://runbooks/memory-pressure#2",
+            "p-1bfd3666f422": "corpus://incidents/DRAFT-2601#0",
+            "p-47e336490a61": "corpus://runbooks/memory-pressure#1",
+            "p-5ff983b32091": "corpus://runbooks/container-resource-limits#0",
+            "p-e06c78522c44": "corpus://runbooks/container-resource-limits#1",
+            "p-dfbb74f0fcc9": "corpus://runbooks/memory-pressure#0",
+            "p-b5386e8a3c6f": "corpus://incidents/INC-2411#1",
+            "p-fd95aef0d16e": "corpus://runbooks/container-resource-limits#2",
+            "p-0d7cde0a14ac": "corpus://incidents/INC-2446#0",
+            "p-e5bdd7198bcc": "corpus://incidents/INC-2419#0",
+            "p-2978a1380a0d": "corpus://incidents/INC-2411#0",
+            "p-ba71e1a2b64a": "corpus://incidents/INC-2350#0",
+            "p-8701b4fabe21": "corpus://incidents/INC-2305#0"
+          },
+          "passage_get": {
+            "p-6e576ef75ce5": "corpus://incidents/INC-2489#0",
+            "p-b5386e8a3c6f": "corpus://incidents/INC-2411#1"
+          }
+        },
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": false,
@@ -3905,7 +4088,30 @@
             "considered": 39,
             "scoring": 31
           }
-        ]
+        ],
+        "hits_by_tool": {
+          "precedent_search": {
+            "p-1bfd3666f422": "corpus://incidents/DRAFT-2601#0",
+            "p-5ff983b32091": "corpus://runbooks/container-resource-limits#0",
+            "p-fd95aef0d16e": "corpus://runbooks/container-resource-limits#2",
+            "p-0d7cde0a14ac": "corpus://incidents/INC-2446#0",
+            "p-e5bdd7198bcc": "corpus://incidents/INC-2419#0",
+            "p-2978a1380a0d": "corpus://incidents/INC-2411#0",
+            "p-ba71e1a2b64a": "corpus://incidents/INC-2350#0",
+            "p-8701b4fabe21": "corpus://incidents/INC-2305#0",
+            "p-5a71352a801a": "corpus://runbooks/denial-log-collection#2",
+            "p-382d9078e2d3": "corpus://incidents/DRAFT-2601#1",
+            "p-0b2d395d47a7": "corpus://incidents/INC-2419#1",
+            "p-47e336490a61": "corpus://runbooks/memory-pressure#1",
+            "p-fa68ddf757b2": "corpus://runbooks/memory-pressure#2"
+          },
+          "passage_get": {
+            "p-e5bdd7198bcc": "corpus://incidents/INC-2419#0",
+            "p-2978a1380a0d": "corpus://incidents/INC-2411#0",
+            "p-ba71e1a2b64a": "corpus://incidents/INC-2350#0"
+          }
+        },
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": false,
@@ -4171,7 +4377,16 @@
             "considered": 39,
             "scoring": 25
           }
-        ]
+        ],
+        "hits_by_tool": {
+          "precedent_search": {
+            "p-516cf417bbb1": "corpus://incidents/INC-2407#0",
+            "p-13b0c0432e17": "corpus://incidents/INC-2288#0",
+            "p-1ffe3e430dc4": "corpus://incidents/INC-2407#1",
+            "p-d81e4a80c0e6": "corpus://runbooks/denial-log-collection#1"
+          }
+        },
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": false,
@@ -4441,7 +4656,29 @@
             "considered": 39,
             "scoring": 32
           }
-        ]
+        ],
+        "hits_by_tool": {
+          "precedent_search": {
+            "p-1bfd3666f422": "corpus://incidents/DRAFT-2601#0",
+            "p-5ff983b32091": "corpus://runbooks/container-resource-limits#0",
+            "p-fd95aef0d16e": "corpus://runbooks/container-resource-limits#2",
+            "p-0d7cde0a14ac": "corpus://incidents/INC-2446#0",
+            "p-e5bdd7198bcc": "corpus://incidents/INC-2419#0",
+            "p-2978a1380a0d": "corpus://incidents/INC-2411#0",
+            "p-ba71e1a2b64a": "corpus://incidents/INC-2350#0",
+            "p-8701b4fabe21": "corpus://incidents/INC-2305#0",
+            "p-49280dfaea99": "corpus://incidents/INC-2350#1",
+            "p-ba41ea63c75c": "corpus://runbooks/change-correlation#1",
+            "p-b5386e8a3c6f": "corpus://incidents/INC-2411#1",
+            "p-278c9731e31d": "corpus://incidents/DRAFT-2508#0",
+            "p-fa68ddf757b2": "corpus://runbooks/memory-pressure#2",
+            "p-0b2d395d47a7": "corpus://incidents/INC-2419#1"
+          },
+          "passage_get": {
+            "p-ba71e1a2b64a": "corpus://incidents/INC-2350#0"
+          }
+        },
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": false,
@@ -4658,7 +4895,17 @@
             "considered": 39,
             "scoring": 25
           }
-        ]
+        ],
+        "hits_by_tool": {
+          "precedent_search": {
+            "p-5ff983b32091": "corpus://runbooks/container-resource-limits#0",
+            "p-e06c78522c44": "corpus://runbooks/container-resource-limits#1",
+            "p-2e2e7ec5af74": "corpus://incidents/INC-2305#1",
+            "p-8701b4fabe21": "corpus://incidents/INC-2305#0",
+            "p-fa68ddf757b2": "corpus://runbooks/memory-pressure#2"
+          }
+        },
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": false,
@@ -4851,7 +5098,16 @@
             "considered": 39,
             "scoring": 22
           }
-        ]
+        ],
+        "hits_by_tool": {
+          "precedent_search": {
+            "p-516cf417bbb1": "corpus://incidents/INC-2407#0",
+            "p-13b0c0432e17": "corpus://incidents/INC-2288#0",
+            "p-1ffe3e430dc4": "corpus://incidents/INC-2407#1",
+            "p-d81e4a80c0e6": "corpus://runbooks/denial-log-collection#1"
+          }
+        },
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": false,
@@ -5080,7 +5336,18 @@
             "considered": 39,
             "scoring": 3
           }
-        ]
+        ],
+        "hits_by_tool": {
+          "precedent_search": {
+            "p-4ba9c35ac6ba": "corpus://incidents/INC-2377#0",
+            "p-6f51e8a77ace": "corpus://runbooks/recovery-point-selection#1",
+            "p-89c645f2a2ae": "corpus://runbooks/recovery-point-selection#0"
+          },
+          "passage_get": {
+            "p-4ba9c35ac6ba": "corpus://incidents/INC-2377#0"
+          }
+        },
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": false,
@@ -5299,7 +5566,22 @@
             "considered": 39,
             "scoring": 30
           }
-        ]
+        ],
+        "hits_by_tool": {
+          "precedent_search": {
+            "p-6300fa23d75c": "corpus://runbooks/change-correlation#0",
+            "p-6e374e7c70b3": "corpus://incidents/INC-2402#0",
+            "p-5a71352a801a": "corpus://runbooks/denial-log-collection#2",
+            "p-9adc3ac80a81": "corpus://runbooks/denial-log-collection#0",
+            "p-47e336490a61": "corpus://runbooks/memory-pressure#1",
+            "p-5ff983b32091": "corpus://runbooks/container-resource-limits#0",
+            "p-fa68ddf757b2": "corpus://runbooks/memory-pressure#2",
+            "p-0b2d395d47a7": "corpus://incidents/INC-2419#1",
+            "p-f1cdb0f013d0": "corpus://incidents/INC-2402#1",
+            "p-ba41ea63c75c": "corpus://runbooks/change-correlation#1"
+          }
+        },
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": false,
@@ -5564,7 +5846,25 @@
             "considered": 39,
             "scoring": 34
           }
-        ]
+        ],
+        "hits_by_tool": {
+          "precedent_search": {
+            "p-1bfd3666f422": "corpus://incidents/DRAFT-2601#0",
+            "p-5ff983b32091": "corpus://runbooks/container-resource-limits#0",
+            "p-fd95aef0d16e": "corpus://runbooks/container-resource-limits#2",
+            "p-0d7cde0a14ac": "corpus://incidents/INC-2446#0",
+            "p-e5bdd7198bcc": "corpus://incidents/INC-2419#0",
+            "p-2978a1380a0d": "corpus://incidents/INC-2411#0",
+            "p-ba71e1a2b64a": "corpus://incidents/INC-2350#0",
+            "p-8701b4fabe21": "corpus://incidents/INC-2305#0",
+            "p-89c645f2a2ae": "corpus://runbooks/recovery-point-selection#0",
+            "p-47e336490a61": "corpus://runbooks/memory-pressure#1",
+            "p-6f51e8a77ace": "corpus://runbooks/recovery-point-selection#1",
+            "p-e06c78522c44": "corpus://runbooks/container-resource-limits#1",
+            "p-fa68ddf757b2": "corpus://runbooks/memory-pressure#2"
+          }
+        },
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": false,
@@ -5797,7 +6097,18 @@
             "considered": 39,
             "scoring": 8
           }
-        ]
+        ],
+        "hits_by_tool": {
+          "precedent_search": {
+            "p-516cf417bbb1": "corpus://incidents/INC-2407#0",
+            "p-13b0c0432e17": "corpus://incidents/INC-2288#0",
+            "p-1ffe3e430dc4": "corpus://incidents/INC-2407#1",
+            "p-d81e4a80c0e6": "corpus://runbooks/denial-log-collection#1",
+            "p-9adc3ac80a81": "corpus://runbooks/denial-log-collection#0",
+            "p-378514460c22": "corpus://incidents/INC-2288#1"
+          }
+        },
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": false,
@@ -6034,7 +6345,24 @@
             "considered": 39,
             "scoring": 30
           }
-        ]
+        ],
+        "hits_by_tool": {
+          "precedent_search": {
+            "p-278c9731e31d": "corpus://incidents/DRAFT-2508#0",
+            "p-6e576ef75ce5": "corpus://incidents/INC-2489#0",
+            "p-2e2e7ec5af74": "corpus://incidents/INC-2305#1",
+            "p-fa68ddf757b2": "corpus://runbooks/memory-pressure#2",
+            "p-1bfd3666f422": "corpus://incidents/DRAFT-2601#0",
+            "p-47e336490a61": "corpus://runbooks/memory-pressure#1",
+            "p-5ff983b32091": "corpus://runbooks/container-resource-limits#0",
+            "p-e06c78522c44": "corpus://runbooks/container-resource-limits#1",
+            "p-dfbb74f0fcc9": "corpus://runbooks/memory-pressure#0"
+          },
+          "passage_get": {
+            "p-6e576ef75ce5": "corpus://incidents/INC-2489#0"
+          }
+        },
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": false,
@@ -6221,7 +6549,20 @@
             "considered": 39,
             "scoring": 22
           }
-        ]
+        ],
+        "hits_by_tool": {
+          "precedent_search": {
+            "p-278c9731e31d": "corpus://incidents/DRAFT-2508#0",
+            "p-6e576ef75ce5": "corpus://incidents/INC-2489#0",
+            "p-2e2e7ec5af74": "corpus://incidents/INC-2305#1",
+            "p-fa68ddf757b2": "corpus://runbooks/memory-pressure#2",
+            "p-1bfd3666f422": "corpus://incidents/DRAFT-2601#0",
+            "p-47e336490a61": "corpus://runbooks/memory-pressure#1",
+            "p-5ff983b32091": "corpus://runbooks/container-resource-limits#0",
+            "p-e06c78522c44": "corpus://runbooks/container-resource-limits#1"
+          }
+        },
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": true,
@@ -6414,7 +6755,23 @@
             "considered": 39,
             "scoring": 30
           }
-        ]
+        ],
+        "hits_by_tool": {
+          "precedent_search": {
+            "p-1bfd3666f422": "corpus://incidents/DRAFT-2601#0",
+            "p-5ff983b32091": "corpus://runbooks/container-resource-limits#0",
+            "p-fd95aef0d16e": "corpus://runbooks/container-resource-limits#2",
+            "p-0d7cde0a14ac": "corpus://incidents/INC-2446#0",
+            "p-e5bdd7198bcc": "corpus://incidents/INC-2419#0",
+            "p-2978a1380a0d": "corpus://incidents/INC-2411#0",
+            "p-ba71e1a2b64a": "corpus://incidents/INC-2350#0",
+            "p-8701b4fabe21": "corpus://incidents/INC-2305#0",
+            "p-13b0c0432e17": "corpus://incidents/INC-2288#0",
+            "p-378514460c22": "corpus://incidents/INC-2288#1",
+            "p-b5386e8a3c6f": "corpus://incidents/INC-2411#1"
+          }
+        },
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": false,
@@ -6679,7 +7036,26 @@
             "considered": 37,
             "scoring": 7
           }
-        ]
+        ],
+        "hits_by_tool": {
+          "precedent_search": {
+            "p-5ff983b32091": "corpus://runbooks/container-resource-limits#0",
+            "p-fd95aef0d16e": "corpus://runbooks/container-resource-limits#2",
+            "p-0d7cde0a14ac": "corpus://incidents/INC-2446#0",
+            "p-e5bdd7198bcc": "corpus://incidents/INC-2419#0",
+            "p-2978a1380a0d": "corpus://incidents/INC-2411#0",
+            "p-ba71e1a2b64a": "corpus://incidents/INC-2350#0",
+            "p-8701b4fabe21": "corpus://incidents/INC-2305#0",
+            "p-47e336490a61": "corpus://runbooks/memory-pressure#1",
+            "p-dfbb74f0fcc9": "corpus://runbooks/memory-pressure#0",
+            "p-0b2d395d47a7": "corpus://incidents/INC-2419#1"
+          },
+          "passage_get": {
+            "p-0b2d395d47a7": "corpus://incidents/INC-2419#1",
+            "p-2978a1380a0d": "corpus://incidents/INC-2411#0"
+          }
+        },
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": false,
@@ -6910,7 +7286,9 @@
             "considered": 39,
             "scoring": 2
           }
-        ]
+        ],
+        "hits_by_tool": {},
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": true,
@@ -7070,7 +7448,9 @@
             "considered": 39,
             "scoring": 3
           }
-        ]
+        ],
+        "hits_by_tool": {},
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": true,
@@ -7245,7 +7625,9 @@
             "considered": 39,
             "scoring": 1
           }
-        ]
+        ],
+        "hits_by_tool": {},
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": true,
@@ -7408,7 +7790,9 @@
             "considered": 39,
             "scoring": 0
           }
-        ]
+        ],
+        "hits_by_tool": {},
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": true,
@@ -7592,7 +7976,9 @@
             "considered": 39,
             "scoring": 24
           }
-        ]
+        ],
+        "hits_by_tool": {},
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": true,
@@ -7778,7 +8164,9 @@
             "considered": 39,
             "scoring": 2
           }
-        ]
+        ],
+        "hits_by_tool": {},
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": true,
@@ -7978,7 +8366,9 @@
             "considered": 39,
             "scoring": 4
           }
-        ]
+        ],
+        "hits_by_tool": {},
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": true,
@@ -8167,7 +8557,9 @@
             "considered": 39,
             "scoring": 2
           }
-        ]
+        ],
+        "hits_by_tool": {},
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": true,
@@ -8349,7 +8741,9 @@
             "considered": 39,
             "scoring": 6
           }
-        ]
+        ],
+        "hits_by_tool": {},
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": true,
@@ -8535,7 +8929,9 @@
             "considered": 39,
             "scoring": 10
           }
-        ]
+        ],
+        "hits_by_tool": {},
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": true,
@@ -8687,7 +9083,9 @@
             "considered": 2,
             "scoring": 1
           }
-        ]
+        ],
+        "hits_by_tool": {},
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": true,
@@ -8824,7 +9222,9 @@
             "considered": 0,
             "scoring": 0
           }
-        ]
+        ],
+        "hits_by_tool": {},
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": true,
@@ -8964,7 +9364,16 @@
             "considered": 6,
             "scoring": 6
           }
-        ]
+        ],
+        "hits_by_tool": {
+          "precedent_search": {
+            "p-ba71e1a2b64a": "corpus://incidents/INC-2350#0",
+            "p-8701b4fabe21": "corpus://incidents/INC-2305#0",
+            "p-49280dfaea99": "corpus://incidents/INC-2350#1",
+            "p-2e2e7ec5af74": "corpus://incidents/INC-2305#1"
+          }
+        },
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": false,
@@ -9150,7 +9559,22 @@
             "considered": 18,
             "scoring": 15
           }
-        ]
+        ],
+        "hits_by_tool": {
+          "precedent_search": {
+            "p-0d7cde0a14ac": "corpus://incidents/INC-2446#0",
+            "p-e5bdd7198bcc": "corpus://incidents/INC-2419#0",
+            "p-2978a1380a0d": "corpus://incidents/INC-2411#0",
+            "p-ba71e1a2b64a": "corpus://incidents/INC-2350#0",
+            "p-8701b4fabe21": "corpus://incidents/INC-2305#0",
+            "p-0b2d395d47a7": "corpus://incidents/INC-2419#1",
+            "p-c47d2508ef3a": "corpus://incidents/INC-2446#1",
+            "p-49280dfaea99": "corpus://incidents/INC-2350#1",
+            "p-b5386e8a3c6f": "corpus://incidents/INC-2411#1",
+            "p-2e2e7ec5af74": "corpus://incidents/INC-2305#1"
+          }
+        },
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": false,
@@ -9444,7 +9868,31 @@
             "considered": 39,
             "scoring": 29
           }
-        ]
+        ],
+        "hits_by_tool": {
+          "precedent_search": {
+            "p-1bfd3666f422": "corpus://incidents/DRAFT-2601#0",
+            "p-5ff983b32091": "corpus://runbooks/container-resource-limits#0",
+            "p-fd95aef0d16e": "corpus://runbooks/container-resource-limits#2",
+            "p-0d7cde0a14ac": "corpus://incidents/INC-2446#0",
+            "p-e5bdd7198bcc": "corpus://incidents/INC-2419#0",
+            "p-2978a1380a0d": "corpus://incidents/INC-2411#0",
+            "p-ba71e1a2b64a": "corpus://incidents/INC-2350#0",
+            "p-8701b4fabe21": "corpus://incidents/INC-2305#0",
+            "p-47e336490a61": "corpus://runbooks/memory-pressure#1",
+            "p-dfbb74f0fcc9": "corpus://runbooks/memory-pressure#0",
+            "p-b5386e8a3c6f": "corpus://incidents/INC-2411#1",
+            "p-e06c78522c44": "corpus://runbooks/container-resource-limits#1",
+            "p-fa68ddf757b2": "corpus://runbooks/memory-pressure#2",
+            "p-13b0c0432e17": "corpus://incidents/INC-2288#0",
+            "p-2e2e7ec5af74": "corpus://incidents/INC-2305#1",
+            "p-0b2d395d47a7": "corpus://incidents/INC-2419#1"
+          },
+          "passage_get": {
+            "p-e5bdd7198bcc": "corpus://incidents/INC-2419#0"
+          }
+        },
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": false,
@@ -9739,7 +10187,13 @@
             "considered": 39,
             "scoring": 28
           }
-        ]
+        ],
+        "hits_by_tool": {
+          "precedent_search": {
+            "p-0d7cde0a14ac": "corpus://incidents/INC-2446#0"
+          }
+        },
+        "hits_by_tool_source": "recovered from the sweep's adapter log, validated against the hits this record already stored"
       },
       "output": {
         "no_applicable_precedent": true,
@@ -9822,6 +10276,44 @@
       }
     }
   ],
-  "rescored_at": "2026-08-20T10:25:51Z",
-  "rejudged_at": "2026-08-20T10:25:51Z"
+  "rescored_at": "2026-08-20T10:48:20Z",
+  "rejudged_at": "2026-08-20T10:25:51Z",
+  "judgings": [
+    {
+      "at": "2026-08-20T09:17:12Z",
+      "commit": "27adb5e",
+      "why": "the payload widened to the whole claim",
+      "scorer_fingerprint": "1e9f0ab8829e39e12ce0b4f47b7158f0673b529a889204080c2dd2d23a54e603",
+      "model": "claude-opus-4-6",
+      "temperature": 0,
+      "groundedness_judge": {
+        "value": 0.8571,
+        "numerator": 48,
+        "denominator": 56
+      },
+      "divergence_quality": {
+        "value": 0.8571,
+        "numerator": 6,
+        "denominator": 7
+      }
+    },
+    {
+      "at": "2026-08-20T09:43:35Z",
+      "commit": "3290794",
+      "why": "the judge fingerprint narrowed",
+      "scorer_fingerprint": "8fb4cab63d309cb35ba7389262271ab0043e739bd340b54dd0571d40008c82c6",
+      "model": "claude-opus-4-6",
+      "temperature": 0,
+      "groundedness_judge": {
+        "value": 0.8036,
+        "numerator": 45,
+        "denominator": 56
+      },
+      "divergence_quality": {
+        "value": 0.8571,
+        "numerator": 6,
+        "denominator": 7
+      }
+    }
+  ]
 }

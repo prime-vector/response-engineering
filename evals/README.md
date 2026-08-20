@@ -457,6 +457,16 @@ Phase 4 and Phase 5 are done.
 - [x] `judgement-fixed` and `judgement-single-query` recorded, both
       comparisons run, and the result written up in the top-level README
 
+**What these three records do not pin, and what the runs themselves show.**
+They were made before the CLI and provider were recorded, so which runtime
+produced them is an assertion by the author, one session on one install, rather
+than a property of the artefact. `--check-records` says so per arm and calls
+for a fresh sweep, which is the only thing that closes it. One part of it is
+evidenced rather than asserted: 182, 163 and 43 tool calls came back
+successfully across the three arms, and an unpatched install fails the first
+one, so the `patches/` provider patch was applied. The CLI version is not
+evidenced that way. Arms recorded from here carry both.
+
 ### The two Phase 5 comparisons
 
 Three arms, one live sweep each, 38 cases, nothing rejected or unparseable.
