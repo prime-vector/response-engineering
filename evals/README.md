@@ -359,8 +359,43 @@ Phase 4 is done. Phase 5 is in progress.
       with the prompts in `judges/`. Neither closes the section-level gap
       above, and the tables say so
 - [x] `judgement-heading` recorded, the shipped configuration
-- [ ] `judgement-fixed` and `judgement-single-query` recorded, and the two
-      Phase 5 comparisons written up
+- [x] `judgement-fixed` and `judgement-single-query` recorded, both
+      comparisons run, and the result written up in the top-level README
+
+### The two Phase 5 comparisons
+
+Three arms, one live sweep each, 38 cases, nothing rejected or unparseable:
+
+| | `judgement-heading` | `judgement-fixed` | `judgement-single-query` |
+| --- | --- | --- | --- |
+| `false_precedent_rate` | 0/52 | 0/56 | 0/22 |
+| `no_precedent_accuracy` | 13/13 | 13/13 | 13/13 |
+| `false_refusal_rate` | 0/25 | 1/25 | 8/25 |
+| `groundedness_log` | 190/190 | 144/144 | 54/54 |
+| `agent_reach` | 54/60 | 54/60 | 22/60 |
+| `groundedness_judge` | 71.2% | 80.4% | 81.8% |
+| `divergence_quality` | 6/6 | 6/7 | 6/7 |
+| searches issued | 182, median 5 | 163, median 4 | 43, median 1 |
+| p50 / p95 | 26.9s / 52.8s | 26.4s / 55.3s | 13.1s / 27.1s |
+
+**The retrieval guidance is worth its words.** One verbose query instead of
+several distinctive ones refuses 8 of 25 answerable cases and reaches 22 of 60
+relevant pairs instead of 54. All four composite cases, the incident this repo
+is built around, report no applicable precedent. It is twice as fast. That is
+the Phase 2 dilution figure, which was a property of the surface, arriving as a
+false refusal rate.
+
+**The chunker is not readable off one sweep each.** Same reach, 54 of 60. The
+judged figures part by one case in each direction, which is what the same arm
+does twice. The one deterministic difference is `d01` falsely refusing under
+fixed, and `d01` is the case that cited the draft under heading-aware: one
+contract gap, coming out either side. Heading-aware is kept for its citations
+carrying the heading chain rather than the document title alone, which no
+metric here scores.
+
+**A higher `groundedness_judge` in both alternatives is not a point for them.**
+They make fewer claims, and the failure the judge catches scales with how much
+divergence text there is.
 
 ### What the first judgement sweep says
 

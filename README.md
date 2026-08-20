@@ -187,6 +187,71 @@ The Incident Commander's output requires, per hypothesis: a confidence word, sup
 
 This exists because unstructured analysis loses its epistemics in transit. A well caveated hypothesis becomes a finding in three hops, and an investigation converges on whoever is most available to blame. A typed output cannot shed its own caveats when it changes hands.
 
+## Measured
+
+The Precedent Analyst is the one agent here with an eval suite, because it is
+the one whose failure is quiet. A wrong precedent and a right one have the same
+shape. `evals/` measures it in two modes: retrieval, which scores the surface
+with no model in the loop and re-runs for free, and judgement, which runs the
+agent live, one `oa run` per case over 38 hand-authored cases. Deterministic
+figures come from the typed output, the adapter's audit log and the ground
+truth. Two more are scored by a separate model at temperature 0, with the judge
+prompts committed, and they are reported in their own table so they cannot be
+read as the same kind of number.
+
+Three configurations, one live sweep each, 38 cases, nothing rejected or
+unparseable in any of them:
+
+| | shipped | fixed chunks | one verbose query |
+| --- | --- | --- | --- |
+| `false_precedent_rate` | 0/52 claims | 0/56 | 0/22 |
+| `no_precedent_accuracy` | 13/13 | 13/13 | 13/13 |
+| `false_refusal_rate` | 0/25 | 1/25 | **8/25** |
+| `groundedness_log` | 190/190 | 144/144 | 54/54 |
+| `agent_reach` | 54/60 pairs | 54/60 | **22/60** |
+| `groundedness_judge` | 71.2% | 80.4% | 81.8% |
+| p95 latency | 52.8s | 55.3s | 27.1s |
+
+**Kept: the retrieval guidance, at twice the latency.** The spec tells the agent
+to query distinctive terms and to query more than once. Replacing that one
+paragraph with the instruction someone would plausibly write instead, a single
+search carrying the whole reported symptom, costs 8 false refusals in 25
+answerable cases and drops the archive's reach from 54 of 60 relevant documents
+to 22. Every case in the composite scenario itself refuses. It is twice as fast,
+p95 27.1s against 52.8s, and one search per case against five. Half the latency
+for a third of the reach is not a trade worth taking in an investigation.
+
+**Rejected: reading the chunker off these numbers.** Heading-aware and
+fixed-size chunking reach the same 54 of 60 pairs, and the judgement figures
+part by one case in each direction, which is what one sweep of a live model
+does twice. Heading-aware is kept for something no metric here scores: its
+citations carry the heading chain, `INC-2411: … > Resolution`, where fixed
+chunks carry only the document title. That is the part that makes a citation
+checkable in five seconds, and it is a property rather than a result.
+
+**Also rejected: the experiment this phase was originally specified with.**
+Section 4 of `docs/precedent-analyst.md` describes a reranker for a real
+adapter. There is none in this repo, so the runner refuses a config that
+declares one rather than recording a configuration nothing produced.
+
+Read the judged column with care. `groundedness_judge` is higher in both
+alternatives, and both make far fewer claims: the failure it catches is a
+divergence asserting an absence the passages never state, and there is more of
+that where there is more divergence text. It is not an argument for the
+alternatives.
+
+What the measurement found that no schema catches: two runs cited an
+unsubmitted working note as `partial` precedent while saying in prose that it
+could not ground a claim. `precedents[]` has no entry meaning retrieved and
+rejected, so an agent trying to report the trap has to put its caveat where the
+contract does not carry it. That is an open gap in the output contract, and it
+is recorded rather than tuned away.
+
+Numbers regenerate with `python3 evals/runner.py --config evals/config.yaml`
+and `python3 evals/judgement.py --arm <arm>`. The retrieval tables are checked
+for drift in CI; the judgement tables are records of one run and carry the
+timestamp, spec, prompt and model that produced them.
+
 ## Where this sits
 
 ![Open Agent Spec and Response Engineering both sit under Prime Vector, the standards home, with the spec the base for the implementation. Genai Pty Ltd builds and maintains the implementation and co-maintains the standard.](docs/diagrams/where-this-sits.svg)

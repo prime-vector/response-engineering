@@ -1,0 +1,4740 @@
+{
+  "recorded_at": "2026-08-20T05:03:03Z",
+  "label": "judgement-single-query",
+  "mode": "judgement",
+  "arm": {
+    "description": "one verbose query instead of several distinctive ones, the shipped prompt with rule 4 replaced",
+    "index": "corpus/index.json",
+    "chunker": "heading",
+    "system_prompt": "evals/prompts/single-query.system.txt",
+    "system_prompt_fingerprint": "87b1a2564d73fb434a7ceed43e9d4646ae4df331160d7e55d7f3077b58c21d9b"
+  },
+  "index": "corpus/index.json",
+  "index_fingerprint": "221bb503e33db5b6502208e213f445df428f856b2a9e48c8240e805f823f5649",
+  "chunker": "heading",
+  "agent": {
+    "spec": ".agents/precedent-analyst.yaml",
+    "spec_fingerprint": "68b29c7e064e4c5f8b1acbe817658c22ad729271d412b463afa84b65b11471a9",
+    "task": "recall",
+    "model": "claude-sonnet-4-6",
+    "temperature": 0.2,
+    "max_tokens": 16000
+  },
+  "corpus": {
+    "documents": 17,
+    "fingerprint": "90d95cfdd67ed1a2133e57c9f367176131ef8dcfb600627a130741f547c284df"
+  },
+  "dataset": {
+    "cases": 38,
+    "path": "evals/dataset.yaml",
+    "fingerprint": "6a1014659711a8c33b8cae0be08bf8618805fc7afd60c86dd92017ff65fb1661",
+    "ids": [
+      "a01",
+      "a02",
+      "a03",
+      "a04",
+      "b01",
+      "b02",
+      "b03",
+      "b04",
+      "b05",
+      "b06",
+      "b07",
+      "c01",
+      "c02",
+      "c03",
+      "c04",
+      "c05",
+      "c06",
+      "c07",
+      "c08",
+      "d01",
+      "d02",
+      "d03",
+      "e01",
+      "e02",
+      "e03",
+      "e04",
+      "e05",
+      "e06",
+      "e07",
+      "e08",
+      "e09",
+      "e10",
+      "f01",
+      "f02",
+      "f03",
+      "f04",
+      "g01",
+      "g02"
+    ],
+    "complete": true
+  },
+  "surface": {
+    "floor_applied": 0.35,
+    "port": 8426
+  },
+  "scorer": {
+    "path": "evals/judgement.py",
+    "fingerprint": "a6fef3c1538cca95414651484fc80379cac4f550f8145a02bf0ad900d27bc79e"
+  },
+  "deterministic": {
+    "cases": 38,
+    "failures": {
+      "total": 0,
+      "by_kind": {},
+      "cases": []
+    },
+    "false_precedent_rate": {
+      "value": 0.0,
+      "numerator": 0,
+      "denominator": 22,
+      "unit": "precedent claims offered across every scored case",
+      "offending": []
+    },
+    "no_precedent_accuracy": {
+      "value": 1.0,
+      "numerator": 13,
+      "denominator": 13,
+      "unit": "cases where no applicable precedent exists",
+      "missed": []
+    },
+    "false_refusal_rate": {
+      "value": 0.32,
+      "numerator": 8,
+      "denominator": 25,
+      "unit": "cases where the archive held applicable precedent",
+      "refused": [
+        "a01",
+        "a02",
+        "a03",
+        "a04",
+        "c06",
+        "d01",
+        "d02",
+        "f04"
+      ]
+    },
+    "groundedness_log": {
+      "value": 1.0,
+      "numerator": 54,
+      "denominator": 54,
+      "unit": "cited passage ids, checked against the adapter's returned set",
+      "invented": []
+    },
+    "agent_reach": {
+      "value": 0.3667,
+      "numerator": 22,
+      "denominator": 60,
+      "unit": "(case, relevant document) pairs the archive returned to the agent across the queries it chose"
+    },
+    "understated_claims": {
+      "count": 6,
+      "of": 22,
+      "unit": "precedent claims offered as `partial` or `superseded` where the ground truth says the document applies. The cheap direction of the same error, counted so that a false precedent rate of zero cannot be read as a calibrated agent when it is a uniformly cautious one.",
+      "claims": [
+        "c02:corpus://incidents/INC-2305",
+        "c03:corpus://incidents/INC-2407",
+        "c04:corpus://incidents/INC-2377",
+        "c05:corpus://incidents/INC-2402",
+        "c07:corpus://runbooks/denial-log-collection",
+        "c08:corpus://incidents/INC-2489"
+      ]
+    },
+    "unrelated_claims": {
+      "count": 3,
+      "of": 22,
+      "unit": "precedent claims on documents this case's ground truth does not call relevant. Not a rate: relevance is judged sharply, so offering an unlisted document as `partial` is a softer error than offering a diverging one as `applies`, and it is reported rather than scored.",
+      "claims": [
+        "b03:corpus://incidents/INC-2489",
+        "b06:corpus://incidents/INC-2411",
+        "d03:corpus://incidents/INC-2350"
+      ]
+    },
+    "hygiene": {
+      "identity_in_queries": [],
+      "must_not_cite": [],
+      "refused_without_coverage": [],
+      "self_report_overstated": [],
+      "queries_per_case": {
+        "median": 1.0,
+        "issued": 43,
+        "reported": 43
+      }
+    },
+    "latency_ms": {
+      "calls": 38,
+      "p50": 13083.7,
+      "p95": 27107.8,
+      "note": "wall clock per `oa run`, provider time included. It is the agent's latency, not the surface's: retrieval mode measures the surface and the two are not comparable."
+    },
+    "groups": [
+      "applies",
+      "composite",
+      "identity",
+      "near_miss",
+      "novel",
+      "record_status",
+      "time_bound"
+    ]
+  },
+  "judged": {
+    "model": "claude-opus-4-6",
+    "temperature": 0,
+    "prompts": {
+      "groundedness": {
+        "path": "evals/judges/groundedness-judge.txt",
+        "fingerprint": "c57c36c2bb0bad583e420804641d31672274f8cc536eae5a877ead8d31cf7281"
+      },
+      "divergence": {
+        "path": "evals/judges/divergence-judge.txt",
+        "fingerprint": "178c9a0e54f03b692630ee97cafef619ed836e99ccf226c9d278a0bb75f502d1"
+      }
+    },
+    "usage": {
+      "input_tokens": 40978,
+      "output_tokens": 2904,
+      "calls": 29
+    },
+    "groundedness_judge": {
+      "value": 0.8182,
+      "numerator": 18,
+      "denominator": 22,
+      "errors": [],
+      "verdicts": [
+        {
+          "case": "b01",
+          "document": "corpus://incidents/INC-2411",
+          "verdict": {
+            "supported": true,
+            "unsupported_elements": [],
+            "reason": "The claim states INC-2411 was associated with a tuning change the prior evening that left no headroom for page cache, which is supported by the document_cause_claimed field; the claim that INC-2411's record does not indicate process-level memory attribution was absent is a statement about what the passages do not show, but the claim is carefully phrased as 'does not indicate,' which is an observation about the record's content rather than a positive assertion about the prior incident's state; all prior-record statements are supported by the cited passages."
+          }
+        },
+        {
+          "case": "b02",
+          "document": "corpus://incidents/INC-2288",
+          "verdict": {
+            "supported": true,
+            "unsupported_elements": [],
+            "reason": "The claim that INC-2288 ran for six days is supported by the passage text ('for six days'), the document_superseded_by field exactly matches the quoted supersession notice, and the claim about destroyed evidence identifying the source domain is stated in that same supersession notice."
+          }
+        },
+        {
+          "case": "b03",
+          "document": "corpus://incidents/INC-2446",
+          "verdict": {
+            "supported": true,
+            "unsupported_elements": [],
+            "reason": "The cited passage confirms that in INC-2446 the filesystem was found full and memory and swap were confirmed normal, and the document_cause_claimed confirms the disk-full finding resolved the incident, all matching the claim's statements about the prior record."
+          }
+        },
+        {
+          "case": "b03",
+          "document": "corpus://incidents/INC-2489",
+          "verdict": {
+            "supported": true,
+            "unsupported_elements": [],
+            "reason": "All claims about INC-2489 are supported: the passages confirm the host was deliberately overcommitted, the page fault rate matched a year-long baseline, and the problem was opened by a threshold that did not account for the host's configuration."
+          }
+        },
+        {
+          "case": "b04",
+          "document": "corpus://runbooks/container-resource-limits",
+          "verdict": {
+            "supported": true,
+            "unsupported_elements": [],
+            "reason": "The claim accurately describes the passage as a scope exclusion in the container-resource-limits runbook that points to a separate host memory exhaustion runbook, notes the standing-condition measurement from the resident set of the largest existing consumer, and correctly states that no prior incident record with a filed resolution was returned \u2014 all of which are supported by the cited passages and their metadata (source_family is 'runbook_procedure', not an incident record)."
+          }
+        },
+        {
+          "case": "b05",
+          "document": "corpus://incidents/INC-2489",
+          "verdict": {
+            "supported": true,
+            "unsupported_elements": [],
+            "reason": "All claims about the prior record are supported: the passages confirm the host was deliberately overcommitted, had run that way since it was built, the page fault rate matched its year-long baseline, and the resolution rested on confirming the configuration was intentional and the page fault rate matched a known baseline."
+          }
+        },
+        {
+          "case": "b06",
+          "document": "corpus://incidents/INC-2419",
+          "verdict": {
+            "supported": false,
+            "unsupported_elements": [
+              "INC-2419 does not document whether that evidence was ever collected"
+            ],
+            "reason": "The cited passages do not state whether process-level memory attribution evidence was or was not collected; the claim asserts an absence of documentation, but no passage affirmatively states that such evidence is undocumented, so this is unsupported reasoning from silence."
+          }
+        },
+        {
+          "case": "b06",
+          "document": "corpus://incidents/INC-2411",
+          "verdict": {
+            "supported": true,
+            "unsupported_elements": [],
+            "reason": "The passages support two days of auto-closure before the incident surfaced, a specific configuration change (heap resize) the prior evening as the claimed cause, and the claim correctly frames that cause as what the prior record asserted rather than established fact."
+          }
+        },
+        {
+          "case": "b07",
+          "document": "corpus://incidents/INC-2407",
+          "verdict": {
+            "supported": true,
+            "unsupported_elements": [],
+            "reason": "The cited passages confirm INC-2407 had a pre-recorded scheduled migration as the load source (Summary says 'the change that caused it was recorded in advance'), and the timeline passage (p-64388910ad43) shows the scheduled migration as the confirmed entry point with 'Source: change registry'; all prior-record statements in the claim are supported."
+          }
+        },
+        {
+          "case": "c01",
+          "document": "corpus://incidents/INC-2350",
+          "verdict": {
+            "supported": true,
+            "unsupported_elements": [],
+            "reason": "The claim states the prior record identified the log shipper process with 6 GiB resident via a process snapshot at D+4, which is directly supported by the cited passage's timeline entry at D+4, 11:15."
+          }
+        },
+        {
+          "case": "c02",
+          "document": "corpus://incidents/INC-2305",
+          "verdict": {
+            "supported": true,
+            "unsupported_elements": [],
+            "reason": "The claim states INC-2305 had eleven restarts over two days (supported by 'D0 to D+1' with eleven restarts), that the resolution was bounding the cache and raising the limit (supported by the D+1 timeline entry), and that the prior record's resolution rested on evidence that the in-process cache was the unbounded grower (supported by `document_cause_claimed`); all prior-record statements are supported by the cited passages."
+          }
+        },
+        {
+          "case": "c03",
+          "document": "corpus://incidents/INC-2407",
+          "verdict": {
+            "supported": false,
+            "unsupported_elements": [
+              "rests on a capacity plan that was evidently available at resolution time"
+            ],
+            "reason": "The cited passages do not mention a capacity plan being available at resolution time; the document_cause_claimed states the migration roughly doubled request volume, but no passage references a capacity plan as the basis for that conclusion."
+          }
+        },
+        {
+          "case": "c04",
+          "document": "corpus://incidents/INC-2377",
+          "verdict": {
+            "supported": true,
+            "unsupported_elements": [],
+            "reason": "The cited passages confirm INC-2377 noted differences in build, patch level, and installed agents, and that the comparison was abandoned at D0+21:45 when build parity was confirmed absent, all matching the claim."
+          }
+        },
+        {
+          "case": "c05",
+          "document": "corpus://incidents/INC-2402",
+          "verdict": {
+            "supported": true,
+            "unsupported_elements": [],
+            "reason": "The claim states that in INC-2402 the component was ultimately exonerated by demonstrating it was not loaded on the affected host, which is directly supported by the timeline passage ('Component owner demonstrates the component is not loaded on the affected host') and the summary passage ('The component was demonstrated uninvolved the following morning'); the remainder of the claim describes the live incident and analyst judgment, which are not subject to verification against the cited passages."
+          }
+        },
+        {
+          "case": "c07",
+          "document": "corpus://runbooks/denial-log-collection",
+          "verdict": {
+            "supported": true,
+            "unsupported_elements": [],
+            "reason": "The claim accurately quotes the passage and correctly describes its warning about suppressing the event dispatcher before collecting the denial log, all of which is directly stated in the cited passage text."
+          }
+        },
+        {
+          "case": "c08",
+          "document": "corpus://incidents/INC-2489",
+          "verdict": {
+            "supported": true,
+            "unsupported_elements": [],
+            "reason": "The claim states INC-2489 is a timeline passage with no resolution/close-out passage retrieved, does not name the specific alert threshold logic, and notes the page fault rate matching baseline \u2014 all of which are consistent with the cited passage content and the absence of resolution passages among those cited."
+          }
+        },
+        {
+          "case": "d03",
+          "document": "corpus://incidents/INC-2411",
+          "verdict": {
+            "supported": true,
+            "unsupported_elements": [],
+            "reason": "The cited passages confirm that INC-2411 was resolved by correlating the exhaustion with a JVM heap change found in the change registry (timeline entry D+2 10:02), and that the record claims the heap was raised the evening before the first alert (D-1 19:40), fully supporting the precedent claim's statements about the prior record."
+          }
+        },
+        {
+          "case": "d03",
+          "document": "corpus://incidents/INC-2350",
+          "verdict": {
+            "supported": true,
+            "unsupported_elements": [],
+            "reason": "The cited passage confirms the memory exhaustion problem opened for the fourth consecutive day on D+4, that a process snapshot was taken at D+4 11:15 attributing 6 GiB resident to the shipper, and these details match the claim's statements about INC-2350."
+          }
+        },
+        {
+          "case": "d03",
+          "document": "corpus://incidents/INC-2419",
+          "verdict": {
+            "supported": false,
+            "unsupported_elements": [
+              "INC-2419 ran for ten days across seven alert cycles before any action was taken"
+            ],
+            "reason": "The passage states the memory exhaustion problem opened and auto-closed on seven of ten days, meaning seven alert cycles over ten days, but action was taken on D+9 (workload restarted), not after ten days; the claim says 'before any action was taken' implying no action for the full ten days, whereas the passage shows action on D+9 within the ten-day span."
+          }
+        },
+        {
+          "case": "f03",
+          "document": "corpus://incidents/INC-2350",
+          "verdict": {
+            "supported": true,
+            "unsupported_elements": [],
+            "reason": "The cited timeline passage confirms a process snapshot attributing 6 GiB resident memory to the shipper at D+4 11:15, which the claim accurately describes as the key evidence in the prior record's timeline, and the divergence text correctly notes this evidence is still outstanding for the live incident."
+          }
+        },
+        {
+          "case": "g01",
+          "document": "corpus://incidents/INC-2419",
+          "verdict": {
+            "supported": false,
+            "unsupported_elements": [
+              "No process-level memory attribution was collected."
+            ],
+            "reason": "The cited passages state that no cause was established and the symptom was resolved by restarting the workload, and they name intg-prod-j5, but they do not state that no process-level memory attribution was collected; the analyst's claim about the absence of that data is not supported by any passage text."
+          }
+        },
+        {
+          "case": "g01",
+          "document": "corpus://incidents/INC-2411",
+          "verdict": {
+            "supported": true,
+            "unsupported_elements": [],
+            "reason": "The cited passages confirm that INC-2411 had a recent JVM heap configuration change as the most recent change on the host (Timeline: 'The heap change is the most recent change on the host'), and the document_cause_claimed field states 'JVM maximum heap raised from 20 GiB to 28 GiB in a tuning change the previous evening, leaving no headroom for page cache,' which matches the claim's description of the record's claimed cause and the correlation basis."
+          }
+        }
+      ],
+      "unit": "precedent claims whose cited passages support them"
+    },
+    "divergence_quality": {
+      "value": 0.8571,
+      "numerator": 6,
+      "denominator": 7,
+      "errors": [],
+      "verdicts": [
+        {
+          "case": "b01",
+          "document": "corpus://incidents/INC-2411",
+          "verdict": {
+            "names_a_distinguishing_factor": true,
+            "factor_named": "the prior incident had a heap change to revert and this one has no correlated change at all",
+            "reason": "The text explicitly states that INC-2411 was associated with a tuning change that could be reverted, whereas the current incident has no change in its 14-day change history, directly naming the distinguishing factor about having no correlated change versus a revertible change."
+          }
+        },
+        {
+          "case": "b02",
+          "document": "corpus://incidents/INC-2288",
+          "verdict": {
+            "names_a_distinguishing_factor": true,
+            "factor_named": "SEC-STD-14",
+            "reason": "The text explicitly names SEC-STD-14 as the platform security standard that now governs the situation, and also states the other two distinguishing factors: that the dispatcher must remain active on production hosts and that deactivating it destroyed the evidence that would name the source."
+          }
+        },
+        {
+          "case": "b03",
+          "document": "corpus://incidents/INC-2446",
+          "verdict": {
+            "names_a_distinguishing_factor": true,
+            "factor_named": "the prior record's exhausted resource was disk and never memory",
+            "reason": "The text explicitly states that in INC-2446 the filesystem was full and memory/swap were normal, which is the opposite of the current incident \u2014 directly naming the difference that the prior record's exhausted resource was disk and never memory."
+          }
+        },
+        {
+          "case": "b04",
+          "document": "corpus://runbooks/container-resource-limits",
+          "verdict": {
+            "names_a_distinguishing_factor": false,
+            "factor_named": null,
+            "reason": "The text discusses the nature of the document (scope exclusion vs. incident record) and the outstanding evidence, but does not state either distinguishing factor: that the prior host never entered exhaustion, or that there is no container limit on this host to raise or bound."
+          }
+        },
+        {
+          "case": "b05",
+          "document": "corpus://incidents/INC-2489",
+          "verdict": {
+            "names_a_distinguishing_factor": true,
+            "factor_named": "the prior host was deliberately overcommitted and had run that way since it was built",
+            "reason": "The text explicitly states that the retrieved record describes a host that was deliberately overcommitted and had run that way since it was built, and contrasts this with the current host which has never swapped and is not configured to overcommit, naming both distinguishing factors."
+          }
+        },
+        {
+          "case": "b06",
+          "document": "corpus://incidents/INC-2419",
+          "verdict": {
+            "names_a_distinguishing_factor": true,
+            "factor_named": "the attribution is still obtainable here and is outstanding",
+            "reason": "The text explicitly states that the current incident has process-level memory attribution still outstanding, which directly names the distinguishing factor that the attribution is still obtainable and outstanding in the live incident."
+          }
+        },
+        {
+          "case": "b07",
+          "document": "corpus://incidents/INC-2407",
+          "verdict": {
+            "names_a_distinguishing_factor": true,
+            "factor_named": "the prior saturation was a planned load increase recorded in advance",
+            "reason": "The text explicitly states that INC-2407 had a pre-recorded scheduled migration confirmed in the change registry as the load source, while the current incident has an empty change registry, which names the same difference as the prior saturation being a planned load increase recorded in advance."
+          }
+        }
+      ],
+      "unit": "near-miss precedents offered, scored on whether the stated divergence names an actual distinguishing factor",
+      "near_miss_cases": 7,
+      "near_miss_cases_with_a_precedent_to_judge": 7,
+      "not_offered": []
+    }
+  },
+  "not_measured": {
+    "cost_per_recall_usd": "oa reports no token usage, so a per-recall cost from this runner would be a price list multiplied by an estimate. The judge's own usage is recorded because the API returns it.",
+    "section_level_citation": "ground truth names documents, so neither the log check nor the judge distinguishes a citation of the right document's Resolution from its Gaps. Unmeasured, not mitigated."
+  },
+  "per_case": [
+    {
+      "case": "a01",
+      "group": "composite",
+      "elapsed_ms": 14240.6,
+      "exit_status": 0,
+      "surface": {
+        "hits": {},
+        "calls": [
+          "coverage_describe",
+          "precedent_search",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00",
+              "signature_terms": [
+                "host.memory.exhaustion"
+              ],
+              "symptom_text": "Scheduled batch file transfers completing late. Business user reports the integration console is slow to respond. No transfers have failed."
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00",
+              "signature_terms": [
+                "security.module.denial",
+                "audit.daemon.cpu",
+                "security.enforcement.denial"
+              ],
+              "symptom_text": "audit analysis daemon active consuming CPU security module enforcing mode denials logged source domain denied action"
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 0,
+            "above_floor": 0,
+            "considered": 82,
+            "scoring": 80
+          },
+          {
+            "returned": 0,
+            "above_floor": 0,
+            "considered": 82,
+            "scoring": 28
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": true,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-03-10",
+          "queries_issued": [
+            "signature_terms: [\"host.memory.exhaustion\"] + symptom_text: \"Scheduled batch file transfers completing late. Business user reports the integration console is slow to respond. No transfers have failed.\"",
+            "signature_terms: [\"security.module.denial\", \"audit.daemon.cpu\", \"security.enforcement.denial\"] + symptom_text: \"audit analysis daemon active consuming CPU security module enforcing mode denials logged source domain denied action\""
+          ]
+        },
+        "precedents": []
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": true,
+        "refused": true,
+        "claims": [],
+        "citations": {
+          "total": 0,
+          "in_returned_set": 0,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "signature_terms: [\"host.memory.exhaustion\"] + symptom_text: \"Scheduled batch file transfers completing late. Business user reports the integration console is slow to respond. No transfers have failed.\"",
+          "signature_terms: [\"security.module.denial\", \"audit.daemon.cpu\", \"security.enforcement.denial\"] + symptom_text: \"audit analysis daemon active consuming CPU security module enforcing mode denials logged source domain denied action\""
+        ],
+        "coverage_called": true,
+        "searches": 2,
+        "reach": {
+          "relevant": 5,
+          "reached": 0,
+          "missed": [
+            "corpus://incidents/INC-2288",
+            "corpus://incidents/INC-2411",
+            "corpus://incidents/INC-2419",
+            "corpus://runbooks/denial-log-collection",
+            "corpus://runbooks/memory-pressure"
+          ]
+        },
+        "queries_searched": [
+          {
+            "before": "2026-03-17T19:30:00+00:00",
+            "signature_terms": [
+              "host.memory.exhaustion"
+            ],
+            "symptom_text": "Scheduled batch file transfers completing late. Business user reports the integration console is slow to respond. No transfers have failed."
+          },
+          {
+            "before": "2026-03-17T19:30:00+00:00",
+            "signature_terms": [
+              "security.module.denial",
+              "audit.daemon.cpu",
+              "security.enforcement.denial"
+            ],
+            "symptom_text": "audit analysis daemon active consuming CPU security module enforcing mode denials logged source domain denied action"
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "a02",
+      "group": "composite",
+      "elapsed_ms": 8161.5,
+      "exit_status": 0,
+      "surface": {
+        "hits": {},
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-03-03T09:00:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-03-03T09:00:00+00:00",
+              "signature_terms": [
+                "host.memory.exhaustion"
+              ],
+              "symptom_text": "Memory exhaustion problem opened and auto-closed on the integration host for the second consecutive day, nobody has acknowledged either, standing condition 23 of 32 GiB resident to the existing largest consumer, process-level memory attribution outstanding"
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 0,
+            "above_floor": 0,
+            "considered": 76,
+            "scoring": 75
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": true,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-02-11",
+          "queries_issued": [
+            "host.memory.exhaustion \u2014 Memory exhaustion problem opened and auto-closed on the integration host for the second consecutive day, nobody has acknowledged either, standing condition 23 of 32 GiB resident to the existing largest consumer, process-level memory attribution outstanding"
+          ]
+        },
+        "precedents": []
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": true,
+        "refused": true,
+        "claims": [],
+        "citations": {
+          "total": 0,
+          "in_returned_set": 0,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "host.memory.exhaustion \u2014 Memory exhaustion problem opened and auto-closed on the integration host for the second consecutive day, nobody has acknowledged either, standing condition 23 of 32 GiB resident to the existing largest consumer, process-level memory attribution outstanding"
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 3,
+          "reached": 0,
+          "missed": [
+            "corpus://incidents/INC-2411",
+            "corpus://incidents/INC-2419",
+            "corpus://runbooks/memory-pressure"
+          ]
+        },
+        "queries_searched": [
+          {
+            "before": "2026-03-03T09:00:00+00:00",
+            "signature_terms": [
+              "host.memory.exhaustion"
+            ],
+            "symptom_text": "Memory exhaustion problem opened and auto-closed on the integration host for the second consecutive day, nobody has acknowledged either, standing condition 23 of 32 GiB resident to the existing largest consumer, process-level memory attribution outstanding"
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "a03",
+      "group": "composite",
+      "elapsed_ms": 15386.6,
+      "exit_status": 0,
+      "surface": {
+        "hits": {},
+        "calls": [
+          "coverage_describe",
+          "precedent_search",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00",
+              "signature_terms": [
+                "host.memory.exhaustion"
+              ],
+              "symptom_text": "Scheduled batch file transfers completing late. Business user reports the integration console is slow to respond. No transfers have failed. Audit analysis daemon active and consuming CPU."
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00",
+              "signature_terms": [
+                "audit.daemon.cpu",
+                "audit.denial",
+                "process.cpu.exhaustion"
+              ],
+              "symptom_text": "audit analysis daemon consuming CPU causing slow response and delayed batch transfers"
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 0,
+            "above_floor": 0,
+            "considered": 82,
+            "scoring": 80
+          },
+          {
+            "returned": 0,
+            "above_floor": 0,
+            "considered": 82,
+            "scoring": 67
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": true,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-03-10",
+          "queries_issued": [
+            "signature_terms: [\"host.memory.exhaustion\"], symptom_text: \"Scheduled batch file transfers completing late. Business user reports the integration console is slow to respond. No transfers have failed. Audit analysis daemon active and consuming CPU.\"",
+            "signature_terms: [\"audit.daemon.cpu\", \"audit.denial\", \"process.cpu.exhaustion\"], symptom_text: \"audit analysis daemon consuming CPU causing slow response and delayed batch transfers\""
+          ]
+        },
+        "precedents": []
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": true,
+        "refused": true,
+        "claims": [],
+        "citations": {
+          "total": 0,
+          "in_returned_set": 0,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "signature_terms: [\"host.memory.exhaustion\"], symptom_text: \"Scheduled batch file transfers completing late. Business user reports the integration console is slow to respond. No transfers have failed. Audit analysis daemon active and consuming CPU.\"",
+          "signature_terms: [\"audit.daemon.cpu\", \"audit.denial\", \"process.cpu.exhaustion\"], symptom_text: \"audit analysis daemon consuming CPU causing slow response and delayed batch transfers\""
+        ],
+        "coverage_called": true,
+        "searches": 2,
+        "reach": {
+          "relevant": 5,
+          "reached": 0,
+          "missed": [
+            "corpus://incidents/INC-2288",
+            "corpus://incidents/INC-2411",
+            "corpus://incidents/INC-2419",
+            "corpus://runbooks/denial-log-collection",
+            "corpus://runbooks/memory-pressure"
+          ]
+        },
+        "queries_searched": [
+          {
+            "before": "2026-03-17T19:30:00+00:00",
+            "signature_terms": [
+              "host.memory.exhaustion"
+            ],
+            "symptom_text": "Scheduled batch file transfers completing late. Business user reports the integration console is slow to respond. No transfers have failed. Audit analysis daemon active and consuming CPU."
+          },
+          {
+            "before": "2026-03-17T19:30:00+00:00",
+            "signature_terms": [
+              "audit.daemon.cpu",
+              "audit.denial",
+              "process.cpu.exhaustion"
+            ],
+            "symptom_text": "audit analysis daemon consuming CPU causing slow response and delayed batch transfers"
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "a04",
+      "group": "composite",
+      "elapsed_ms": 11926.7,
+      "exit_status": 0,
+      "surface": {
+        "hits": {},
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00",
+              "signature_terms": [
+                "host.memory.exhaustion"
+              ],
+              "symptom_text": "Scheduled batch file transfers completing late. Business user reports the integration console is slow to respond. No transfers have failed. Audit analysis daemon active and consuming CPU."
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 0,
+            "above_floor": 0,
+            "considered": 82,
+            "scoring": 80
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": true,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-03-10",
+          "queries_issued": [
+            "signature_terms: [\"host.memory.exhaustion\"] | symptom_text: \"Scheduled batch file transfers completing late. Business user reports the integration console is slow to respond. No transfers have failed. Audit analysis daemon active and consuming CPU.\""
+          ]
+        },
+        "precedents": []
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": true,
+        "refused": true,
+        "claims": [],
+        "citations": {
+          "total": 0,
+          "in_returned_set": 0,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "signature_terms: [\"host.memory.exhaustion\"] | symptom_text: \"Scheduled batch file transfers completing late. Business user reports the integration console is slow to respond. No transfers have failed. Audit analysis daemon active and consuming CPU.\""
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 5,
+          "reached": 0,
+          "missed": [
+            "corpus://incidents/INC-2288",
+            "corpus://incidents/INC-2411",
+            "corpus://incidents/INC-2419",
+            "corpus://runbooks/denial-log-collection",
+            "corpus://runbooks/memory-pressure"
+          ]
+        },
+        "queries_searched": [
+          {
+            "before": "2026-03-17T19:30:00+00:00",
+            "signature_terms": [
+              "host.memory.exhaustion"
+            ],
+            "symptom_text": "Scheduled batch file transfers completing late. Business user reports the integration console is slow to respond. No transfers have failed. Audit analysis daemon active and consuming CPU."
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "b01",
+      "group": "near_miss",
+      "elapsed_ms": 17199.1,
+      "exit_status": 0,
+      "surface": {
+        "hits": {
+          "p-b05efbf8f847": "corpus://incidents/INC-2411#0"
+        },
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00",
+              "signature_terms": [
+                "host.memory.exhaustion"
+              ],
+              "symptom_text": "Host swapping heavily. Batch work running late. Change history for the host was queried and returned nothing in the fortnight before onset."
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 1,
+            "above_floor": 1,
+            "considered": 82,
+            "scoring": 81
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": false,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-03-10",
+          "queries_issued": [
+            "host.memory.exhaustion \u2014 Host swapping heavily. Batch work running late. Change history for the host was queried and returned nothing in the fortnight before onset."
+          ]
+        },
+        "precedents": [
+          {
+            "incident_ref": {
+              "source_uri": "corpus://incidents/INC-2411",
+              "heading_path": "INC-2411: Memory exhaustion on a batch integration host after a heap resize > Summary",
+              "passage_id": "p-b05efbf8f847"
+            },
+            "signature_overlap": "host.memory.exhaustion on a batch integration host; host swapping heavily; batch work running late.",
+            "divergence": "The critical difference is in the change-history finding. INC-2411 was associated with a tuning change the prior evening that the record claims left no headroom for page cache. Here, a 14-day change-history query returned nothing, and that absence has been recorded as a finding. If the prior incident's resolution depended on identifying and reverting a specific configuration change, that path is not available here without a change to attribute. Additionally, process-level memory attribution is still outstanding in this incident; INC-2411's record does not indicate that attribution was similarly absent at the time of investigation.",
+            "resolution_taken": "Not reproduced here. The record claims the cause was a JVM maximum heap raise from 20 GiB to 28 GiB the prior evening. That is a claim in the document, not evidence, and the change-history gap in this incident means the same resolution path cannot be assumed.",
+            "applicability": "partial",
+            "confidence": "plausible",
+            "falsifying_test": "If process-level memory attribution (still outstanding) shows a workload or process profile materially different from a JVM heap overrun \u2014 for example, a non-JVM process or a data-volume spike rather than a configuration change \u2014 the INC-2411 pattern does not apply.",
+            "grounded_in": [
+              "p-b05efbf8f847"
+            ]
+          }
+        ]
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": true,
+        "refused": false,
+        "claims": [
+          {
+            "source_uri": "corpus://incidents/INC-2411",
+            "offered": "partial",
+            "truth": "partial",
+            "false_precedent": false,
+            "understated": false,
+            "unrelated": false,
+            "confidence": "plausible",
+            "divergence": "The critical difference is in the change-history finding. INC-2411 was associated with a tuning change the prior evening that the record claims left no headroom for page cache. Here, a 14-day change-history query returned nothing, and that absence has been recorded as a finding. If the prior incident's resolution depended on identifying and reverting a specific configuration change, that path is not available here without a change to attribute. Additionally, process-level memory attribution is still outstanding in this incident; INC-2411's record does not indicate that attribution was similarly absent at the time of investigation.",
+            "grounded_in": [
+              "p-b05efbf8f847",
+              "p-b05efbf8f847"
+            ],
+            "ungrounded": []
+          }
+        ],
+        "citations": {
+          "total": 2,
+          "in_returned_set": 2,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "host.memory.exhaustion \u2014 Host swapping heavily. Batch work running late. Change history for the host was queried and returned nothing in the fortnight before onset."
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 2,
+          "reached": 1,
+          "missed": [
+            "corpus://runbooks/memory-pressure"
+          ]
+        },
+        "queries_searched": [
+          {
+            "before": "2026-03-17T19:30:00+00:00",
+            "signature_terms": [
+              "host.memory.exhaustion"
+            ],
+            "symptom_text": "Host swapping heavily. Batch work running late. Change history for the host was queried and returned nothing in the fortnight before onset."
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "b02",
+      "group": "near_miss",
+      "elapsed_ms": 17293.4,
+      "exit_status": 0,
+      "surface": {
+        "hits": {
+          "p-7a1ed9517c93": "corpus://incidents/INC-2288#0"
+        },
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00",
+              "signature_terms": [
+                "host.cpu.saturation"
+              ],
+              "symptom_text": "denial-analysis process held roughly a fifth of CPU for four days and spikes to full utilisation during scans"
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 1,
+            "above_floor": 1,
+            "considered": 82,
+            "scoring": 74
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": false,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-03-10",
+          "queries_issued": [
+            "host.cpu.saturation | denial-analysis process held roughly a fifth of CPU for four days and spikes to full utilisation during scans"
+          ]
+        },
+        "precedents": [
+          {
+            "incident_ref": {
+              "source_uri": "corpus://incidents/INC-2288",
+              "heading_path": "INC-2288: Sustained CPU from an OS denial-analysis daemon > Summary",
+              "passage_id": "p-7a1ed9517c93"
+            },
+            "signature_overlap": "Denial-analysis daemon as top CPU consumer, sustained at roughly 20% with spikes to full utilisation during scans, on a mid-prod host \u2014 matches the current symptom profile closely.",
+            "divergence": "INC-2288 ran for six days before resolution; the current incident is at four days. More critically, the resolution taken in INC-2288 is withdrawn: document_superseded_by reads \u2014 'Platform security standard SEC-STD-14 (2026-01-30) requires the audit event dispatcher to remain active on production hosts. Deactivating it is no longer an available resolution, and doing it here destroyed the evidence that would have identified the source domain.' Additionally, the denial log naming the source domain is still outstanding here, which is the same evidence INC-2288 lost by applying its (now-superseded) resolution.",
+            "resolution_taken": "Not reproduced. The resolution recorded in INC-2288 is superseded by SEC-STD-14 (2026-01-30) and must not be applied.",
+            "applicability": "superseded",
+            "confidence": "supported",
+            "falsifying_test": "If the denial log (still outstanding) shows a denial source domain that differs from any policy-change event in the INC-2288 timeline, the causal pattern the prior record claimed does not transfer even as a signal.",
+            "grounded_in": [
+              "p-7a1ed9517c93"
+            ]
+          }
+        ]
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": true,
+        "refused": false,
+        "claims": [
+          {
+            "source_uri": "corpus://incidents/INC-2288",
+            "offered": "superseded",
+            "truth": "superseded",
+            "false_precedent": false,
+            "understated": false,
+            "unrelated": false,
+            "confidence": "supported",
+            "divergence": "INC-2288 ran for six days before resolution; the current incident is at four days. More critically, the resolution taken in INC-2288 is withdrawn: document_superseded_by reads \u2014 'Platform security standard SEC-STD-14 (2026-01-30) requires the audit event dispatcher to remain active on production hosts. Deactivating it is no longer an available resolution, and doing it here destroyed the evidence that would have identified the source domain.' Additionally, the denial log naming the source domain is still outstanding here, which is the same evidence INC-2288 lost by applying its (now-superseded) resolution.",
+            "grounded_in": [
+              "p-7a1ed9517c93",
+              "p-7a1ed9517c93"
+            ],
+            "ungrounded": []
+          }
+        ],
+        "citations": {
+          "total": 2,
+          "in_returned_set": 2,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "host.cpu.saturation | denial-analysis process held roughly a fifth of CPU for four days and spikes to full utilisation during scans"
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 2,
+          "reached": 1,
+          "missed": [
+            "corpus://runbooks/denial-log-collection"
+          ]
+        },
+        "queries_searched": [
+          {
+            "before": "2026-03-17T19:30:00+00:00",
+            "signature_terms": [
+              "host.cpu.saturation"
+            ],
+            "symptom_text": "denial-analysis process held roughly a fifth of CPU for four days and spikes to full utilisation during scans"
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "b03",
+      "group": "near_miss",
+      "elapsed_ms": 21888.3,
+      "exit_status": 0,
+      "surface": {
+        "hits": {
+          "p-e66d0c38373c": "corpus://runbooks/memory-pressure#0",
+          "p-d378b8d1caee": "corpus://incidents/INC-2446#2",
+          "p-3a9a41f559cf": "corpus://incidents/INC-2489#0",
+          "p-c16300c887ae": "corpus://incidents/INC-2489#2"
+        },
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00",
+              "signature_terms": [
+                "host.memory.exhaustion"
+              ],
+              "symptom_text": "Host reported as exhausted. Swap in use and climbing, page fault rate elevated, filesystem utilisation confirmed normal."
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 4,
+            "above_floor": 4,
+            "considered": 82,
+            "scoring": 75
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": false,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-03-10",
+          "queries_issued": [
+            "signature_terms: [\"host.memory.exhaustion\"] | symptom_text: \"Host reported as exhausted. Swap in use and climbing, page fault rate elevated, filesystem utilisation confirmed normal.\""
+          ]
+        },
+        "precedents": [
+          {
+            "incident_ref": {
+              "source_uri": "corpus://incidents/INC-2446",
+              "heading_path": "INC-2446: Disk exhaustion reported as memory exhaustion > Timeline",
+              "passage_id": "p-d378b8d1caee"
+            },
+            "signature_overlap": "Host reported as exhausted with the report naming memory; same opening presentation as the current incident.",
+            "divergence": "In INC-2446 the filesystem was found full and memory and swap were confirmed normal \u2014 the opposite of what is observed here, where swap is in use and climbing and filesystem utilisation is confirmed normal. The disk-full finding that resolved INC-2446 is already ruled out by evidence already collected in this incident.",
+            "resolution_taken": "Logs rotated by hand and the rotation policy reapplied (per the INC-2446 timeline passage).",
+            "applicability": "partial",
+            "confidence": "plausible",
+            "falsifying_test": "Filesystem utilisation has already been checked and confirmed normal on every mount, which is the observation that would show this precedent does not apply \u2014 and that observation is already in hand.",
+            "grounded_in": [
+              "p-d378b8d1caee"
+            ]
+          },
+          {
+            "incident_ref": {
+              "source_uri": "corpus://incidents/INC-2489",
+              "heading_path": "INC-2489: Swap in use by design on an overcommitted cache host > Summary",
+              "passage_id": "p-3a9a41f559cf"
+            },
+            "signature_overlap": "Swap usage and elevated page fault rate on a production host, matching the two primary signals present here.",
+            "divergence": "INC-2489 was resolved by confirming the host was deliberately overcommitted and that the page fault rate matched a year-long baseline. Neither of those facts has been established for rep-prod-q4: the outstanding process-level memory attribution has not been collected, and no baseline comparison has been performed. The problem in INC-2489 was opened by a threshold that did not account for the host's configuration; it is not yet known whether the same applies here.",
+            "resolution_taken": "Configuration confirmed intended; page fault rate matched the host's baseline for the past year. Problem closed as expected behaviour.",
+            "applicability": "partial",
+            "confidence": "speculative",
+            "falsifying_test": "If process-level memory attribution (currently outstanding) shows a process consuming memory beyond its expected footprint, the overcommit-by-design explanation does not apply.",
+            "grounded_in": [
+              "p-3a9a41f559cf",
+              "p-c16300c887ae"
+            ]
+          }
+        ]
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": true,
+        "refused": false,
+        "claims": [
+          {
+            "source_uri": "corpus://incidents/INC-2446",
+            "offered": "partial",
+            "truth": "partial",
+            "false_precedent": false,
+            "understated": false,
+            "unrelated": false,
+            "confidence": "plausible",
+            "divergence": "In INC-2446 the filesystem was found full and memory and swap were confirmed normal \u2014 the opposite of what is observed here, where swap is in use and climbing and filesystem utilisation is confirmed normal. The disk-full finding that resolved INC-2446 is already ruled out by evidence already collected in this incident.",
+            "grounded_in": [
+              "p-d378b8d1caee",
+              "p-d378b8d1caee"
+            ],
+            "ungrounded": []
+          },
+          {
+            "source_uri": "corpus://incidents/INC-2489",
+            "offered": "partial",
+            "truth": null,
+            "false_precedent": false,
+            "understated": false,
+            "unrelated": true,
+            "confidence": "speculative",
+            "divergence": "INC-2489 was resolved by confirming the host was deliberately overcommitted and that the page fault rate matched a year-long baseline. Neither of those facts has been established for rep-prod-q4: the outstanding process-level memory attribution has not been collected, and no baseline comparison has been performed. The problem in INC-2489 was opened by a threshold that did not account for the host's configuration; it is not yet known whether the same applies here.",
+            "grounded_in": [
+              "p-3a9a41f559cf",
+              "p-c16300c887ae",
+              "p-3a9a41f559cf"
+            ],
+            "ungrounded": []
+          }
+        ],
+        "citations": {
+          "total": 5,
+          "in_returned_set": 5,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "signature_terms: [\"host.memory.exhaustion\"] | symptom_text: \"Host reported as exhausted. Swap in use and climbing, page fault rate elevated, filesystem utilisation confirmed normal.\""
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 2,
+          "reached": 2,
+          "missed": []
+        },
+        "queries_searched": [
+          {
+            "before": "2026-03-17T19:30:00+00:00",
+            "signature_terms": [
+              "host.memory.exhaustion"
+            ],
+            "symptom_text": "Host reported as exhausted. Swap in use and climbing, page fault rate elevated, filesystem utilisation confirmed normal."
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "b04",
+      "group": "near_miss",
+      "elapsed_ms": 25930.0,
+      "exit_status": 0,
+      "surface": {
+        "hits": {
+          "p-cf59a39a0489": "corpus://runbooks/container-resource-limits#2",
+          "p-9c2fa80b1be4": "corpus://runbooks/container-resource-limits#1"
+        },
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00",
+              "signature_terms": [
+                "host.memory.exhaustion"
+              ],
+              "symptom_text": "Workload on the host is failing to allocate. The host runs the workload directly with no container runtime. No memory limit to read."
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 2,
+            "above_floor": 2,
+            "considered": 82,
+            "scoring": 80
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": false,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-03-10",
+          "queries_issued": [
+            "host.memory.exhaustion \u2014 Workload on the host is failing to allocate. The host runs the workload directly with no container runtime. No memory limit to read."
+          ]
+        },
+        "precedents": [
+          {
+            "incident_ref": {
+              "source_uri": "corpus://runbooks/container-resource-limits",
+              "heading_path": "Runbook: container memory limits against host memory > What this runbook does not cover",
+              "passage_id": "p-cf59a39a0489"
+            },
+            "signature_overlap": "host.memory.exhaustion on a host running a workload directly with no container runtime and no memory limit to read \u2014 the passage explicitly names this configuration as a distinct case.",
+            "divergence": "This passage is a scope exclusion in the container-resource-limits runbook, not a resolved incident record. It points to a separate host memory exhaustion runbook as the applicable procedure, but that runbook was not returned by the search and is not in the retrieved passages. The evidence item establishing the resident set of the largest existing consumer is still outstanding, which is precisely the standing-condition measurement the passage says must be taken first. No prior incident record with a filed resolution was returned.",
+            "resolution_taken": "The passage does not record a resolution. It states that the procedure for this configuration is in the host memory exhaustion runbook, which was not retrieved.",
+            "applicability": "partial",
+            "confidence": "plausible",
+            "falsifying_test": "If the host memory exhaustion runbook, when retrieved, describes a different configuration (e.g. one with a container runtime present), this passage does not transfer and the current incident has no applicable runbook precedent in the archive.",
+            "grounded_in": [
+              "p-cf59a39a0489",
+              "p-9c2fa80b1be4"
+            ]
+          }
+        ]
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": true,
+        "refused": false,
+        "claims": [
+          {
+            "source_uri": "corpus://runbooks/container-resource-limits",
+            "offered": "partial",
+            "truth": "partial",
+            "false_precedent": false,
+            "understated": false,
+            "unrelated": false,
+            "confidence": "plausible",
+            "divergence": "This passage is a scope exclusion in the container-resource-limits runbook, not a resolved incident record. It points to a separate host memory exhaustion runbook as the applicable procedure, but that runbook was not returned by the search and is not in the retrieved passages. The evidence item establishing the resident set of the largest existing consumer is still outstanding, which is precisely the standing-condition measurement the passage says must be taken first. No prior incident record with a filed resolution was returned.",
+            "grounded_in": [
+              "p-cf59a39a0489",
+              "p-9c2fa80b1be4",
+              "p-cf59a39a0489"
+            ],
+            "ungrounded": []
+          }
+        ],
+        "citations": {
+          "total": 3,
+          "in_returned_set": 3,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "host.memory.exhaustion \u2014 Workload on the host is failing to allocate. The host runs the workload directly with no container runtime. No memory limit to read."
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 3,
+          "reached": 1,
+          "missed": [
+            "corpus://incidents/INC-2305",
+            "corpus://runbooks/memory-pressure"
+          ]
+        },
+        "queries_searched": [
+          {
+            "before": "2026-03-17T19:30:00+00:00",
+            "signature_terms": [
+              "host.memory.exhaustion"
+            ],
+            "symptom_text": "Workload on the host is failing to allocate. The host runs the workload directly with no container runtime. No memory limit to read."
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "b05",
+      "group": "near_miss",
+      "elapsed_ms": 18091.6,
+      "exit_status": 0,
+      "surface": {
+        "hits": {
+          "p-3a9a41f559cf": "corpus://incidents/INC-2489#0",
+          "p-c16300c887ae": "corpus://incidents/INC-2489#2",
+          "p-e66d0c38373c": "corpus://runbooks/memory-pressure#0"
+        },
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00",
+              "signature_terms": [
+                "host.memory.pressure"
+              ],
+              "symptom_text": "Swap in use and an elevated page fault rate on a host that has never swapped before, host not configured to overcommit"
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 3,
+            "above_floor": 3,
+            "considered": 82,
+            "scoring": 80
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": false,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-03-10",
+          "queries_issued": [
+            "signature_terms: [\"host.memory.pressure\"] | symptom_text: \"Swap in use and an elevated page fault rate on a host that has never swapped before, host not configured to overcommit\""
+          ]
+        },
+        "precedents": [
+          {
+            "incident_ref": {
+              "source_uri": "corpus://incidents/INC-2489",
+              "heading_path": "INC-2489: Swap in use by design on an overcommitted cache host > Summary",
+              "passage_id": "p-3a9a41f559cf"
+            },
+            "signature_overlap": "Swap in use and elevated page fault rate on a host flagged by a host.memory.pressure signal; the retrieved record describes the same surface presentation.",
+            "divergence": "The retrieved record describes a host that was deliberately overcommitted and had run that way since it was built, with a page fault rate matching its year-long baseline. The current host has never swapped before, has no history of swap use in the preceding year, and is explicitly not configured to overcommit. The resolution in INC-2489 rested on confirming that the configuration was intentional and that the page fault rate matched a known baseline \u2014 neither condition is present here. Process-level memory attribution, which would be the next step in establishing whether this is a new workload change or something else, is still outstanding.",
+            "resolution_taken": "The record states that the alert threshold did not account for the host's configuration, and once the configuration was confirmed as intentional and the page fault rate matched the host's year-long baseline, no incident was declared.",
+            "applicability": "partial",
+            "confidence": "plausible",
+            "falsifying_test": "Confirm that the host's page fault rate matches any established baseline from the preceding year. If it does, the current incident more closely resembles INC-2489; if it does not, the precedent does not transfer.",
+            "grounded_in": [
+              "p-3a9a41f559cf",
+              "p-c16300c887ae"
+            ]
+          }
+        ]
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": true,
+        "refused": false,
+        "claims": [
+          {
+            "source_uri": "corpus://incidents/INC-2489",
+            "offered": "partial",
+            "truth": "partial",
+            "false_precedent": false,
+            "understated": false,
+            "unrelated": false,
+            "confidence": "plausible",
+            "divergence": "The retrieved record describes a host that was deliberately overcommitted and had run that way since it was built, with a page fault rate matching its year-long baseline. The current host has never swapped before, has no history of swap use in the preceding year, and is explicitly not configured to overcommit. The resolution in INC-2489 rested on confirming that the configuration was intentional and that the page fault rate matched a known baseline \u2014 neither condition is present here. Process-level memory attribution, which would be the next step in establishing whether this is a new workload change or something else, is still outstanding.",
+            "grounded_in": [
+              "p-3a9a41f559cf",
+              "p-c16300c887ae",
+              "p-3a9a41f559cf"
+            ],
+            "ungrounded": []
+          }
+        ],
+        "citations": {
+          "total": 3,
+          "in_returned_set": 3,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "signature_terms: [\"host.memory.pressure\"] | symptom_text: \"Swap in use and an elevated page fault rate on a host that has never swapped before, host not configured to overcommit\""
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 2,
+          "reached": 2,
+          "missed": []
+        },
+        "queries_searched": [
+          {
+            "before": "2026-03-17T19:30:00+00:00",
+            "signature_terms": [
+              "host.memory.pressure"
+            ],
+            "symptom_text": "Swap in use and an elevated page fault rate on a host that has never swapped before, host not configured to overcommit"
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "b06",
+      "group": "near_miss",
+      "elapsed_ms": 20905.7,
+      "exit_status": 0,
+      "surface": {
+        "hits": {
+          "p-97816f4244e0": "corpus://incidents/INC-2419#2",
+          "p-b05efbf8f847": "corpus://incidents/INC-2411#0"
+        },
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00",
+              "signature_terms": [
+                "host.memory.exhaustion"
+              ],
+              "symptom_text": "Memory exhaustion recurring daily on the same host, auto-closed each time, unacknowledged throughout"
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 2,
+            "above_floor": 2,
+            "considered": 82,
+            "scoring": 80
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": false,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-03-10",
+          "queries_issued": [
+            "signature_terms: [\"host.memory.exhaustion\"] | symptom_text: \"Memory exhaustion recurring daily on the same host, auto-closed each time, unacknowledged throughout\""
+          ]
+        },
+        "precedents": [
+          {
+            "incident_ref": {
+              "source_uri": "corpus://incidents/INC-2419",
+              "heading_path": "INC-2419: Memory exhaustion closed with the cause unconfirmed > Timeline",
+              "passage_id": "p-97816f4244e0"
+            },
+            "signature_overlap": "Memory exhaustion problem opening and auto-closing on multiple consecutive days, unacknowledged throughout \u2014 INC-2419 records seven of ten days; the current incident shows eight of eleven days. Pattern and alerting behaviour are structurally identical.",
+            "divergence": "INC-2419 closed with root cause recorded as unconfirmed, so no confirmed resolution transferred from that record. The current incident has process-level memory attribution still outstanding; INC-2419 does not document whether that evidence was ever collected, meaning the prior record cannot indicate what that evidence will show here.",
+            "resolution_taken": "Workload restarted at D+9; memory recovered. Root cause recorded as unconfirmed at closure.",
+            "applicability": "partial",
+            "confidence": "plausible",
+            "falsifying_test": "If process-level memory attribution (currently outstanding) shows a stable consumer profile with no growth trend, the recurring exhaustion pattern differs from what a simple workload restart resolved in INC-2419, and the precedent does not transfer.",
+            "grounded_in": [
+              "p-97816f4244e0"
+            ]
+          },
+          {
+            "incident_ref": {
+              "source_uri": "corpus://incidents/INC-2411",
+              "heading_path": "INC-2411: Memory exhaustion on a batch integration host after a heap resize > Summary",
+              "passage_id": "p-b05efbf8f847"
+            },
+            "signature_overlap": "Memory exhaustion on an integration host with the observability platform opening and auto-closing the problem on preceding days \u2014 same alert behaviour and host class.",
+            "divergence": "INC-2411 covers only two days of auto-closure before the incident surfaced; the current incident spans eight of eleven days, a substantially longer unacknowledged run. INC-2411's record claims a specific configuration change the prior evening as the cause; no equivalent change has been identified or ruled out here, and process-level attribution is still outstanding. The claimed cause is what the prior record asserted and is not evidence for this incident.",
+            "resolution_taken": "Not stated in the retrieved passage.",
+            "applicability": "partial",
+            "confidence": "speculative",
+            "falsifying_test": "If no configuration or sizing change preceded the start of the recurring exhaustion window on the current host, the scenario INC-2411 describes does not apply.",
+            "grounded_in": [
+              "p-b05efbf8f847"
+            ]
+          }
+        ]
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": true,
+        "refused": false,
+        "claims": [
+          {
+            "source_uri": "corpus://incidents/INC-2419",
+            "offered": "partial",
+            "truth": "partial",
+            "false_precedent": false,
+            "understated": false,
+            "unrelated": false,
+            "confidence": "plausible",
+            "divergence": "INC-2419 closed with root cause recorded as unconfirmed, so no confirmed resolution transferred from that record. The current incident has process-level memory attribution still outstanding; INC-2419 does not document whether that evidence was ever collected, meaning the prior record cannot indicate what that evidence will show here.",
+            "grounded_in": [
+              "p-97816f4244e0",
+              "p-97816f4244e0"
+            ],
+            "ungrounded": []
+          },
+          {
+            "source_uri": "corpus://incidents/INC-2411",
+            "offered": "partial",
+            "truth": null,
+            "false_precedent": false,
+            "understated": false,
+            "unrelated": true,
+            "confidence": "speculative",
+            "divergence": "INC-2411 covers only two days of auto-closure before the incident surfaced; the current incident spans eight of eleven days, a substantially longer unacknowledged run. INC-2411's record claims a specific configuration change the prior evening as the cause; no equivalent change has been identified or ruled out here, and process-level attribution is still outstanding. The claimed cause is what the prior record asserted and is not evidence for this incident.",
+            "grounded_in": [
+              "p-b05efbf8f847",
+              "p-b05efbf8f847"
+            ],
+            "ungrounded": []
+          }
+        ],
+        "citations": {
+          "total": 4,
+          "in_returned_set": 4,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "signature_terms: [\"host.memory.exhaustion\"] | symptom_text: \"Memory exhaustion recurring daily on the same host, auto-closed each time, unacknowledged throughout\""
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 2,
+          "reached": 1,
+          "missed": [
+            "corpus://runbooks/memory-pressure"
+          ]
+        },
+        "queries_searched": [
+          {
+            "before": "2026-03-17T19:30:00+00:00",
+            "signature_terms": [
+              "host.memory.exhaustion"
+            ],
+            "symptom_text": "Memory exhaustion recurring daily on the same host, auto-closed each time, unacknowledged throughout"
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "b07",
+      "group": "near_miss",
+      "elapsed_ms": 16395.4,
+      "exit_status": 0,
+      "surface": {
+        "hits": {
+          "p-6e98569eac86": "corpus://incidents/INC-2407#0",
+          "p-64388910ad43": "corpus://incidents/INC-2407#2"
+        },
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00",
+              "signature_terms": [
+                "host.cpu.saturation"
+              ],
+              "symptom_text": "CPU near full utilisation for three days. No planned change on the host and no capacity plan recorded. Change registry empty for the fortnight before onset."
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 2,
+            "above_floor": 2,
+            "considered": 82,
+            "scoring": 80
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": false,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-03-10",
+          "queries_issued": [
+            "host.cpu.saturation \u2014 CPU near full utilisation for three days. No planned change on the host and no capacity plan recorded. Change registry empty for the fortnight before onset."
+          ]
+        },
+        "precedents": [
+          {
+            "incident_ref": {
+              "source_uri": "corpus://incidents/INC-2407",
+              "heading_path": "INC-2407: Sustained CPU saturation from a planned load increase > Summary",
+              "passage_id": "p-6e98569eac86"
+            },
+            "signature_overlap": "Sustained CPU saturation near full utilisation lasting three days on an api-prod host, with no anomalous process identified.",
+            "divergence": "The critical difference is in the change record: INC-2407 had a pre-recorded scheduled migration confirmed in the change registry as the load source, and the timeline passage (p-64388910ad43) shows that migration as the confirmed entry point. Here the change registry is empty for the fortnight before onset and no capacity plan exists. The missing evidence that would be needed to transfer the precedent \u2014 a process snapshot naming what is consuming CPU \u2014 is still outstanding. Without it, the load source is unknown, whereas in INC-2407 it was known before investigation began.",
+            "resolution_taken": "INC-2407 record claims capacity was added and load rebalanced after the source was identified via the change registry. That path is not available here because no change entry exists.",
+            "applicability": "partial",
+            "confidence": "plausible",
+            "falsifying_test": "If the process snapshot, when collected, shows a process or workload that was also present the week before onset at the same CPU share, the INC-2407 pattern (new load introduced by a change) does not apply.",
+            "grounded_in": [
+              "p-6e98569eac86",
+              "p-64388910ad43"
+            ]
+          }
+        ]
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": true,
+        "refused": false,
+        "claims": [
+          {
+            "source_uri": "corpus://incidents/INC-2407",
+            "offered": "partial",
+            "truth": "partial",
+            "false_precedent": false,
+            "understated": false,
+            "unrelated": false,
+            "confidence": "plausible",
+            "divergence": "The critical difference is in the change record: INC-2407 had a pre-recorded scheduled migration confirmed in the change registry as the load source, and the timeline passage (p-64388910ad43) shows that migration as the confirmed entry point. Here the change registry is empty for the fortnight before onset and no capacity plan exists. The missing evidence that would be needed to transfer the precedent \u2014 a process snapshot naming what is consuming CPU \u2014 is still outstanding. Without it, the load source is unknown, whereas in INC-2407 it was known before investigation began.",
+            "grounded_in": [
+              "p-6e98569eac86",
+              "p-64388910ad43",
+              "p-6e98569eac86"
+            ],
+            "ungrounded": []
+          }
+        ],
+        "citations": {
+          "total": 3,
+          "in_returned_set": 3,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "host.cpu.saturation \u2014 CPU near full utilisation for three days. No planned change on the host and no capacity plan recorded. Change registry empty for the fortnight before onset."
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 1,
+          "reached": 1,
+          "missed": []
+        },
+        "queries_searched": [
+          {
+            "before": "2026-03-17T19:30:00+00:00",
+            "signature_terms": [
+              "host.cpu.saturation"
+            ],
+            "symptom_text": "CPU near full utilisation for three days. No planned change on the host and no capacity plan recorded. Change registry empty for the fortnight before onset."
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "c01",
+      "group": "applies",
+      "elapsed_ms": 15502.6,
+      "exit_status": 0,
+      "surface": {
+        "hits": {
+          "p-7cbef34d8405": "corpus://incidents/INC-2350#2"
+        },
+        "calls": [
+          "coverage_describe",
+          "precedent_search",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00",
+              "signature_terms": [
+                "host.memory.exhaustion"
+              ],
+              "symptom_text": "Memory exhaustion building over several days on a host with no recent change. A log forwarding destination has been unreachable since onset."
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00",
+              "symptom_text": "log forwarding destination unreachable memory leak accumulation no change"
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 0,
+            "above_floor": 0,
+            "considered": 82,
+            "scoring": 77
+          },
+          {
+            "returned": 1,
+            "above_floor": 1,
+            "considered": 82,
+            "scoring": 67
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": false,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-03-10",
+          "queries_issued": [
+            "host.memory.exhaustion + Memory exhaustion building over several days on a host with no recent change. A log forwarding destination has been unreachable since onset.",
+            "log forwarding destination unreachable memory leak accumulation no change"
+          ]
+        },
+        "precedents": [
+          {
+            "incident_ref": {
+              "source_uri": "corpus://incidents/INC-2350",
+              "heading_path": "INC-2350: Host memory exhaustion from a log shipper backlog > Timeline",
+              "passage_id": "p-7cbef34d8405"
+            },
+            "signature_overlap": "Multi-day memory exhaustion on a host; log forwarding destination unreachable since onset; no change event cited.",
+            "divergence": "The retrieved record settled on a specific process (the log shipper, attributed 6 GiB resident) via a process snapshot taken at D+4. That evidence \u2014 resident set attribution by process \u2014 is still outstanding here. Without it, the mechanism described in INC-2350 cannot be confirmed to be operating in this incident.",
+            "resolution_taken": "The record documents that a process snapshot attributed 6 GiB resident to the shipper; the record does not describe a remediation step beyond that attribution. No resolution action is reproduced in the retrieved passage.",
+            "applicability": "partial",
+            "confidence": "plausible",
+            "falsifying_test": "If the resident set attribution by process (still outstanding) shows no single process holding anomalous memory, the log-shipper-backlog mechanism described in INC-2350 does not apply.",
+            "grounded_in": [
+              "p-7cbef34d8405"
+            ]
+          }
+        ]
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": true,
+        "refused": false,
+        "claims": [
+          {
+            "source_uri": "corpus://incidents/INC-2350",
+            "offered": "partial",
+            "truth": "partial",
+            "false_precedent": false,
+            "understated": false,
+            "unrelated": false,
+            "confidence": "plausible",
+            "divergence": "The retrieved record settled on a specific process (the log shipper, attributed 6 GiB resident) via a process snapshot taken at D+4. That evidence \u2014 resident set attribution by process \u2014 is still outstanding here. Without it, the mechanism described in INC-2350 cannot be confirmed to be operating in this incident.",
+            "grounded_in": [
+              "p-7cbef34d8405",
+              "p-7cbef34d8405"
+            ],
+            "ungrounded": []
+          }
+        ],
+        "citations": {
+          "total": 2,
+          "in_returned_set": 2,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "host.memory.exhaustion + Memory exhaustion building over several days on a host with no recent change. A log forwarding destination has been unreachable since onset.",
+          "log forwarding destination unreachable memory leak accumulation no change"
+        ],
+        "coverage_called": true,
+        "searches": 2,
+        "reach": {
+          "relevant": 2,
+          "reached": 1,
+          "missed": [
+            "corpus://runbooks/memory-pressure"
+          ]
+        },
+        "queries_searched": [
+          {
+            "before": "2026-03-17T19:30:00+00:00",
+            "signature_terms": [
+              "host.memory.exhaustion"
+            ],
+            "symptom_text": "Memory exhaustion building over several days on a host with no recent change. A log forwarding destination has been unreachable since onset."
+          },
+          {
+            "before": "2026-03-17T19:30:00+00:00",
+            "symptom_text": "log forwarding destination unreachable memory leak accumulation no change"
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "c02",
+      "group": "applies",
+      "elapsed_ms": 16075.9,
+      "exit_status": 0,
+      "surface": {
+        "hits": {
+          "p-44b35eaf8423": "corpus://incidents/INC-2305#2"
+        },
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00",
+              "signature_terms": [
+                "container.memory.limit"
+              ],
+              "symptom_text": "service container restarted nine times since midnight, host memory and swap flat throughout, container terminated on reaching its configured memory limit, process grew without bound"
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 1,
+            "above_floor": 1,
+            "considered": 82,
+            "scoring": 72
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": false,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-03-10",
+          "queries_issued": [
+            "signature_terms: [\"container.memory.limit\"]; symptom_text: \"service container restarted nine times since midnight, host memory and swap flat throughout, container terminated on reaching its configured memory limit, process grew without bound\""
+          ]
+        },
+        "precedents": [
+          {
+            "incident_ref": {
+              "source_uri": "corpus://incidents/INC-2305",
+              "heading_path": "INC-2305: Container memory limit reached in an orchestrated service > Timeline",
+              "passage_id": "p-44b35eaf8423"
+            },
+            "signature_overlap": "Container repeatedly terminated on reaching its configured memory limit; host memory and swap flat throughout the restart window; orchestrator-driven restarts.",
+            "divergence": "INC-2305 ran to eleven restarts over two days before resolution; the current incident is at nine restarts within a single day. The prior record's resolution (bounding the cache and raising the limit) rested on evidence that the in-process cache was the unbounded grower \u2014 evidence that is still outstanding here ('What in the process grew without a bound' is listed as not yet collected). The resolution therefore does not transfer until that evidence is in hand.",
+            "resolution_taken": "The prior record states: cache bounded and the limit raised to match the working set (D+1, 13:40, change registry). This is what INC-2305 did; it is not a recommendation for the current incident.",
+            "applicability": "partial",
+            "confidence": "plausible",
+            "falsifying_test": "If memory profiling of the current container shows no unbounded in-process cache \u2014 for example, a leak in a different allocator path or an external resource accumulating inside the container \u2014 the prior incident's pattern does not apply and its resolution is irrelevant.",
+            "grounded_in": [
+              "p-44b35eaf8423"
+            ]
+          }
+        ]
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": true,
+        "refused": false,
+        "claims": [
+          {
+            "source_uri": "corpus://incidents/INC-2305",
+            "offered": "partial",
+            "truth": "applies",
+            "false_precedent": false,
+            "understated": true,
+            "unrelated": false,
+            "confidence": "plausible",
+            "divergence": "INC-2305 ran to eleven restarts over two days before resolution; the current incident is at nine restarts within a single day. The prior record's resolution (bounding the cache and raising the limit) rested on evidence that the in-process cache was the unbounded grower \u2014 evidence that is still outstanding here ('What in the process grew without a bound' is listed as not yet collected). The resolution therefore does not transfer until that evidence is in hand.",
+            "grounded_in": [
+              "p-44b35eaf8423",
+              "p-44b35eaf8423"
+            ],
+            "ungrounded": []
+          }
+        ],
+        "citations": {
+          "total": 2,
+          "in_returned_set": 2,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "signature_terms: [\"container.memory.limit\"]; symptom_text: \"service container restarted nine times since midnight, host memory and swap flat throughout, container terminated on reaching its configured memory limit, process grew without bound\""
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 2,
+          "reached": 1,
+          "missed": [
+            "corpus://runbooks/container-resource-limits"
+          ]
+        },
+        "queries_searched": [
+          {
+            "before": "2026-03-17T19:30:00+00:00",
+            "signature_terms": [
+              "container.memory.limit"
+            ],
+            "symptom_text": "service container restarted nine times since midnight, host memory and swap flat throughout, container terminated on reaching its configured memory limit, process grew without bound"
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "c03",
+      "group": "applies",
+      "elapsed_ms": 15821.3,
+      "exit_status": 0,
+      "surface": {
+        "hits": {
+          "p-64388910ad43": "corpus://incidents/INC-2407#2"
+        },
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00",
+              "signature_terms": [
+                "host.cpu.saturation"
+              ],
+              "symptom_text": "CPU near full utilisation since a scheduled migration completed the previous night. No process present that was not present last week."
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 1,
+            "above_floor": 1,
+            "considered": 82,
+            "scoring": 82
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": false,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-03-10",
+          "queries_issued": [
+            "signature_terms: [\"host.cpu.saturation\"], symptom_text: \"CPU near full utilisation since a scheduled migration completed the previous night. No process present that was not present last week.\""
+          ]
+        },
+        "precedents": [
+          {
+            "incident_ref": {
+              "source_uri": "corpus://incidents/INC-2407",
+              "heading_path": "INC-2407: Sustained CPU saturation from a planned load increase > Timeline",
+              "passage_id": "p-64388910ad43"
+            },
+            "signature_overlap": "host.cpu.saturation following a scheduled migration completing the night before onset; CPU near full utilisation sustained with no new processes visible in the process inventory.",
+            "divergence": "The prior record's claimed cause \u2014 that a second consumer's request volume was moved onto the host, roughly doubling it \u2014 rests on a capacity plan that was evidently available at resolution time. Here, the capacity plan for the migrated load is still outstanding. The settling evidence in INC-2407 is precisely the evidence that has not yet been collected in this incident, so the prior resolution does not transfer until that gap is closed.",
+            "resolution_taken": "The prior record states that capacity was added and the load rebalanced at D+2, 10:15 per the change registry. document_cause_claimed in that record attributes the saturation to a second consumer's request volume being moved onto the host.",
+            "applicability": "partial",
+            "confidence": "plausible",
+            "falsifying_test": "Retrieve the capacity plan for the migrated load: if it shows the migrated workload's CPU demand is within the headroom that existed before the migration, the prior incident's pattern does not apply and a different cause must be sought.",
+            "grounded_in": [
+              "p-64388910ad43"
+            ]
+          }
+        ]
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": true,
+        "refused": false,
+        "claims": [
+          {
+            "source_uri": "corpus://incidents/INC-2407",
+            "offered": "partial",
+            "truth": "applies",
+            "false_precedent": false,
+            "understated": true,
+            "unrelated": false,
+            "confidence": "plausible",
+            "divergence": "The prior record's claimed cause \u2014 that a second consumer's request volume was moved onto the host, roughly doubling it \u2014 rests on a capacity plan that was evidently available at resolution time. Here, the capacity plan for the migrated load is still outstanding. The settling evidence in INC-2407 is precisely the evidence that has not yet been collected in this incident, so the prior resolution does not transfer until that gap is closed.",
+            "grounded_in": [
+              "p-64388910ad43",
+              "p-64388910ad43"
+            ],
+            "ungrounded": []
+          }
+        ],
+        "citations": {
+          "total": 2,
+          "in_returned_set": 2,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "signature_terms: [\"host.cpu.saturation\"], symptom_text: \"CPU near full utilisation since a scheduled migration completed the previous night. No process present that was not present last week.\""
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 1,
+          "reached": 1,
+          "missed": []
+        },
+        "queries_searched": [
+          {
+            "before": "2026-03-17T19:30:00+00:00",
+            "signature_terms": [
+              "host.cpu.saturation"
+            ],
+            "symptom_text": "CPU near full utilisation since a scheduled migration completed the previous night. No process present that was not present last week."
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "c04",
+      "group": "applies",
+      "elapsed_ms": 15139.8,
+      "exit_status": 0,
+      "surface": {
+        "hits": {
+          "p-8386863a5740": "corpus://incidents/INC-2377#2",
+          "p-390c801816a2": "corpus://incidents/INC-2377#0"
+        },
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00",
+              "signature_terms": [
+                "validation.parity"
+              ],
+              "symptom_text": "proposed falsifying test is a comparison against non-production, non-production differs in build and patch level, comparable environment outstanding"
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 2,
+            "above_floor": 2,
+            "considered": 82,
+            "scoring": 66
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": false,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-03-10",
+          "queries_issued": [
+            "validation.parity \u2014 proposed falsifying test is a comparison against non-production, non-production differs in build and patch level, comparable environment outstanding"
+          ]
+        },
+        "precedents": [
+          {
+            "incident_ref": {
+              "source_uri": "corpus://incidents/INC-2377",
+              "heading_path": "INC-2377: Non-production could not validate production > Summary",
+              "passage_id": "p-390c801816a2"
+            },
+            "signature_overlap": "Falsifying test proposed as a non-production comparison; non-production environment differs in build and patch level, making the comparison unavailable \u2014 matching the current symptom and outstanding evidence item exactly.",
+            "divergence": "The prior record (INC-2377) also notes a difference in installed agents, which is not yet confirmed or ruled out in the current evidence. The prior incident reached the point of abandoning the comparison (build parity confirmed absent at D0+21:45); the current incident still has the comparable-environment request outstanding, so it has not yet reached that determination.",
+            "resolution_taken": "The non-production comparison was abandoned after build parity was confirmed absent. No alternative falsifying test is recorded in the retrieved passages.",
+            "applicability": "partial",
+            "confidence": "plausible",
+            "falsifying_test": "Confirm whether the non-production environment also differs in installed agents; if it does not, the current situation diverges from INC-2377 in a way that may affect whether the comparison can still be salvaged.",
+            "grounded_in": [
+              "p-390c801816a2",
+              "p-8386863a5740"
+            ]
+          }
+        ]
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": true,
+        "refused": false,
+        "claims": [
+          {
+            "source_uri": "corpus://incidents/INC-2377",
+            "offered": "partial",
+            "truth": "applies",
+            "false_precedent": false,
+            "understated": true,
+            "unrelated": false,
+            "confidence": "plausible",
+            "divergence": "The prior record (INC-2377) also notes a difference in installed agents, which is not yet confirmed or ruled out in the current evidence. The prior incident reached the point of abandoning the comparison (build parity confirmed absent at D0+21:45); the current incident still has the comparable-environment request outstanding, so it has not yet reached that determination.",
+            "grounded_in": [
+              "p-390c801816a2",
+              "p-8386863a5740",
+              "p-390c801816a2"
+            ],
+            "ungrounded": []
+          }
+        ],
+        "citations": {
+          "total": 3,
+          "in_returned_set": 3,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "validation.parity \u2014 proposed falsifying test is a comparison against non-production, non-production differs in build and patch level, comparable environment outstanding"
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 1,
+          "reached": 1,
+          "missed": []
+        },
+        "queries_searched": [
+          {
+            "before": "2026-03-17T19:30:00+00:00",
+            "signature_terms": [
+              "validation.parity"
+            ],
+            "symptom_text": "proposed falsifying test is a comparison against non-production, non-production differs in build and patch level, comparable environment outstanding"
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "c05",
+      "group": "applies",
+      "elapsed_ms": 15543.0,
+      "exit_status": 0,
+      "surface": {
+        "hits": {
+          "p-834deaad6bb5": "corpus://incidents/INC-2402#2",
+          "p-075764e95511": "corpus://incidents/INC-2402#0",
+          "p-7a9131b827b0": "corpus://runbooks/change-correlation#1"
+        },
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00",
+              "signature_terms": [
+                "investigation.attribution"
+              ],
+              "symptom_text": "The bridge has named the most recently deployed component as probable cause. No evidence has been recorded that distinguishes it. Deployment is the most recent change on the host."
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 3,
+            "above_floor": 3,
+            "considered": 82,
+            "scoring": 81
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": false,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-03-10",
+          "queries_issued": [
+            "investigation.attribution | The bridge has named the most recently deployed component as probable cause. No evidence has been recorded that distinguishes it. Deployment is the most recent change on the host."
+          ]
+        },
+        "precedents": [
+          {
+            "incident_ref": {
+              "source_uri": "corpus://incidents/INC-2402",
+              "heading_path": "INC-2402: Newest change blamed first, later exonerated > Summary",
+              "passage_id": "p-075764e95511"
+            },
+            "signature_overlap": "Bridge named the most recently deployed component as probable cause within minutes of opening; no distinguishing evidence recorded at the time of attribution.",
+            "divergence": "In INC-2402 the component was ultimately exonerated by demonstrating it was not loaded on the affected host \u2014 evidence that is still outstanding here. Until that or equivalent distinguishing evidence is collected, it is unknown whether this incident will follow the same path or diverge from it.",
+            "resolution_taken": "The record states the component was demonstrated uninvolved the following morning; the investigation then restarted from the evidence available at the original attribution point. Five hours had been spent on the named component before it was cleared.",
+            "applicability": "partial",
+            "confidence": "plausible",
+            "falsifying_test": "Confirm whether the named component is actually loaded and active on the affected host. If it is not present, the attribution is already falsified and the pattern from INC-2402 applies directly; if it is present, the precedent's resolution path does not transfer.",
+            "grounded_in": [
+              "p-075764e95511",
+              "p-834deaad6bb5",
+              "p-7a9131b827b0"
+            ]
+          }
+        ]
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": true,
+        "refused": false,
+        "claims": [
+          {
+            "source_uri": "corpus://incidents/INC-2402",
+            "offered": "partial",
+            "truth": "applies",
+            "false_precedent": false,
+            "understated": true,
+            "unrelated": false,
+            "confidence": "plausible",
+            "divergence": "In INC-2402 the component was ultimately exonerated by demonstrating it was not loaded on the affected host \u2014 evidence that is still outstanding here. Until that or equivalent distinguishing evidence is collected, it is unknown whether this incident will follow the same path or diverge from it.",
+            "grounded_in": [
+              "p-075764e95511",
+              "p-834deaad6bb5",
+              "p-7a9131b827b0",
+              "p-075764e95511"
+            ],
+            "ungrounded": []
+          }
+        ],
+        "citations": {
+          "total": 4,
+          "in_returned_set": 4,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "investigation.attribution | The bridge has named the most recently deployed component as probable cause. No evidence has been recorded that distinguishes it. Deployment is the most recent change on the host."
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 2,
+          "reached": 2,
+          "missed": []
+        },
+        "queries_searched": [
+          {
+            "before": "2026-03-17T19:30:00+00:00",
+            "signature_terms": [
+              "investigation.attribution"
+            ],
+            "symptom_text": "The bridge has named the most recently deployed component as probable cause. No evidence has been recorded that distinguishes it. Deployment is the most recent change on the host."
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "c06",
+      "group": "applies",
+      "elapsed_ms": 9054.1,
+      "exit_status": 0,
+      "surface": {
+        "hits": {},
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00",
+              "signature_terms": [
+                "host.memory.exhaustion"
+              ],
+              "symptom_text": "restore from snapshot proposed as mitigation for memory exhaustion, onset time not established, snapshots available at daily granularity for past fortnight"
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 0,
+            "above_floor": 0,
+            "considered": 82,
+            "scoring": 79
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": true,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-03-10",
+          "queries_issued": [
+            "host.memory.exhaustion \u2014 restore from snapshot proposed as mitigation for memory exhaustion, onset time not established, snapshots available at daily granularity for past fortnight"
+          ]
+        },
+        "precedents": []
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": true,
+        "refused": true,
+        "claims": [],
+        "citations": {
+          "total": 0,
+          "in_returned_set": 0,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "host.memory.exhaustion \u2014 restore from snapshot proposed as mitigation for memory exhaustion, onset time not established, snapshots available at daily granularity for past fortnight"
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 2,
+          "reached": 0,
+          "missed": [
+            "corpus://runbooks/memory-pressure",
+            "corpus://runbooks/recovery-point-selection"
+          ]
+        },
+        "queries_searched": [
+          {
+            "before": "2026-03-17T19:30:00+00:00",
+            "signature_terms": [
+              "host.memory.exhaustion"
+            ],
+            "symptom_text": "restore from snapshot proposed as mitigation for memory exhaustion, onset time not established, snapshots available at daily granularity for past fortnight"
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "c07",
+      "group": "applies",
+      "elapsed_ms": 16498.0,
+      "exit_status": 0,
+      "surface": {
+        "hits": {
+          "p-06770bc5c194": "corpus://runbooks/denial-log-collection#1"
+        },
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00",
+              "signature_terms": [
+                "host.cpu.saturation"
+              ],
+              "symptom_text": "Suppressing the denial stream has been proposed as relief while the denial-analysis process is consuming CPU"
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 1,
+            "above_floor": 1,
+            "considered": 82,
+            "scoring": 80
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": false,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-03-10",
+          "queries_issued": [
+            "signature_terms: [\"host.cpu.saturation\"], symptom_text: \"Suppressing the denial stream has been proposed as relief while the denial-analysis process is consuming CPU\""
+          ]
+        },
+        "precedents": [
+          {
+            "incident_ref": {
+              "source_uri": "corpus://runbooks/denial-log-collection",
+              "heading_path": "Runbook: collecting the security denial log > Collect before suppressing",
+              "passage_id": "p-06770bc5c194"
+            },
+            "signature_overlap": "Denial-analysis process consuming CPU; suppression of the denial stream proposed as relief \u2014 matches the current situation exactly as described in the runbook passage.",
+            "divergence": "The outstanding evidence item here is the denial log naming the source domain, which has not yet been collected. The runbook passage warns that suppressing the event dispatcher before collecting the log destroys that evidence permanently: 'If suppression is applied before the log is taken, the evidence that would have identified the source is gone, and no later collection recovers it.' The current incident is precisely in the state the runbook flags as the risk window.",
+            "resolution_taken": "The runbook prescribes: collect the denial log first, then suppress if suppression is still wanted. It does not endorse suppression as a first step.",
+            "applicability": "partial",
+            "confidence": "supported",
+            "falsifying_test": "If the denial log naming the source domain has already been collected and preserved, the sequencing risk the runbook describes no longer applies to this incident.",
+            "grounded_in": [
+              "p-06770bc5c194"
+            ]
+          }
+        ]
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": true,
+        "refused": false,
+        "claims": [
+          {
+            "source_uri": "corpus://runbooks/denial-log-collection",
+            "offered": "partial",
+            "truth": "applies",
+            "false_precedent": false,
+            "understated": true,
+            "unrelated": false,
+            "confidence": "supported",
+            "divergence": "The outstanding evidence item here is the denial log naming the source domain, which has not yet been collected. The runbook passage warns that suppressing the event dispatcher before collecting the log destroys that evidence permanently: 'If suppression is applied before the log is taken, the evidence that would have identified the source is gone, and no later collection recovers it.' The current incident is precisely in the state the runbook flags as the risk window.",
+            "grounded_in": [
+              "p-06770bc5c194",
+              "p-06770bc5c194"
+            ],
+            "ungrounded": []
+          }
+        ],
+        "citations": {
+          "total": 2,
+          "in_returned_set": 2,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "signature_terms: [\"host.cpu.saturation\"], symptom_text: \"Suppressing the denial stream has been proposed as relief while the denial-analysis process is consuming CPU\""
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 2,
+          "reached": 1,
+          "missed": [
+            "corpus://incidents/INC-2288"
+          ]
+        },
+        "queries_searched": [
+          {
+            "before": "2026-03-17T19:30:00+00:00",
+            "signature_terms": [
+              "host.cpu.saturation"
+            ],
+            "symptom_text": "Suppressing the denial stream has been proposed as relief while the denial-analysis process is consuming CPU"
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "c08",
+      "group": "applies",
+      "elapsed_ms": 27107.8,
+      "exit_status": 0,
+      "surface": {
+        "hits": {
+          "p-c16300c887ae": "corpus://incidents/INC-2489#2",
+          "p-e66d0c38373c": "corpus://runbooks/memory-pressure#0"
+        },
+        "calls": [
+          "coverage_describe",
+          "precedent_search",
+          "precedent_search",
+          "passage_get",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00",
+              "signature_terms": [
+                "host.memory.pressure"
+              ],
+              "symptom_text": "Memory pressure alert on a cache host. Page fault rate matches the host's baseline for the past year."
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00",
+              "symptom_text": "host configured to overcommit memory, confirmed intended since build, page fault rate within baseline"
+            }
+          },
+          {
+            "tool": "passage_get",
+            "arguments": {
+              "passage_id": "p-c16300c887ae"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00",
+              "limit": 5,
+              "signature_terms": [
+                "host.memory.pressure"
+              ],
+              "symptom_text": "memory pressure alert threshold does not account for overcommit configuration cache host"
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 2,
+            "above_floor": 2,
+            "considered": 82,
+            "scoring": 81
+          },
+          {
+            "returned": 1,
+            "above_floor": 1,
+            "considered": 82,
+            "scoring": 67
+          },
+          {
+            "returned": 1,
+            "above_floor": 1,
+            "considered": 82,
+            "scoring": 71
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": false,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-03-10",
+          "queries_issued": [
+            "signature_terms=[\"host.memory.pressure\"], symptom_text=\"Memory pressure alert on a cache host. Page fault rate matches the host's baseline for the past year.\"",
+            "symptom_text=\"host configured to overcommit memory, confirmed intended since build, page fault rate within baseline\"",
+            "signature_terms=[\"host.memory.pressure\"], symptom_text=\"memory pressure alert threshold does not account for overcommit configuration cache host\""
+          ]
+        },
+        "precedents": [
+          {
+            "incident_ref": {
+              "source_uri": "corpus://incidents/INC-2489",
+              "heading_path": "INC-2489: Swap in use by design on an overcommitted cache host > Timeline",
+              "passage_id": "p-c16300c887ae"
+            },
+            "signature_overlap": "host.memory.pressure alert on an overcommitted cache host where page fault rate matches the host's own baseline for the past year and overcommit configuration is confirmed intended since build \u2014 all three elements present in both the prior record and the current evidence.",
+            "divergence": "The prior record (INC-2489) is a timeline passage; the archive returned no resolution or close-out passage for it above the relevance floor, so what was done to resolve INC-2489 is not available from retrieved passages. The falsifying test below therefore cannot be checked against a documented resolution. Additionally, the prior record does not name the specific alert threshold logic involved; if the threshold in this environment differs from the one in INC-2489, the match weakens.",
+            "resolution_taken": "Not recoverable from retrieved passages. No resolution or close-out passage for INC-2489 cleared the relevance floor.",
+            "applicability": "partial",
+            "confidence": "plausible",
+            "falsifying_test": "If the memory pressure alert in this environment uses a threshold that does account for the host's overcommit configuration (i.e., the alert was not fired by a configuration-unaware threshold), the core mechanism described in INC-2489 does not apply.",
+            "grounded_in": [
+              "p-c16300c887ae"
+            ]
+          }
+        ]
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": true,
+        "refused": false,
+        "claims": [
+          {
+            "source_uri": "corpus://incidents/INC-2489",
+            "offered": "partial",
+            "truth": "applies",
+            "false_precedent": false,
+            "understated": true,
+            "unrelated": false,
+            "confidence": "plausible",
+            "divergence": "The prior record (INC-2489) is a timeline passage; the archive returned no resolution or close-out passage for it above the relevance floor, so what was done to resolve INC-2489 is not available from retrieved passages. The falsifying test below therefore cannot be checked against a documented resolution. Additionally, the prior record does not name the specific alert threshold logic involved; if the threshold in this environment differs from the one in INC-2489, the match weakens.",
+            "grounded_in": [
+              "p-c16300c887ae",
+              "p-c16300c887ae"
+            ],
+            "ungrounded": []
+          }
+        ],
+        "citations": {
+          "total": 2,
+          "in_returned_set": 2,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "signature_terms=[\"host.memory.pressure\"], symptom_text=\"Memory pressure alert on a cache host. Page fault rate matches the host's baseline for the past year.\"",
+          "symptom_text=\"host configured to overcommit memory, confirmed intended since build, page fault rate within baseline\"",
+          "signature_terms=[\"host.memory.pressure\"], symptom_text=\"memory pressure alert threshold does not account for overcommit configuration cache host\""
+        ],
+        "coverage_called": true,
+        "searches": 3,
+        "reach": {
+          "relevant": 1,
+          "reached": 1,
+          "missed": []
+        },
+        "queries_searched": [
+          {
+            "before": "2026-03-17T19:30:00+00:00",
+            "signature_terms": [
+              "host.memory.pressure"
+            ],
+            "symptom_text": "Memory pressure alert on a cache host. Page fault rate matches the host's baseline for the past year."
+          },
+          {
+            "before": "2026-03-17T19:30:00+00:00",
+            "symptom_text": "host configured to overcommit memory, confirmed intended since build, page fault rate within baseline"
+          },
+          {
+            "before": "2026-03-17T19:30:00+00:00",
+            "limit": 5,
+            "signature_terms": [
+              "host.memory.pressure"
+            ],
+            "symptom_text": "memory pressure alert threshold does not account for overcommit configuration cache host"
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "d01",
+      "group": "record_status",
+      "elapsed_ms": 7512.2,
+      "exit_status": 0,
+      "surface": {
+        "hits": {},
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00",
+              "signature_terms": [
+                "host.memory.pressure"
+              ],
+              "symptom_text": "Swap climbing overnight since two batch schedules began starting in the same hour"
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 0,
+            "above_floor": 0,
+            "considered": 82,
+            "scoring": 80
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": true,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-03-10",
+          "queries_issued": [
+            "host.memory.pressure \u2014 Swap climbing overnight since two batch schedules began starting in the same hour"
+          ]
+        },
+        "precedents": []
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": true,
+        "refused": true,
+        "claims": [],
+        "citations": {
+          "total": 0,
+          "in_returned_set": 0,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "host.memory.pressure \u2014 Swap climbing overnight since two batch schedules began starting in the same hour"
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 1,
+          "reached": 0,
+          "missed": [
+            "corpus://runbooks/memory-pressure"
+          ]
+        },
+        "queries_searched": [
+          {
+            "before": "2026-03-17T19:30:00+00:00",
+            "signature_terms": [
+              "host.memory.pressure"
+            ],
+            "symptom_text": "Swap climbing overnight since two batch schedules began starting in the same hour"
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "d02",
+      "group": "record_status",
+      "elapsed_ms": 7793.8,
+      "exit_status": 0,
+      "surface": {
+        "hits": {},
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00",
+              "signature_terms": [
+                "host.memory.exhaustion"
+              ],
+              "symptom_text": "Scheduled batch file transfers completing late. Integration console slow to respond. Audit analysis daemon active and consuming CPU."
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 0,
+            "above_floor": 0,
+            "considered": 82,
+            "scoring": 74
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": true,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-03-10",
+          "queries_issued": [
+            "host.memory.exhaustion \u2014 Scheduled batch file transfers completing late. Integration console slow to respond. Audit analysis daemon active and consuming CPU."
+          ]
+        },
+        "precedents": []
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": true,
+        "refused": true,
+        "claims": [],
+        "citations": {
+          "total": 0,
+          "in_returned_set": 0,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "host.memory.exhaustion \u2014 Scheduled batch file transfers completing late. Integration console slow to respond. Audit analysis daemon active and consuming CPU."
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 5,
+          "reached": 0,
+          "missed": [
+            "corpus://incidents/INC-2288",
+            "corpus://incidents/INC-2411",
+            "corpus://incidents/INC-2419",
+            "corpus://runbooks/denial-log-collection",
+            "corpus://runbooks/memory-pressure"
+          ]
+        },
+        "queries_searched": [
+          {
+            "before": "2026-03-17T19:30:00+00:00",
+            "signature_terms": [
+              "host.memory.exhaustion"
+            ],
+            "symptom_text": "Scheduled batch file transfers completing late. Integration console slow to respond. Audit analysis daemon active and consuming CPU."
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "d03",
+      "group": "record_status",
+      "elapsed_ms": 27124.0,
+      "exit_status": 0,
+      "surface": {
+        "hits": {
+          "p-b05efbf8f847": "corpus://incidents/INC-2411#0",
+          "p-7cbef34d8405": "corpus://incidents/INC-2350#2",
+          "p-fa1b9e69fdee": "corpus://incidents/INC-2411#2",
+          "p-97816f4244e0": "corpus://incidents/INC-2419#2"
+        },
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-03-03T09:00:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-03-03T09:00:00+00:00",
+              "signature_terms": [
+                "host.memory.exhaustion"
+              ],
+              "symptom_text": "Memory exhaustion problem opened and auto-closed for the second consecutive day"
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 4,
+            "above_floor": 4,
+            "considered": 76,
+            "scoring": 74
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": false,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-02-11",
+          "queries_issued": [
+            "signature_terms: [\"host.memory.exhaustion\"], symptom_text: \"Memory exhaustion problem opened and auto-closed for the second consecutive day\""
+          ]
+        },
+        "precedents": [
+          {
+            "incident_ref": {
+              "source_uri": "corpus://incidents/INC-2411",
+              "heading_path": "INC-2411: Memory exhaustion on a batch integration host after a heap resize > Summary",
+              "passage_id": "p-b05efbf8f847"
+            },
+            "signature_overlap": "host.memory.exhaustion on an integration host; problem opened and auto-closed on each of two preceding days \u2014 matching the current pattern of two consecutive days exactly.",
+            "divergence": "INC-2411 was resolved by correlating the exhaustion with a JVM heap change in the change registry (the record claims the heap was raised the evening before the first alert). No change history correlation has been attempted here, and process-level memory attribution is still outstanding \u2014 the evidence that settled INC-2411 does not yet exist for this incident.",
+            "resolution_taken": "The record states the heap was reverted to 20 GiB and the service restarted outside the batch window, after which swap usage returned to zero. This is what the record says was done; it is not a recommendation for this incident.",
+            "applicability": "partial",
+            "confidence": "plausible",
+            "falsifying_test": "If no configuration or tuning change appears in the change registry for intg-prod-a1 in the 48 hours before the first alert, the INC-2411 pattern does not apply.",
+            "grounded_in": [
+              "p-b05efbf8f847",
+              "p-fa1b9e69fdee"
+            ]
+          },
+          {
+            "incident_ref": {
+              "source_uri": "corpus://incidents/INC-2350",
+              "heading_path": "INC-2350: Host memory exhaustion from a log shipper backlog > Timeline",
+              "passage_id": "p-7cbef34d8405"
+            },
+            "signature_overlap": "host.memory.exhaustion; problem opened and auto-closed on consecutive days without acknowledgement.",
+            "divergence": "INC-2350 ran for four consecutive days before a process snapshot was taken; the process snapshot (attributing 6 GiB resident to the shipper) was the key piece of evidence. Here the incident is on day two and process-level memory attribution is still outstanding \u2014 the evidence that identified the pattern in INC-2350 has not yet been collected.",
+            "resolution_taken": "The record does not describe a resolution step beyond the process snapshot identifying the shipper as the source; it records what the snapshot showed, not what was done afterward.",
+            "applicability": "partial",
+            "confidence": "speculative",
+            "falsifying_test": "If process-level memory attribution (currently outstanding) shows no single process holding an anomalous resident-set share, the INC-2350 pattern does not apply.",
+            "grounded_in": [
+              "p-7cbef34d8405"
+            ]
+          },
+          {
+            "incident_ref": {
+              "source_uri": "corpus://incidents/INC-2419",
+              "heading_path": "INC-2419: Memory exhaustion closed with the cause unconfirmed > Timeline",
+              "passage_id": "p-97816f4244e0"
+            },
+            "signature_overlap": "host.memory.exhaustion; problem opens and auto-closes on consecutive days, unacknowledged.",
+            "divergence": "INC-2419 ran for ten days across seven alert cycles before any action was taken, and the root cause was recorded as unconfirmed. The current incident is on day two. INC-2419 offers no settled resolution and no confirmed cause \u2014 the record explicitly records the cause as unconfirmed.",
+            "resolution_taken": "The record states the workload was restarted on D+9 and memory recovered, but root cause was recorded as unconfirmed. This is what the record says happened, not a recommended action.",
+            "applicability": "partial",
+            "confidence": "speculative",
+            "falsifying_test": "If process-level attribution or change history yields a clear cause within the next 24 hours, this incident will have diverged from INC-2419's unresolved trajectory before it reaches a comparable stage.",
+            "grounded_in": [
+              "p-97816f4244e0"
+            ]
+          }
+        ]
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": true,
+        "refused": false,
+        "claims": [
+          {
+            "source_uri": "corpus://incidents/INC-2411",
+            "offered": "partial",
+            "truth": "partial",
+            "false_precedent": false,
+            "understated": false,
+            "unrelated": false,
+            "confidence": "plausible",
+            "divergence": "INC-2411 was resolved by correlating the exhaustion with a JVM heap change in the change registry (the record claims the heap was raised the evening before the first alert). No change history correlation has been attempted here, and process-level memory attribution is still outstanding \u2014 the evidence that settled INC-2411 does not yet exist for this incident.",
+            "grounded_in": [
+              "p-b05efbf8f847",
+              "p-fa1b9e69fdee",
+              "p-b05efbf8f847"
+            ],
+            "ungrounded": []
+          },
+          {
+            "source_uri": "corpus://incidents/INC-2350",
+            "offered": "partial",
+            "truth": null,
+            "false_precedent": false,
+            "understated": false,
+            "unrelated": true,
+            "confidence": "speculative",
+            "divergence": "INC-2350 ran for four consecutive days before a process snapshot was taken; the process snapshot (attributing 6 GiB resident to the shipper) was the key piece of evidence. Here the incident is on day two and process-level memory attribution is still outstanding \u2014 the evidence that identified the pattern in INC-2350 has not yet been collected.",
+            "grounded_in": [
+              "p-7cbef34d8405",
+              "p-7cbef34d8405"
+            ],
+            "ungrounded": []
+          },
+          {
+            "source_uri": "corpus://incidents/INC-2419",
+            "offered": "partial",
+            "truth": "partial",
+            "false_precedent": false,
+            "understated": false,
+            "unrelated": false,
+            "confidence": "speculative",
+            "divergence": "INC-2419 ran for ten days across seven alert cycles before any action was taken, and the root cause was recorded as unconfirmed. The current incident is on day two. INC-2419 offers no settled resolution and no confirmed cause \u2014 the record explicitly records the cause as unconfirmed.",
+            "grounded_in": [
+              "p-97816f4244e0",
+              "p-97816f4244e0"
+            ],
+            "ungrounded": []
+          }
+        ],
+        "citations": {
+          "total": 7,
+          "in_returned_set": 7,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "signature_terms: [\"host.memory.exhaustion\"], symptom_text: \"Memory exhaustion problem opened and auto-closed for the second consecutive day\""
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 3,
+          "reached": 2,
+          "missed": [
+            "corpus://runbooks/memory-pressure"
+          ]
+        },
+        "queries_searched": [
+          {
+            "before": "2026-03-03T09:00:00+00:00",
+            "signature_terms": [
+              "host.memory.exhaustion"
+            ],
+            "symptom_text": "Memory exhaustion problem opened and auto-closed for the second consecutive day"
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "e01",
+      "group": "novel",
+      "elapsed_ms": 8811.8,
+      "exit_status": 0,
+      "surface": {
+        "hits": {},
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-04-14T09:40:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-04-14T09:40:00+00:00",
+              "signature_terms": [
+                "broker.tls.session.handshake_failure"
+              ],
+              "symptom_text": "Consumers of the order events stream are reconnecting in a loop. Queue depth climbing on two of six broker nodes. No messages lost. Handshake failures steady at roughly 1200 per hour since onset."
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 0,
+            "above_floor": 0,
+            "considered": 82,
+            "scoring": 82
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": true,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-03-10",
+          "queries_issued": [
+            "broker.tls.session.handshake_failure \u2014 Consumers of the order events stream are reconnecting in a loop. Queue depth climbing on two of six broker nodes. No messages lost. Handshake failures steady at roughly 1200 per hour since onset."
+          ]
+        },
+        "precedents": []
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": false,
+        "refused": true,
+        "claims": [],
+        "citations": {
+          "total": 0,
+          "in_returned_set": 0,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "broker.tls.session.handshake_failure \u2014 Consumers of the order events stream are reconnecting in a loop. Queue depth climbing on two of six broker nodes. No messages lost. Handshake failures steady at roughly 1200 per hour since onset."
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 0,
+          "reached": 0,
+          "missed": []
+        },
+        "queries_searched": [
+          {
+            "before": "2026-04-14T09:40:00+00:00",
+            "signature_terms": [
+              "broker.tls.session.handshake_failure"
+            ],
+            "symptom_text": "Consumers of the order events stream are reconnecting in a loop. Queue depth climbing on two of six broker nodes. No messages lost. Handshake failures steady at roughly 1200 per hour since onset."
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "e02",
+      "group": "novel",
+      "elapsed_ms": 9556.9,
+      "exit_status": 0,
+      "surface": {
+        "hits": {},
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-04-14T09:40:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-04-14T09:40:00+00:00",
+              "limit": 5,
+              "signature_terms": [
+                "pki.chain.validation_failure"
+              ],
+              "symptom_text": "Internal callers are rejecting the service's certificate chain. External callers are unaffected. Intermediate certificate expired at 00:00 on the day of onset."
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 0,
+            "above_floor": 0,
+            "considered": 82,
+            "scoring": 79
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": true,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-03-10",
+          "queries_issued": [
+            "pki.chain.validation_failure \u2014 Internal callers are rejecting the service's certificate chain. External callers are unaffected. Intermediate certificate expired at 00:00 on the day of onset."
+          ]
+        },
+        "precedents": []
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": false,
+        "refused": true,
+        "claims": [],
+        "citations": {
+          "total": 0,
+          "in_returned_set": 0,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "pki.chain.validation_failure \u2014 Internal callers are rejecting the service's certificate chain. External callers are unaffected. Intermediate certificate expired at 00:00 on the day of onset."
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 0,
+          "reached": 0,
+          "missed": []
+        },
+        "queries_searched": [
+          {
+            "before": "2026-04-14T09:40:00+00:00",
+            "limit": 5,
+            "signature_terms": [
+              "pki.chain.validation_failure"
+            ],
+            "symptom_text": "Internal callers are rejecting the service's certificate chain. External callers are unaffected. Intermediate certificate expired at 00:00 on the day of onset."
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "e03",
+      "group": "novel",
+      "elapsed_ms": 7723.4,
+      "exit_status": 0,
+      "surface": {
+        "hits": {},
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-04-14T09:40:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-04-14T09:40:00+00:00",
+              "signature_terms": [
+                "dns.resolution.intermittent_failure"
+              ],
+              "symptom_text": "Roughly one lookup in twenty returns NXDOMAIN for a name that exists. Retries succeed. Failures observed against one of three configured forwarders."
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 0,
+            "above_floor": 0,
+            "considered": 82,
+            "scoring": 70
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": true,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-03-10",
+          "queries_issued": [
+            "dns.resolution.intermittent_failure \u2014 Roughly one lookup in twenty returns NXDOMAIN for a name that exists. Retries succeed. Failures observed against one of three configured forwarders."
+          ]
+        },
+        "precedents": []
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": false,
+        "refused": true,
+        "claims": [],
+        "citations": {
+          "total": 0,
+          "in_returned_set": 0,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "dns.resolution.intermittent_failure \u2014 Roughly one lookup in twenty returns NXDOMAIN for a name that exists. Retries succeed. Failures observed against one of three configured forwarders."
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 0,
+          "reached": 0,
+          "missed": []
+        },
+        "queries_searched": [
+          {
+            "before": "2026-04-14T09:40:00+00:00",
+            "signature_terms": [
+              "dns.resolution.intermittent_failure"
+            ],
+            "symptom_text": "Roughly one lookup in twenty returns NXDOMAIN for a name that exists. Retries succeed. Failures observed against one of three configured forwarders."
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "e04",
+      "group": "novel",
+      "elapsed_ms": 7150.5,
+      "exit_status": 0,
+      "surface": {
+        "hits": {},
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-04-14T09:40:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-04-14T09:40:00+00:00",
+              "signature_terms": [
+                "database.deadlock.victim_rollback"
+              ],
+              "symptom_text": "Transactions are being chosen as deadlock victims and rolled back, all of them touching the same secondary index."
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 0,
+            "above_floor": 0,
+            "considered": 82,
+            "scoring": 80
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": true,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-03-10",
+          "queries_issued": [
+            "database.deadlock.victim_rollback \u2014 Transactions are being chosen as deadlock victims and rolled back, all of them touching the same secondary index."
+          ]
+        },
+        "precedents": []
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": false,
+        "refused": true,
+        "claims": [],
+        "citations": {
+          "total": 0,
+          "in_returned_set": 0,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "database.deadlock.victim_rollback \u2014 Transactions are being chosen as deadlock victims and rolled back, all of them touching the same secondary index."
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 0,
+          "reached": 0,
+          "missed": []
+        },
+        "queries_searched": [
+          {
+            "before": "2026-04-14T09:40:00+00:00",
+            "signature_terms": [
+              "database.deadlock.victim_rollback"
+            ],
+            "symptom_text": "Transactions are being chosen as deadlock victims and rolled back, all of them touching the same secondary index."
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "e05",
+      "group": "novel",
+      "elapsed_ms": 7668.3,
+      "exit_status": 0,
+      "surface": {
+        "hits": {},
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-04-14T09:40:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-04-14T09:40:00+00:00",
+              "signature_terms": [
+                "auth.token.nbf_rejection"
+              ],
+              "symptom_text": "Authentication failing for subset of callers with tokens reported as not yet valid, affected callers served by same two nodes, measured offset between nodes and time source outstanding"
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 0,
+            "above_floor": 0,
+            "considered": 82,
+            "scoring": 71
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": true,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-03-10",
+          "queries_issued": [
+            "auth.token.nbf_rejection \u2014 Authentication failing for subset of callers with tokens reported as not yet valid, affected callers served by same two nodes, measured offset between nodes and time source outstanding"
+          ]
+        },
+        "precedents": []
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": false,
+        "refused": true,
+        "claims": [],
+        "citations": {
+          "total": 0,
+          "in_returned_set": 0,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "auth.token.nbf_rejection \u2014 Authentication failing for subset of callers with tokens reported as not yet valid, affected callers served by same two nodes, measured offset between nodes and time source outstanding"
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 0,
+          "reached": 0,
+          "missed": []
+        },
+        "queries_searched": [
+          {
+            "before": "2026-04-14T09:40:00+00:00",
+            "signature_terms": [
+              "auth.token.nbf_rejection"
+            ],
+            "symptom_text": "Authentication failing for subset of callers with tokens reported as not yet valid, affected callers served by same two nodes, measured offset between nodes and time source outstanding"
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "e06",
+      "group": "novel",
+      "elapsed_ms": 8241.1,
+      "exit_status": 0,
+      "surface": {
+        "hits": {},
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-04-14T09:40:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-04-14T09:40:00+00:00",
+              "signature_terms": [
+                "loadbalancer.healthcheck.flapping"
+              ],
+              "symptom_text": "Backends are being taken out of the pool and returned within seconds, repeatedly, while serving traffic normally. Probe interval and timeout are equal."
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 0,
+            "above_floor": 0,
+            "considered": 82,
+            "scoring": 79
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": true,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-03-10",
+          "queries_issued": [
+            "loadbalancer.healthcheck.flapping \u2014 Backends are being taken out of the pool and returned within seconds, repeatedly, while serving traffic normally. Probe interval and timeout are equal."
+          ]
+        },
+        "precedents": []
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": false,
+        "refused": true,
+        "claims": [],
+        "citations": {
+          "total": 0,
+          "in_returned_set": 0,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "loadbalancer.healthcheck.flapping \u2014 Backends are being taken out of the pool and returned within seconds, repeatedly, while serving traffic normally. Probe interval and timeout are equal."
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 0,
+          "reached": 0,
+          "missed": []
+        },
+        "queries_searched": [
+          {
+            "before": "2026-04-14T09:40:00+00:00",
+            "signature_terms": [
+              "loadbalancer.healthcheck.flapping"
+            ],
+            "symptom_text": "Backends are being taken out of the pool and returned within seconds, repeatedly, while serving traffic normally. Probe interval and timeout are equal."
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "e07",
+      "group": "novel",
+      "elapsed_ms": 10048.4,
+      "exit_status": 0,
+      "surface": {
+        "hits": {},
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-04-14T09:40:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-04-14T09:40:00+00:00",
+              "signature_terms": [
+                "auth.jwt.signature_rejected"
+              ],
+              "symptom_text": "Downstream services are rejecting signatures on tokens issued since the signing key was rotated. Rejections began within a minute of the rotation. Downstream caches may not have refreshed the key set."
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 0,
+            "above_floor": 0,
+            "considered": 82,
+            "scoring": 82
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": true,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-03-10",
+          "queries_issued": [
+            "signature_terms: [\"auth.jwt.signature_rejected\"] | symptom_text: \"Downstream services are rejecting signatures on tokens issued since the signing key was rotated. Rejections began within a minute of the rotation. Downstream caches may not have refreshed the key set.\""
+          ]
+        },
+        "precedents": []
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": false,
+        "refused": true,
+        "claims": [],
+        "citations": {
+          "total": 0,
+          "in_returned_set": 0,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "signature_terms: [\"auth.jwt.signature_rejected\"] | symptom_text: \"Downstream services are rejecting signatures on tokens issued since the signing key was rotated. Rejections began within a minute of the rotation. Downstream caches may not have refreshed the key set.\""
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 0,
+          "reached": 0,
+          "missed": []
+        },
+        "queries_searched": [
+          {
+            "before": "2026-04-14T09:40:00+00:00",
+            "signature_terms": [
+              "auth.jwt.signature_rejected"
+            ],
+            "symptom_text": "Downstream services are rejecting signatures on tokens issued since the signing key was rotated. Rejections began within a minute of the rotation. Downstream caches may not have refreshed the key set."
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "e08",
+      "group": "novel",
+      "elapsed_ms": 8241.2,
+      "exit_status": 0,
+      "surface": {
+        "hits": {},
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-04-14T09:40:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-04-14T09:40:00+00:00",
+              "signature_terms": [
+                "search.replication.lag"
+              ],
+              "symptom_text": "Searches are returning documents that were deleted minutes earlier, but only on some requests. Lag concentrated on two of eight shards."
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 0,
+            "above_floor": 0,
+            "considered": 82,
+            "scoring": 51
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": true,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-03-10",
+          "queries_issued": [
+            "search.replication.lag \u2014 Searches are returning documents that were deleted minutes earlier, but only on some requests. Lag concentrated on two of eight shards."
+          ]
+        },
+        "precedents": []
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": false,
+        "refused": true,
+        "claims": [],
+        "citations": {
+          "total": 0,
+          "in_returned_set": 0,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "search.replication.lag \u2014 Searches are returning documents that were deleted minutes earlier, but only on some requests. Lag concentrated on two of eight shards."
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 0,
+          "reached": 0,
+          "missed": []
+        },
+        "queries_searched": [
+          {
+            "before": "2026-04-14T09:40:00+00:00",
+            "signature_terms": [
+              "search.replication.lag"
+            ],
+            "symptom_text": "Searches are returning documents that were deleted minutes earlier, but only on some requests. Lag concentrated on two of eight shards."
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "e09",
+      "group": "novel",
+      "elapsed_ms": 8158.1,
+      "exit_status": 0,
+      "surface": {
+        "hits": {},
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-04-14T09:40:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-04-14T09:40:00+00:00",
+              "signature_terms": [
+                "api.quota.throttled"
+              ],
+              "symptom_text": "partner integration throttled on roughly a third of requests with flat request volume, quota or accounting window may have changed"
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 0,
+            "above_floor": 0,
+            "considered": 82,
+            "scoring": 69
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": true,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-03-10",
+          "queries_issued": [
+            "partner integration throttled on roughly a third of requests with flat request volume, quota or accounting window may have changed"
+          ]
+        },
+        "precedents": []
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": false,
+        "refused": true,
+        "claims": [],
+        "citations": {
+          "total": 0,
+          "in_returned_set": 0,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "partner integration throttled on roughly a third of requests with flat request volume, quota or accounting window may have changed"
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 0,
+          "reached": 0,
+          "missed": []
+        },
+        "queries_searched": [
+          {
+            "before": "2026-04-14T09:40:00+00:00",
+            "signature_terms": [
+              "api.quota.throttled"
+            ],
+            "symptom_text": "partner integration throttled on roughly a third of requests with flat request volume, quota or accounting window may have changed"
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "e10",
+      "group": "novel",
+      "elapsed_ms": 7486.9,
+      "exit_status": 0,
+      "surface": {
+        "hits": {},
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-04-14T09:40:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-04-14T09:40:00+00:00",
+              "signature_terms": [
+                "broker.ordering.violation"
+              ],
+              "symptom_text": "two messages delivered out of order after a network partition between two racks healed, both messages carry the same partition key"
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 0,
+            "above_floor": 0,
+            "considered": 82,
+            "scoring": 81
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": true,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-03-10",
+          "queries_issued": [
+            "broker.ordering.violation \u2014 two messages delivered out of order after a network partition between two racks healed, both messages carry the same partition key"
+          ]
+        },
+        "precedents": []
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": false,
+        "refused": true,
+        "claims": [],
+        "citations": {
+          "total": 0,
+          "in_returned_set": 0,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "broker.ordering.violation \u2014 two messages delivered out of order after a network partition between two racks healed, both messages carry the same partition key"
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 0,
+          "reached": 0,
+          "missed": []
+        },
+        "queries_searched": [
+          {
+            "before": "2026-04-14T09:40:00+00:00",
+            "signature_terms": [
+              "broker.ordering.violation"
+            ],
+            "symptom_text": "two messages delivered out of order after a network partition between two racks healed, both messages carry the same partition key"
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "f01",
+      "group": "time_bound",
+      "elapsed_ms": 7601.9,
+      "exit_status": 0,
+      "surface": {
+        "hits": {},
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2025-09-01T00:00:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2025-09-01T00:00:00+00:00",
+              "signature_terms": [
+                "host.memory.exhaustion"
+              ],
+              "symptom_text": "Memory exhaustion building on an integration host over three days"
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 0,
+            "above_floor": 0,
+            "considered": 6,
+            "scoring": 6
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": true,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record"
+          ],
+          "date_range": "2025-08-19 to 2025-08-19",
+          "queries_issued": [
+            "host.memory.exhaustion \u2014 Memory exhaustion building on an integration host over three days"
+          ]
+        },
+        "precedents": []
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": false,
+        "refused": true,
+        "claims": [],
+        "citations": {
+          "total": 0,
+          "in_returned_set": 0,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "host.memory.exhaustion \u2014 Memory exhaustion building on an integration host over three days"
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 0,
+          "reached": 0,
+          "missed": []
+        },
+        "queries_searched": [
+          {
+            "before": "2025-09-01T00:00:00+00:00",
+            "signature_terms": [
+              "host.memory.exhaustion"
+            ],
+            "symptom_text": "Memory exhaustion building on an integration host over three days"
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "f02",
+      "group": "time_bound",
+      "elapsed_ms": 8802.1,
+      "exit_status": 0,
+      "surface": {
+        "hits": {},
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2025-08-01T00:00:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2025-08-01T00:00:00+00:00",
+              "signature_terms": [
+                "host.cpu.saturation"
+              ],
+              "symptom_text": "A denial-analysis process is holding sustained CPU on a mid-tier host."
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 0,
+            "above_floor": 0,
+            "considered": 0,
+            "scoring": 0
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": true,
+        "search_coverage": {
+          "sources_searched": [
+            "precedent archive (as_of 2025-08-01T00:00:00+00:00)"
+          ],
+          "date_range": "no documents held at this bound (0 documents, 0 passages; 82 candidates excluded by the before filter)",
+          "queries_issued": [
+            "signature_terms: [\"host.cpu.saturation\"], symptom_text: \"A denial-analysis process is holding sustained CPU on a mid-tier host.\""
+          ]
+        },
+        "precedents": []
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": false,
+        "refused": true,
+        "claims": [],
+        "citations": {
+          "total": 0,
+          "in_returned_set": 0,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "signature_terms: [\"host.cpu.saturation\"], symptom_text: \"A denial-analysis process is holding sustained CPU on a mid-tier host.\""
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 0,
+          "reached": 0,
+          "missed": []
+        },
+        "queries_searched": [
+          {
+            "before": "2025-08-01T00:00:00+00:00",
+            "signature_terms": [
+              "host.cpu.saturation"
+            ],
+            "symptom_text": "A denial-analysis process is holding sustained CPU on a mid-tier host."
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "f03",
+      "group": "time_bound",
+      "elapsed_ms": 16651.0,
+      "exit_status": 0,
+      "surface": {
+        "hits": {
+          "p-9e8af3bcbe6d": "corpus://incidents/INC-2350#0",
+          "p-7cbef34d8405": "corpus://incidents/INC-2350#2"
+        },
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2025-10-01T00:00:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2025-10-01T00:00:00+00:00",
+              "signature_terms": [
+                "host.memory.exhaustion"
+              ],
+              "symptom_text": "Memory exhaustion on an extract host with no recent change and a log destination that has been unreachable for days."
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 2,
+            "above_floor": 2,
+            "considered": 16,
+            "scoring": 16
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": false,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record"
+          ],
+          "date_range": "2025-08-19 to 2025-09-27",
+          "queries_issued": [
+            "host.memory.exhaustion \u2014 Memory exhaustion on an extract host with no recent change and a log destination that has been unreachable for days."
+          ]
+        },
+        "precedents": [
+          {
+            "incident_ref": {
+              "source_uri": "corpus://incidents/INC-2350",
+              "heading_path": "INC-2350: Host memory exhaustion from a log shipper backlog > Summary",
+              "passage_id": "p-9e8af3bcbe6d"
+            },
+            "signature_overlap": "host.memory.exhaustion on an extract host, no recent change, log destination unreachable for multiple days before exhaustion was observed.",
+            "divergence": "The prior record's timeline shows that a process snapshot attributing resident memory to the shipper (6 GiB) was the key piece of evidence that settled the incident. That evidence \u2014 resident set attribution by process \u2014 is still outstanding here, so the mechanism described in the prior record has not yet been confirmed for this incident. Without it, the overlap in surface symptoms does not establish that the same process is responsible.",
+            "resolution_taken": "Not reported in the retrieved passages; the passages cover the summary and timeline only. The timeline records that a process snapshot was taken at D+4 11:15 and attributed 6 GiB resident to the shipper.",
+            "applicability": "partial",
+            "confidence": "plausible",
+            "falsifying_test": "Run a resident-set attribution by process now. If the log shipper does not account for the dominant share of resident memory, this precedent does not apply.",
+            "grounded_in": [
+              "p-9e8af3bcbe6d",
+              "p-7cbef34d8405"
+            ]
+          }
+        ]
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": true,
+        "refused": false,
+        "claims": [
+          {
+            "source_uri": "corpus://incidents/INC-2350",
+            "offered": "partial",
+            "truth": "partial",
+            "false_precedent": false,
+            "understated": false,
+            "unrelated": false,
+            "confidence": "plausible",
+            "divergence": "The prior record's timeline shows that a process snapshot attributing resident memory to the shipper (6 GiB) was the key piece of evidence that settled the incident. That evidence \u2014 resident set attribution by process \u2014 is still outstanding here, so the mechanism described in the prior record has not yet been confirmed for this incident. Without it, the overlap in surface symptoms does not establish that the same process is responsible.",
+            "grounded_in": [
+              "p-9e8af3bcbe6d",
+              "p-7cbef34d8405",
+              "p-9e8af3bcbe6d"
+            ],
+            "ungrounded": []
+          }
+        ],
+        "citations": {
+          "total": 3,
+          "in_returned_set": 3,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "host.memory.exhaustion \u2014 Memory exhaustion on an extract host with no recent change and a log destination that has been unreachable for days."
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 1,
+          "reached": 1,
+          "missed": []
+        },
+        "queries_searched": [
+          {
+            "before": "2025-10-01T00:00:00+00:00",
+            "signature_terms": [
+              "host.memory.exhaustion"
+            ],
+            "symptom_text": "Memory exhaustion on an extract host with no recent change and a log destination that has been unreachable for days."
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "f04",
+      "group": "time_bound",
+      "elapsed_ms": 9641.1,
+      "exit_status": 0,
+      "surface": {
+        "hits": {},
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-01-01T00:00:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-01-01T00:00:00+00:00",
+              "signature_terms": [
+                "host.memory.exhaustion"
+              ],
+              "symptom_text": "A host is exhausted and a restart has been proposed as the first step."
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 0,
+            "above_floor": 0,
+            "considered": 46,
+            "scoring": 45
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": true,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record"
+          ],
+          "date_range": "2025-08-19 to 2025-12-18",
+          "queries_issued": [
+            "host.memory.exhaustion \u2014 A host is exhausted and a restart has been proposed as the first step."
+          ]
+        },
+        "precedents": []
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": true,
+        "refused": true,
+        "claims": [],
+        "citations": {
+          "total": 0,
+          "in_returned_set": 0,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "host.memory.exhaustion \u2014 A host is exhausted and a restart has been proposed as the first step."
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 2,
+          "reached": 0,
+          "missed": [
+            "corpus://incidents/INC-2411",
+            "corpus://incidents/INC-2419"
+          ]
+        },
+        "queries_searched": [
+          {
+            "before": "2026-01-01T00:00:00+00:00",
+            "signature_terms": [
+              "host.memory.exhaustion"
+            ],
+            "symptom_text": "A host is exhausted and a restart has been proposed as the first step."
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "g01",
+      "group": "identity",
+      "elapsed_ms": 21603.3,
+      "exit_status": 0,
+      "surface": {
+        "hits": {
+          "p-6bbe7d8a53b6": "corpus://incidents/INC-2419#0",
+          "p-b05efbf8f847": "corpus://incidents/INC-2411#0",
+          "p-fa1b9e69fdee": "corpus://incidents/INC-2411#2"
+        },
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00",
+              "signature_terms": [
+                "host.memory.exhaustion"
+              ],
+              "symptom_text": "Memory exhaustion on the integration host, recurring daily"
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 3,
+            "above_floor": 3,
+            "considered": 82,
+            "scoring": 80
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": false,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-03-10",
+          "queries_issued": [
+            "signature_terms: [\"host.memory.exhaustion\"], symptom_text: \"Memory exhaustion on the integration host, recurring daily\""
+          ]
+        },
+        "precedents": [
+          {
+            "incident_ref": {
+              "source_uri": "corpus://incidents/INC-2419",
+              "heading_path": "INC-2419: Memory exhaustion closed with the cause unconfirmed > Summary",
+              "passage_id": "p-6bbe7d8a53b6"
+            },
+            "signature_overlap": "host.memory.exhaustion on an integration host, recurring pattern",
+            "divergence": "INC-2419 was resolved by restarting the workload and no cause was established before the symptom stopped. No process-level memory attribution was collected. The current incident has process-level attribution still outstanding, so the evidence base here is not yet comparable. The prior record also names a different host (intg-prod-j5 vs intg-prod-a1), though host identity is not a symptom criterion.",
+            "resolution_taken": "Workload restarted; cause unconfirmed at closure.",
+            "applicability": "partial",
+            "confidence": "speculative",
+            "falsifying_test": "If process-level memory attribution, once collected, points to a different process or pattern than anything in INC-2419's (unrecorded) investigation, the structural similarity collapses entirely.",
+            "grounded_in": [
+              "p-6bbe7d8a53b6"
+            ]
+          },
+          {
+            "incident_ref": {
+              "source_uri": "corpus://incidents/INC-2411",
+              "heading_path": "INC-2411: Memory exhaustion on a batch integration host after a heap resize > Summary",
+              "passage_id": "p-b05efbf8f847"
+            },
+            "signature_overlap": "host.memory.exhaustion on an integration host, recurring on multiple consecutive days, heavy swapping",
+            "divergence": "INC-2411 had a recent JVM heap configuration change as the most recent change on the host at the time of investigation \u2014 that correlation was the basis of the record's claimed cause. No change history has been collected for the current incident, and process-level memory attribution is still outstanding. Without those two data points the structural parallel cannot be confirmed or ruled out. The record claims a cause (heap resize leaving no headroom for page cache) but that claim is unverified from this incident's evidence.",
+            "resolution_taken": "The record claims the heap was reverted to 20 GiB and the service restarted outside the batch window, after which swap usage returned to zero.",
+            "applicability": "partial",
+            "confidence": "plausible",
+            "falsifying_test": "If the change registry shows no JVM heap or memory configuration change on intg-prod-a1 in the days preceding the first exhaustion event, the structural parallel to INC-2411 does not hold.",
+            "grounded_in": [
+              "p-b05efbf8f847",
+              "p-fa1b9e69fdee"
+            ]
+          }
+        ]
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": true,
+        "refused": false,
+        "claims": [
+          {
+            "source_uri": "corpus://incidents/INC-2419",
+            "offered": "partial",
+            "truth": "partial",
+            "false_precedent": false,
+            "understated": false,
+            "unrelated": false,
+            "confidence": "speculative",
+            "divergence": "INC-2419 was resolved by restarting the workload and no cause was established before the symptom stopped. No process-level memory attribution was collected. The current incident has process-level attribution still outstanding, so the evidence base here is not yet comparable. The prior record also names a different host (intg-prod-j5 vs intg-prod-a1), though host identity is not a symptom criterion.",
+            "grounded_in": [
+              "p-6bbe7d8a53b6",
+              "p-6bbe7d8a53b6"
+            ],
+            "ungrounded": []
+          },
+          {
+            "source_uri": "corpus://incidents/INC-2411",
+            "offered": "partial",
+            "truth": "partial",
+            "false_precedent": false,
+            "understated": false,
+            "unrelated": false,
+            "confidence": "plausible",
+            "divergence": "INC-2411 had a recent JVM heap configuration change as the most recent change on the host at the time of investigation \u2014 that correlation was the basis of the record's claimed cause. No change history has been collected for the current incident, and process-level memory attribution is still outstanding. Without those two data points the structural parallel cannot be confirmed or ruled out. The record claims a cause (heap resize leaving no headroom for page cache) but that claim is unverified from this incident's evidence.",
+            "grounded_in": [
+              "p-b05efbf8f847",
+              "p-fa1b9e69fdee",
+              "p-b05efbf8f847"
+            ],
+            "ungrounded": []
+          }
+        ],
+        "citations": {
+          "total": 5,
+          "in_returned_set": 5,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "signature_terms: [\"host.memory.exhaustion\"], symptom_text: \"Memory exhaustion on the integration host, recurring daily\""
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 3,
+          "reached": 2,
+          "missed": [
+            "corpus://runbooks/memory-pressure"
+          ]
+        },
+        "queries_searched": [
+          {
+            "before": "2026-03-17T19:30:00+00:00",
+            "signature_terms": [
+              "host.memory.exhaustion"
+            ],
+            "symptom_text": "Memory exhaustion on the integration host, recurring daily"
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    },
+    {
+      "case": "g02",
+      "group": "identity",
+      "elapsed_ms": 7189.1,
+      "exit_status": 0,
+      "surface": {
+        "hits": {},
+        "calls": [
+          "coverage_describe",
+          "precedent_search"
+        ],
+        "asked": [
+          {
+            "tool": "coverage_describe",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00"
+            }
+          },
+          {
+            "tool": "precedent_search",
+            "arguments": {
+              "before": "2026-03-17T19:30:00+00:00",
+              "signature_terms": [
+                "host.disk.latency"
+              ],
+              "symptom_text": "Disk latency on the reporting host has doubled since a storage firmware update"
+            }
+          }
+        ],
+        "searches": [
+          {
+            "returned": 0,
+            "above_floor": 0,
+            "considered": 82,
+            "scoring": 81
+          }
+        ]
+      },
+      "output": {
+        "no_applicable_precedent": true,
+        "search_coverage": {
+          "sources_searched": [
+            "prior_incident_record",
+            "runbook_procedure"
+          ],
+          "date_range": "2025-08-19 to 2026-03-10",
+          "queries_issued": [
+            "host.disk.latency \u2014 Disk latency on the reporting host has doubled since a storage firmware update"
+          ]
+        },
+        "precedents": []
+      },
+      "failure": null,
+      "score": {
+        "precedent_exists": false,
+        "refused": true,
+        "claims": [],
+        "citations": {
+          "total": 0,
+          "in_returned_set": 0,
+          "invented": []
+        },
+        "must_not_cite_violations": [],
+        "query_hygiene_violations": [],
+        "queries_issued": [
+          "host.disk.latency \u2014 Disk latency on the reporting host has doubled since a storage firmware update"
+        ],
+        "coverage_called": true,
+        "searches": 1,
+        "reach": {
+          "relevant": 0,
+          "reached": 0,
+          "missed": []
+        },
+        "queries_searched": [
+          {
+            "before": "2026-03-17T19:30:00+00:00",
+            "signature_terms": [
+              "host.disk.latency"
+            ],
+            "symptom_text": "Disk latency on the reporting host has doubled since a storage firmware update"
+          }
+        ],
+        "queries_reported_but_not_issued": 0
+      }
+    }
+  ]
+}

@@ -80,9 +80,9 @@ The fifth agent. Owns a retrieval surface over prior incident records and runboo
       per case, the deterministic rates read off the typed output and the
       adapter log, and `groundedness_judge` and `divergence_quality` judged at
       temperature 0 with the prompts committed in `evals/judges/`
-- [ ] Measured improvement documented with before and after. One arm of three
-      recorded: the shipped configuration. The chunker arm and the
-      query-strategy arm are each a live sweep away
+- [x] Measured improvement documented with before and after. Three arms
+      recorded, both comparisons run, and the README states what was kept,
+      what was rejected and the latency accepted for it
 - [ ] `investigate.sh` composes three acts with recall in act one, typed precedent entering the board as supporting and never deciding evidence
 
 **Done when:** a board cites precedent by `passage_id`, convergence still blocks on outstanding deciding evidence, and the README carries a results table the runner can regenerate.
@@ -291,12 +291,44 @@ contract rather than a tuning problem, it is on the board rather than fixed
 here, and it was found by measuring, which is the argument for judgement mode
 in one line.
 
-Phase 5 is in progress. One arm of three is recorded, the shipped
-configuration above, and the two comparisons are each a live sweep away:
-`judgement-fixed` changes the index to the Phase 4 baseline, and
-`judgement-single-query` changes rule 4 of the system prompt to one verbose
-query. `--compare` refuses two records that differ in more than one thing, and
-says in its own output that one sweep is one sample of a stochastic system.
+Phase 5 is done. Three arms recorded, one live sweep each, 38 cases, nothing
+rejected or unparseable in any of them. `--compare` refuses two records that
+differ in more than one thing, and says in its own output that one sweep is one
+sample of a stochastic system.
+
+**The retrieval guidance is kept, and it is the one that mattered.** Replacing
+rule 4 with a single search carrying the whole reported symptom costs 8 false
+refusals in 25 answerable cases, against none, and drops reach from 54 of 60
+relevant pairs to 22. Every case in the composite scenario itself refuses:
+`a01` to `a04`, the incident this repo is built around, all four report no
+applicable precedent because one verbose query clears the floor nowhere. Median
+one search per case against five, 43 searches against 182. It is twice as fast,
+p95 27.1s against 52.8s. Half the latency for a third of the reach.
+
+That is the Phase 2 dilution measurement reaching the agent's answers. It was a
+property of the surface then, 79 of 82 passages scoring above zero and 0
+clearing the floor; it is now a false refusal rate.
+
+**The chunker is not readable off these numbers, and saying so is the result.**
+Heading-aware and fixed reach the same 54 of 60 pairs. The judged figures part
+by one case in each direction, `groundedness_judge` 71.2% against 80.4% and
+`divergence_quality` 6 of 6 against 6 of 7, which is what one sweep of a live
+model at temperature 0.2 does twice. The one deterministic difference is a
+single false refusal under fixed, on `d01`, which is the draft-status case that
+cited the draft under heading-aware: the same contract gap coming out the other
+side.
+
+Heading-aware stays, for something no metric here scores. Its citations carry
+the heading chain, `INC-2411: ... > Resolution`; fixed chunks carry the
+document title alone, because there is no heading to carry. That is the part
+that makes a citation checkable in five seconds. It is a property, and it is
+recorded as a property rather than dressed up as a measured win.
+
+**`groundedness_judge` is higher in both alternatives, and that is not an
+argument for them.** They make 22 and 56 claims against the shipped arm's 52,
+and the failure the judge catches is a divergence asserting an absence the
+passages never state. There is more of it where there is more divergence text.
+The comparison prints both numerators for that reason.
 
 **The second experiment is no longer the reranker, and the reason is written
 down rather than quietly dropped.** `docs/precedent-analyst.md` named "hybrid

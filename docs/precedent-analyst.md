@@ -389,6 +389,14 @@ clears 35. The arm is the shipped system prompt with that paragraph replaced by 
 instruction someone would plausibly have written without the measurement, derived from
 the spec so the two differ in one rule and nothing else.
 
+Done. Three arms recorded, both comparisons run, and the README carries what was
+kept, what was rejected and the latency accepted for it. The guidance arm is the
+decisive one: one verbose query refuses 8 of 25 answerable cases against none and
+reaches 22 of 60 relevant pairs against 54, at half the latency. The chunker arm is
+a null result reported as one: the same reach, judged figures parting by a single
+case in each direction, and heading-aware kept for its citations carrying the
+heading chain rather than for a measured win.
+
 Read the deltas across both modes, because neither mode can produce all four numbers.
 `precedent_hit_rate@5` is retrieval mode and a property of the surface;
 `false_precedent_rate`, both groundedness figures and the agent's `p95` are judgement
