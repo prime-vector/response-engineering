@@ -210,6 +210,19 @@ def check_corpus_pin(dataset):
     return corpus, got
 
 
+def file_fingerprint(path):
+    """sha256 of a file's bytes.
+
+    Used for the index actually served. The corpus pin is over the manifest,
+    which is a different artefact: an index can be edited, or left stale,
+    while the manifest and every document still hash to what the dataset was
+    pinned against. Recording this ties a result to what was measured rather
+    than to what the manifest says exists.
+    """
+    with open(path, "rb") as handle:
+        return hashlib.sha256(handle.read()).hexdigest()
+
+
 def dataset_fingerprint(path):
     """The ground truth these figures were scored against, by content.
 
@@ -416,6 +429,7 @@ def run(config, stamp):
         "label": config["label"],
         "mode": "retrieval",
         "index": config["index"],
+        "index_fingerprint": file_fingerprint(config["index"]),
         "chunker": config["chunker"],
         "reranker": config["reranker"],
         "k": ks,
@@ -645,7 +659,7 @@ def cross_check(config):
     scored_cases = [c for c in dataset["cases"]
                     if c["expect"].get("relevant")]
 
-    ranks, budget = {}, {}
+    ranks, budget, served = {}, {}, {}
     for entry in config["cross_check"]:
         with open(entry["index"]) as handle:
             index = json.load(handle)
@@ -653,6 +667,7 @@ def cross_check(config):
             raise SystemExit(
                 f"cross_check says chunker {entry['chunker']}, "
                 f"{entry['index']} was built with {index.get('chunker')}")
+        served[entry["label"]] = file_fingerprint(entry["index"])
         proc = start_adapter(entry["index"], config["port"])
         try:
             found, kept = {}, {}
@@ -728,6 +743,7 @@ def cross_check(config):
             },
             "dataset_fingerprint": dataset_fingerprint(DATASET),
             "corpus_fingerprint": fingerprint(load_corpus()),
+            "index_fingerprints": served,
             "rank_limit": RANK_LIMIT}
 
 
@@ -849,7 +865,11 @@ def cross_markdown(result):
         "different questions.",
         "",
         f"Corpus `{result['corpus_fingerprint'][:16]}`, ground truth "
-        f"`{result['dataset_fingerprint'][:16]}`. Regenerate and diff with "
+        f"`{result['dataset_fingerprint'][:16]}`, index {a} "
+        f"`{result['index_fingerprints'][a][:16]}`, index {b} "
+        f"`{result['index_fingerprints'][b][:16]}`. Either index changing "
+        f"under this comparison fails the check rather than moving the "
+        f"figures quietly. Regenerate and diff with "
         f"`python3 evals/runner.py --config evals/config.yaml --cross-check "
         f"--check`.",
         "",
@@ -894,8 +914,21 @@ def compare(path_a, path_b):
                   f"re-run both.")
             return 1
 
-    print(f"{a['label']} ({a['chunker']}, reranker {a['reranker']})  ->  "
-          f"{b['label']} ({b['chunker']}, reranker {b['reranker']})\n")
+    fa = a.get("index_fingerprint")
+    fb = b.get("index_fingerprint")
+    if a["index"] == b["index"] and a["chunker"] == b["chunker"] and fa != fb:
+        print(f"FAIL  both runs name {a['index']}, and the file differed "
+              f"between them:")
+        print(f"        {path_a}  index_fingerprint = {fa}")
+        print(f"        {path_b}  index_fingerprint = {fb}")
+        print("        One index under one name, changed underneath. The "
+              "delta is that change.")
+        return 1
+
+    print(f"{a['label']} ({a['chunker']}, reranker {a['reranker']}, "
+          f"index {str(fa)[:12]})  ->  "
+          f"{b['label']} ({b['chunker']}, reranker {b['reranker']}, "
+          f"index {str(fb)[:12]})\n")
     ks = a["k"]
     print("  k    hit_rate@k              mrr@k")
     for k in ks:
@@ -952,9 +985,12 @@ def main():
     parser.add_argument("--label", default=None)
     parser.add_argument("--port", type=int, default=None)
     parser.add_argument("--stamp", default=None,
-                        help="UTC timestamp for the record. Defaults to now; "
-                             "pass one to reproduce a results file byte for "
-                             "byte.")
+                        help="UTC timestamp for the record, and the name of "
+                             "the file. Defaults to now. It does not make a "
+                             "record reproducible byte for byte: the JSON "
+                             "carries measured latency, which varies per run. "
+                             "latest.md is the artefact with that property, "
+                             "and it is why no latency figure is in it.")
     parser.add_argument("--compare", nargs=2, metavar=("A", "B"))
     parser.add_argument("--cross-check", action="store_true",
                         help="Score both indexes in config.cross_check at "
