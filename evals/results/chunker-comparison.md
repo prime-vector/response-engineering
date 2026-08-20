@@ -19,7 +19,7 @@ Both indexes scored against the same 60 (case, document) pairs, at every k from 
 | fixed | 38/60 |
 | heading-aware | 36/60 |
 
-2 pair(s) survive one budget and not the other: `a02`:runbooks/memory-pressure, `d03`:runbooks/memory-pressure. None of them is a pair whose rank moved, so this is a different difference from the ranking one: chunk size decides how many distinct documents fit in a fixed number of passages, independently of the order they arrive in.
+2 pair(s) survive one budget and not the other: `a02`:runbooks/memory-pressure, `d03`:runbooks/memory-pressure. No relevant document's rank moved for any of them, so the budget difference is not a re-ranking of the documents this dataset scores. What it is instead is not measured here: a document ahead of them contributing two passages under one chunker and one under the other would produce it, and so would a distractor moving, and neither appears in the table above. Read this as the two effects being distinct in the ranking of relevant documents, not as the budget being independent of ordering.
 
 Both figures are measured by this file. `latest.md` reports the budget for the baseline index only, so quoting the other one from it would be quoting something it does not contain.
 

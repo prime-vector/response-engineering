@@ -373,6 +373,19 @@ def run(config, stamp):
             f"the wrong index is the one mistake that makes Phase 5's "
             f"comparison meaningless.")
 
+    # Recorded in every result and, until now, never checked against anything.
+    # There is no reranker here to configure: the mock ranks by term overlap
+    # and nothing else. A results file claiming one would be a checked
+    # artefact asserting a configuration that did not exist, which is worse
+    # than not recording it. Accept only what can be true.
+    if config["reranker"] != "none":
+        raise SystemExit(
+            f"config declares reranker {config['reranker']!r}, and this "
+            f"runner can configure none. The mock surface ranks by term "
+            f"overlap and takes no reranker, so recording that value would "
+            f"put a configuration in a results file that nothing produced. "
+            f"Wire one before declaring one.")
+
     ks = sorted(config["k"])
     port = config["port"]
     composition = {
@@ -779,10 +792,15 @@ def budget_claim(result, a, b):
     shared = limit["shared_with_ranking"]
     if not shared:
         return (f"{len(moved)} pair(s) survive one budget and not the other: "
-                f"{names}. None of them is a pair whose rank moved, so this "
-                f"is a different difference from the ranking one: chunk size "
-                f"decides how many distinct documents fit in a fixed number "
-                f"of passages, independently of the order they arrive in.")
+                f"{names}. No relevant document's rank moved for any of them, "
+                f"so the budget difference is not a re-ranking of the "
+                f"documents this dataset scores. What it is instead is not "
+                f"measured here: a document ahead of them contributing two "
+                f"passages under one chunker and one under the other would "
+                f"produce it, and so would a distractor moving, and neither "
+                f"appears in the table above. Read this as the two effects "
+                f"being distinct in the ranking of relevant documents, not as "
+                f"the budget being independent of ordering.")
     return (f"{len(moved)} pair(s) survive one budget and not the other: "
             f"{names}. {len(shared)} of them also changed rank, so the two "
             f"differences are not independent and the budget figure should "
