@@ -888,6 +888,20 @@ class Handler(BaseHTTPRequestHandler):
             # before dispatch so a call that faults is still on the record;
             # what came back is logged after, by _audit_lines.
             _log(f"tools/call {params.get('name')}")
+            if SURFACE == "precedent_archive":
+                # What the caller asked for, verbatim. The passage lines
+                # below record what came back; without this the log answers
+                # "was a call made" and "what left the surface" and cannot
+                # answer "what was it asked", which is the claim the identity
+                # rule turns on. An agent that puts the entity id in a query
+                # can report a sanitised one in queries_issued, and an output
+                # cannot attest to its own tool use.
+                #
+                # Caller text, not archive text: this reproduces the query,
+                # never a passage, so the log is still not a second copy of
+                # the corpus.
+                _log(f"args {params.get('name')} "
+                     f"{json.dumps(params.get('arguments') or {}, sort_keys=True)}")
             try:
                 result = _tools_call(params)
             except ToolFault as fault:

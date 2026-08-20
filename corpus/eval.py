@@ -333,6 +333,41 @@ def case_audit_log_names_hits(log_path):
                 f"text logged={sample in log}")
 
 
+def case_audit_log_names_arguments(log_path):
+    """The log says what the caller asked for, not only what it got.
+
+    Without this the log answers two of the three questions an audit of this
+    surface has to answer: whether a call happened, and what left the
+    surface. It cannot answer what was asked, and that is the question the
+    identity rule turns on. An agent is required to search on the signature
+    type and never the entity id, and the only other record of what it
+    searched is the queries_issued field in its own output, which is the
+    agent's account of its own conduct.
+
+    Caller text, never archive text: the line reproduces the arguments, and
+    the rule against a log that copies the corpus is unaffected by it.
+    """
+    with open(log_path) as fh:
+        fh.seek(0, 2)
+        start = fh.tell()
+    query = {"signature_terms": ["host.memory.exhaustion"],
+             "symptom_text": "audit analysis daemon memory",
+             "before": BRIDGE_BOUND, "limit": 4}
+    r = rpc("precedent_search", query)
+    with open(log_path) as fh:
+        fh.seek(start)
+        log = fh.read()
+
+    logged = re.findall(r"^\[mock-precedent_archive\] args (\S+) (.*)$",
+                        log, re.M)
+    ok = any(name == "precedent_search" and json.loads(blob) == query
+             for name, blob in logged)
+    sample = " ".join(r["passages"][0]["text"].split()[:8])
+    return (ok and sample not in log,
+            f"{len(logged)} args line(s), arguments reproduced={ok}, "
+            f"passage text logged={sample in log}")
+
+
 def observed_degenerate_query():
     """OBSERVED, not asserted: the floor is not a semantic guarantee.
 
@@ -396,6 +431,8 @@ def main():
              case_read_only_declared),
             ("the log names every passage that left the surface",
              lambda: case_audit_log_names_hits(log_path)),
+            ("the log names what the caller asked for",
+             lambda: case_audit_log_names_arguments(log_path)),
         ]
 
         failures = 0
