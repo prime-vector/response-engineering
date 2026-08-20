@@ -37,7 +37,7 @@ Applicability offered across this run: `partial` 48, `superseded` 8. A `false_pr
 
 ## Judged by a model
 
-A separate judge, claude-opus-4-6 at temperature 0, with the prompts committed at `evals/judges/groundedness-judge.txt` and `evals/judges/divergence-judge.txt`. This is a model's opinion of a model, reported apart from the table above so it cannot be read as the same kind of number.
+A separate judge, claude-opus-4-6 at temperature 0, scored by a scorer this record does not fingerprint, because it was recorded before that field existed, with the prompts committed at `evals/judges/groundedness-judge.txt` and `evals/judges/divergence-judge.txt`. This is a model's opinion of a model, reported apart from the table above so it cannot be read as the same kind of number.
 
 | Metric | Value | Count | Denominator |
 | --- | --- | --- | --- |

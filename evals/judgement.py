@@ -240,9 +240,17 @@ def require_contracts():
         shebang = handle.readline().strip()
     interpreter = shebang[2:].strip() if shebang.startswith("#!") else None
     if not interpreter or not os.access(interpreter, os.X_OK):
-        print("warning: cannot locate oa's interpreter; contract validation "
-              "is unverified for this run.", file=sys.stderr)
-        return oa
+        # Fails closed, unlike the governance demos, and for a different
+        # reason: a demo that cannot verify this still shows a boundary
+        # working, while a sweep that cannot verify it produces rates measured
+        # against a harness nobody established. Every one of them would be
+        # quietly better than the harness this repo ships.
+        raise SystemExit(
+            f"cannot resolve oa's interpreter from {oa}, so whether contract "
+            f"validation is enabled is unknown. A sweep measured with "
+            f"contracts silently off is a sweep of a different harness: "
+            f"install oa with the contracts extra where its shebang names a "
+            f"real interpreter, or run the sweep from that environment.")
     probe = subprocess.run(
         [interpreter, "-c", "import sys; from oas_cli.runner import "
          "CONTRACTS_ENABLED; sys.exit(0 if CONTRACTS_ENABLED else 1)"],
@@ -901,6 +909,11 @@ def judge_run(config, records, scores, cases, port, key):
     return {
         "model": judge["model"],
         "temperature": judge.get("temperature", 0),
+        # The code that built these payloads and read these verdicts. It is
+        # not the same claim as the record's top-level scorer fingerprint,
+        # which moves whenever the deterministic scoring is edited and a
+        # record is rescored.
+        "scorer_fingerprint": file_fingerprint(os.path.abspath(__file__)),
         "prompts": {
             "groundedness": {
                 "path": judge["groundedness_prompt"],
@@ -1038,8 +1051,17 @@ def run_arm(config, arm, cases, stamp, judged=True):
         # carries the fingerprint of the code that read it and --rescore can
         # recompute every deterministic figure from what is stored here
         # rather than paying for 38 more live runs.
+        # Scoped deliberately. This fingerprints the code that produced the
+        # deterministic figures, which --rescore can recompute from the
+        # record. The judged verdicts cannot be recomputed: re-judging is a
+        # fresh call to a model. So they carry their own fingerprint, taken
+        # when they were produced, and a rescore leaves both the verdicts and
+        # that fingerprint alone. Stamping one number over both would certify
+        # judged figures against code that never saw them.
         "scorer": {"path": os.path.relpath(os.path.abspath(__file__)),
-                   "fingerprint": file_fingerprint(os.path.abspath(__file__))},
+                   "fingerprint": file_fingerprint(os.path.abspath(__file__)),
+                   "scope": "the deterministic figures. The judged half "
+                            "carries its own fingerprint under judged."},
         "deterministic": summary,
         "judged": judgement,
         "not_measured": {
@@ -1173,7 +1195,12 @@ def markdown(result):
             "## Judged by a model",
             "",
             f"A separate judge, {judged['model']} at temperature "
-            f"{judged['temperature']}, with the prompts committed at "
+            f"{judged['temperature']}, scored by "
+            + (f"`{judged['scorer_fingerprint'][:16]}`"
+               if judged.get("scorer_fingerprint")
+               else "a scorer this record does not fingerprint, because it "
+                    "was recorded before that field existed")
+            + f", with the prompts committed at "
             f"`{judged['prompts']['groundedness']['path']}` and "
             f"`{judged['prompts']['divergence']['path']}`. This is a model's "
             f"opinion of a model, reported apart from the table above so it "
@@ -1376,9 +1403,16 @@ def rescore(path, config=None):
                 result["arm"]["description"] = fresh
 
     result["rescored_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    # The deterministic half only. result["judged"] is carried through
+    # untouched, including the fingerprint of the code that produced it: a
+    # rescore re-reads a record, it does not re-judge one, and a single
+    # fingerprint over both halves would say the judge output was produced by
+    # whatever this file happens to be today.
     result["scorer"] = {
         "path": os.path.relpath(os.path.abspath(__file__)),
         "fingerprint": file_fingerprint(os.path.abspath(__file__)),
+        "scope": "the deterministic figures. The judged half carries its own "
+                 "fingerprint under judged.",
     }
     with open(path, "w") as handle:
         json.dump(result, handle, indent=2, sort_keys=False)
@@ -1845,37 +1879,72 @@ def comparison(config, check):
     for record in records:
         if record.get("mode") != "judgement":
             raise SystemExit(f"{record.get('label')} is not a judgement record")
-    pins = {(r["corpus"]["fingerprint"], r["dataset"]["fingerprint"],
-             (r.get("scorer") or {}).get("fingerprint")) for r in records}
-    if len(pins) > 1:
+    # The same list --compare refuses on, imported rather than restated: a
+    # grid checking three pins while the delta tool checks twelve is a CI job
+    # approving a table the comparison would refuse.
+    from runner import judgement_mismatch
+    mismatch = judgement_mismatch(records)
+    if mismatch:
+        label, path, seen = mismatch
+        print(f"these records do not share a {label} ({path}), so one grid "
+              f"cannot hold them:")
+        for name, value in seen:
+            print(f"  {name}: {str(value)[:70]}")
         raise SystemExit(
-            "these records were measured against a different corpus, ground "
-            "truth or scorer, so one grid cannot hold them. Rescore or "
-            "re-record before publishing a comparison.")
+            "rescore or re-record before publishing a comparison.")
+
+    # Arm isolation, which a grid implies by putting columns side by side.
+    # Every column after the first must differ from it in at most one input,
+    # or the reader is invited to attribute a difference to something no
+    # record varies alone.
+    first = records[0]["arm"]
+    for record in records[1:]:
+        changed = [key for key in ("index", "system_prompt")
+                   if record["arm"].get(key) != first.get(key)]
+        if len(changed) > 1:
+            raise SystemExit(
+                f"{record['label']} differs from {records[0]['label']} in "
+                f"{' and '.join(changed)}. A column that moves two inputs at "
+                f"once has no reading, and putting it in the grid invites "
+                f"one.")
 
     block = comparison_grid(records)
     path = os.path.join(RESULTS, "judgement-comparison.md")
     body = ("# Phase 5, three arms\n\nGenerated by `evals/judgement.py "
             "--comparison`. Do not hand-edit.\n\n" + block + "\n")
+
+    # The per-arm tables are derived from the same records and were checked by
+    # nothing, so a rescore of an older record, or a hand edit, stayed green
+    # while the grid beside them was diffed. Same treatment.
+    per_arm = [(os.path.join(RESULTS, f"{r['label']}.md"), markdown(r))
+               for r in records]
+
     if check:
         current = open(path).read() if os.path.exists(path) else ""
         stale = [] if current == body else [path]
         stale += [p for p in PUBLISHED_IN if not inject(p, block, check=True)]
+        stale += [table for table, fresh in per_arm
+                  if (open(table).read() if os.path.exists(table) else "")
+                  != fresh]
         if stale:
-            print("the judgement comparison grid has drifted in: "
+            print("judgement tables derived from the records have drifted: "
                   + ", ".join(stale))
             print("  python3 evals/judgement.py --comparison")
             return 1
-        print("judgement comparison grid is current in "
-              + ", ".join([path] + PUBLISHED_IN))
+        print("judgement tables are current: "
+              + ", ".join([path] + PUBLISHED_IN
+                          + [table for table, _ in per_arm]))
         return 0
     os.makedirs(RESULTS, exist_ok=True)
     with open(path, "w") as handle:
         handle.write(body)
     for published in PUBLISHED_IN:
         inject(published, block, check=False)
-    print(f"wrote {path} and the marked block in "
-          + ", ".join(PUBLISHED_IN))
+    for table, fresh in per_arm:
+        with open(table, "w") as handle:
+            handle.write(fresh)
+    print(f"wrote {path}, the marked block in " + ", ".join(PUBLISHED_IN)
+          + ", and " + ", ".join(table for table, _ in per_arm))
     return 0
 
 

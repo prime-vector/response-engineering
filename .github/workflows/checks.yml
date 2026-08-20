@@ -79,7 +79,7 @@ jobs:
       # 3/22. It is generated from the three committed run records now: the
       # sweeps do not reproduce, but the records are files, so a table
       # derived from them is checkable like any other.
-      - name: Judgement comparison grid is current
+      - name: Judgement tables derived from the records are current
         run: python3 evals/judgement.py --comparison --check
 
   specs:

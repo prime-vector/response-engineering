@@ -63,6 +63,14 @@ makes iterating on the dataset affordable. Judgement mode needs both, plus the
 `behavioural-contracts` extra, which it checks for rather than measuring a
 harness with contract validation silently switched off.
 
+A record fingerprints two scorers, not one. The top-level `scorer` is the code
+that produced the deterministic figures, which `--rescore` can recompute; the
+judged half carries its own fingerprint, taken when the verdicts were produced,
+and a rescore leaves both the verdicts and that fingerprint alone. Re-judging is
+a fresh call to a model, so one fingerprint over both halves would certify judge
+output against code that never saw it. The three committed records predate that
+field and their tables say so.
+
 `--rescore` recomputes the deterministic figures of a recorded sweep with the
 current scoring, from what the record already holds. The runs are the half
 that costs money and the scoring is the half that gets edited, so a scoring

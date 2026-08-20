@@ -1043,6 +1043,51 @@ def compare(path_a, path_b):
     return 0
 
 
+# What must match before two judgement records can appear in one delta or one
+# published grid. One list, two callers: the grid used to check three of these
+# and --compare eleven, so CI could approve a table comparing records --compare
+# would refuse. Sol found that at the gate.
+JUDGEMENT_PINS = [
+    ("corpus", "corpus.fingerprint", lambda r: r["corpus"]["fingerprint"]),
+    ("ground truth", "dataset.fingerprint",
+     lambda r: r["dataset"]["fingerprint"]),
+    ("case set", "dataset.ids", lambda r: r["dataset"]["ids"]),
+    ("relevance floor", "surface.floor_applied",
+     lambda r: r["surface"]["floor_applied"]),
+    ("agent spec", "agent.spec_fingerprint",
+     lambda r: r["agent"]["spec_fingerprint"]),
+    ("agent model", "agent.model", lambda r: r["agent"]["model"]),
+    ("scorer", "scorer.fingerprint",
+     lambda r: (r.get("scorer") or {}).get("fingerprint")),
+    ("judge model", "judged.model",
+     lambda r: (r.get("judged") or {}).get("model")),
+    ("judge temperature", "judged.temperature",
+     lambda r: (r.get("judged") or {}).get("temperature")),
+    ("judge scorer", "judged.scorer_fingerprint",
+     lambda r: (r.get("judged") or {}).get("scorer_fingerprint")),
+    ("groundedness judge prompt", "judged.prompts.groundedness.fingerprint",
+     lambda r: ((r.get("judged") or {}).get("prompts") or {})
+     .get("groundedness", {}).get("fingerprint")),
+    ("divergence judge prompt", "judged.prompts.divergence.fingerprint",
+     lambda r: ((r.get("judged") or {}).get("prompts") or {})
+     .get("divergence", {}).get("fingerprint")),
+]
+
+
+def judgement_mismatch(records):
+    """The first pin two of these records disagree on, or None.
+
+    Returns (label, path, [(record label, value), ...]) so a caller can say
+    which records parted and on what, rather than that something did.
+    """
+    for label, path, get in JUDGEMENT_PINS:
+        seen = [(r.get("label"), get(r)) for r in records]
+        values = [v for _, v in seen]
+        if any(v != values[0] for v in values):
+            return label, path, seen
+    return None
+
+
 def compare_judgement(path_a, a, path_b, b):
     """Two live sweeps, and what may legitimately differ between them.
 
@@ -1053,37 +1098,7 @@ def compare_judgement(path_a, a, path_b, b):
     dressed up as a result. This prints the deltas and says that plainly; it
     does not test significance, and 38 cases would not support much of one.
     """
-    for label, path, get in (
-            ("corpus", "corpus.fingerprint",
-             lambda r: r["corpus"]["fingerprint"]),
-            ("ground truth", "dataset.fingerprint",
-             lambda r: r["dataset"]["fingerprint"]),
-            ("case set", "dataset.ids", lambda r: r["dataset"]["ids"]),
-            ("relevance floor", "surface.floor_applied",
-             lambda r: r["surface"]["floor_applied"]),
-            ("agent spec", "agent.spec_fingerprint",
-             lambda r: r["agent"]["spec_fingerprint"]),
-            ("agent model", "agent.model", lambda r: r["agent"]["model"]),
-            # The inputs a rescore or a prompt edit moves. Retrieval
-            # --compare refuses everything that can change a number without
-            # producing an error, and these are that class on this side:
-            # scoring one record with newer code, or editing a judge prompt
-            # without touching the model id, prints as an arm delta and is
-            # not one. Grok found the gap on PR #17.
-            ("scorer", "scorer.fingerprint",
-             lambda r: (r.get("scorer") or {}).get("fingerprint")),
-            ("judge model", "judged.model",
-             lambda r: (r.get("judged") or {}).get("model")),
-            ("judge temperature", "judged.temperature",
-             lambda r: (r.get("judged") or {}).get("temperature")),
-            ("groundedness judge prompt",
-             "judged.prompts.groundedness.fingerprint",
-             lambda r: ((r.get("judged") or {}).get("prompts") or {})
-             .get("groundedness", {}).get("fingerprint")),
-            ("divergence judge prompt",
-             "judged.prompts.divergence.fingerprint",
-             lambda r: ((r.get("judged") or {}).get("prompts") or {})
-             .get("divergence", {}).get("fingerprint"))):
+    for label, path, get in JUDGEMENT_PINS:
         va, vb = get(a), get(b)
         if va != vb:
             print(f"FAIL  these sweeps used a different {label}, so the delta "
