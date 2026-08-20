@@ -73,6 +73,15 @@ jobs:
       - name: Derived judgement prompts are current
         run: python3 evals/judgement.py --check-prompts
 
+      # The Phase 5 grid is published in two documents and was typed into
+      # both by hand, which is how a repo that generates every other number
+      # ends up with an unrelated-claims figure of 6/22 where the record says
+      # 3/22. It is generated from the three committed run records now: the
+      # sweeps do not reproduce, but the records are files, so a table
+      # derived from them is checkable like any other.
+      - name: Judgement comparison grid is current
+        run: python3 evals/judgement.py --comparison --check
+
   specs:
     runs-on: ubuntu-latest
     steps:

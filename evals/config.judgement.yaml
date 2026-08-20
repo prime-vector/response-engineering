@@ -37,6 +37,15 @@ judge:
   groundedness_prompt: evals/judges/groundedness-judge.txt
   divergence_prompt: evals/judges/divergence-judge.txt
 
+# The records the Phase 5 comparison grid is generated from, in the order the
+# columns appear. Named explicitly rather than globbed: "the newest record per
+# arm" is a rule that quietly re-points a published table when someone records
+# an exploratory sweep.
+comparison:
+  - evals/results/judgement-heading-20260820T041555Z.json
+  - evals/results/judgement-fixed-20260820T044153Z.json
+  - evals/results/judgement-single-query-20260820T050303Z.json
+
 arms:
   # The shipped configuration: the index the mock serves by default and the
   # spec's own system prompt. Every other arm is this one with a single

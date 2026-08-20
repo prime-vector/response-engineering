@@ -85,7 +85,7 @@ The fifth agent. Owns a retrieval surface over prior incident records and runboo
       what was rejected and the latency accepted for it
 - [ ] `investigate.sh` composes three acts with recall in act one, typed precedent entering the board as supporting and never deciding evidence
 
-**Done when:** a board cites precedent by `passage_id`, convergence still blocks on outstanding deciding evidence, and the README carries a results table the runner can regenerate.
+**Done when:** a board cites precedent by `passage_id`, convergence still blocks on outstanding deciding evidence, and the README carries a results table generated from the records rather than typed. The retrieval half regenerates from the corpus and the dataset; the judgement half is a grid derived from three committed run records, because a live sweep does not reproduce and a promise that it does is one the artefacts cannot keep.
 
 #### Where this is up to
 

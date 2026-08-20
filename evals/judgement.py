@@ -1335,6 +1335,13 @@ def rescore(path, config=None):
                       f"-> {new_block['count']}/{new_block['of']}")
             continue
         if not isinstance(new_block, dict) or "value" not in new_block:
+            # Everything else in the deterministic block: hygiene, the
+            # applicability distribution, latency. markdown() rewrites the
+            # published table from all of it, so a scoring edit that moved a
+            # must_not_cite line or the p95 index could change a published
+            # file with nothing on stdout but a rescored_at stamp.
+            if old_block != new_block:
+                print(f"  {name}: changed")
             continue
         if not isinstance(old_block, dict) or "value" not in old_block:
             # A metric this scoring added. Worth a line of its own: a figure
@@ -1586,6 +1593,9 @@ def main():
     parser.add_argument("--dry-run", action="store_true",
                         help="print what would be run and spend nothing.")
     parser.add_argument("--write-prompts", action="store_true")
+    parser.add_argument("--check", action="store_true",
+                        help="with --comparison, fail if the grid has drifted "
+                             "rather than rewriting it.")
     parser.add_argument("--check-prompts", action="store_true",
                         help="regenerate every derived arm prompt and fail if "
                              "it has drifted. Needs no API key, so CI can "
@@ -1595,6 +1605,11 @@ def main():
                              "describes this tree, and which are owed a "
                              "sweep. Needs no API key and spends nothing.")
     parser.add_argument("--list-arms", action="store_true")
+    parser.add_argument("--comparison", action="store_true",
+                        help="regenerate the Phase 5 grid from the records "
+                             "named in the config and inject it into every "
+                             "document that publishes it. With --check, diff "
+                             "instead of writing. Needs no API key.")
     parser.add_argument("--rescore", metavar="RECORD",
                         help="recompute the deterministic figures of a "
                              "recorded sweep with the current scoring, from "
@@ -1611,6 +1626,9 @@ def main():
 
     if args.write_prompts or args.check_prompts:
         return write_prompts(config, check=args.check_prompts)
+
+    if args.comparison:
+        return comparison(config, check=args.check)
 
     if args.check_records:
         return check_records(config, args.config)
@@ -1674,6 +1692,190 @@ def main():
     print(f"  failures               {summary['failures']['total']}"
           f"/{summary['cases']}")
     print(f"\nwrote {out}\nwrote {table}")
+    return 0
+
+
+
+# --------------------------------------------------------------------------
+# The Phase 5 comparison grid
+# --------------------------------------------------------------------------
+#
+# Generated, and injected into the documents that publish it. Every other
+# number in this repo is generated with a check that fails on drift, and this
+# grid was the exception: hand-typed into README.md and evals/README.md from
+# three JSON files nobody was going to re-read. It had already been wrong once,
+# an unrelated-claims figure typed as 6/22 where the record says 3/22, and a
+# groundedness_log of 190/190 left in prose after the dedup made it 138.
+#
+# The records themselves are not regenerable, which is what makes this safe:
+# they are committed files, so a table derived from them is a function of
+# checked-in artefacts exactly like the retrieval tables, and CI can diff it.
+
+MARK_START = "<!-- judgement-comparison:start -->"
+MARK_END = "<!-- judgement-comparison:end -->"
+
+PUBLISHED_IN = ["README.md", "evals/README.md"]
+
+
+def _fraction(block):
+    if not block or block.get("numerator") is None:
+        return "-"
+    return f"{block['numerator']}/{block['denominator']}"
+
+
+def comparison_grid(records):
+    """The Phase 5 grid, deterministic and judged kept apart."""
+    labels = [r["label"] for r in records]
+    dets = [r["deterministic"] for r in records]
+    judged = [r.get("judged") or {} for r in records]
+
+    rows = [
+        ("`false_precedent_rate`", "claims offered", "false_precedent_rate"),
+        ("`applies_omission_rate`", "applies documents returned to the agent",
+         "applies_omission_rate"),
+        ("`no_precedent_accuracy`", "cases with no precedent",
+         "no_precedent_accuracy"),
+        ("`false_refusal_rate`", "answerable cases", "false_refusal_rate"),
+        ("`groundedness_log`", "cited passage ids", "groundedness_log"),
+        ("`agent_reach`", "(case, relevant document) pairs", "agent_reach"),
+    ]
+    head = " | ".join(labels)
+    lines = [
+        MARK_START,
+        "",
+        "| measured by code | unit | " + head + " |",
+        "| --- | --- | " + " | ".join("---" for _ in labels) + " |",
+    ]
+    for name, unit, key in rows:
+        cells = " | ".join(_fraction(d.get(key)) for d in dets)
+        lines.append(f"| {name} | {unit} | {cells} |")
+    lines.append(
+        "| claims understated | claims offered | "
+        + " | ".join(f"{d['understated_claims']['count']}/"
+                     f"{d['understated_claims']['of']}" for d in dets) + " |")
+    lines.append(
+        "| claims on documents not called relevant | claims offered | "
+        + " | ".join(f"{d['unrelated_claims']['count']}/"
+                     f"{d['unrelated_claims']['of']}" for d in dets) + " |")
+    lines.append(
+        "| searches issued | calls on the surface | "
+        + " | ".join(f"{d['hygiene']['queries_per_case']['issued']}, median "
+                     f"{d['hygiene']['queries_per_case']['median']}"
+                     for d in dets) + " |")
+    lines.append(
+        "| p50 / p95 | one recall | "
+        + " | ".join(f"{d['latency_ms']['p50'] / 1000:.1f}s / "
+                     f"{d['latency_ms']['p95'] / 1000:.1f}s" for d in dets)
+        + " |")
+
+    lines += [
+        "",
+        "Applicability offered: "
+        + "; ".join(
+            f"{label} " + ", ".join(f"`{w}` {n}" for w, n in sorted(
+                (d.get("applicability_offered") or {}).items(),
+                key=lambda kv: -kv[1]))
+            for label, d in zip(labels, dets))
+        + ". `false_precedent_rate` fires only on `applies`.",
+        "",
+        "| judged at temperature 0 | " + head + " |",
+        "| --- | " + " | ".join("---" for _ in labels) + " |",
+        "| `groundedness_judge` | "
+        + " | ".join(_fraction(j.get("groundedness_judge")) for j in judged)
+        + " |",
+        "| `divergence_quality` | "
+        + " | ".join(_fraction(j.get("divergence_quality")) for j in judged)
+        + " |",
+        "",
+    ]
+    # The selection effect behind the judged rows, from the records rather
+    # than from prose: a near miss never offered cannot fail its divergence.
+    notes = []
+    for label, j in zip(labels, judged):
+        block = j.get("divergence_quality") or {}
+        missing = block.get("not_offered") or []
+        if missing:
+            notes.append(f"{label} never offered the diverging record on "
+                         + ", ".join(f"`{c}`" for c in missing))
+    if notes:
+        lines += ["Both judged rates are scored over what each run offered, so "
+                  "offering less can raise them: " + "; ".join(notes) + ".",
+                  ""]
+    lines += [
+        f"Generated by `python3 evals/judgement.py --comparison` from "
+        f"{len(records)} records: "
+        + ", ".join(f"`{r['label']}` recorded {r['recorded_at']}"
+                    for r in records)
+        + ". Do not hand-edit either copy: `--comparison --check` diffs this "
+          "block in every file that publishes it.",
+        MARK_END,
+    ]
+    return "\n".join(lines)
+
+
+def inject(path, block, check):
+    """Replace the marked region in a published document."""
+    with open(path) as handle:
+        current = handle.read()
+    start, end = current.find(MARK_START), current.find(MARK_END)
+    if start == -1 or end == -1:
+        raise SystemExit(
+            f"{path} has no judgement-comparison markers. A document that "
+            f"publishes this grid keeps it inside {MARK_START} ... "
+            f"{MARK_END} so it can be regenerated and diffed.")
+    updated = current[:start] + block + current[end + len(MARK_END):]
+    if check:
+        return updated == current
+    if updated != current:
+        with open(path, "w") as handle:
+            handle.write(updated)
+    return True
+
+
+def comparison(config, check):
+    paths = config.get("comparison") or []
+    if len(paths) < 2:
+        raise SystemExit(
+            "config has no `comparison` list naming the records the grid is "
+            "generated from. Two or more, in column order.")
+    records = []
+    for path in paths:
+        with open(path) as handle:
+            records.append(json.load(handle))
+    for record in records:
+        if record.get("mode") != "judgement":
+            raise SystemExit(f"{record.get('label')} is not a judgement record")
+    pins = {(r["corpus"]["fingerprint"], r["dataset"]["fingerprint"],
+             (r.get("scorer") or {}).get("fingerprint")) for r in records}
+    if len(pins) > 1:
+        raise SystemExit(
+            "these records were measured against a different corpus, ground "
+            "truth or scorer, so one grid cannot hold them. Rescore or "
+            "re-record before publishing a comparison.")
+
+    block = comparison_grid(records)
+    path = os.path.join(RESULTS, "judgement-comparison.md")
+    body = ("# Phase 5, three arms\n\nGenerated by `evals/judgement.py "
+            "--comparison`. Do not hand-edit.\n\n" + block + "\n")
+    if check:
+        current = open(path).read() if os.path.exists(path) else ""
+        stale = [] if current == body else [path]
+        stale += [p for p in PUBLISHED_IN if not inject(p, block, check=True)]
+        if stale:
+            print("the judgement comparison grid has drifted in: "
+                  + ", ".join(stale))
+            print("  python3 evals/judgement.py --comparison")
+            return 1
+        print("judgement comparison grid is current in "
+              + ", ".join([path] + PUBLISHED_IN))
+        return 0
+    os.makedirs(RESULTS, exist_ok=True)
+    with open(path, "w") as handle:
+        handle.write(body)
+    for published in PUBLISHED_IN:
+        inject(published, block, check=False)
+    print(f"wrote {path} and the marked block in "
+          + ", ".join(PUBLISHED_IN))
     return 0
 
 
