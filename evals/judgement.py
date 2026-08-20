@@ -508,6 +508,13 @@ def score_run(case, record):
             "divergence": (precedent.get("divergence") or "").strip(),
             "grounded_in": ids,
             "ungrounded": invented,
+            # The claim as the agent wrote it, minus the citation block,
+            # which the judge is handed separately as resolved passages. The
+            # scored fields above are a reading of this; the judge gets the
+            # thing itself.
+            "offered_claim": {key: value
+                              for key, value in precedent.items()
+                              if key not in ("incident_ref", "grounded_in")},
         })
     out["applies_offered"] = sorted(
         {c["source_uri"] for c in out["claims"]}
@@ -858,15 +865,16 @@ def judge_run(config, records, scores, cases, port, key):
                 except SystemExit as exc:
                     passages.append({"passage_id": passage_id,
                                      "error": str(exc)})
+            # The whole claim, every field of it. The first version passed
+            # source_uri, applicability, confidence and divergence only,
+            # while the metric reported the proportion of claims their
+            # citations support: an invented resolution_taken or
+            # signature_overlap scored as grounded because the judge was
+            # never shown it. Sol found that at the gate.
             verdict, usage = call_judge(judge, grounding_system, {
                 "incident": {"symptom": case["symptom"].strip(),
                              "as_of": case["as_of"]},
-                "precedent_claim": {
-                    "source_uri": claim["source_uri"],
-                    "applicability": claim["offered"],
-                    "confidence": claim["confidence"],
-                    "divergence": claim["divergence"],
-                },
+                "precedent_claim": claim["offered_claim"],
                 "cited_passages": passages,
             }, key)
             account(usage)
@@ -1644,6 +1652,11 @@ def main():
                              "named in the config and inject it into every "
                              "document that publishes it. With --check, diff "
                              "instead of writing. Needs no API key.")
+    parser.add_argument("--rejudge", metavar="RECORD",
+                        help="re-run the judge over a recorded sweep with the "
+                             "current prompts and payload, without re-running "
+                             "the agent. A fresh measurement, not a recount: "
+                             "it stamps rejudged_at and prints what moved.")
     parser.add_argument("--rescore", metavar="RECORD",
                         help="recompute the deterministic figures of a "
                              "recorded sweep with the current scoring, from "
@@ -1653,6 +1666,9 @@ def main():
     args = parser.parse_args()
 
     config = load_config(args.config)
+    if args.rejudge:
+        return rejudge(args.rejudge, config)
+
     if args.rescore:
         global args_config_path
         args_config_path = args.config
@@ -1882,7 +1898,14 @@ def comparison(config, check):
     # The same list --compare refuses on, imported rather than restated: a
     # grid checking three pins while the delta tool checks twelve is a CI job
     # approving a table the comparison would refuse.
-    from runner import judgement_mismatch
+    from runner import judgement_index_mismatch, judgement_mismatch
+    clash = judgement_index_mismatch(records)
+    if clash:
+        path, fingerprints = clash
+        raise SystemExit(
+            f"two of these records name {path} and the file differed between "
+            f"them: {', '.join(fingerprints)}. A column crediting a prompt "
+            f"would also be carrying a rebuilt index.")
     mismatch = judgement_mismatch(records)
     if mismatch:
         label, path, seen = mismatch
@@ -1947,6 +1970,70 @@ def comparison(config, check):
           + ", and " + ", ".join(table for table, _ in per_arm))
     return 0
 
+
+
+def rejudge(record_path, config):
+    """Re-run the judge over a recorded sweep, without re-running the agent.
+
+    The two halves of a record cost differently and fail differently. The
+    agent runs are the expensive half and cannot be reproduced; the judged
+    half is cheap, and when the question put to the judge changes, the old
+    verdicts answer a question nobody is asking any more. --rescore recounts
+    and never re-judges, for the good reason that re-judging is a fresh
+    measurement rather than a recount. This is that fresh measurement, made
+    explicit: it stamps rejudged_at, records the fingerprint of the code that
+    produced the new verdicts, and prints what moved.
+
+    Needs the API key and the arm's index served, because a claim is judged
+    against the text of the passages it cites.
+    """
+    key = os.environ.get("ANTHROPIC_API_KEY")
+    if not key:
+        raise SystemExit("ANTHROPIC_API_KEY is not set; re-judging calls a "
+                         "model.")
+    with open(record_path) as handle:
+        result = json.load(handle)
+    if result.get("mode") != "judgement":
+        raise SystemExit(f"{record_path} is not a judgement record")
+
+    with open(DATASET) as handle:
+        dataset = yaml.safe_load(handle)
+    if dataset_fingerprint(DATASET) != result["dataset"]["fingerprint"]:
+        raise SystemExit(
+            "the dataset has changed since this sweep was recorded, and the "
+            "divergence judge is scored against it. Re-run the arm.")
+    by_id = {c["id"]: c for c in dataset["cases"]}
+    cases = [by_id[i] for i in result["dataset"]["ids"]]
+    records = [{k: v for k, v in entry.items() if k != "score"}
+               for entry in result["per_case"]]
+    scores = {r["case"]: score_run(by_id[r["case"]], r) for r in records}
+
+    spec = spec_document(config["spec"])
+    port = spec_port(spec, config["spec"])
+    proc = start_adapter(result["index"], port,
+                         log_path=os.path.join(RESULTS, ".logs",
+                                               f"rejudge-{result['label']}.log"))
+    try:
+        before = result.get("judged") or {}
+        fresh = judge_run(config, records, scores, cases, port, key)
+    finally:
+        proc.terminate()
+        proc.wait(timeout=5)
+
+    for name in ("groundedness_judge", "divergence_quality"):
+        was, now = before.get(name) or {}, fresh[name]
+        print(f"  {name}: {pct(was.get('value'))} "
+              f"({was.get('numerator')}/{was.get('denominator')}) -> "
+              f"{pct(now['value'])} ({now['numerator']}/{now['denominator']})")
+    result["judged"] = fresh
+    result["rejudged_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    result["per_case"] = [{**r, "score": scores[r["case"]]} for r in records]
+    result["deterministic"] = aggregate(cases, records, scores)
+    with open(record_path, "w") as handle:
+        json.dump(result, handle, indent=2, sort_keys=False)
+        handle.write("\n")
+    print(f"rejudged {record_path}")
+    return 0
 
 if __name__ == "__main__":
     sys.exit(main())

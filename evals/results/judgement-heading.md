@@ -37,16 +37,16 @@ Applicability offered across this run: `partial` 44, `superseded` 8. A `false_pr
 
 ## Judged by a model
 
-A separate judge, claude-opus-4-6 at temperature 0, scored by a scorer this record does not fingerprint, because it was recorded before that field existed, with the prompts committed at `evals/judges/groundedness-judge.txt` and `evals/judges/divergence-judge.txt`. This is a model's opinion of a model, reported apart from the table above so it cannot be read as the same kind of number.
+A separate judge, claude-opus-4-6 at temperature 0, scored by `1e9f0ab8829e39e1`, with the prompts committed at `evals/judges/groundedness-judge.txt` and `evals/judges/divergence-judge.txt`. This is a model's opinion of a model, reported apart from the table above so it cannot be read as the same kind of number.
 
 | Metric | Value | Count | Denominator |
 | --- | --- | --- | --- |
-| `groundedness_judge` | 71.2% | 37/52 | precedent claims whose cited passages support them |
+| `groundedness_judge` | 75.0% | 39/52 | precedent claims whose cited passages support them |
 | `divergence_quality` | 100.0% | 6/6 | near-miss precedents offered, scored on whether the stated divergence names an actual distinguishing factor |
 
 6 of 7 near-miss cases offered a precedent for the diverging record, so the rest have no divergence to judge. Not offered: `b04`. A retrieval miss is not folded into this metric; it shows up in `agent_reach` and in the false refusal rate.
 
-Judge usage: 58 calls, 104346 input and 8687 output tokens.
+Judge usage: 58 calls, 103351 input and 7426 output tokens.
 
 ## What went wrong, by name
 

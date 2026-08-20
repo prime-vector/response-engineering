@@ -1074,6 +1074,25 @@ JUDGEMENT_PINS = [
 ]
 
 
+def judgement_index_mismatch(records):
+    """Two records naming one index that was not the same file.
+
+    Not a flat pin: the chunker arms name different indexes on purpose. What
+    cannot happen is two records naming the same path whose contents differ,
+    because then a delta credited to a prompt also contains a rebuilt index.
+    Sol found this at the gate: index_fingerprint was recorded and compared
+    only in retrieval mode.
+    """
+    by_path = {}
+    for record in records:
+        by_path.setdefault(record["index"], set()).add(
+            record.get("index_fingerprint"))
+    for path, fingerprints in by_path.items():
+        if len(fingerprints) > 1:
+            return path, sorted(str(f)[:16] for f in fingerprints)
+    return None
+
+
 def judgement_mismatch(records):
     """The first pin two of these records disagree on, or None.
 
@@ -1108,6 +1127,15 @@ def compare_judgement(path_a, a, path_b, b):
             print(f"        {path_b}  {path} = "
                   f"{vb if label != 'case set' else str(vb)[:80]}")
             return 1
+
+    clash = judgement_index_mismatch([a, b])
+    if clash:
+        path, fingerprints = clash
+        print(f"FAIL  both runs name {path} and the file differed between "
+              f"them: {', '.join(fingerprints)}. One index under one name, "
+              f"rebuilt underneath, so the delta contains a retrieval change "
+              f"as well as an arm change.")
+        return 1
 
     changed = [name for name, get in (
         ("index", lambda r: r["arm"]["index"]),

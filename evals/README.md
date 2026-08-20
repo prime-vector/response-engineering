@@ -63,6 +63,15 @@ makes iterating on the dataset affordable. Judgement mode needs both, plus the
 `behavioural-contracts` extra, which it checks for rather than measuring a
 harness with contract validation silently switched off.
 
+`--rejudge` re-runs the judge over a recorded sweep with the current prompts and
+payload, without re-running the agent. It is a fresh measurement rather than a
+recount, so it stamps `rejudged_at`, records the fingerprint of the code that
+produced the new verdicts, and prints what moved. The three committed records
+were re-judged once, when the payload was widened from four fields of a claim to
+all of them: `groundedness_judge` moved 71.2% to 75.0%, 80.4% to 85.7% and 81.8%
+to 90.9%. The earlier figures answered a narrower question than the metric's own
+description, which is the reason to re-judge rather than to restate.
+
 A record fingerprints two scorers, not one. The top-level `scorer` is the code
 that produced the deterministic figures, which `--rescore` can recompute; the
 judged half carries its own fingerprint, taken when the verdicts were produced,
@@ -440,7 +449,7 @@ Applicability offered: judgement-heading `partial` 44, `superseded` 8; judgement
 
 | judged at temperature 0 | judgement-heading | judgement-fixed | judgement-single-query |
 | --- | --- | --- | --- |
-| `groundedness_judge` | 37/52 | 45/56 | 18/22 |
+| `groundedness_judge` | 39/52 | 48/56 | 20/22 |
 | `divergence_quality` | 6/6 | 6/7 | 6/7 |
 
 Both judged rates are scored over what each run offered, so offering less can raise them: judgement-heading never offered the diverging record on `b04`.
@@ -467,8 +476,8 @@ delta is the paragraph, not query count in isolation, and `--compare` cannot
 see the difference because a system prompt is one knob to it.
 
 **The chunker is not choosable off one sweep each.** Same reach, 54 of 60, and
-14 against 13 omissions. The judged half parts by more than a wobble, 37/52
-against 45/56, which is eight more supported claims from four more claims made;
+14 against 13 omissions. The judged half parts by more than a wobble, 39/52
+against 48/56, which is nine more supported claims from four more claims made;
 one sweep each with a judge scoring a model is not enough to choose on.
 Heading-aware is kept for its citations carrying the heading chain rather than
 the document title alone, which no metric here scores.
@@ -499,8 +508,8 @@ applies. An agent that never says `applies` cannot offer a false precedent, so
 the two figures have to be read together, and the table prints them together
 for that reason.
 
-**`groundedness_judge` at 71.2%, and the failures have one shape.** Most of the
-15 unsupported claims assert an absence: "the prior incident shows no audit
+**`groundedness_judge` at 75%, and the failures have one shape.** Most of the
+13 unsupported claims assert an absence: "the prior incident shows no audit
 daemon", from passages that simply do not mention one. It is a divergence of
 exactly the kind rule 5 asks for, resting on something the archive never said.
 `groundedness_log` cannot see it: every one of those citations is a passage the

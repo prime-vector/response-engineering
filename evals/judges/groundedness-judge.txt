@@ -27,6 +27,13 @@ Rules:
    carrying a supersession notice. If the claim says superseded and no cited
    passage carries one, that is unsupported.
 
+   Every other field is factual and all of them are yours to check.
+   `signature_overlap` states what the two incidents share, and
+   `resolution_taken` states what was done in the prior one, both of which the
+   passages must support. `falsifying_test` proposes an observation about the
+   live incident, so judge only the part of it that asserts something about
+   the prior record.
+
 4. Paraphrase is fine. Invention is not. A claim that compresses what a
    passage says is supported. A claim that adds a cause, a number, a date, an
    action taken or an outcome the passage does not state is not.
