@@ -655,7 +655,7 @@ def cross_check(config):
                 f"{entry['index']} was built with {index.get('chunker')}")
         proc = start_adapter(entry["index"], config["port"])
         try:
-            found, hits = {}, 0
+            found, kept = {}, {}
             for case in scored_cases:
                 result, _ = probe(config["port"], case, RANK_LIMIT)
                 position = {uri: i + 1 for i, uri in
@@ -672,10 +672,10 @@ def cross_check(config):
                 # in the measurement that claim was contrasted against.
                 budgeted, _ = probe(config["port"], case, config["run_limit"])
                 at_limit = set(ranked_documents(budgeted.get("passages") or []))
-                hits += sum(1 for uri in case["expect"]["relevant"]
-                            if uri in at_limit)
+                for uri in case["expect"]["relevant"]:
+                    kept[f"{case['id']}|{uri}"] = uri in at_limit
             ranks[entry["label"]] = found
-            budget[entry["label"]] = hits
+            budget[entry["label"]] = kept
         finally:
             proc.terminate()
             proc.wait(timeout=5)
@@ -684,12 +684,27 @@ def cross_check(config):
     a, b = ranks[labels[0]], ranks[labels[1]]
     pairs = sorted(a)
 
-    moved = []
-    for key in pairs:
-        if a[key] != b[key]:
+    def rows(keys, left, right):
+        out = []
+        for key in keys:
             case, uri = key.split("|")
-            moved.append({"case": case, "document": uri.replace("corpus://", ""),
-                          labels[0]: a[key], labels[1]: b[key]})
+            out.append({"case": case,
+                        "document": uri.replace("corpus://", ""),
+                        labels[0]: left[key], labels[1]: right[key]})
+        return out
+
+    moved_keys = [key for key in pairs if a[key] != b[key]]
+    moved = rows(moved_keys, a, b)
+
+    # Which pairs the budget keeps, not how many. The claim this file used to
+    # make, that the budget difference is a different difference from the
+    # ranking movement, cannot be read off two totals: offsetting changes
+    # produce the same totals as no changes. It is a statement about which
+    # pairs, so it needs the pairs.
+    ba, bb = budget[labels[0]], budget[labels[1]]
+    budget_keys = [key for key in pairs if ba[key] != bb[key]]
+    budget_moved = rows(budget_keys, ba, bb)
+    shared = sorted(set(moved_keys) & set(budget_keys))
 
     depth = max((r for r in list(a.values()) + list(b.values())
                  if r is not None), default=0)
@@ -703,10 +718,46 @@ def cross_check(config):
 
     return {"labels": labels, "pairs": len(pairs), "depth": depth,
             "moved": moved, "curve": curve, "disagree_at": disagree,
-            "at_run_limit": {"limit": config["run_limit"], "hits": budget},
+            "at_run_limit": {
+                "limit": config["run_limit"],
+                "hits": {label: sum(1 for v in budget[label].values() if v)
+                         for label in labels},
+                "moved": budget_moved,
+                "shared_with_ranking": [k.replace("corpus://", "")
+                                        for k in shared],
+            },
             "dataset_fingerprint": dataset_fingerprint(DATASET),
             "corpus_fingerprint": fingerprint(load_corpus()),
             "rank_limit": RANK_LIMIT}
+
+
+def budget_claim(result, a, b):
+    """What the budget difference is, stated from the pairs behind it.
+
+    This sentence used to read "the difference is not the same one" off two
+    totals, which cannot support it: the same pair moving could produce both
+    differences, and offsetting pairs could hide a difference in either. It is
+    a claim about which pairs, so it is answered with the pairs.
+    """
+    limit = result["at_run_limit"]
+    moved = limit["moved"]
+    if not moved:
+        return ("No pair is kept by one chunker's budget and dropped by the "
+                "other, so the budget separates these two indexes no more "
+                "than the ranking does.")
+
+    names = ", ".join(f"`{row['case']}`:{row['document']}" for row in moved)
+    shared = limit["shared_with_ranking"]
+    if not shared:
+        return (f"{len(moved)} pair(s) survive one budget and not the other: "
+                f"{names}. None of them is a pair whose rank moved, so this "
+                f"is a different difference from the ranking one: chunk size "
+                f"decides how many distinct documents fit in a fixed number "
+                f"of passages, independently of the order they arrive in.")
+    return (f"{len(moved)} pair(s) survive one budget and not the other: "
+            f"{names}. {len(shared)} of them also changed rank, so the two "
+            f"differences are not independent and the budget figure should "
+            f"not be read as measuring something the ranking does not.")
 
 
 def cross_markdown(result):
@@ -723,17 +774,29 @@ def cross_markdown(result):
         f"time.",
         "",
     ]
+    moved_n = len(result["moved"])
     if result["disagree_at"]:
         ks = ", ".join(str(k) for k in result["disagree_at"])
         lines += [
-            f"**The two disagree at k = {ks}.** They agree at every other k, "
-            f"which is why a grid that skips these values reports them as "
-            f"identical.",
+            f"**The two disagree at k = {ks}**, and "
+            f"{moved_n} of {result['pairs']} pairs land at a different rank. "
+            f"They agree at every other k, which is why a grid that skips "
+            f"these values reports them as identical.",
+        ]
+    elif moved_n:
+        lines += [
+            f"**{moved_n} of {result['pairs']} pairs land at a different "
+            f"rank, and the hit counts are identical at every k anyway.** The "
+            f"movements offset. No grid of any resolution would separate "
+            f"these two indexes, and documents are still moving underneath: "
+            f"the table below is the measurement, the counts are not.",
         ]
     else:
         lines += [
-            "**The two agree at every k.** No relevant document lands at a "
-            "different rank under either chunker.",
+            "**No relevant document lands at a different rank under either "
+            "chunker**, so the hit counts are identical at every k. Both "
+            "facts are measured here: equal counts alone would not establish "
+            "the first, because movements can offset.",
         ]
 
     lines += [
@@ -761,12 +824,7 @@ def cross_markdown(result):
         f"| {a} | {ha}/{result['pairs']} |",
         f"| {b} | {hb}/{result['pairs']} |",
         "",
-        ("The two differ here as well as in the ranking, and the difference is "
-         "not the same one: the budget is where chunk size decides how many "
-         "distinct documents fit in a fixed number of passages."
-         if ha != hb else
-         "The two do not differ here, so the budget separates them no more "
-         "than the ranking does."),
+        budget_claim(result, a, b),
         "",
         "Both figures are measured by this file. `latest.md` reports the "
         "budget for the baseline index only, so quoting the other one from it "
