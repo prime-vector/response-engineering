@@ -301,14 +301,20 @@ python3 evals/judgement.py --dry-run                 # spends nothing
 python3 evals/judgement.py --cases a01,b01,e01       # a cheap smoke run
 python3 evals/judgement.py --arm judgement-heading   # a full sweep, live
 python3 evals/judgement.py --check-prompts           # CI: derived arm prompts
+python3 evals/judgement.py --check-records          # is a sweep owed
 ```
 
 One live `oa run` per case, an API key and the provider patch. Its output is a
 record of one run rather than a regenerable artefact, so it carries a
 timestamp, the spec, the prompt, the model and the case ids, and nothing in CI
-diffs it. `--compare` on two judgement records refuses two arms that differ in
-more than one thing, refuses two records of the same arm, and says in the
-output that one sweep is one sample of a stochastic system.
+diffs it. The inputs it names can still be checked, and `--check-records` is
+the one to run before spending: it compares the spec, prompt, index, corpus,
+ground truth and judge a recording names against what is on disk, and says
+whether the arm is owed a fresh sweep or only a free `--rescore`.
+
+`--compare` on two judgement records refuses two arms that differ in more than
+one thing, refuses two records of the same arm, and says in the output that
+one sweep is one sample of a stochastic system.
 
 **Two hit rates, and the second is not a footnote.** `precedent_hit_rate@k` ranks
 documents with nothing truncating, which is a property of the ranking alone.

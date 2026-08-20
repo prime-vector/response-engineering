@@ -9531,9 +9531,9 @@
       }
     }
   ],
-  "rescored_at": "2026-08-20T04:39:42Z",
+  "rescored_at": "2026-08-20T05:26:48Z",
   "scorer": {
     "path": "evals/judgement.py",
-    "fingerprint": "a6fef3c1538cca95414651484fc80379cac4f550f8145a02bf0ad900d27bc79e"
+    "fingerprint": "dc18524d69cbd25fbbd2403a13c4ec387f7532fdeb82400324ce69229859314d"
   }
 }

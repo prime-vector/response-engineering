@@ -48,6 +48,7 @@ python3 evals/judgement.py --dry-run                      # spends nothing
 python3 evals/judgement.py --cases a01,b01,e01            # a cheap smoke run
 python3 evals/judgement.py --arm judgement-heading        # a full sweep, live
 python3 evals/judgement.py --check-prompts                # CI: derived arm prompts
+python3 evals/judgement.py --check-records               # is a sweep owed, spends nothing
 python3 evals/judgement.py --rescore evals/results/<record>.json
 ```
 
@@ -69,6 +70,24 @@ change does not mean paying for the sweep again. It refuses a record whose
 ground truth has moved, keeps the judged verdicts as recorded, and stamps the
 record with what rescored it: a file whose numbers changed after it was
 written has to say so.
+
+`--check-records` answers the question you would otherwise answer by paying:
+is the recorded sweep still about this tree. Each record names the spec,
+system prompt, index, corpus, ground truth, judge and scorer it ran against,
+by fingerprint, and the check compares every one against what is on disk now.
+It sorts what it finds into the two remedies, because they cost differently.
+An input the runs depended on means a fresh sweep, live, 38 cases. The scoring
+code means `--rescore`, which reads what the record already holds and spends
+nothing. A green line is the useful half: an arm nobody owes a sweep for.
+
+The scorer check is over the whole of `judgement.py`, so editing a comment in
+it reports every record as owed a rescore. That is the right way round. The
+record cannot tell a comment from a change to `score_run`, and settling the
+question costs seconds either way.
+
+Deliberately not in CI, unlike `--check-prompts`. A stale recording is a
+statement about money owed rather than a broken artefact, and a gate that
+fails until somebody spends is a gate that gets switched off.
 
 `runner.py` refuses to run if the corpus fingerprint has moved off the
 dataset's pin, and refuses if the config's `chunker` disagrees with the index
@@ -257,6 +276,12 @@ system prompt, the model and the case ids, and the only thing CI checks is
 the one input that is derived rather than measured: the query-strategy arm's
 prompt.
 
+The numbers cannot be checked, then. The inputs can, and that is what
+`--check-records` does: it reads back the fingerprints a record already
+carries and says whether the recording still describes the tree. A different
+question from whether it would come back the same, and the one that decides
+whether to spend.
+
 ### Two kinds of number, never one table
 
 Deterministic, read off the typed output, the adapter's audit log and the
@@ -319,6 +344,13 @@ about, on a measurement (a whole reported symptom scores 79 of 82 passages
 above zero and clears the floor 0 times, while the signature type alone
 clears 35), so whether that decision is worth its words is the experiment that
 was available.
+
+One arm delivers its prompt through `--system-prompt` and the others do not,
+so the delivery path had to be equivalent or the delta would be partly about
+that. It was read rather than assumed: `oas_cli/runner.py` `_resolve_prompts`
+assigns `system = override_system` at exactly the point it would otherwise
+take the spec's, and only the user template is placeholder-substituted. Check
+it again after a CLI upgrade.
 
 Its prompt is **derived from the spec**, not written beside it. `--system-prompt`
 replaces the whole system prompt rather than editing it, which the Phase 3

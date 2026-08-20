@@ -31,9 +31,12 @@ elsewhere in this repo:
   precedent, so the refusal is a real false refusal rather than an artefact.
 
   A record from this mode is not a regenerable artefact. Two runs of the same
-  arm differ, so there is no --check here and nothing in CI diffs the table.
-  It carries a timestamp, the spec and prompt it ran, and the model that ran
-  it, because those are what a reader would otherwise have to take on trust.
+  arm differ, so nothing here regenerates a table and diffs it, and nothing in
+  CI does either. It carries a timestamp, the spec and prompt it ran, and the
+  model that ran it, because those are what a reader would otherwise have to
+  take on trust. Those are also what --check-records reads back: it asks
+  whether a recording still describes the configuration on disk, which is a
+  different question from whether it would come back the same.
 
 Deterministic and judged metrics are reported apart, always. false_precedent_
 rate, no_precedent_accuracy, false_refusal_rate and groundedness_log are read
@@ -68,6 +71,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from runner import (  # noqa: E402
     DATASET, RESULTS, check_corpus_pin, dataset_fingerprint, file_fingerprint,
     pct, rpc, start_adapter,
+)
+from validate import (  # noqa: E402
+    fingerprint as fingerprint_corpus, load_corpus,
 )
 
 API_URL = "https://api.anthropic.com/v1/messages"
@@ -150,6 +156,14 @@ def system_prompt_for(spec, arm):
     a plain run minus one rule. So the override arm's file is generated from
     the spec's prompt with one paragraph substituted, and --check-prompts
     fails when the spec moves underneath it.
+
+    The delivery path is equivalent, and that was read rather than assumed:
+    oas_cli/runner.py `_resolve_prompts` assigns `system = override_system`
+    at exactly the point it would otherwise take the spec's, and only the
+    user template is placeholder-substituted. So an arm that overrides the
+    system prompt differs from one that does not in the text and in nothing
+    else. Worth checking again after a CLI upgrade: if that ever stops being
+    true, the guidance arm's delta stops being about the paragraph.
     """
     if not arm.get("system_prompt"):
         return spec["prompts"]["system"], "spec", None
@@ -1012,8 +1026,10 @@ def markdown(result):
         "function of the corpus, the dataset and a config, and CI fails when "
         "one drifts. This one has a model in it: re-running the same arm "
         "gives different numbers, so it carries a timestamp, the spec, the "
-        "prompt and the model that produced it, and nothing checks it for "
-        "drift.",
+        "prompt and the model that produced it. Nothing checks the numbers "
+        "for drift, because nothing can regenerate them. What can be checked "
+        "is the inputs listed below, which is what `--check-records` does: "
+        "it says when this recording has stopped describing the tree.",
         "",
         f"- Recorded {result['recorded_at']}"
         + (f", rescored {result['rescored_at']} with "
@@ -1249,6 +1265,181 @@ def rescore(path):
     return 0
 
 
+# --------------------------------------------------------------------------
+# Whether a recording still describes this configuration
+# --------------------------------------------------------------------------
+
+STAMP = re.compile(r"\d{8}T\d{6}Z")
+
+
+def latest_record(label):
+    """The most recent recording of an arm, by the stamp in its filename.
+
+    The stamp is ISO basic UTC, so lexicographic order is chronological. The
+    pattern match is what stops a label that is a prefix of another label
+    reading the other one's records and reporting on the wrong arm.
+    """
+    if not os.path.isdir(RESULTS):
+        return None
+    names = sorted(
+        name for name in os.listdir(RESULTS)
+        if name.startswith(f"{label}-") and name.endswith(".json")
+        and STAMP.fullmatch(name[len(label) + 1:-len(".json")]))
+    return os.path.join(RESULTS, names[-1]) if names else None
+
+
+def fingerprint_or_none(path):
+    """A missing input is drift, not a crash: the check reports every arm."""
+    try:
+        return file_fingerprint(path)
+    except OSError:
+        return None
+
+
+def record_drift(config, arm, record):
+    """What has moved under a recording since it was made.
+
+    Two kinds, and the difference between them is money. An input the runs
+    depended on invalidates the runs: only a fresh sweep can say what this
+    configuration does. The scoring code invalidates the figures and not the
+    runs, and --rescore recomputes those from what the record already holds.
+    """
+    rerun, rescore_owed = [], []
+
+    # The spec file carries the model, the sampling config and, for the two
+    # arms that do not override it, the system prompt. One fingerprint over
+    # the file covers all three.
+    agent = record.get("agent", {})
+    if agent.get("spec") != config["spec"]:
+        rerun.append(f"the config names spec {config['spec']}, the recording "
+                     f"ran {agent.get('spec')}")
+    elif agent.get("spec_fingerprint") != fingerprint_or_none(config["spec"]):
+        rerun.append(f"{config['spec']} has changed since the recording")
+
+    recorded_arm = record.get("arm", {})
+    prompt = arm.get("system_prompt")
+    if (prompt or "spec") != recorded_arm.get("system_prompt"):
+        rerun.append(f"the arm now runs {prompt or 'the spec prompt'}, the "
+                     f"recording ran {recorded_arm.get('system_prompt')}")
+    elif prompt and (recorded_arm.get("system_prompt_fingerprint")
+                     != fingerprint_or_none(prompt)):
+        rerun.append(f"{prompt} has changed since the recording")
+
+    if arm["index"] != record.get("index"):
+        rerun.append(f"the arm now names {arm['index']}, the recording ran "
+                     f"{record.get('index')}")
+    elif record.get("index_fingerprint") != fingerprint_or_none(arm["index"]):
+        rerun.append(f"{arm['index']} has been rebuilt since the recording")
+    if arm["chunker"] != record.get("chunker"):
+        rerun.append(f"the arm now declares chunker {arm['chunker']}, the "
+                     f"recording ran {record.get('chunker')}")
+
+    dataset = record.get("dataset", {})
+    if dataset.get("fingerprint") != dataset_fingerprint(DATASET):
+        rerun.append(f"{DATASET} has changed since the recording, so these "
+                     f"figures were scored against different ground truth")
+    if not dataset.get("complete", True):
+        rerun.append(f"the recording is a subset, {dataset.get('cases')} of "
+                     f"the dataset's cases: a smoke run, not the arm")
+
+    try:
+        corpus_now = fingerprint_corpus(load_corpus())
+    except OSError:
+        corpus_now = None
+    if record.get("corpus", {}).get("fingerprint") != corpus_now:
+        rerun.append("the corpus has changed since the recording, so the "
+                     "archive the agent searched is not the one on disk")
+
+    # The judged half has no cheap remedy. Re-judging is a fresh call to a
+    # model against passages only a running adapter can resolve, and this
+    # file has no path to it, so a moved judge means a fresh sweep.
+    judge = config["judge"]
+    judged = record.get("judged")
+    if judged is None:
+        rerun.append("the recording has no judged half, so groundedness_"
+                     "judge and divergence_quality are unmeasured for it")
+    else:
+        if judged.get("model") != judge["model"]:
+            rerun.append(f"the config judges with {judge['model']}, the "
+                         f"recording used {judged.get('model')}")
+        if judged.get("temperature") != judge.get("temperature", 0):
+            rerun.append(f"the config judges at temperature "
+                         f"{judge.get('temperature', 0)}, the recording used "
+                         f"{judged.get('temperature')}")
+        for name in ("groundedness", "divergence"):
+            path = judge[f"{name}_prompt"]
+            stored = judged.get("prompts", {}).get(name, {})
+            if stored.get("path") != path:
+                rerun.append(f"the config judges {name} with {path}, the "
+                             f"recording used {stored.get('path')}")
+            elif stored.get("fingerprint") != fingerprint_or_none(path):
+                rerun.append(f"{path} has changed since the recording")
+
+    # The record pins this whole file, so a comment here trips this as
+    # readily as a change to score_run. That is the right way round: the
+    # remedy costs seconds and settles the question either way.
+    scorer = record.get("scorer", {})
+    scoring_now = file_fingerprint(os.path.abspath(__file__))
+    if scorer.get("fingerprint") != scoring_now:
+        rescore_owed.append("evals/judgement.py has changed since these "
+                            "figures were scored")
+
+    return rerun, rescore_owed
+
+
+def check_records(config, config_path):
+    """Which recordings still describe the configuration in this tree.
+
+    A judgement record is not a regenerable artefact, so nothing can diff a
+    fresh table against the committed one. The other direction can be
+    checked, and it is the one worth money: every recording names the spec,
+    prompt, index, corpus, ground truth and judge it ran against, by
+    fingerprint, and this compares those against what is on disk now. Not
+    "would this table come back the same" but "is it still about the current
+    configuration".
+
+    It answers in both directions, and the green line is the useful half: an
+    arm nobody owes a sweep for. A live run per case is the cost of assuming
+    otherwise.
+
+    Deliberately not in CI, unlike --check-prompts. A stale recording is a
+    statement about money owed rather than a broken artefact, and a gate
+    that fails until somebody spends is a gate that gets switched off.
+    """
+    stale = 0
+    for arm in config["arms"]:
+        path = latest_record(arm["label"])
+        if path is None:
+            stale += 1
+            print(f"{arm['label']:<24} never recorded")
+            print(f"    python3 evals/judgement.py --config {config_path} "
+                  f"--arm {arm['label']}")
+            continue
+        with open(path) as handle:
+            record = json.load(handle)
+        rerun, rescore_owed = record_drift(config, arm, record)
+        recorded = record.get("recorded_at", "an unstamped run")
+        if not rerun and not rescore_owed:
+            print(f"{arm['label']:<24} current, recorded {recorded}")
+            continue
+        stale += 1
+        print(f"{arm['label']:<24} "
+              f"{'re-run owed' if rerun else 'rescore owed'}, recorded "
+              f"{recorded} in {os.path.relpath(path)}")
+        for line in rerun + rescore_owed:
+            print(f"  {line}")
+        if rerun:
+            print(f"    python3 evals/judgement.py --config {config_path} "
+                  f"--arm {arm['label']}")
+        else:
+            print(f"    python3 evals/judgement.py --rescore {path}")
+    if stale:
+        print(f"\n{stale} of {len(config['arms'])} arm(s) stale. A re-run is "
+              f"live and costs; a rescore reads what the record already "
+              f"holds and does not.")
+    return 1 if stale else 0
+
+
 def select_cases(dataset, only, limit):
     cases = dataset["cases"]
     if only:
@@ -1281,6 +1472,10 @@ def main():
                         help="regenerate every derived arm prompt and fail if "
                              "it has drifted. Needs no API key, so CI can "
                              "run it.")
+    parser.add_argument("--check-records", action="store_true",
+                        help="report which arms have a recording that still "
+                             "describes this tree, and which are owed a "
+                             "sweep. Needs no API key and spends nothing.")
     parser.add_argument("--list-arms", action="store_true")
     parser.add_argument("--rescore", metavar="RECORD",
                         help="recompute the deterministic figures of a "
@@ -1296,6 +1491,9 @@ def main():
     config = load_config(args.config)
     if args.write_prompts or args.check_prompts:
         return write_prompts(config, check=args.check_prompts)
+
+    if args.check_records:
+        return check_records(config, args.config)
 
     if args.list_arms:
         for arm in config["arms"]:
