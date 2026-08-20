@@ -50,6 +50,19 @@ jobs:
           python3 evals/validate.py
           python3 evals/validate.py --index corpus/index.fixed.json
 
+      # The results table is generated like everything else here, so it gets
+      # the same treatment: a number in it that no longer follows from the
+      # corpus, the dataset and the config is a failure rather than a stale
+      # line nobody reread. Retrieval mode only, which needs no API key.
+      - name: Retrieval baseline table is current
+        run: python3 evals/runner.py --config evals/config.yaml --check
+
+      # The baseline table is one index, so it cannot check a claim about two.
+      # This scores both at every k and fails if the comparison has moved,
+      # which is what stops that claim being a sentence nobody can falsify.
+      - name: Chunker comparison is current
+        run: python3 evals/runner.py --config evals/config.yaml --cross-check --check
+
   specs:
     runs-on: ubuntu-latest
     steps:

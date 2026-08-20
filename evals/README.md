@@ -15,8 +15,12 @@ a refusal issued when the archive held something.
 | `dataset.yaml` | 38 cases with ground truth. Hand-authored. |
 | `RELEVANCE.md` | How `expect.relevant` is judged, and why it is not scoped to the case. |
 | `validate.py` | Asserts every claim in the dataset the corpus can settle. Runs in CI against both indexes. |
+| `runner.py` | Measures retrieval against the dataset. Writes a timestamped JSON record and `results/latest.md`. |
+| `config.yaml` | The baseline configuration: fixed chunker, no reranker, the k values, the passage budget. |
+| `results/` | Timestamped run records, `latest.md` (the baseline table) and `chunker-comparison.md`. |
 
-The runner and the metrics are not written yet. See **Status** below.
+The judgement metrics are not written. `runner.py --mode judgement` says so and
+exits rather than reporting a partial table under a whole name. See **Status**.
 
 ## Running it
 
@@ -24,10 +28,37 @@ The runner and the metrics are not written yet. See **Status** below.
 python3 evals/validate.py                                   # heading-aware index
 python3 evals/validate.py --index corpus/index.fixed.json   # the Phase 4 baseline
 python3 evals/validate.py --repin                           # after a corpus change
+
+python3 evals/runner.py --config evals/config.yaml          # record the baseline
+python3 evals/runner.py --config evals/config.yaml --check   # CI: has the table drifted
+python3 evals/runner.py --config evals/config.yaml --cross-check          # both indexes, every k
+python3 evals/runner.py --config evals/config.yaml --cross-check --check  # CI
+python3 evals/runner.py --index corpus/index.json --chunker heading --label heading-aware
+python3 evals/runner.py --compare evals/results/<a>.json evals/results/<b>.json
 ```
 
-Needs PyYAML. Neither an API key nor the `patches/` provider patch is required:
-`validate.py` drives the mock surface directly and never calls a model.
+Needs PyYAML. Neither an API key nor the `patches/` provider patch is required
+by either script in retrieval mode: both drive the mock surface directly and
+never call a model. That is the point of splitting the modes, and it is what
+makes iterating on the dataset affordable.
+
+`runner.py` refuses to run if the corpus fingerprint has moved off the
+dataset's pin, and refuses if the config's `chunker` disagrees with the index
+it names. Recording a baseline against the wrong index is the one mistake that
+would make the Phase 5 comparison meaningless while looking entirely normal.
+`--compare` refuses two runs that differ in corpus, ground truth, relevance
+floor, passage budget or k list, and refuses a record too old to state one of
+them. Each of those produces a plausible delta rather than an error, and the
+delta is that input moving rather than retrieval improving.
+
+Only a `--config` run writes `latest.md`. An exploratory `--index` run writes
+its JSON and leaves the committed table alone, because it used to overwrite it
+silently and the next `--check` reported drift that was the scratch run.
+
+`runner.py` also refuses to measure through an adapter it did not start, and
+proves the one it did start is serving the index that was asked for by
+resolving a passage id taken from that index file. A passage id carries the
+chunker name, so a leftover process serving the other index cannot pass it.
 
 ## The dataset
 
@@ -152,6 +183,12 @@ At limit 8, on a single canonical query, that observation currently reads:
 | heading-aware | 36 / 60 |
 | fixed | 38 / 60 |
 
+`runner.py` reports the same two numbers as `precedent_hit_rate@limit`, from
+the same probes. Deliberately the same figure in two places rather than two
+figures: this one is printed as an observation the dataset must not be edited
+to satisfy, and the runner's is the measurement. If they ever disagree, one of
+them has changed what it counts.
+
 **Read the denominator, not the ratio.** These are one query per case against
 relevance that is scoped to the incident, so a case probing one axis of a
 multi-axis incident is counted as missing the documents its other axis reaches.
@@ -179,13 +216,82 @@ advance.
 
 ## Status
 
-Phase 4 is partly done.
+Phase 4 is done for retrieval and open for judgement.
 
 - [x] Dataset written, 38 cases, composition asserted
 - [x] Integrity check, both indexes, in CI
-- [ ] Metrics implemented
-- [ ] Runner, `--compare`, `results/latest.md`
-- [ ] Baseline recorded against the fixed chunker with no reranker
+- [x] Retrieval metrics implemented: `precedent_hit_rate@k`, `mrr@k`, and the
+      hit rate at a fixed passage budget
+- [x] Runner, `--compare`, `--check`, `results/latest.md`, drift checked in CI
+- [x] Baseline recorded against the fixed chunker with no reranker
+- [ ] Judgement metrics: `false_precedent_rate`, `no_precedent_accuracy`,
+      `false_refusal_rate`, `divergence_quality`
+- [ ] `groundedness`, which needs a judge prompt at temperature 0 that is not
+      designed yet, and which does not close the section-level gap above
+
+### What the baseline says, and the finding in it
+
+`results/latest.md` has the table. The one result worth carrying forward:
+
+**Two hit rates, because there are two questions.** Ranking documents with
+nothing truncating asks which prior records the surface orders highest.
+Counting what survives inside a fixed passage budget asks what a caller under
+that budget gets, and chunk size decides how many distinct documents fit in
+eight passages.
+
+**The budget is an eval parameter, and an earlier version of this file called
+it the agent's.** Nothing binds the agent to eight: `mock/adapter.py` defaults
+`precedent_search` to five, `.agents/precedent-analyst.yaml` tells the agent to
+ask for enough breadth without naming a number, and no demo passes one.
+`validate.py` had said "limit 8 matches the demos" since the previous PR and
+that was never true. So `precedent_hit_rate@limit` measures the surface under a
+fixed budget, which is a real question about the retriever, and it is not an
+estimate of what the agent is handed. Sol found it at the gate. What the agent
+actually requests is recorded in `search_coverage.queries_issued`, and scoring
+it is judgement mode's job.
+
+Whether the spec should name a number at all is a genuine open question rather
+than an oversight: the qualitative guidance is deliberate, and pinning a limit
+in the prompt would fix something the agent is meant to judge. It is on the
+board, not resolved here.
+
+The chunkers differ on both, in different places. At the budget it is 38/60
+against 36/60. On the ranking they are identical at k = 1, 3, 5 and 8, and
+differ at k = 2, where heading-aware reaches 25 of 60 pairs against fixed's 24:
+`b03`'s `INC-2446` is rank 2 under heading-aware and rank 3 under fixed, and
+the baseline's grid steps over the gap that lives in. Every one of those
+figures is measured by `results/chunker-comparison.md`, which CI diffs.
+
+This file said the ranking was **chunker-blind**, flatly, and that was wrong.
+Two failures produced it, and both are worth naming because neither was a
+retrieval mistake:
+
+- **A grid was mistaken for every k.** Four k values were chosen for the table,
+  the two indexes agreed on all four, and the conclusion drawn was about all k.
+- **The claim lived where nothing could falsify it.** It was a hardcoded
+  sentence in `runner.py`'s table generator, and `--check` regenerates the
+  baseline against one index. Both sides of the diff carried the same sentence
+  whatever the other index did, so CI certified it while being structurally
+  unable to test it.
+
+The fix for the second is `--cross-check`, which scores both indexes at every k
+from 1 to the deepest rank any relevant document reaches, reports the k values
+where they part rather than taking a grid, and writes
+`results/chunker-comparison.md` with its own `--check` in CI. Grok found the
+first in review of PR #16; the k = 2 figure was measured rather than argued
+about.
+
+The cross-check scores both indexes **at the passage budget too**, and that was
+a second round of the same mistake. The first fix measured the ranking across
+both indexes and left the budget comparison where it had always been: `38/60
+against 36/60` typed into three documents, with only the `38/60` half inside a
+checked artefact, because `latest.md` is the baseline index alone. Sol found it
+at the pre-merge gate. A cross-index claim needs a cross-index measurement
+whichever metric it is about, and fixing that for one metric while leaving the
+metric it is contrasted with unchecked is the fix stopping one line short.
+
+For Phase 5 the consequence is that both numbers get reported. Either alone
+answers a question it was not asked.
 
 ### Notes for the runner
 

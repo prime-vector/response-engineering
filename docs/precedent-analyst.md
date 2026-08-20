@@ -271,10 +271,38 @@ never counted as a miss. The judgements are recorded in `evals/RELEVANCE.md`.
 
 ```bash
 python3 evals/runner.py --config evals/config.yaml
+python3 evals/runner.py --config evals/config.yaml --check
 python3 evals/runner.py --compare evals/results/<a>.json evals/results/<b>.json
 ```
 
 Writes timestamped JSON plus `evals/results/latest.md` as a table ready for the README.
+Written, for retrieval. `--check` regenerates the table and fails if it has drifted,
+which is why the table carries no timestamp and no latency figure: it is a function
+of the dataset, the corpus and the config, and CI treats it like any other generated
+artefact. Judgement mode exits with what it would need rather than reporting a partial
+table under a whole name.
+
+**Two hit rates, and the second is not a footnote.** `precedent_hit_rate@k` ranks
+documents with nothing truncating, which is a property of the ranking alone.
+`precedent_hit_rate@limit` counts what survives inside a fixed passage budget of
+eight, where chunk size decides how many distinct documents fit. That budget is an
+eval parameter and not the agent's: the surface defaults to five, this spec tells the
+agent to ask for breadth without naming a number, and no demo passes one. They differ at
+the budget, 38/60 against 36/60, and at k = 2, where heading-aware reaches 25 of 60
+pairs against fixed's 24. They are identical at k = 1, 3, 5 and 8, which is the grid
+the baseline reads: the one relevant document that moves, `b03`'s `INC-2446`, sits
+between grid points. Phase 5 must report both, since either alone answers a question
+it was not asked.
+
+**A claim about two indexes may not live in a table generated from one.** An earlier
+version of this section said the ranking was chunker-blind, and the sentence sat in
+the generated baseline table where `--check` regenerated it identically whatever the
+other index did. `--cross-check` scores both indexes at every k from 1 to the deepest
+rank any relevant document reaches, finds the k values where they part rather than
+taking a grid, and writes `evals/results/chunker-comparison.md`, which CI diffs.
+It scores both indexes at the passage budget as well: `latest.md` holds that figure
+for the baseline index only, so the other half of `38/60 against 36/60` was prose
+no check could falsify until the cross-check measured it.
 
 ---
 
@@ -304,8 +332,13 @@ grounding-stripped producer is rejected by the schema. Done, as
 **Phase 4, Evals baseline.** Dataset written, metrics implemented, baseline recorded
 with the fixed-size chunker and no reranker.
 *Done when:* `latest.md` holds a complete baseline table.
-Dataset and its integrity check are done and in CI. Metrics, runner and the
-baseline table are not started.
+Done for retrieval, open for judgement. The dataset, its integrity check, the runner,
+the retrieval metrics and the fixed-chunker baseline are all in, and CI fails if the
+table drifts off the corpus or the dataset. `false_precedent_rate`,
+`no_precedent_accuracy`, `false_refusal_rate` and `divergence_quality` need one live
+`oa run` per case and are listed in the table as unmeasured with what each needs.
+`groundedness` needs a judge prompt at temperature 0 that is not designed, and it
+would not close the section-level gap either way.
 
 **Phase 5, Measured improvement.** At least two experiments:
 heading-aware versus fixed chunking, and hybrid with versus without the reranker.
