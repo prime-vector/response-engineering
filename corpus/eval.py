@@ -354,17 +354,29 @@ def case_audit_log_names_arguments(log_path):
              "symptom_text": "audit analysis daemon memory",
              "before": BRIDGE_BOUND, "limit": 4}
     r = rpc("precedent_search", query)
+    # Every call on the surface, not just the one the identity rule turns on.
+    # The first version of this case asserted a single search round-tripped,
+    # which would have passed with the other two tools logging nothing: a
+    # coverage call whose bound is unrecorded is as unauditable as a query
+    # whose terms are.
+    asked = {"precedent_search": query,
+             "coverage_describe": {"before": BRIDGE_BOUND},
+             "passage_get": {"passage_id": r["passages"][0]["passage_id"]}}
+    rpc("coverage_describe", asked["coverage_describe"])
+    rpc("passage_get", asked["passage_get"])
     with open(log_path) as fh:
         fh.seek(start)
         log = fh.read()
 
     logged = re.findall(r"^\[mock-precedent_archive\] args (\S+) (.*)$",
                         log, re.M)
-    ok = any(name == "precedent_search" and json.loads(blob) == query
-             for name, blob in logged)
+    seen = {name: json.loads(blob) for name, blob in logged}
+    missing = sorted(name for name, args in asked.items()
+                     if seen.get(name) != args)
     sample = " ".join(r["passages"][0]["text"].split()[:8])
-    return (ok and sample not in log,
-            f"{len(logged)} args line(s), arguments reproduced={ok}, "
+    return (not missing and sample not in log,
+            f"{len(logged)} args line(s) over {len(asked)} tools, "
+            f"unlogged or altered: {missing or 'none'}, "
             f"passage text logged={sample in log}")
 
 

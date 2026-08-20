@@ -200,45 +200,85 @@ prompts committed, and they are reported in their own table so they cannot be
 read as the same kind of number.
 
 Three configurations, one live sweep each, 38 cases, nothing rejected or
-unparseable in any of them:
+unparseable in any of them. Deterministic first, with the unit each figure is
+counted in, because they are not the same unit:
 
-| | shipped | fixed chunks | one verbose query |
+| measured by code | unit | shipped | fixed chunks | one verbose query |
+| --- | --- | --- | --- | --- |
+| `false_precedent_rate` | claims offered | 0/52 | 0/56 | 0/22 |
+| `applies_omission_rate` | applies documents returned to the agent | **14/23** | 13/23 | 3/9 |
+| `no_precedent_accuracy` | cases with no precedent | 13/13 | 13/13 | 13/13 |
+| `false_refusal_rate` | answerable cases | 0/25 | 1/25 | **8/25** |
+| `groundedness_log` | cited passage ids | 138/138 | 88/88 | 32/32 |
+| `agent_reach` | (case, relevant document) pairs | 54/60 | 54/60 | **22/60** |
+| p50 / p95 latency | one recall | 26.9s / 52.8s | 26.4s / 55.3s | 13.1s / 27.1s |
+
+Judged by a model, in its own table because a judged figure beside a
+deterministic one reads as the same kind of fact:
+
+| judged at temperature 0 | shipped | fixed chunks | one verbose query |
 | --- | --- | --- | --- |
-| `false_precedent_rate` | 0/52 claims | 0/56 | 0/22 |
-| `no_precedent_accuracy` | 13/13 | 13/13 | 13/13 |
-| `false_refusal_rate` | 0/25 | 1/25 | **8/25** |
-| `groundedness_log` | 190/190 | 144/144 | 54/54 |
-| `agent_reach` | 54/60 pairs | 54/60 | **22/60** |
-| `groundedness_judge` | 71.2% | 80.4% | 81.8% |
-| p95 latency | 52.8s | 55.3s | 27.1s |
+| `groundedness_judge` | 37/52 claims | 45/56 | 18/22 |
+| `divergence_quality` | 6/6 near-miss precedents | 6/7 | 6/7 |
 
-**Kept: the retrieval guidance, at twice the latency.** The spec tells the agent
-to query distinctive terms and to query more than once. Replacing that one
-paragraph with the instruction someone would plausibly write instead, a single
-search carrying the whole reported symptom, costs 8 false refusals in 25
-answerable cases and drops the archive's reach from 54 of 60 relevant documents
-to 22. Every case in the composite scenario itself refuses. It is twice as fast,
-p95 27.1s against 52.8s, and one search per case against five. Half the latency
-for a third of the reach is not a trade worth taking in an investigation.
+**A zero false precedent rate is not the result it looks like.** Across all
+three sweeps the agent offered `partial` 113 times and `superseded` 17 times,
+and `applies` not once, so the rate cannot fire. The row that catches what it
+misses is `applies_omission_rate`: in the shipped configuration, 14 of the 23
+documents the ground truth says apply here were handed to the agent by the
+archive and never reached the board at all, mostly the covering runbook
+procedures. Nothing was overclaimed and the responder still did not get the
+thing that applies. Every other rate is blind to it, `agent_reach` included,
+because the archive did return them.
+
+**Kept: the rule 4 paragraph, at twice the latency.** Replacing it with the
+instruction someone would plausibly write instead, a single search carrying the
+whole reported symptom, costs 8 false refusals in 25 answerable cases and drops
+the archive's reach from 54 of 60 relevant documents to 22. Every case in the
+composite scenario itself refuses. It is twice as fast, p95 27.1s against 52.8s.
+Half the latency for a third of the reach is not a trade worth taking in an
+investigation.
+
+**What that delta is not is a clean test of query count.** The shipped
+paragraph carries two instructions, and the replacement drops both: search more
+than once, and ask for enough breadth because the surface caps how many
+passages one document contributes. The sweeps show the second doing real work.
+The shipped arm passed `limit: 8` on 157 of its 182 searches; the alternative
+passed no limit on 41 of its 43 and took the surface default of five. So the
+reach collapse mixes fewer queries with a smaller passage budget, and the arm
+measures the paragraph rather than the query strategy inside it. The
+paragraph-level result stands, the causal attribution to query count alone does
+not, and `--compare` cannot see the difference because it treats a system
+prompt as one knob.
 
 **Rejected: reading the chunker off these numbers.** Heading-aware and
-fixed-size chunking reach the same 54 of 60 pairs, and the judgement figures
-part by one case in each direction, which is what one sweep of a live model
-does twice. Heading-aware is kept for something no metric here scores: its
+fixed-size chunking reach the same 54 of 60 pairs and omit 14 and 13 of 23
+applying documents. They part on the judged half, 37 of 52 claims supported
+against 45 of 56, which is eight more supported claims and not a rounding
+wobble; on one sweep each, with a judge scoring a model, that is not enough to
+choose on. Heading-aware is kept for something no metric here scores: its
 citations carry the heading chain, `INC-2411: … > Resolution`, where fixed
 chunks carry only the document title. That is the part that makes a citation
 checkable in five seconds, and it is a property rather than a result.
+
+On `d01`, the draft-status case, both indexes returned the covering procedure.
+Under heading-aware the agent offered only the barred draft, as `partial`, and
+cited the procedure not at all; under fixed it refused the case outright. Two
+different failures, neither of them caught by a headline rate before
+`applies_omission_rate` existed.
 
 **Also rejected: the experiment this phase was originally specified with.**
 Section 4 of `docs/precedent-analyst.md` describes a reranker for a real
 adapter. There is none in this repo, so the runner refuses a config that
 declares one rather than recording a configuration nothing produced.
 
-Read the judged column with care. `groundedness_judge` is higher in both
-alternatives, and both make far fewer claims: the failure it catches is a
-divergence asserting an absence the passages never state, and there is more of
-that where there is more divergence text. It is not an argument for the
-alternatives.
+Read the judged table with care. `groundedness_judge` is higher in both
+alternatives. For the single-query arm the explanation is selection: 22 claims
+against 52, and the failure the judge catches is a divergence asserting an
+absence the passages never state, so there is more of it where there is more
+divergence text. That explanation does not cover the fixed arm, which made
+*more* claims than the shipped one, 56 against 52, and still had more of them
+supported. Why is not established here.
 
 What the measurement found that no schema catches: two runs cited an
 unsubmitted working note as `partial` precedent while saying in prose that it
@@ -247,10 +287,12 @@ rejected, so an agent trying to report the trap has to put its caveat where the
 contract does not carry it. That is an open gap in the output contract, and it
 is recorded rather than tuned away.
 
-Numbers regenerate with `python3 evals/runner.py --config evals/config.yaml`
-and `python3 evals/judgement.py --arm <arm>`. The retrieval tables are checked
-for drift in CI; the judgement tables are records of one run and carry the
-timestamp, spec, prompt and model that produced them.
+The retrieval tables regenerate with `python3 evals/runner.py --config
+evals/config.yaml` and are checked for drift in CI. The judgement tables do not
+regenerate: they are records of one live run, a fresh sweep of the same arm
+gives different numbers, and each carries the timestamp, spec, prompt, model
+and case ids that produced it. `evals/judgement.py --rescore` recomputes the
+deterministic half from a stored record and prints which figures moved.
 
 ## Where this sits
 

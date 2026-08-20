@@ -384,9 +384,17 @@ def run_case(oa, config, case, log_path, system_prompt, timeout):
 # --------------------------------------------------------------------------
 
 def cited_ids(precedent):
+    """Every passage id this claim rests on, each counted once.
+
+    incident_ref.passage_id is normally also in grounded_in, which is the
+    contract's ordinary shape, so appending it produced a denominator no
+    reader could tally from the output: one cited id read as 2/2. The rate
+    was unaffected, both copies being in the log or neither, and a
+    denominator that cannot be checked is worth fixing anyway.
+    """
     ref = precedent.get("incident_ref") or {}
     ids = list(precedent.get("grounded_in") or [])
-    if ref.get("passage_id"):
+    if ref.get("passage_id") and ref["passage_id"] not in ids:
         ids.append(ref["passage_id"])
     return ids
 
@@ -418,6 +426,15 @@ def score_run(case, record):
         "reach": {"relevant": len(relevant),
                   "reached": len(relevant & reached),
                   "missed": sorted(relevant - reached)},
+        # The failure every rate below is blind to. A document the ground
+        # truth says applies here, which the archive handed the agent, and
+        # which never reached the board: no claim was offered on it, so
+        # false_precedent_rate sees nothing, understated sees nothing, and
+        # agent_reach counts it as reached because the surface did return it.
+        # The case answers, so it is not a refusal either.
+        "applies_retrieved": sorted(uri for uri, verdict in truth.items()
+                                    if verdict == "applies" and uri in reached),
+        "applies_offered": [],
     }
     if record["failure"]:
         return out
@@ -483,6 +500,9 @@ def score_run(case, record):
             "grounded_in": ids,
             "ungrounded": invented,
         })
+    out["applies_offered"] = sorted(
+        {c["source_uri"] for c in out["claims"]}
+        & set(out["applies_retrieved"]))
     return out
 
 
@@ -512,6 +532,16 @@ def aggregate(cases, records, scores):
     reached = sum(scores[r["case"]]["reach"]["reached"] for r in usable
                   if scores[r["case"]]["precedent_exists"])
 
+    omitted = [f"{r['case']}:{uri}" for r in usable
+               for uri in scores[r["case"]]["applies_retrieved"]
+               if uri not in scores[r["case"]]["applies_offered"]]
+    applies_pairs = sum(len(scores[r["case"]]["applies_retrieved"])
+                        for r in usable)
+    offered_words = {}
+    for claim in claims:
+        offered_words[claim["offered"]] = offered_words.get(
+            claim["offered"], 0) + 1
+
     latencies = sorted(r["elapsed_ms"] for r in records)
     return {
         "cases": len(records),
@@ -536,6 +566,26 @@ def aggregate(cases, records, scores):
                           for c in scores[r["case"]]["claims"]
                           if c["false_precedent"]],
         },
+        # Read this one before the rate above it. false_precedent_rate can
+        # only fire on a claim the agent made; this fires on one it did not.
+        # A document the archive handed over, which the ground truth says
+        # applies here, and which never reached the board, is the anchoring
+        # failure's quiet twin: nothing was overclaimed and the responder
+        # still did not get the thing that applies.
+        "applies_omission_rate": {
+            "value": round(len(omitted) / applies_pairs, 4)
+            if applies_pairs else None,
+            "numerator": len(omitted),
+            "denominator": applies_pairs,
+            "unit": "(case, document) pairs whose ground truth is `applies` "
+                    "and which the surface returned to the agent, counted "
+                    "when no precedent was offered on them at all",
+            "omitted": omitted,
+        },
+        # The distribution the headline rate depends on, printed because a
+        # rate of zero over a word nobody used is not a result. Sol and Grok
+        # both have to be able to see this without opening the record.
+        "applicability_offered": offered_words,
         "no_precedent_accuracy": {
             "value": round(len(correct_refusals) / len(novel_usable), 4)
             if novel_usable else None,
@@ -1060,10 +1110,27 @@ def markdown(result):
         "| Metric | Value | Count | Denominator |",
         "| --- | --- | --- | --- |",
         metric_row("false_precedent_rate", summary["false_precedent_rate"]),
+        metric_row("applies_omission_rate", summary["applies_omission_rate"]),
         metric_row("no_precedent_accuracy", summary["no_precedent_accuracy"]),
         metric_row("false_refusal_rate", summary["false_refusal_rate"]),
         metric_row("groundedness_log", summary["groundedness_log"]),
         metric_row("agent_reach", summary["agent_reach"]),
+        "",
+        "**Read the two top rows together.** `false_precedent_rate` fires "
+        "only on a claim the agent made. `applies_omission_rate` fires on one "
+        "it did not: a document the ground truth says applies here, which the "
+        "surface returned, and which no precedent was offered on at all. "
+        "Nothing is overclaimed and the responder still does not get the "
+        "thing that applies, and every other rate here is blind to it, "
+        "`agent_reach` included, because the archive did return it.",
+        "",
+        "Applicability offered across this run: "
+        + ", ".join(f"`{word}` {count}" for word, count
+                    in sorted(summary["applicability_offered"].items(),
+                              key=lambda kv: -kv[1]))
+        + ". A `false_precedent_rate` of zero over a run that never used "
+          "`applies` is a property of the vocabulary the agent reached for, "
+          "not evidence that it judged applicability well.",
         "",
         "`groundedness_log` is the check the adapter log can settle: every "
         "cited `passage_id` was in the set the surface returned. It proves a "
@@ -1248,7 +1315,32 @@ def rescore(path):
     records = [{k: v for k, v in entry.items() if k != "score"}
                for entry in result["per_case"]]
     scores = {r["case"]: score_run(by_id[r["case"]], r) for r in records}
+    before = result["deterministic"]
     result["deterministic"] = aggregate(cases, records, scores)
+    # Which published figures moved, by name. A stamp saying a rescore
+    # happened meets the letter of "a file whose numbers changed says so" and
+    # not the point of it: a reader should not have to diff two JSON files to
+    # learn that a headline rate is a different number than it was.
+    for name in sorted(set(before) | set(result["deterministic"])):
+        old_block = before.get(name)
+        new_block = result["deterministic"].get(name)
+        if not isinstance(new_block, dict) or "value" not in new_block:
+            continue
+        if not isinstance(old_block, dict) or "value" not in old_block:
+            # A metric this scoring added. Worth a line of its own: a figure
+            # appearing in a published table without the tool saying it is
+            # new reads as one that was always there.
+            print(f"  {name}: new, {pct(new_block.get('value'))} "
+                  f"({new_block.get('numerator')}/"
+                  f"{new_block.get('denominator')})")
+            continue
+        was = (old_block.get("value"), old_block.get("numerator"),
+               old_block.get("denominator"))
+        now = (new_block.get("value"), new_block.get("numerator"),
+               new_block.get("denominator"))
+        if was != now:
+            print(f"  {name}: {pct(was[0])} ({was[1]}/{was[2]}) -> "
+                  f"{pct(now[0])} ({now[1]}/{now[2]})")
     result["per_case"] = [{**r, "score": scores[r["case"]]} for r in records]
     result["rescored_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     result["scorer"] = {

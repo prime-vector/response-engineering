@@ -12,9 +12,10 @@ are the numbers Phase 5's chunker comparison turns on. The judgement metrics
 (false_precedent_rate, no_precedent_accuracy, false_refusal_rate,
 groundedness, divergence_quality) need a live `oa run` per case, an API key and
 the patches/ provider patch, and they score the agent on the queries it chose
-rather than on this dataset's canonical probe. They are not written yet. Every
-one of them appears in the results table as unmeasured rather than being left
-out, because a table that lists only what was measured reads as a full result.
+rather than on this dataset's canonical probe. They live in evals/judgement.py.
+Every one of them still appears in this mode's results table as unmeasured,
+with where it is measured instead, because a table that lists only what it
+measured reads as a full result.
 
 Stdlib plus PyYAML, same as evals/validate.py, which this borrows the corpus
 fingerprint from so a results file records the corpus it was measured against.
@@ -1062,7 +1063,27 @@ def compare_judgement(path_a, a, path_b, b):
              lambda r: r["surface"]["floor_applied"]),
             ("agent spec", "agent.spec_fingerprint",
              lambda r: r["agent"]["spec_fingerprint"]),
-            ("agent model", "agent.model", lambda r: r["agent"]["model"])):
+            ("agent model", "agent.model", lambda r: r["agent"]["model"]),
+            # The inputs a rescore or a prompt edit moves. Retrieval
+            # --compare refuses everything that can change a number without
+            # producing an error, and these are that class on this side:
+            # scoring one record with newer code, or editing a judge prompt
+            # without touching the model id, prints as an arm delta and is
+            # not one. Grok found the gap on PR #17.
+            ("scorer", "scorer.fingerprint",
+             lambda r: (r.get("scorer") or {}).get("fingerprint")),
+            ("judge model", "judged.model",
+             lambda r: (r.get("judged") or {}).get("model")),
+            ("judge temperature", "judged.temperature",
+             lambda r: (r.get("judged") or {}).get("temperature")),
+            ("groundedness judge prompt",
+             "judged.prompts.groundedness.fingerprint",
+             lambda r: ((r.get("judged") or {}).get("prompts") or {})
+             .get("groundedness", {}).get("fingerprint")),
+            ("divergence judge prompt",
+             "judged.prompts.divergence.fingerprint",
+             lambda r: ((r.get("judged") or {}).get("prompts") or {})
+             .get("divergence", {}).get("fingerprint"))):
         va, vb = get(a), get(b)
         if va != vb:
             print(f"FAIL  these sweeps used a different {label}, so the delta "
@@ -1093,17 +1114,26 @@ def compare_judgement(path_a, a, path_b, b):
     print(f"  {a['label']:<24} {a['arm'][changed[0].replace(' ', '_')]}")
     print(f"  {b['label']:<24} {b['arm'][changed[0].replace(' ', '_')]}\n")
 
-    def show(name, block_a, block_b, lower_is_better=False):
+    def show(name, block_a, block_b, lower_is_better=False,
+             denominator_is_an_outcome=False):
         if not block_a or not block_b or block_a.get("value") is None \
                 or block_b.get("value") is None:
             print(f"  {name:<22} {'-':>7}    {'-':>7}          not scored in "
                   f"both runs")
             return
         delta = (block_b["value"] - block_a["value"]) * 100
+        # Some rates are scored over what the run itself produced. An arm that
+        # retrieved fewer documents that apply has fewer of them to omit, so
+        # its omission rate improves by doing less, and calling that better
+        # would be the fitting move in miniature.
+        moved = (denominator_is_an_outcome
+                 and block_a["denominator"] != block_b["denominator"])
         direction = ""
-        if abs(delta) >= 0.05:
+        if abs(delta) >= 0.05 and not moved:
             better = (delta < 0) if lower_is_better else (delta > 0)
             direction = "  better" if better else "  worse"
+        elif moved:
+            direction = "  denominators differ"
         print(f"  {name:<22} {pct(block_a['value']):>7} -> "
               f"{pct(block_b['value']):>7}  {delta:+6.1f}pp{direction}"
               f"   ({block_a['numerator']}/{block_a['denominator']} -> "
@@ -1113,6 +1143,9 @@ def compare_judgement(path_a, a, path_b, b):
     print("  Measured by code")
     show("false_precedent_rate", da["false_precedent_rate"],
          db["false_precedent_rate"], lower_is_better=True)
+    show("applies_omission_rate", da.get("applies_omission_rate"),
+         db.get("applies_omission_rate"), lower_is_better=True,
+         denominator_is_an_outcome=True)
     show("no_precedent_accuracy", da["no_precedent_accuracy"],
          db["no_precedent_accuracy"])
     show("false_refusal_rate", da["false_refusal_rate"],
@@ -1137,6 +1170,16 @@ def compare_judgement(path_a, a, path_b, b):
     for key in ("p50", "p95"):
         print(f"  {key:<22} {da['latency_ms'][key] / 1000:7.1f}s -> "
               f"{db['latency_ms'][key] / 1000:7.1f}s")
+
+    words_a = da.get("applicability_offered") or {}
+    words_b = db.get("applicability_offered") or {}
+    if words_a or words_b:
+        print(f"\n  applicability offered   "
+              f"{words_a or 'none'}  ->  {words_b or 'none'}")
+        if not words_a.get("applies") and not words_b.get("applies"):
+            print("        Neither run used `applies`, so the false "
+                  "precedent rate above is zero over a word the agent never "
+                  "reached for. Read applies_omission_rate instead.")
 
     print(f"\n  One sweep each, {len(a['dataset']['ids'])} cases, a model at "
           f"temperature {a['agent']['temperature']} on both sides. A few "

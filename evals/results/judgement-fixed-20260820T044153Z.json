@@ -76,7 +76,7 @@
   },
   "scorer": {
     "path": "evals/judgement.py",
-    "fingerprint": "dc18524d69cbd25fbbd2403a13c4ec387f7532fdeb82400324ce69229859314d"
+    "fingerprint": "d1cc50fdf4063e518fc8f6d1110168eea3d5a19f9a274e0dcafaaf6a888d9424"
   },
   "deterministic": {
     "cases": 38,
@@ -91,6 +91,31 @@
       "denominator": 56,
       "unit": "precedent claims offered across every scored case",
       "offending": []
+    },
+    "applies_omission_rate": {
+      "value": 0.5652,
+      "numerator": 13,
+      "denominator": 23,
+      "unit": "(case, document) pairs whose ground truth is `applies` and which the surface returned to the agent, counted when no precedent was offered on them at all",
+      "omitted": [
+        "a01:corpus://runbooks/denial-log-collection",
+        "a02:corpus://runbooks/memory-pressure",
+        "a03:corpus://runbooks/denial-log-collection",
+        "b01:corpus://runbooks/memory-pressure",
+        "b03:corpus://runbooks/memory-pressure",
+        "b05:corpus://runbooks/memory-pressure",
+        "b06:corpus://runbooks/memory-pressure",
+        "c01:corpus://runbooks/memory-pressure",
+        "c02:corpus://runbooks/container-resource-limits",
+        "c06:corpus://runbooks/memory-pressure",
+        "d01:corpus://runbooks/memory-pressure",
+        "d03:corpus://runbooks/memory-pressure",
+        "g01:corpus://runbooks/memory-pressure"
+      ]
+    },
+    "applicability_offered": {
+      "superseded": 8,
+      "partial": 48
     },
     "no_precedent_accuracy": {
       "value": 1.0,
@@ -110,8 +135,8 @@
     },
     "groundedness_log": {
       "value": 1.0,
-      "numerator": 144,
-      "denominator": 144,
+      "numerator": 88,
+      "denominator": 88,
       "unit": "cited passage ids, checked against the adapter's returned set",
       "invented": []
     },
@@ -1021,8 +1046,7 @@
             "divergence": "INC-2288 was filed under host.cpu.saturation, not host.memory.exhaustion; the current incident carries a memory exhaustion signal that INC-2288 did not. The resolution taken in INC-2288 \u2014 deactivating the audit event dispatcher \u2014 is superseded: document_superseded_by reads 'Platform security standard SEC-STD-14 (2026-01-30) requires the audit event dispatcher to remain active on production hosts. Deactivating it is no longer an available resolution, and doing it here destroyed the evidence that would have identified the source domain.' The audit denial log naming the source domain was outstanding in INC-2288 and remains outstanding here; without it the source domain is unidentified in both records.",
             "grounded_in": [
               "p-13b0c0432e17",
-              "p-378514460c22",
-              "p-13b0c0432e17"
+              "p-378514460c22"
             ],
             "ungrounded": []
           },
@@ -1036,7 +1060,6 @@
             "confidence": "speculative",
             "divergence": "INC-2411 had a preceding JVM heap tuning change as the distinguishing evidence; no equivalent change has been identified here. The current incident also shows an active audit analysis daemon consuming CPU and a security module in enforcing mode \u2014 neither feature appears in INC-2411. Process-level memory attribution, which would distinguish these patterns, is still outstanding here.",
             "grounded_in": [
-              "p-2978a1380a0d",
               "p-2978a1380a0d"
             ],
             "ungrounded": []
@@ -1051,15 +1074,14 @@
             "confidence": "speculative",
             "divergence": "INC-2419 had no security module or denial-analysis daemon activity in its record; the current incident has both confirmed. INC-2419 was resolved by restarting the workload with the cause unconfirmed; no equivalent action has been taken here, and the audit denial log and memory attribution are still outstanding.",
             "grounded_in": [
-              "p-e5bdd7198bcc",
               "p-e5bdd7198bcc"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 7,
-          "in_returned_set": 7,
+          "total": 4,
+          "in_returned_set": 4,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -1080,6 +1102,10 @@
             "corpus://runbooks/memory-pressure"
           ]
         },
+        "applies_retrieved": [
+          "corpus://runbooks/denial-log-collection"
+        ],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -1300,8 +1326,7 @@
             "divergence": "INC-2419 ran for nine days across ten before any action was taken; the current incident is on day two. INC-2419 was resolved by restarting the workload with no process-level attribution ever captured \u2014 the record explicitly notes 'Process-level attribution was never captured while the host was exhausted, so there is no record of what held the memory' (p-0b2d395d47a7). The current incident has that attribution still outstanding but not yet destroyed; the evidence gap that defined INC-2419 as unresolvable has not yet been created here.",
             "grounded_in": [
               "p-e5bdd7198bcc",
-              "p-0b2d395d47a7",
-              "p-e5bdd7198bcc"
+              "p-0b2d395d47a7"
             ],
             "ungrounded": []
           },
@@ -1316,8 +1341,7 @@
             "divergence": "INC-2411 had a recent change on the host (JVM heap raised the evening before the first auto-close) that correlated with the onset; no such change is noted in the current evidence. INC-2411 showed heavy swapping; the current evidence describes a standing resident condition (23 of 32 GiB) but does not report swap activity. Process-level attribution was not captured before the revert in INC-2411 (p-b5386e8a3c6f); that evidence is still outstanding here and has not yet been destroyed.",
             "grounded_in": [
               "p-2978a1380a0d",
-              "p-b5386e8a3c6f",
-              "p-2978a1380a0d"
+              "p-b5386e8a3c6f"
             ],
             "ungrounded": []
           },
@@ -1331,15 +1355,14 @@
             "confidence": "plausible",
             "divergence": "INC-2350 was resolved only after a process snapshot attributed 6 GiB to a specific process (the log shipper); that snapshot is the key piece of evidence still outstanding in the current incident. INC-2350 ran for four days before the snapshot was taken; the current incident is on day two. The record's claimed cause names a specific dependency failure as the trigger \u2014 that has not been established here and must not be assumed.",
             "grounded_in": [
-              "p-ba71e1a2b64a",
               "p-ba71e1a2b64a"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 8,
-          "in_returned_set": 8,
+          "total": 5,
+          "in_returned_set": 5,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -1357,6 +1380,10 @@
           "reached": 3,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://runbooks/memory-pressure"
+        ],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-03-03T09:00:00+00:00",
@@ -1593,7 +1620,6 @@
             "confidence": "plausible",
             "divergence": "INC-2411 had a process snapshot showing heavy swapping and a recent JVM heap change as the candidate consumer. The current incident has an active audit analysis daemon as the identified CPU consumer, and the audit denial log naming the source domain is still outstanding. No heap change has been identified here. The memory consumer in INC-2411 was a JVM workload; the consumer identified here is the audit analysis daemon, which is a different process class. The distinguishing evidence in INC-2411 (swap metrics and change registry) is not what is outstanding here.",
             "grounded_in": [
-              "p-2978a1380a0d",
               "p-2978a1380a0d"
             ],
             "ungrounded": []
@@ -1609,8 +1635,7 @@
             "divergence": "INC-2288 fired under host.cpu.saturation, not host.memory.exhaustion; the current incident's primary signal is memory exhaustion. INC-2288 was on a different host class (mid-prod-f3, not an integration host). The resolution taken in INC-2288\u2014deactivating the audit event dispatcher\u2014is superseded: Platform security standard SEC-STD-14 (2026-01-30) requires the audit event dispatcher to remain active on production hosts. Deactivating it is no longer an available resolution, and doing it here destroyed the evidence that would have identified the source domain.",
             "grounded_in": [
               "p-13b0c0432e17",
-              "p-378514460c22",
-              "p-13b0c0432e17"
+              "p-378514460c22"
             ],
             "ungrounded": []
           },
@@ -1624,15 +1649,14 @@
             "confidence": "speculative",
             "divergence": "INC-2419 had no identified CPU consumer and no audit daemon activity in evidence; the current incident has a confirmed active audit analysis daemon. INC-2419 was resolved by restarting the workload with no cause established; that resolution is not grounded in the current evidence pattern and the cause here is still under investigation with outstanding evidence.",
             "grounded_in": [
-              "p-e5bdd7198bcc",
               "p-e5bdd7198bcc"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 7,
-          "in_returned_set": 7,
+          "total": 4,
+          "in_returned_set": 4,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -1653,6 +1677,10 @@
             "corpus://runbooks/memory-pressure"
           ]
         },
+        "applies_retrieved": [
+          "corpus://runbooks/denial-log-collection"
+        ],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -1880,8 +1908,7 @@
             "divergence": "INC-2411 had a recent JVM heap-resize change as the correlating event, and the resolution was confirmed by the swap curve returning to baseline after a revert. No equivalent recent change has been identified here. Additionally, INC-2411 had no active audit analysis daemon in its process listing, and no outstanding audit denial log evidence; the current incident has both, which INC-2411 does not address. INC-2411's gap note explicitly records that no process-level attribution was captured before the revert, so the contribution of any other consumer was never measured \u2014 meaning the record cannot rule out a daemon-class consumer like the one observed here.",
             "grounded_in": [
               "p-2978a1380a0d",
-              "p-b5386e8a3c6f",
-              "p-2978a1380a0d"
+              "p-b5386e8a3c6f"
             ],
             "ungrounded": []
           },
@@ -1896,8 +1923,7 @@
             "divergence": "Platform security standard SEC-STD-14 (2026-01-30) requires the audit event dispatcher to remain active on production hosts. Deactivating it is no longer an available resolution, and doing it here destroyed the evidence that would have identified the source domain. INC-2288's signature was host.cpu.saturation, not host.memory.exhaustion; the current incident's primary signal is memory exhaustion, not CPU saturation. The audit denial log for the current incident is still outstanding, so the denial-volume pattern that drove INC-2288 has not yet been confirmed or ruled out here.",
             "grounded_in": [
               "p-13b0c0432e17",
-              "p-378514460c22",
-              "p-13b0c0432e17"
+              "p-378514460c22"
             ],
             "ungrounded": []
           },
@@ -1911,15 +1937,14 @@
             "confidence": "speculative",
             "divergence": "INC-2419 was on a different host (intg-prod-j5), had no identified audit daemon activity, and was closed with cause unconfirmed after a workload restart \u2014 no process-level evidence was gathered. The current incident has a specific process (audit analysis daemon) already identified in the process listing, which INC-2419 does not address. INC-2419 offers no resolution that transfers to a situation where a specific consumer has been identified.",
             "grounded_in": [
-              "p-e5bdd7198bcc",
               "p-e5bdd7198bcc"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 8,
-          "in_returned_set": 8,
+          "total": 5,
+          "in_returned_set": 5,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -1941,6 +1966,8 @@
             "corpus://runbooks/memory-pressure"
           ]
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -2178,7 +2205,6 @@
             "confidence": "plausible",
             "divergence": "INC-2350 resolved only after a process-level snapshot attributed 6 GiB resident to a specific process. That snapshot is the outstanding evidence here and has not yet been taken. Without it, the consumer in this incident is unattributed and the INC-2350 resolution path does not transfer. INC-2350 also involved an ETL host, not a batch integration host, and the specific process class that changed behaviour there is not established for this incident.",
             "grounded_in": [
-              "p-ba71e1a2b64a",
               "p-ba71e1a2b64a"
             ],
             "ungrounded": []
@@ -2194,8 +2220,7 @@
             "divergence": "INC-2411 was resolved by correlating a heap-resize change found in package and change history. The current incident's change history query returned empty over a 14-day window, so the distinguishing feature of INC-2411 \u2014 a traceable change record \u2014 is absent here. INC-2411 also noted as a gap that no process-level attribution was captured before the revert, which is precisely the evidence still outstanding in this incident. The record claims a JVM heap change as cause; that claim belongs to the record and is not established for this incident.",
             "grounded_in": [
               "p-2978a1380a0d",
-              "p-b5386e8a3c6f",
-              "p-2978a1380a0d"
+              "p-b5386e8a3c6f"
             ],
             "ungrounded": []
           },
@@ -2209,15 +2234,14 @@
             "confidence": "plausible",
             "divergence": "INC-2419 was closed with root cause unconfirmed after a workload restart resolved the symptom. The current incident has not yet taken a process-level snapshot, which is the evidence INC-2419 destroyed by restarting first. INC-2419 offers no resolution that transfers; it is a record of what happens when attribution evidence is not collected.",
             "grounded_in": [
-              "p-e5bdd7198bcc",
               "p-e5bdd7198bcc"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 7,
-          "in_returned_set": 7,
+          "total": 4,
+          "in_returned_set": 4,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -2236,6 +2260,10 @@
           "reached": 2,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://runbooks/memory-pressure"
+        ],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -2427,8 +2455,7 @@
             "divergence": "Duration differs: prior incident ran six days before identification; current incident is at four days. More critically, the resolution taken in INC-2288 is superseded: Platform security standard SEC-STD-14 (2026-01-30) requires the audit event dispatcher to remain active on production hosts. Deactivating it is no longer an available resolution, and doing it here destroyed the evidence that would have identified the source domain. The denial log naming the source domain is still outstanding here, whereas in INC-2288 it was never collected at all \u2014 meaning the evidence gap that made INC-2288 unresolvable is still open in this incident and must not be allowed to close the same way.",
             "grounded_in": [
               "p-13b0c0432e17",
-              "p-378514460c22",
-              "p-13b0c0432e17"
+              "p-378514460c22"
             ],
             "ungrounded": []
           },
@@ -2443,15 +2470,14 @@
             "divergence": "The runbook is a procedure document, not a prior incident. It describes no resolution outcome and carries no claim about what will be found. Its relevance is to the evidence-collection step, not to the incident's cause or fix. Additionally, the runbook warns that applying suppression before collecting the log destroys the evidence \u2014 the outstanding denial log here is still collectable, but that window closes if any suppression action is taken first.",
             "grounded_in": [
               "p-9adc3ac80a81",
-              "p-d81e4a80c0e6",
-              "p-9adc3ac80a81"
+              "p-d81e4a80c0e6"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 6,
-          "in_returned_set": 6,
+          "total": 4,
+          "in_returned_set": 4,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -2469,6 +2495,12 @@
           "reached": 2,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://runbooks/denial-log-collection"
+        ],
+        "applies_offered": [
+          "corpus://runbooks/denial-log-collection"
+        ],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -2755,7 +2787,6 @@
             "confidence": "plausible",
             "divergence": "In INC-2350 the process snapshot had already been taken and attributed 6 GiB resident to a specific process before the incident was resolved. Here, process-level memory attribution is still outstanding. The prior record's resolution rested entirely on that evidence, which is not yet in hand. Additionally, INC-2350 ran for four days before attribution; the current incident is four hours old, so the growth trajectory may differ.",
             "grounded_in": [
-              "p-ba71e1a2b64a",
               "p-ba71e1a2b64a"
             ],
             "ungrounded": []
@@ -2770,7 +2801,6 @@
             "confidence": "speculative",
             "divergence": "INC-2411 had a confirmed preceding change (JVM heap raised from 20 GiB to 28 GiB the evening before symptoms began) that anchored attribution. No such change is recorded in the current evidence. Process-level attribution is also still outstanding here. The record's claimed cause is specific to a JVM heap configuration, which has no equivalent in the current evidence set.",
             "grounded_in": [
-              "p-2978a1380a0d",
               "p-2978a1380a0d"
             ],
             "ungrounded": []
@@ -2785,7 +2815,6 @@
             "confidence": "speculative",
             "divergence": "INC-2419 ran for ten days unacknowledged before any action was taken, and the cause was never confirmed. The current incident is being actively investigated at four hours. INC-2419 offers no resolution path that transferred: the workload was restarted and the cause remained unknown. Process-level attribution was never obtained in that record.",
             "grounded_in": [
-              "p-e5bdd7198bcc",
               "p-e5bdd7198bcc"
             ],
             "ungrounded": []
@@ -2800,7 +2829,6 @@
             "confidence": "speculative",
             "divergence": "INC-2489 was resolved as a non-incident: the host was deliberately overcommitted and the page fault rate matched its year-long baseline. The current incident carries a host.memory.exhaustion signature (not host.memory.pressure), swap is climbing over four hours (not stable), and no baseline confirmation has been collected. INC-2489's resolution depended on confirming the configuration was intentional and the metrics matched historical baseline \u2014 neither has been established here.",
             "grounded_in": [
-              "p-6e576ef75ce5",
               "p-6e576ef75ce5"
             ],
             "ungrounded": []
@@ -2815,15 +2843,14 @@
             "confidence": "speculative",
             "divergence": "INC-2446's actual exhausted resource was disk, not memory: memory and swap were confirmed normal throughout. In the current incident, swap is confirmed in use and climbing, and filesystem utilisation has been confirmed normal. The current evidence is the inverse of INC-2446's findings. This precedent does not describe the same failure.",
             "grounded_in": [
-              "p-0d7cde0a14ac",
               "p-0d7cde0a14ac"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 10,
-          "in_returned_set": 10,
+          "total": 5,
+          "in_returned_set": 5,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -2842,6 +2869,10 @@
           "reached": 2,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://runbooks/memory-pressure"
+        ],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -3123,7 +3154,6 @@
             "confidence": "plausible",
             "divergence": "INC-2350 had a process snapshot in hand at D+4 that attributed 6 GiB resident to a specific process; here the resident set of the largest consumer is still outstanding evidence. The record's claimed cause (log shipper buffering to memory) is what that record asserted \u2014 it is not established for this incident. Without the process snapshot the attribution path that resolved INC-2350 cannot be followed.",
             "grounded_in": [
-              "p-ba71e1a2b64a",
               "p-ba71e1a2b64a"
             ],
             "ungrounded": []
@@ -3138,7 +3168,6 @@
             "confidence": "speculative",
             "divergence": "INC-2411 had a confirmed preceding change (JVM heap raised from 20 GiB to 28 GiB the evening before) as the anchoring evidence; no such change is recorded in the current evidence set. The record's claimed cause (heap resize leaving no headroom for page cache) is what that record asserted \u2014 it is not established for this incident. The standing-condition resident-set evidence is still outstanding here.",
             "grounded_in": [
-              "p-2978a1380a0d",
               "p-2978a1380a0d"
             ],
             "ungrounded": []
@@ -3154,8 +3183,7 @@
             "divergence": "This is a runbook procedure, not a prior incident record. It describes what to do, not what happened before. The outstanding evidence (resident set of the largest consumer) is precisely what the runbook identifies as the required first step; that step has not yet been completed.",
             "grounded_in": [
               "p-e06c78522c44",
-              "p-5ff983b32091",
-              "p-e06c78522c44"
+              "p-5ff983b32091"
             ],
             "ungrounded": []
           },
@@ -3171,15 +3199,14 @@
             "grounded_in": [
               "p-dfbb74f0fcc9",
               "p-47e336490a61",
-              "p-fa68ddf757b2",
-              "p-dfbb74f0fcc9"
+              "p-fa68ddf757b2"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 11,
-          "in_returned_set": 11,
+          "total": 7,
+          "in_returned_set": 7,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -3199,6 +3226,12 @@
           "reached": 3,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://runbooks/memory-pressure"
+        ],
+        "applies_offered": [
+          "corpus://runbooks/memory-pressure"
+        ],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -3434,7 +3467,6 @@
             "confidence": "plausible",
             "divergence": "INC-2489 resolved as a non-incident: the host was deliberately overcommitted and the page fault rate matched its year-long baseline. The current host is confirmed not configured to overcommit and has not used swap at any point in the preceding year. The resolution path in INC-2489 \u2014 confirming intended configuration and closing \u2014 does not transfer because the configuration facts are the opposite here.",
             "grounded_in": [
-              "p-6e576ef75ce5",
               "p-6e576ef75ce5"
             ],
             "ungrounded": []
@@ -3450,15 +3482,14 @@
             "divergence": "INC-2411 had a recent change on the host (a JVM heap resize the evening before swap appeared) that provided a clear starting point for attribution. No equivalent change is recorded in the current evidence. Additionally, INC-2411's gap note records that no process-level attribution was captured before the revert, so the contribution of any other consumer was never measured \u2014 the resolution rested on a single correlated change, not confirmed attribution. Process-level attribution is still outstanding here.",
             "grounded_in": [
               "p-2978a1380a0d",
-              "p-b5386e8a3c6f",
-              "p-2978a1380a0d"
+              "p-b5386e8a3c6f"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 5,
-          "in_returned_set": 5,
+          "total": 3,
+          "in_returned_set": 3,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -3477,6 +3508,10 @@
           "reached": 2,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://runbooks/memory-pressure"
+        ],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -3712,8 +3747,7 @@
             "divergence": "INC-2419 was resolved by restarting the workload with no cause established; the gap passage (p-0b2d395d47a7) records that process-level attribution was never captured while the host was exhausted. The current incident has that attribution explicitly requested and still outstanding, meaning the evidence INC-2419 lacked is still being sought here rather than already absent. INC-2419 closed with root cause unconfirmed; this incident is still open.",
             "grounded_in": [
               "p-e5bdd7198bcc",
-              "p-0b2d395d47a7",
-              "p-e5bdd7198bcc"
+              "p-0b2d395d47a7"
             ],
             "ungrounded": []
           },
@@ -3727,7 +3761,6 @@
             "confidence": "speculative",
             "divergence": "INC-2411 had a preceding change (JVM heap raised the evening before the first auto-close) that the record claims as the precipitating event. No equivalent change is recorded in the current evidence. INC-2411 also surfaced through a secondary symptom (batch transfers running late) rather than through the problem feed alone. Neither of those conditions is present here.",
             "grounded_in": [
-              "p-2978a1380a0d",
               "p-2978a1380a0d"
             ],
             "ungrounded": []
@@ -3742,15 +3775,14 @@
             "confidence": "speculative",
             "divergence": "INC-2350 was resolved only after a process snapshot attributed 6 GiB resident to a specific process (the log shipper). The current incident has that snapshot requested and still outstanding; without it, the consumer shape cannot be compared. INC-2350 also had a clear external trigger (log destination became unreachable) that is not yet established here.",
             "grounded_in": [
-              "p-ba71e1a2b64a",
               "p-ba71e1a2b64a"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 7,
-          "in_returned_set": 7,
+          "total": 4,
+          "in_returned_set": 4,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -3768,6 +3800,10 @@
           "reached": 2,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://runbooks/memory-pressure"
+        ],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -3934,8 +3970,7 @@
             "divergence": "The critical difference is the change registry result. In INC-2407 a change record existed and explained the load; here the change registry query across the fortnight before onset returned empty. INC-2407 passage p-1ffe3e430dc4 notes that the capacity plan was not attached to the change record, which caused the saturation to read as unexplained to those not in the migration planning \u2014 but a change record still existed. Here no change record exists at all. Additionally, no process snapshot has been collected yet in the current incident, whereas INC-2407 confirmed no anomalous process was present via OS metrics. That evidence is still outstanding here.",
             "grounded_in": [
               "p-516cf417bbb1",
-              "p-1ffe3e430dc4",
-              "p-516cf417bbb1"
+              "p-1ffe3e430dc4"
             ],
             "ungrounded": []
           },
@@ -3949,15 +3984,14 @@
             "confidence": "plausible",
             "divergence": "Platform security standard SEC-STD-14 (2026-01-30) requires the audit event dispatcher to remain active on production hosts. Deactivating it is no longer an available resolution, and doing it here destroyed the evidence that would have identified the source domain. The duration in INC-2288 was six days; the current incident is at three days. The process snapshot that identified the daemon in INC-2288 is the same evidence still outstanding here, so the applicability of this precedent cannot be confirmed until that snapshot is collected.",
             "grounded_in": [
-              "p-13b0c0432e17",
               "p-13b0c0432e17"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 5,
-          "in_returned_set": 5,
+          "total": 3,
+          "in_returned_set": 3,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -3974,6 +4008,8 @@
           "reached": 1,
           "missed": []
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -4172,15 +4208,14 @@
             "divergence": "The outstanding evidence here \u2014 resident set attribution by process \u2014 is precisely what resolved the ambiguity in INC-2350 (a process snapshot attributed 6 GiB to the shipper at D+4, 11:15). That attribution has not yet been collected for the current incident, so the mechanism that made INC-2350 conclusive is still missing. Additionally, INC-2350's gaps section notes that the empty change history was recorded as a finding rather than treated as absence of change; the current incident has done the same, which the prior record flags as a methodological gap, not a confirmation.",
             "grounded_in": [
               "p-ba71e1a2b64a",
-              "p-49280dfaea99",
-              "p-ba71e1a2b64a"
+              "p-49280dfaea99"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 3,
-          "in_returned_set": 3,
+          "total": 2,
+          "in_returned_set": 2,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -4199,6 +4234,10 @@
           "reached": 2,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://runbooks/memory-pressure"
+        ],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -4375,15 +4414,14 @@
             "divergence": "Restart count differs (eleven in INC-2305 over roughly D0\u2013D+1; nine here since midnight, a shorter window). More critically, the outstanding evidence item \u2014 what in the process grew without a bound \u2014 has not yet been collected here. INC-2305 had that attribution in hand before resolution; it is still outstanding in this incident. The record's document_cause_claimed is what INC-2305 concluded, not evidence established here.",
             "grounded_in": [
               "p-8701b4fabe21",
-              "p-2e2e7ec5af74",
-              "p-8701b4fabe21"
+              "p-2e2e7ec5af74"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 3,
-          "in_returned_set": 3,
+          "total": 2,
+          "in_returned_set": 2,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -4401,6 +4439,13 @@
           "reached": 2,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://incidents/INC-2305",
+          "corpus://runbooks/container-resource-limits"
+        ],
+        "applies_offered": [
+          "corpus://incidents/INC-2305"
+        ],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -4567,8 +4612,7 @@
             "divergence": "The outstanding evidence here is a capacity plan that has not yet been retrieved. INC-2407 explicitly notes that the capacity plan was not attached to the change record in that incident either, which is what made the saturation read as unexplained for a day. That gap is still open in the current incident (capacity plan still outstanding), so the key piece of evidence that would confirm or deny the sizing explanation is missing. Additionally, the prior record's claimed cause (a second consumer roughly doubling load) is what that record asserted; no equivalent load-accounting evidence has been collected here yet.",
             "grounded_in": [
               "p-516cf417bbb1",
-              "p-1ffe3e430dc4",
-              "p-516cf417bbb1"
+              "p-1ffe3e430dc4"
             ],
             "ungrounded": []
           },
@@ -4582,15 +4626,14 @@
             "confidence": "speculative",
             "divergence": "INC-2288 was resolved by deactivating the audit event dispatcher. That resolution is superseded: document_superseded_by reads \"Platform security standard SEC-STD-14 (2026-01-30) requires the audit event dispatcher to remain active on production hosts. Deactivating it is no longer an available resolution, and doing it here destroyed the evidence that would have identified the source domain.\" The prior incident was also triggered by a sharp rise in denial volume, not a scheduled migration; no denial-volume evidence has been collected or noted in the current incident.",
             "grounded_in": [
-              "p-13b0c0432e17",
               "p-13b0c0432e17"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 5,
-          "in_returned_set": 5,
+          "total": 3,
+          "in_returned_set": 3,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -4607,6 +4650,12 @@
           "reached": 1,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://incidents/INC-2407"
+        ],
+        "applies_offered": [
+          "corpus://incidents/INC-2407"
+        ],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -4756,15 +4805,14 @@
             "confidence": "plausible",
             "divergence": "The prior record notes that non-production differed in build, patch level, and installed agents; the current evidence collected so far names only build and patch level \u2014 whether installed agents also differ here is not yet established. The prior incident's outstanding evidence request (a comparable environment) was ultimately abandoned; here that request is still outstanding and the outcome is not yet known. The prior incident's host was intg-prod-h1; the current is intg-prod-h8 \u2014 different identity, same signature type.",
             "grounded_in": [
-              "p-4ba9c35ac6ba",
               "p-4ba9c35ac6ba"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 2,
-          "in_returned_set": 2,
+          "total": 1,
+          "in_returned_set": 1,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -4781,6 +4829,12 @@
           "reached": 1,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://incidents/INC-2377"
+        ],
+        "applies_offered": [
+          "corpus://incidents/INC-2377"
+        ],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -4981,8 +5035,7 @@
             "divergence": "In INC-2402 the component was later demonstrated uninvolved because it was not loaded on the affected host at all \u2014 a concrete falsifying fact that arrived the following morning. Here, no equivalent distinguishing evidence has been collected yet, so the current incident is at the same unresolved state INC-2402 was at D0 17:20. The prior record also notes that nobody recorded what evidence would have distinguished the named component from the alternatives, which is precisely the outstanding evidence request in the current incident. The gap in INC-2402 is therefore a warning about the current investigation's trajectory, not a resolution that transfers.",
             "grounded_in": [
               "p-6e374e7c70b3",
-              "p-f1cdb0f013d0",
-              "p-6e374e7c70b3"
+              "p-f1cdb0f013d0"
             ],
             "ungrounded": []
           },
@@ -4997,15 +5050,14 @@
             "divergence": "This is a runbook procedure, not a prior incident. It describes what should be done, not what was done in a comparable case. The runbook also notes that components updating themselves outside the package manager will not appear in package history, meaning the change correlation step may have blind spots that are not yet recorded here.",
             "grounded_in": [
               "p-6300fa23d75c",
-              "p-ba41ea63c75c",
-              "p-6300fa23d75c"
+              "p-ba41ea63c75c"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 6,
-          "in_returned_set": 6,
+          "total": 4,
+          "in_returned_set": 4,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -5024,6 +5076,14 @@
           "reached": 2,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://incidents/INC-2402",
+          "corpus://runbooks/change-correlation"
+        ],
+        "applies_offered": [
+          "corpus://incidents/INC-2402",
+          "corpus://runbooks/change-correlation"
+        ],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -5220,8 +5280,7 @@
             "divergence": "This is a runbook procedure, not a prior incident record. It describes the general risk; it does not record a case where a restore was attempted and succeeded or failed. No incident-specific timeline, host, or outcome is on record to compare against. The outstanding evidence item \u2014 onset time \u2014 is the same gap the runbook identifies as the prerequisite for safe point selection.",
             "grounded_in": [
               "p-89c645f2a2ae",
-              "p-6f51e8a77ace",
-              "p-89c645f2a2ae"
+              "p-6f51e8a77ace"
             ],
             "ungrounded": []
           },
@@ -5235,15 +5294,14 @@
             "confidence": "plausible",
             "divergence": "Resolution in INC-2419 was a workload restart, not a snapshot restore. No snapshot was selected or evaluated. Onset was never established there either, but the consequence was only that the cause remained unconfirmed \u2014 the record does not address whether a snapshot restore was considered or what recovery point would have been safe. Missing evidence here (onset time) is the same gap, but the proposed action (restore) carries a different risk profile than a restart.",
             "grounded_in": [
-              "p-e5bdd7198bcc",
               "p-e5bdd7198bcc"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 5,
-          "in_returned_set": 5,
+          "total": 3,
+          "in_returned_set": 3,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -5261,6 +5319,13 @@
           "reached": 2,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://runbooks/memory-pressure",
+          "corpus://runbooks/recovery-point-selection"
+        ],
+        "applies_offered": [
+          "corpus://runbooks/recovery-point-selection"
+        ],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -5430,8 +5495,7 @@
             "divergence": "The resolution taken in INC-2288 \u2014 deactivating the audit event dispatcher \u2014 is superseded. document_superseded_by reads: \"Platform security standard SEC-STD-14 (2026-01-30) requires the audit event dispatcher to remain active on production hosts. Deactivating it is no longer an available resolution, and doing it here destroyed the evidence that would have identified the source domain.\" Additionally, in INC-2288 the denial log was never collected before suppression was applied, so the source domain was never identified. Here, the denial log naming the source domain is still outstanding but has not yet been destroyed; that window remains open.",
             "grounded_in": [
               "p-13b0c0432e17",
-              "p-378514460c22",
-              "p-13b0c0432e17"
+              "p-378514460c22"
             ],
             "ungrounded": []
           },
@@ -5446,15 +5510,14 @@
             "divergence": "The runbook addresses the general case; it does not record a specific incident outcome. The denial log here is outstanding but not yet lost, which is exactly the window the runbook describes as actionable. No divergence disqualifies it, but it is procedural guidance rather than a resolved incident record.",
             "grounded_in": [
               "p-9adc3ac80a81",
-              "p-d81e4a80c0e6",
-              "p-9adc3ac80a81"
+              "p-d81e4a80c0e6"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 6,
-          "in_returned_set": 6,
+          "total": 4,
+          "in_returned_set": 4,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -5471,6 +5534,12 @@
           "reached": 2,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://runbooks/denial-log-collection"
+        ],
+        "applies_offered": [
+          "corpus://runbooks/denial-log-collection"
+        ],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -5626,15 +5695,14 @@
             "confidence": "plausible",
             "divergence": "The prior record is for cache-prod-n3; the current incident is on cache-prod-n8. The record's resolution text is truncated at 'The alert' \u2014 the full disposition of the alert threshold is not visible in the retrieved passage. No evidence has been collected here yet about swap usage levels, whereas the prior record explicitly noted swap usage alongside the page fault rate.",
             "grounded_in": [
-              "p-6e576ef75ce5",
               "p-6e576ef75ce5"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 2,
-          "in_returned_set": 2,
+          "total": 1,
+          "in_returned_set": 1,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -5651,6 +5719,12 @@
           "reached": 1,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://incidents/INC-2489"
+        ],
+        "applies_offered": [
+          "corpus://incidents/INC-2489"
+        ],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -5790,6 +5864,10 @@
           "reached": 1,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://runbooks/memory-pressure"
+        ],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -6007,8 +6085,7 @@
             "divergence": "INC-2288 fired under host.cpu.saturation, not host.memory.exhaustion; the current incident's primary signal is memory exhaustion with CPU consumption as secondary evidence. INC-2288's resolution \u2014 deactivating the audit event dispatcher \u2014 carries document_superseded_by: \"Platform security standard SEC-STD-14 (2026-01-30) requires the audit event dispatcher to remain active on production hosts. Deactivating it is no longer an available resolution, and doing it here destroyed the evidence that would have identified the source domain.\" INC-2288 also noted that the source domain was never identified because the denial log was lost; the current incident has that log outstanding but not yet collected.",
             "grounded_in": [
               "p-13b0c0432e17",
-              "p-378514460c22",
-              "p-13b0c0432e17"
+              "p-378514460c22"
             ],
             "ungrounded": []
           },
@@ -6023,15 +6100,14 @@
             "divergence": "INC-2411's distinguishing evidence was a JVM heap change in the change registry immediately preceding the exhaustion; no such change is mentioned in the current evidence. INC-2411 had no active audit daemon as a contributing factor, whereas the current incident has an active audit analysis daemon consuming CPU. INC-2411's gap note records that no process-level attribution was captured before the revert, so the contribution of any other consumer was never measured \u2014 meaning INC-2411 cannot confirm or exclude a daemon-driven component.",
             "grounded_in": [
               "p-2978a1380a0d",
-              "p-b5386e8a3c6f",
-              "p-2978a1380a0d"
+              "p-b5386e8a3c6f"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 6,
-          "in_returned_set": 6,
+          "total": 4,
+          "in_returned_set": 4,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -6054,6 +6130,8 @@
             "corpus://runbooks/memory-pressure"
           ]
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -6250,8 +6328,7 @@
             "divergence": "INC-2419 ran for ten days (seven auto-close events) before any action was taken. The current incident is on its second consecutive day, so the pattern is earlier in its progression. INC-2419 was closed with cause unconfirmed and no falsifying test recorded; the gap explicitly noted is that process-level attribution was never captured while the host was exhausted \u2014 the same evidence that is still outstanding here. The resolution (workload restart) stopped the symptom but did not establish the cause, so the record does not transfer a confirmed explanation.",
             "grounded_in": [
               "p-e5bdd7198bcc",
-              "p-0b2d395d47a7",
-              "p-e5bdd7198bcc"
+              "p-0b2d395d47a7"
             ],
             "ungrounded": []
           },
@@ -6265,15 +6342,14 @@
             "confidence": "speculative",
             "divergence": "INC-2411 had a change event (JVM heap raised the evening before the first auto-close) that preceded the pattern; no such change is recorded in the current evidence. INC-2411 also showed heavy swapping as a corroborating signal by the time it was raised; no swap data is available here. The record claims a cause, but that claim rests on the change event, which has no equivalent in the current evidence set.",
             "grounded_in": [
-              "p-2978a1380a0d",
               "p-2978a1380a0d"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 5,
-          "in_returned_set": 5,
+          "total": 3,
+          "in_returned_set": 3,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -6290,6 +6366,10 @@
           "reached": 3,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://runbooks/memory-pressure"
+        ],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-03-03T09:00:00+00:00",
@@ -6437,6 +6517,8 @@
           "reached": 0,
           "missed": []
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-04-14T09:40:00+00:00",
@@ -6593,6 +6675,8 @@
           "reached": 0,
           "missed": []
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-04-14T09:40:00+00:00",
@@ -6766,6 +6850,8 @@
           "reached": 0,
           "missed": []
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-04-14T09:40:00+00:00",
@@ -6923,6 +7009,8 @@
           "reached": 0,
           "missed": []
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-04-14T09:40:00+00:00",
@@ -7107,6 +7195,8 @@
           "reached": 0,
           "missed": []
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-04-14T09:40:00+00:00",
@@ -7287,6 +7377,8 @@
           "reached": 0,
           "missed": []
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-04-14T09:40:00+00:00",
@@ -7485,6 +7577,8 @@
           "reached": 0,
           "missed": []
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-04-14T09:40:00+00:00",
@@ -7668,6 +7762,8 @@
           "reached": 0,
           "missed": []
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-04-14T09:40:00+00:00",
@@ -7846,6 +7942,8 @@
           "reached": 0,
           "missed": []
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-04-14T09:40:00+00:00",
@@ -8028,6 +8126,8 @@
           "reached": 0,
           "missed": []
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-04-14T09:40:00+00:00",
@@ -8171,6 +8271,8 @@
           "reached": 0,
           "missed": []
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2025-09-01T00:00:00+00:00",
@@ -8302,6 +8404,8 @@
           "reached": 0,
           "missed": []
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2025-08-01T00:00:00+00:00",
@@ -8450,15 +8554,14 @@
             "divergence": "The prior record reached resolution only after a process snapshot attributed 6 GiB resident to the shipper (INC-2350, D+4, 11:15). That attribution evidence is still outstanding here. Without it, the mechanism assumed in the prior record has not been confirmed for this incident. The prior record also notes that an empty change-history query was recorded as a finding rather than treated as absence of change \u2014 the same interpretive risk applies here.",
             "grounded_in": [
               "p-ba71e1a2b64a",
-              "p-49280dfaea99",
-              "p-ba71e1a2b64a"
+              "p-49280dfaea99"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 3,
-          "in_returned_set": 3,
+          "total": 2,
+          "in_returned_set": 2,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -8475,6 +8578,8 @@
           "reached": 1,
           "missed": []
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2025-10-01T00:00:00+00:00",
@@ -8659,8 +8764,7 @@
             "divergence": "In INC-2419 the problem had auto-closed and reopened seven times over nine days before the restart was applied; here the incident is at day zero. The gap recorded for INC-2419 is that process-level attribution was never captured while the host was exhausted \u2014 the same evidence that is still outstanding here. That gap is what left the cause unconfirmed in the prior record, and it has not been filled in the current incident either.",
             "grounded_in": [
               "p-e5bdd7198bcc",
-              "p-0b2d395d47a7",
-              "p-e5bdd7198bcc"
+              "p-0b2d395d47a7"
             ],
             "ungrounded": []
           },
@@ -8675,8 +8779,7 @@
             "divergence": "INC-2446 confirmed that the exhausted resource was disk, not memory \u2014 memory and swap were normal throughout. The current incident carries the signature host.memory.exhaustion and no process-level attribution has been collected yet, so it is not yet confirmed that memory is actually the exhausted resource. The record explicitly notes the cost of an uncorrected wrong report to later readers.",
             "grounded_in": [
               "p-0d7cde0a14ac",
-              "p-c47d2508ef3a",
-              "p-0d7cde0a14ac"
+              "p-c47d2508ef3a"
             ],
             "ungrounded": []
           },
@@ -8691,15 +8794,14 @@
             "divergence": "INC-2350 was resolved without a host restart; the resolution was capping a shipper buffer and restoring a destination route. Attribution was available (process snapshot attributed 6 GiB to the shipper) before any action was taken. Here, process-level attribution is still outstanding, so the specific consumer driving exhaustion is unknown. The record also notes that an empty change history was treated as a finding rather than as absence of change.",
             "grounded_in": [
               "p-ba71e1a2b64a",
-              "p-49280dfaea99",
-              "p-ba71e1a2b64a"
+              "p-49280dfaea99"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 9,
-          "in_returned_set": 9,
+          "total": 6,
+          "in_returned_set": 6,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -8716,6 +8818,8 @@
           "reached": 2,
           "missed": []
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-01-01T00:00:00+00:00",
@@ -8929,8 +9033,7 @@
             "divergence": "INC-2419 ran for ten days before any action was taken; the current incident is being investigated actively. Critically, INC-2419's gap record states that process-level attribution was never captured while the host was exhausted, so there is no record of what held the memory \u2014 the same evidence that is still outstanding here. The prior incident closed with cause unconfirmed, meaning it offers no resolution that transfers.",
             "grounded_in": [
               "p-e5bdd7198bcc",
-              "p-0b2d395d47a7",
-              "p-e5bdd7198bcc"
+              "p-0b2d395d47a7"
             ],
             "ungrounded": []
           },
@@ -8945,8 +9048,7 @@
             "divergence": "INC-2411 was preceded by a documented JVM heap change the evening before first exhaustion; no such change is recorded in the current evidence. INC-2411's resolution (heap revert) was confirmed by a swap curve returning to baseline \u2014 no swap data has been collected here. Process-level attribution was not captured before the revert in INC-2411, which its gap record acknowledges. The record claims a cause (heap resize leaving no headroom for page cache), but that claim was never confirmed by process-level evidence.",
             "grounded_in": [
               "p-2978a1380a0d",
-              "p-b5386e8a3c6f",
-              "p-2978a1380a0d"
+              "p-b5386e8a3c6f"
             ],
             "ungrounded": []
           },
@@ -8960,15 +9062,14 @@
             "confidence": "speculative",
             "divergence": "INC-2350 was resolved after a process snapshot attributed 6 GiB resident to a specific process \u2014 exactly the evidence that is still outstanding here. Without that attribution, it is not possible to determine whether the current incident shares the same consumer shape. The record claims a cause (log shipper buffering to memory after its destination became unreachable), but that claim rests on the snapshot evidence not yet available here.",
             "grounded_in": [
-              "p-ba71e1a2b64a",
               "p-ba71e1a2b64a"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 8,
-          "in_returned_set": 8,
+          "total": 5,
+          "in_returned_set": 5,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -8986,6 +9087,10 @@
           "reached": 3,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://runbooks/memory-pressure"
+        ],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -9157,6 +9262,8 @@
           "reached": 0,
           "missed": []
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -9190,5 +9297,5 @@
       }
     }
   ],
-  "rescored_at": "2026-08-20T05:26:48Z"
+  "rescored_at": "2026-08-20T08:03:39Z"
 }

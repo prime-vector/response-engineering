@@ -88,6 +88,32 @@
       "unit": "precedent claims offered across every scored case",
       "offending": []
     },
+    "applies_omission_rate": {
+      "value": 0.6087,
+      "numerator": 14,
+      "denominator": 23,
+      "unit": "(case, document) pairs whose ground truth is `applies` and which the surface returned to the agent, counted when no precedent was offered on them at all",
+      "omitted": [
+        "a01:corpus://runbooks/denial-log-collection",
+        "a01:corpus://runbooks/memory-pressure",
+        "a02:corpus://runbooks/memory-pressure",
+        "a03:corpus://runbooks/denial-log-collection",
+        "b01:corpus://runbooks/memory-pressure",
+        "b02:corpus://runbooks/denial-log-collection",
+        "b03:corpus://runbooks/memory-pressure",
+        "b05:corpus://runbooks/memory-pressure",
+        "c02:corpus://runbooks/container-resource-limits",
+        "c05:corpus://runbooks/change-correlation",
+        "d01:corpus://runbooks/memory-pressure",
+        "d02:corpus://runbooks/denial-log-collection",
+        "d03:corpus://runbooks/memory-pressure",
+        "g01:corpus://runbooks/memory-pressure"
+      ]
+    },
+    "applicability_offered": {
+      "superseded": 8,
+      "partial": 44
+    },
     "no_precedent_accuracy": {
       "value": 1.0,
       "numerator": 13,
@@ -104,8 +130,8 @@
     },
     "groundedness_log": {
       "value": 1.0,
-      "numerator": 190,
-      "denominator": 190,
+      "numerator": 138,
+      "denominator": 138,
       "unit": "cited passage ids, checked against the adapter's returned set",
       "invented": []
     },
@@ -1057,8 +1083,7 @@
             "grounded_in": [
               "p-7a1ed9517c93",
               "p-14cc2f280479",
-              "p-7d5d4b61754a",
-              "p-7a1ed9517c93"
+              "p-7d5d4b61754a"
             ],
             "ungrounded": []
           },
@@ -1074,15 +1099,14 @@
             "grounded_in": [
               "p-b05efbf8f847",
               "p-fa1b9e69fdee",
-              "p-e49e527fc579",
-              "p-b05efbf8f847"
+              "p-e49e527fc579"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 8,
-          "in_returned_set": 8,
+          "total": 6,
+          "in_returned_set": 6,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -1104,6 +1128,11 @@
           "reached": 5,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://runbooks/denial-log-collection",
+          "corpus://runbooks/memory-pressure"
+        ],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -1357,8 +1386,7 @@
             "grounded_in": [
               "p-97816f4244e0",
               "p-e24268e115b8",
-              "p-610e89eb3e32",
-              "p-97816f4244e0"
+              "p-610e89eb3e32"
             ],
             "ungrounded": []
           },
@@ -1375,8 +1403,7 @@
               "p-b05efbf8f847",
               "p-fa1b9e69fdee",
               "p-dd0770fac8bf",
-              "p-9c1f38af5f11",
-              "p-b05efbf8f847"
+              "p-9c1f38af5f11"
             ],
             "ungrounded": []
           },
@@ -1391,15 +1418,14 @@
             "divergence": "INC-2350 was resolved by a process snapshot taken while the host was still exhausted, which attributed the memory to a specific process \u2014 exactly the evidence still outstanding here. Without that snapshot, the INC-2350 resolution path is not available. INC-2350 also involved a growing consumer (buffering over days), whereas the current evidence describes a standing condition with 23 of 32 GiB resident to the largest existing consumer, which says nothing about whether a new consumer has appeared.",
             "grounded_in": [
               "p-7cbef34d8405",
-              "p-0e0bd82c6107",
-              "p-7cbef34d8405"
+              "p-0e0bd82c6107"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 12,
-          "in_returned_set": 12,
+          "total": 9,
+          "in_returned_set": 9,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -1418,6 +1444,10 @@
           "reached": 3,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://runbooks/memory-pressure"
+        ],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-03-03T09:00:00+00:00",
@@ -1638,8 +1668,7 @@
             "grounded_in": [
               "p-14cc2f280479",
               "p-7d5d4b61754a",
-              "p-d3258c5113d1",
-              "p-14cc2f280479"
+              "p-d3258c5113d1"
             ],
             "ungrounded": []
           },
@@ -1654,15 +1683,14 @@
             "divergence": "INC-2411 presented with heavy swap usage as the distinguishing evidence, and the investigation was resolved by correlating a recent heap-size change in the change registry. The current incident's evidence instead points to the audit analysis daemon consuming CPU \u2014 a different foreground process. No swap data has been collected here, and no change-registry correlation has been reported. The missing evidence that settled INC-2411 (swap metrics, change history) has not been gathered for this incident.",
             "grounded_in": [
               "p-b05efbf8f847",
-              "p-fa1b9e69fdee",
-              "p-b05efbf8f847"
+              "p-fa1b9e69fdee"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 7,
-          "in_returned_set": 7,
+          "total": 5,
+          "in_returned_set": 5,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -1683,6 +1711,10 @@
             "corpus://runbooks/memory-pressure"
           ]
         },
+        "applies_retrieved": [
+          "corpus://runbooks/denial-log-collection"
+        ],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -1894,8 +1926,7 @@
             "divergence": "INC-2411 showed heavy swap usage as the distinguishing host-level evidence, and resolution was confirmed by swap returning to zero after a heap revert. No swap data has been collected here yet. INC-2411 had no audit analysis daemon involvement; the current incident has a confirmed active audit analysis daemon consuming CPU, which INC-2411 did not. The prior incident's claimed cause was a JVM heap change the previous evening \u2014 no equivalent change has been identified or ruled out here.",
             "grounded_in": [
               "p-b05efbf8f847",
-              "p-fa1b9e69fdee",
-              "p-b05efbf8f847"
+              "p-fa1b9e69fdee"
             ],
             "ungrounded": []
           },
@@ -1910,15 +1941,14 @@
             "divergence": "INC-2288 did not involve host.memory.exhaustion or batch transfer latency \u2014 it was a CPU incident. The current incident carries both a memory exhaustion signature and an outstanding audit denial log request; INC-2288's denial log was available and used to establish the timeline. The resolution taken in INC-2288 \u2014 deactivating the audit event dispatcher \u2014 is superseded: Platform security standard SEC-STD-14 (2026-01-30) requires the audit event dispatcher to remain active on production hosts. Deactivating it is no longer an available resolution, and doing it here destroyed the evidence that would have identified the source domain.",
             "grounded_in": [
               "p-14cc2f280479",
-              "p-7d5d4b61754a",
-              "p-14cc2f280479"
+              "p-7d5d4b61754a"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 6,
-          "in_returned_set": 6,
+          "total": 4,
+          "in_returned_set": 4,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -1940,6 +1970,8 @@
             "corpus://runbooks/memory-pressure"
           ]
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -2181,8 +2213,7 @@
               "p-b05efbf8f847",
               "p-fa1b9e69fdee",
               "p-e49e527fc579",
-              "p-dd0770fac8bf",
-              "p-b05efbf8f847"
+              "p-dd0770fac8bf"
             ],
             "ungrounded": []
           },
@@ -2196,15 +2227,14 @@
             "confidence": "speculative",
             "divergence": "The passages retrieved for INC-2350 cover only the Gaps section. No timeline, resolution, or process attribution passages cleared the relevance floor, so the shape of the failure beyond the change-history handling is not available from the archive at this bound. The current incident's process attribution is still outstanding; whether INC-2350 had the same gap is not recoverable from what was returned.",
             "grounded_in": [
-              "p-1cd4e19a778d",
               "p-1cd4e19a778d"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 7,
-          "in_returned_set": 7,
+          "total": 5,
+          "in_returned_set": 5,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -2224,6 +2254,10 @@
           "reached": 2,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://runbooks/memory-pressure"
+        ],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -2411,8 +2445,7 @@
               "p-7a1ed9517c93",
               "p-51aad2eb05ef",
               "p-14cc2f280479",
-              "p-06770bc5c194",
-              "p-7a1ed9517c93"
+              "p-06770bc5c194"
             ],
             "ungrounded": []
           },
@@ -2427,15 +2460,14 @@
             "divergence": "INC-2407 had no anomalous process \u2014 the process snapshot showed only processes present the prior week, and the record claims the load increase came from a scheduled migration doubling request volume. The current incident has a named anomalous process (the denial-analysis daemon) as the top CPU consumer, which is the opposite of INC-2407's finding. INC-2407 was resolved by adding capacity and rebalancing load, not by addressing a runaway process.",
             "grounded_in": [
               "p-9580a37896d8",
-              "p-64388910ad43",
-              "p-9580a37896d8"
+              "p-64388910ad43"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 8,
-          "in_returned_set": 8,
+          "total": 6,
+          "in_returned_set": 6,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -2452,6 +2484,10 @@
           "reached": 2,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://runbooks/denial-log-collection"
+        ],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -2766,8 +2802,7 @@
             "grounded_in": [
               "p-6bbe7d8a53b6",
               "p-97816f4244e0",
-              "p-e24268e115b8",
-              "p-6bbe7d8a53b6"
+              "p-e24268e115b8"
             ],
             "ungrounded": []
           },
@@ -2782,8 +2817,7 @@
             "divergence": "INC-2489 involved a host deliberately overcommitted since build, where the page fault rate matched a year-long baseline and the configuration was confirmed intended within 35 minutes. The current incident shows swap climbing over four hours, which is inconsistent with a stable baseline; no confirmation that rep-prod-q4 is intentionally overcommitted has been recorded in the evidence collected so far.",
             "grounded_in": [
               "p-3a9a41f559cf",
-              "p-c16300c887ae",
-              "p-3a9a41f559cf"
+              "p-c16300c887ae"
             ],
             "ungrounded": []
           },
@@ -2799,8 +2833,7 @@
             "grounded_in": [
               "p-b05efbf8f847",
               "p-fa1b9e69fdee",
-              "p-9c1f38af5f11",
-              "p-b05efbf8f847"
+              "p-9c1f38af5f11"
             ],
             "ungrounded": []
           },
@@ -2815,15 +2848,14 @@
             "divergence": "INC-2446's exhausted resource was disk, not memory: memory and swap were within normal range throughout. The current incident has confirmed filesystem utilisation is normal on every mount and swap is in use and climbing, which is the opposite evidence pattern. INC-2446 is included because it is the closest filed record on the same signature type, but the evidence already collected here rules out the INC-2446 pattern.",
             "grounded_in": [
               "p-21e3c31f3fc6",
-              "p-d378b8d1caee",
-              "p-21e3c31f3fc6"
+              "p-d378b8d1caee"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 14,
-          "in_returned_set": 14,
+          "total": 10,
+          "in_returned_set": 10,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -2846,6 +2878,10 @@
           "reached": 2,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://runbooks/memory-pressure"
+        ],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -3136,8 +3172,7 @@
             "divergence": "INC-2419 was closed with cause unconfirmed because the workload was restarted before attribution was complete, destroying the evidence. The resident set of the largest consumer was never recorded. Here, that evidence (resident set) is still outstanding but not yet destroyed \u2014 the workload has not been restarted. Whether the host was swapping or showing elevated page-fault rate during INC-2419 is not stated in the retrieved passages, so the standing condition comparison cannot be made.",
             "grounded_in": [
               "p-6bbe7d8a53b6",
-              "p-97816f4244e0",
-              "p-6bbe7d8a53b6"
+              "p-97816f4244e0"
             ],
             "ungrounded": []
           },
@@ -3153,8 +3188,7 @@
             "grounded_in": [
               "p-b05efbf8f847",
               "p-fa1b9e69fdee",
-              "p-dd0770fac8bf",
-              "p-b05efbf8f847"
+              "p-dd0770fac8bf"
             ],
             "ungrounded": []
           },
@@ -3170,8 +3204,7 @@
             "grounded_in": [
               "p-085a2e74fa61",
               "p-cf59a39a0489",
-              "p-e66d0c38373c",
-              "p-085a2e74fa61"
+              "p-e66d0c38373c"
             ],
             "ungrounded": []
           },
@@ -3186,15 +3219,14 @@
             "divergence": "This is a runbook procedure, not a prior incident. INC-2419 is the filed incident that demonstrates the consequence described here (restart before attribution \u2192 cause unconfirmed). The runbook applies to the current state \u2014 evidence is still live \u2014 but cannot confirm what the consumer is.",
             "grounded_in": [
               "p-2ce84f184b08",
-              "p-0e33150d993e",
-              "p-2ce84f184b08"
+              "p-0e33150d993e"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 14,
-          "in_returned_set": 14,
+          "total": 10,
+          "in_returned_set": 10,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -3214,6 +3246,12 @@
           "reached": 3,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://runbooks/memory-pressure"
+        ],
+        "applies_offered": [
+          "corpus://runbooks/memory-pressure"
+        ],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -3415,15 +3453,14 @@
             "grounded_in": [
               "p-3a9a41f559cf",
               "p-c16300c887ae",
-              "p-cc7c16614e1a",
-              "p-3a9a41f559cf"
+              "p-cc7c16614e1a"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 4,
-          "in_returned_set": 4,
+          "total": 3,
+          "in_returned_set": 3,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -3442,6 +3479,10 @@
           "reached": 2,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://runbooks/memory-pressure"
+        ],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -3657,8 +3698,7 @@
             "grounded_in": [
               "p-97816f4244e0",
               "p-6bbe7d8a53b6",
-              "p-610e89eb3e32",
-              "p-97816f4244e0"
+              "p-610e89eb3e32"
             ],
             "ungrounded": []
           },
@@ -3674,8 +3714,7 @@
             "grounded_in": [
               "p-b05efbf8f847",
               "p-fa1b9e69fdee",
-              "p-dd0770fac8bf",
-              "p-b05efbf8f847"
+              "p-dd0770fac8bf"
             ],
             "ungrounded": []
           },
@@ -3689,15 +3728,14 @@
             "confidence": "supported",
             "divergence": "This is a runbook procedure, not a prior incident. It describes what to do when attribution has not yet been taken, which matches the current outstanding evidence request. It does not describe a resolution for this incident's specific pattern.",
             "grounded_in": [
-              "p-0e33150d993e",
               "p-0e33150d993e"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 10,
-          "in_returned_set": 10,
+          "total": 7,
+          "in_returned_set": 7,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -3715,6 +3753,12 @@
           "reached": 2,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://runbooks/memory-pressure"
+        ],
+        "applies_offered": [
+          "corpus://runbooks/memory-pressure"
+        ],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -3904,8 +3948,7 @@
             "grounded_in": [
               "p-6e98569eac86",
               "p-64388910ad43",
-              "p-a4bc005fc1ce",
-              "p-6e98569eac86"
+              "p-a4bc005fc1ce"
             ],
             "ungrounded": []
           },
@@ -3920,15 +3963,14 @@
             "divergence": "Platform security standard SEC-STD-14 (2026-01-30) requires the audit event dispatcher to remain active on production hosts. Deactivating it is no longer an available resolution, and doing it here destroyed the evidence that would have identified the source domain. The resolution taken in INC-2288 (deactivating the audit event dispatcher) is therefore not available. The process snapshot that identified the top consumer in INC-2288 is still outstanding in the current incident, so it is not yet known whether the same class of process is involved.",
             "grounded_in": [
               "p-51aad2eb05ef",
-              "p-14cc2f280479",
-              "p-51aad2eb05ef"
+              "p-14cc2f280479"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 7,
-          "in_returned_set": 7,
+          "total": 5,
+          "in_returned_set": 5,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -3946,6 +3988,8 @@
           "reached": 1,
           "missed": []
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -4163,15 +4207,14 @@
             "grounded_in": [
               "p-7cbef34d8405",
               "p-7e41e5d21b23",
-              "p-1cd4e19a778d",
-              "p-7cbef34d8405"
+              "p-1cd4e19a778d"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 4,
-          "in_returned_set": 4,
+          "total": 3,
+          "in_returned_set": 3,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -4192,6 +4235,8 @@
             "corpus://runbooks/memory-pressure"
           ]
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -4388,15 +4433,14 @@
               "p-bcba05c58132",
               "p-44b35eaf8423",
               "p-019a7487f788",
-              "p-2ce84f184b08",
-              "p-bcba05c58132"
+              "p-2ce84f184b08"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 5,
-          "in_returned_set": 5,
+          "total": 4,
+          "in_returned_set": 4,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -4415,6 +4459,13 @@
           "reached": 2,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://incidents/INC-2305",
+          "corpus://runbooks/container-resource-limits"
+        ],
+        "applies_offered": [
+          "corpus://incidents/INC-2305"
+        ],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -4625,8 +4676,7 @@
             "grounded_in": [
               "p-64388910ad43",
               "p-9580a37896d8",
-              "p-a4bc005fc1ce",
-              "p-64388910ad43"
+              "p-a4bc005fc1ce"
             ],
             "ungrounded": []
           },
@@ -4642,15 +4692,14 @@
             "grounded_in": [
               "p-14cc2f280479",
               "p-51aad2eb05ef",
-              "p-7a1ed9517c93",
-              "p-14cc2f280479"
+              "p-7a1ed9517c93"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 8,
-          "in_returned_set": 8,
+          "total": 6,
+          "in_returned_set": 6,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -4669,6 +4718,12 @@
           "reached": 1,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://incidents/INC-2407"
+        ],
+        "applies_offered": [
+          "corpus://incidents/INC-2407"
+        ],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -4852,15 +4907,14 @@
               "p-390c801816a2",
               "p-8386863a5740",
               "p-7b23ed259efb",
-              "p-5b51d5a850ff",
-              "p-390c801816a2"
+              "p-5b51d5a850ff"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 5,
-          "in_returned_set": 5,
+          "total": 4,
+          "in_returned_set": 4,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -4878,6 +4932,12 @@
           "reached": 1,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://incidents/INC-2377"
+        ],
+        "applies_offered": [
+          "corpus://incidents/INC-2377"
+        ],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -5084,8 +5144,7 @@
             "grounded_in": [
               "p-075764e95511",
               "p-834deaad6bb5",
-              "p-da4f8db2866e",
-              "p-075764e95511"
+              "p-da4f8db2866e"
             ],
             "ungrounded": []
           },
@@ -5100,15 +5159,14 @@
             "divergence": "The runbook is written around a denial log as the specific deciding artefact. The current incident has not identified what form the distinguishing evidence would take, so the runbook's collection procedure does not transfer directly; only its framing of the unresolved state does.",
             "grounded_in": [
               "p-85f3ebf5bc89",
-              "p-544ae28167cd",
-              "p-85f3ebf5bc89"
+              "p-544ae28167cd"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 7,
-          "in_returned_set": 7,
+          "total": 5,
+          "in_returned_set": 5,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -5127,6 +5185,13 @@
           "reached": 2,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://incidents/INC-2402",
+          "corpus://runbooks/change-correlation"
+        ],
+        "applies_offered": [
+          "corpus://incidents/INC-2402"
+        ],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -5371,8 +5436,7 @@
             "divergence": "This is a runbook procedure, not a prior incident. It describes the general risk; it does not record what happened when a specific restore was attempted without a known onset. No incident record in the archive shows a snapshot restore actually executed under these conditions, so there is no outcome to compare against.",
             "grounded_in": [
               "p-dea2f3f516bc",
-              "p-fa65e24d8e9e",
-              "p-dea2f3f516bc"
+              "p-fa65e24d8e9e"
             ],
             "ungrounded": []
           },
@@ -5387,8 +5451,7 @@
             "divergence": "INC-2419 was resolved by restarting the workload, not by a snapshot restore. The record does not mention snapshots or recovery-point selection. Root cause was recorded as unconfirmed, so the mechanism that drove memory exhaustion there is unknown and cannot be compared to the current incident. No evidence here yet establishes whether the current condition has been running for days as it did in INC-2419.",
             "grounded_in": [
               "p-97816f4244e0",
-              "p-610e89eb3e32",
-              "p-97816f4244e0"
+              "p-610e89eb3e32"
             ],
             "ungrounded": []
           },
@@ -5402,15 +5465,14 @@
             "confidence": "plausible",
             "divergence": "INC-2350 does not involve a snapshot restore; the record describes a process-level diagnosis. The condition there had a traceable start event (D0, log destination unreachable) that is absent here \u2014 onset in the current incident is explicitly outstanding. The record's claimed cause is specific to that incident and is not carried forward.",
             "grounded_in": [
-              "p-7cbef34d8405",
               "p-7cbef34d8405"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 8,
-          "in_returned_set": 8,
+          "total": 5,
+          "in_returned_set": 5,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -5432,6 +5494,12 @@
             "corpus://runbooks/memory-pressure"
           ]
         },
+        "applies_retrieved": [
+          "corpus://runbooks/recovery-point-selection"
+        ],
+        "applies_offered": [
+          "corpus://runbooks/recovery-point-selection"
+        ],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -5609,8 +5677,7 @@
             "divergence": "Platform security standard SEC-STD-14 (2026-01-30) requires the audit event dispatcher to remain active on production hosts. Deactivating it is no longer an available resolution, and doing it here destroyed the evidence that would have identified the source domain. Additionally, the denial log naming the source domain is still outstanding here, whereas in INC-2288 the dispatcher was deactivated before that evidence was secured \u2014 the same sequencing risk is live in this incident.",
             "grounded_in": [
               "p-51aad2eb05ef",
-              "p-14cc2f280479",
-              "p-51aad2eb05ef"
+              "p-14cc2f280479"
             ],
             "ungrounded": []
           },
@@ -5624,15 +5691,14 @@
             "confidence": "supported",
             "divergence": "The runbook is a procedure document, not a prior incident; it does not describe a resolved event. The denial log named as the key evidence item is still outstanding in this incident, which is precisely the condition the runbook warns against acting before satisfying.",
             "grounded_in": [
-              "p-06770bc5c194",
               "p-06770bc5c194"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 5,
-          "in_returned_set": 5,
+          "total": 3,
+          "in_returned_set": 3,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -5649,6 +5715,12 @@
           "reached": 2,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://runbooks/denial-log-collection"
+        ],
+        "applies_offered": [
+          "corpus://runbooks/denial-log-collection"
+        ],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -5831,15 +5903,14 @@
               "p-cc7c16614e1a",
               "p-c16300c887ae",
               "p-afa2b73f9592",
-              "p-b72651149ca6",
-              "p-3a9a41f559cf"
+              "p-b72651149ca6"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 6,
-          "in_returned_set": 6,
+          "total": 5,
+          "in_returned_set": 5,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -5857,6 +5928,12 @@
           "reached": 1,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://incidents/INC-2489"
+        ],
+        "applies_offered": [
+          "corpus://incidents/INC-2489"
+        ],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -6041,15 +6118,14 @@
             "confidence": "speculative",
             "divergence": "DRAFT-2508 carries record_status \"draft\", meaning it is unsubmitted and unreviewed and cannot be the basis of a precedent claim. It cannot be used as precedent regardless of how closely the symptom matches. Additionally, the peak working set of each batch job is still outstanding here, whereas DRAFT-2508's document_cause_claimed asserts both peak working sets were on the host simultaneously \u2014 evidence that has not yet been gathered in the current incident.",
             "grounded_in": [
-              "p-6ccf8f43d2c9",
               "p-6ccf8f43d2c9"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 2,
-          "in_returned_set": 2,
+          "total": 1,
+          "in_returned_set": 1,
           "invented": []
         },
         "must_not_cite_violations": [
@@ -6070,6 +6146,10 @@
           "reached": 1,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://runbooks/memory-pressure"
+        ],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -6291,8 +6371,7 @@
             "grounded_in": [
               "p-b05efbf8f847",
               "p-fa1b9e69fdee",
-              "p-dd0770fac8bf",
-              "p-b05efbf8f847"
+              "p-dd0770fac8bf"
             ],
             "ungrounded": []
           },
@@ -6308,15 +6387,14 @@
             "grounded_in": [
               "p-14cc2f280479",
               "p-7d5d4b61754a",
-              "p-d3258c5113d1",
-              "p-14cc2f280479"
+              "p-d3258c5113d1"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 8,
-          "in_returned_set": 8,
+          "total": 6,
+          "in_returned_set": 6,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -6337,6 +6415,10 @@
             "corpus://runbooks/memory-pressure"
           ]
         },
+        "applies_retrieved": [
+          "corpus://runbooks/denial-log-collection"
+        ],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -6557,8 +6639,7 @@
             "grounded_in": [
               "p-b05efbf8f847",
               "p-fa1b9e69fdee",
-              "p-dd0770fac8bf",
-              "p-b05efbf8f847"
+              "p-dd0770fac8bf"
             ],
             "ungrounded": []
           },
@@ -6574,8 +6655,7 @@
             "grounded_in": [
               "p-6bbe7d8a53b6",
               "p-97816f4244e0",
-              "p-610e89eb3e32",
-              "p-6bbe7d8a53b6"
+              "p-610e89eb3e32"
             ],
             "ungrounded": []
           },
@@ -6590,15 +6670,14 @@
             "divergence": "INC-2350 reached four consecutive days before a process snapshot was taken; the current incident is at two days. The process-level attribution that resolved INC-2350 is still outstanding here \u2014 the snapshot in INC-2350 was taken while the host was still exhausted, which the runbook identifies as the condition under which it is valid. If the current host recovers before the snapshot is taken, that evidence path closes.",
             "grounded_in": [
               "p-7cbef34d8405",
-              "p-0e0bd82c6107",
-              "p-7cbef34d8405"
+              "p-0e0bd82c6107"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 11,
-          "in_returned_set": 11,
+          "total": 8,
+          "in_returned_set": 8,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -6616,6 +6695,10 @@
           "reached": 3,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://runbooks/memory-pressure"
+        ],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-03-03T09:00:00+00:00",
@@ -6768,6 +6851,8 @@
           "reached": 0,
           "missed": []
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-04-14T09:40:00+00:00",
@@ -6925,6 +7010,8 @@
           "reached": 0,
           "missed": []
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-04-14T09:40:00+00:00",
@@ -7099,6 +7186,8 @@
           "reached": 0,
           "missed": []
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-04-14T09:40:00+00:00",
@@ -7256,6 +7345,8 @@
           "reached": 0,
           "missed": []
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-04-14T09:40:00+00:00",
@@ -7408,6 +7499,8 @@
           "reached": 0,
           "missed": []
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-04-14T09:40:00+00:00",
@@ -7597,6 +7690,8 @@
           "reached": 0,
           "missed": []
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-04-14T09:40:00+00:00",
@@ -7762,6 +7857,8 @@
           "reached": 0,
           "missed": []
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-04-14T09:40:00+00:00",
@@ -7931,6 +8028,8 @@
           "reached": 0,
           "missed": []
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-04-14T09:40:00+00:00",
@@ -8109,6 +8208,8 @@
           "reached": 0,
           "missed": []
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-04-14T09:40:00+00:00",
@@ -8291,6 +8392,8 @@
           "reached": 0,
           "missed": []
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-04-14T09:40:00+00:00",
@@ -8434,6 +8537,8 @@
           "reached": 0,
           "missed": []
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2025-09-01T00:00:00+00:00",
@@ -8544,6 +8649,8 @@
           "reached": 0,
           "missed": []
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2025-08-01T00:00:00+00:00",
@@ -8705,15 +8812,14 @@
               "p-9e8af3bcbe6d",
               "p-7cbef34d8405",
               "p-7e41e5d21b23",
-              "p-0e0bd82c6107",
-              "p-9e8af3bcbe6d"
+              "p-0e0bd82c6107"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 5,
-          "in_returned_set": 5,
+          "total": 4,
+          "in_returned_set": 4,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -8731,6 +8837,8 @@
           "reached": 1,
           "missed": []
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2025-10-01T00:00:00+00:00",
@@ -8952,15 +9060,14 @@
             "grounded_in": [
               "p-97816f4244e0",
               "p-610e89eb3e32",
-              "p-e24268e115b8",
-              "p-97816f4244e0"
+              "p-e24268e115b8"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 4,
-          "in_returned_set": 4,
+          "total": 3,
+          "in_returned_set": 3,
           "invented": []
         },
         "must_not_cite_violations": [],
@@ -8980,6 +9087,8 @@
           "reached": 2,
           "missed": []
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-01-01T00:00:00+00:00",
@@ -9243,8 +9352,7 @@
               "p-6bbe7d8a53b6",
               "p-97816f4244e0",
               "p-e24268e115b8",
-              "p-610e89eb3e32",
-              "p-6bbe7d8a53b6"
+              "p-610e89eb3e32"
             ],
             "ungrounded": []
           },
@@ -9261,8 +9369,7 @@
               "p-b05efbf8f847",
               "p-fa1b9e69fdee",
               "p-dd0770fac8bf",
-              "p-9c1f38af5f11",
-              "p-b05efbf8f847"
+              "p-9c1f38af5f11"
             ],
             "ungrounded": []
           },
@@ -9277,8 +9384,7 @@
             "divergence": "INC-2350 occurred on an ETL host (etl-prod-c1), not an integration host. The record claims the memory consumer was a log shipper buffering to memory \u2014 but that is what the record asserts, not confirmed evidence transferable here. No log-shipper behaviour or connectivity loss has been reported or observed in the current incident. Process-level attribution is still outstanding here; in INC-2350 it was the step that identified the consumer.",
             "grounded_in": [
               "p-7cbef34d8405",
-              "p-0e0bd82c6107",
-              "p-7cbef34d8405"
+              "p-0e0bd82c6107"
             ],
             "ungrounded": []
           },
@@ -9292,15 +9398,14 @@
             "confidence": "speculative",
             "divergence": "This document carries record_status \"draft\". It is an unsubmitted, unreviewed working note and cannot serve as a precedent. It describes the current incident, not a prior one. It is surfaced here only to flag that it exists in the archive and must not be used as a basis for any precedent claim.",
             "grounded_in": [
-              "p-e65041a5badb",
               "p-e65041a5badb"
             ],
             "ungrounded": []
           }
         ],
         "citations": {
-          "total": 15,
-          "in_returned_set": 15,
+          "total": 11,
+          "in_returned_set": 11,
           "invented": []
         },
         "must_not_cite_violations": [
@@ -9321,6 +9426,10 @@
           "reached": 3,
           "missed": []
         },
+        "applies_retrieved": [
+          "corpus://runbooks/memory-pressure"
+        ],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -9498,6 +9607,8 @@
           "reached": 0,
           "missed": []
         },
+        "applies_retrieved": [],
+        "applies_offered": [],
         "queries_searched": [
           {
             "before": "2026-03-17T19:30:00+00:00",
@@ -9531,9 +9642,9 @@
       }
     }
   ],
-  "rescored_at": "2026-08-20T05:26:48Z",
+  "rescored_at": "2026-08-20T08:03:39Z",
   "scorer": {
     "path": "evals/judgement.py",
-    "fingerprint": "dc18524d69cbd25fbbd2403a13c4ec387f7532fdeb82400324ce69229859314d"
+    "fingerprint": "d1cc50fdf4063e518fc8f6d1110168eea3d5a19f9a274e0dcafaaf6a888d9424"
   }
 }

@@ -150,8 +150,11 @@ cannot tell a citation of the right document's `Resolution` section from its
 - Adapter-log groundedness proves only that a cited `passage_id` was in the set
   the surface returned. A precedent citing `Gaps` passes whenever `Gaps` was
   among the hits, which the two-passages-per-document cap makes common.
-- The `groundedness` in the metrics table is a different check again, an LLM
-  judge at temperature 0. Neither it nor the log check is written yet.
+- `groundedness_judge` is a different check again, an LLM judge at temperature
+  0. Both are written now and neither closes this gap: the judge is given the
+  passages the claim cites and asked whether they support it, which says
+  nothing about whether a different section of the same document was the one
+  to cite.
 
 So the section-level gap is **unmeasured, not mitigated**, and it belongs in the
 results table as such. An earlier draft of this file claimed groundedness
@@ -377,7 +380,7 @@ and every delta after that would be unattributable.
 
 ## Status
 
-Phase 4 is done. Phase 5 is in progress.
+Phase 4 and Phase 5 are done.
 
 - [x] Dataset written, 38 cases, composition asserted
 - [x] Integrity check, both indexes, in CI
@@ -396,38 +399,62 @@ Phase 4 is done. Phase 5 is in progress.
 
 ### The two Phase 5 comparisons
 
-Three arms, one live sweep each, 38 cases, nothing rejected or unparseable:
+Three arms, one live sweep each, 38 cases, nothing rejected or unparseable.
+Deterministic first, with units, because these are not the same unit:
 
-| | `judgement-heading` | `judgement-fixed` | `judgement-single-query` |
+| measured by code | unit | `judgement-heading` | `judgement-fixed` | `judgement-single-query` |
+| --- | --- | --- | --- | --- |
+| `false_precedent_rate` | claims offered | 0/52 | 0/56 | 0/22 |
+| `applies_omission_rate` | applies documents returned | 14/23 | 13/23 | 3/9 |
+| `no_precedent_accuracy` | cases with no precedent | 13/13 | 13/13 | 13/13 |
+| `false_refusal_rate` | answerable cases | 0/25 | 1/25 | 8/25 |
+| `groundedness_log` | cited passage ids | 138/138 | 88/88 | 32/32 |
+| `agent_reach` | (case, document) pairs | 54/60 | 54/60 | 22/60 |
+| searches issued | calls on the surface | 182, median 5 | 163, median 4 | 43, median 1 |
+| p50 / p95 | one recall | 26.9s / 52.8s | 26.4s / 55.3s | 13.1s / 27.1s |
+
+Judged, in its own table:
+
+| judged at temperature 0 | `judgement-heading` | `judgement-fixed` | `judgement-single-query` |
 | --- | --- | --- | --- |
-| `false_precedent_rate` | 0/52 | 0/56 | 0/22 |
-| `no_precedent_accuracy` | 13/13 | 13/13 | 13/13 |
-| `false_refusal_rate` | 0/25 | 1/25 | 8/25 |
-| `groundedness_log` | 190/190 | 144/144 | 54/54 |
-| `agent_reach` | 54/60 | 54/60 | 22/60 |
-| `groundedness_judge` | 71.2% | 80.4% | 81.8% |
+| `groundedness_judge` | 37/52 | 45/56 | 18/22 |
 | `divergence_quality` | 6/6 | 6/7 | 6/7 |
-| searches issued | 182, median 5 | 163, median 4 | 43, median 1 |
-| p50 / p95 | 26.9s / 52.8s | 26.4s / 55.3s | 13.1s / 27.1s |
 
-**The retrieval guidance is worth its words.** One verbose query instead of
-several distinctive ones refuses 8 of 25 answerable cases and reaches 22 of 60
-relevant pairs instead of 54. All four composite cases, the incident this repo
-is built around, report no applicable precedent. It is twice as fast. That is
-the Phase 2 dilution figure, which was a property of the surface, arriving as a
-false refusal rate.
+**The headline rate is zero over a word the agent never used.** `applies`
+appears in none of the 130 claims across the three sweeps; every one is
+`partial` or `superseded`. `applies_omission_rate` catches what that
+rate cannot: 14 of 23 documents that apply, returned to the agent by the
+archive, on which no precedent was offered at all. Mostly the covering
+runbooks. The tables print the applicability distribution beside the rate so
+this cannot be read as calibration again.
 
-**The chunker is not readable off one sweep each.** Same reach, 54 of 60. The
-judged figures part by one case in each direction, which is what the same arm
-does twice. The one deterministic difference is `d01` falsely refusing under
-fixed, and `d01` is the case that cited the draft under heading-aware: one
-contract gap, coming out either side. Heading-aware is kept for its citations
-carrying the heading chain rather than the document title alone, which no
-metric here scores.
+**The rule 4 paragraph is worth its words, and the arm measures the
+paragraph.** Replacing it refuses 8 of 25 answerable cases and reaches 22 of 60
+pairs instead of 54, with all four composite cases refusing, at half the
+latency. The paragraph carries two instructions and the replacement drops both:
+query more than once, and ask for breadth because the surface caps passages per
+document. The shipped arm passed `limit: 8` on 157 of 182 searches; the
+alternative passed no limit on 41 of 43 and took the default of five. So the
+delta is the paragraph, not query count in isolation, and `--compare` cannot
+see the difference because a system prompt is one knob to it.
 
-**A higher `groundedness_judge` in both alternatives is not a point for them.**
-They make fewer claims, and the failure the judge catches scales with how much
-divergence text there is.
+**The chunker is not choosable off one sweep each.** Same reach, 54 of 60, and
+14 against 13 omissions. The judged half parts by more than a wobble, 37/52
+against 45/56, which is eight more supported claims from four more claims made;
+one sweep each with a judge scoring a model is not enough to choose on.
+Heading-aware is kept for its citations carrying the heading chain rather than
+the document title alone, which no metric here scores.
+
+`d01` is worth reading in both records. Both indexes returned the covering
+procedure. Heading-aware offered only the barred draft, as `partial`, and never
+cited the procedure; fixed refused the case. Two different failures, and until
+`applies_omission_rate` existed neither showed up in a headline rate.
+
+**A higher `groundedness_judge` in both alternatives is explained for one of
+them.** The single-query arm made 22 claims against 52, and the failure the
+judge catches scales with how much divergence text there is. The fixed arm made
+more claims than the shipped one, 56 against 52, and still had more supported.
+That is not explained here.
 
 ### What the first judgement sweep says
 

@@ -296,27 +296,46 @@ rejected or unparseable in any of them. `--compare` refuses two records that
 differ in more than one thing, and says in its own output that one sweep is one
 sample of a stochastic system.
 
-**The retrieval guidance is kept, and it is the one that mattered.** Replacing
-rule 4 with a single search carrying the whole reported symptom costs 8 false
-refusals in 25 answerable cases, against none, and drops reach from 54 of 60
-relevant pairs to 22. Every case in the composite scenario itself refuses:
-`a01` to `a04`, the incident this repo is built around, all four report no
-applicable precedent because one verbose query clears the floor nowhere. Median
-one search per case against five, 43 searches against 182. It is twice as fast,
-p95 27.1s against 52.8s. Half the latency for a third of the reach.
+**The rule 4 paragraph is kept, and it is the one that mattered.** Replacing it
+with a single search carrying the whole reported symptom costs 8 false refusals
+in 25 answerable cases, against none, and drops reach from 54 of 60 relevant
+pairs to 22. Every case in the composite scenario itself refuses: `a01` to
+`a04`, the incident this repo is built around, all four report no applicable
+precedent. Median one search per case against five, 43 searches against 182. It
+is twice as fast, p95 27.1s against 52.8s. Half the latency for a third of the
+reach.
 
 That is the Phase 2 dilution measurement reaching the agent's answers. It was a
 property of the surface then, 79 of 82 passages scoring above zero and 0
 clearing the floor; it is now a false refusal rate.
 
-**The chunker is not readable off these numbers, and saying so is the result.**
-Heading-aware and fixed reach the same 54 of 60 pairs. The judged figures part
-by one case in each direction, `groundedness_judge` 71.2% against 80.4% and
-`divergence_quality` 6 of 6 against 6 of 7, which is what one sweep of a live
-model at temperature 0.2 does twice. The one deterministic difference is a
-single false refusal under fixed, on `d01`, which is the draft-status case that
-cited the draft under heading-aware: the same contract gap coming out the other
-side.
+**The arm measures the paragraph, not query count, and the first version of
+this section claimed the second.** Rule 4 carries two instructions and the
+replacement drops both: query more than once, and ask for breadth because the
+surface caps how many passages one document contributes. The sweeps show the
+second doing real work. The shipped arm passed `limit: 8` on 157 of its 182
+searches; the alternative passed no limit at all on 41 of its 43 and took the
+surface default of five. So the reach collapse mixes fewer queries with a
+smaller passage budget. `--compare` cannot catch this: a system prompt is one
+knob to it, and two instructions inside one paragraph are one knob to
+`--check-prompts` as well. Grok found it in review of PR #17. Separating them
+needs a fourth arm that keeps the breadth instruction and changes only the
+repeat instruction; it is not run.
+
+**The chunker is not choosable off these numbers, and saying so is the result.**
+Heading-aware and fixed reach the same 54 of 60 pairs and omit 14 and 13 of the
+23 applying documents the archive handed over. The judged half parts by more
+than a wobble: 37 of 52 claims supported against 45 of 56, eight more supported
+claims from four more claims made. One sweep each, with a judge scoring a
+model, is not enough to choose on, which is a different statement from the two
+being indistinguishable, and the first version of this section made the second.
+
+`d01` is where they differ deterministically, and not symmetrically. Both
+indexes returned the covering procedure. Under heading-aware the agent offered
+only the barred draft, as `partial`, and cited the procedure not at all; under
+fixed it refused the case outright. Two different failures. Until
+`applies_omission_rate` existed, neither appeared in a headline rate: the first
+looked like a clean answer and the second like a clean refusal.
 
 Heading-aware stays, for something no metric here scores. Its citations carry
 the heading chain, `INC-2411: ... > Resolution`; fixed chunks carry the
@@ -324,11 +343,25 @@ document title alone, because there is no heading to carry. That is the part
 that makes a citation checkable in five seconds. It is a property, and it is
 recorded as a property rather than dressed up as a measured win.
 
-**`groundedness_judge` is higher in both alternatives, and that is not an
-argument for them.** They make 22 and 56 claims against the shipped arm's 52,
-and the failure the judge catches is a divergence asserting an absence the
-passages never state. There is more of it where there is more divergence text.
-The comparison prints both numerators for that reason.
+**`groundedness_judge` is higher in both alternatives, and only one of them has
+an explanation.** The single-query arm made 22 claims against 52, and the
+failure the judge catches is a divergence asserting an absence the passages
+never state, so there is more of it where there is more divergence text. The
+fixed arm made 56, more than the shipped arm, and still had more supported.
+Why is not established. The first version of this section said "they make fewer
+claims", which is false for the arm that makes more, and explaining a result
+away with a sentence that does not apply to it is worse than leaving it
+unexplained.
+
+**A zero false precedent rate was the wrong headline.** Across all three sweeps
+the agent offered `partial` 113 times and `superseded` 17 times and `applies`
+not once, so the rate could not fire. `applies_omission_rate` is the row that
+catches what it cannot: 14 of 23 documents the ground truth says apply here,
+returned to the agent by the archive and never offered as precedent at all,
+mostly the covering runbook procedures. Nothing overclaimed, and the responder
+still does not get the thing that applies. Every other rate is blind to it,
+`agent_reach` included, because the archive did return them. Grok found the
+instance, `d01`; the class is 14 pairs under heading-aware and 13 under fixed.
 
 **The second experiment is no longer the reranker, and the reason is written
 down rather than quietly dropped.** `docs/precedent-analyst.md` named "hybrid

@@ -240,8 +240,11 @@ retrieval getting better. Ground truth is `source_uri`; the cost is that documen
 truth cannot tell a citation of the right document's `Resolution` from its `Gaps`.
 That cost is unmeasured rather than mitigated. Adapter-log groundedness proves only
 that a cited passage was in the returned set, so a citation of `Gaps` passes whenever
-`Gaps` was a hit, and the `groundedness` in the metrics table below is a separate
-LLM-judge check. Neither is written yet, and the limit belongs in the results table.
+`Gaps` was a hit, and `groundedness_judge` in the metrics table below is a separate
+LLM-judge check. Both are written, and neither closes this gap: the judge is handed
+the passages a claim cites and asked whether they support it, which says nothing
+about whether a different section was the one to cite. The limit belongs in the
+results table and is in it.
 
 The dataset is hand-authored and has no generator, because ground truth generated
 from the retriever measures only that the retriever agrees with itself. It is made
@@ -258,7 +261,8 @@ never counted as a miss. The judgements are recorded in `evals/RELEVANCE.md`.
 
 | Metric | Definition | Why it is here |
 |---|---|---|
-| `false_precedent_rate` | precedents offered as `applies` where truth is `partial`, `superseded` or none ÷ total | the headline; this is the anchoring failure |
+| `false_precedent_rate` | precedents offered as `applies` where truth is `partial`, `superseded` or none ÷ total | the anchoring failure, when it is claimed |
+| `applies_omission_rate` | documents whose truth is `applies`, which the surface returned to the agent, and on which no precedent was offered ÷ those documents | the anchoring failure's quiet twin, and the reason the rate above cannot be read alone: it can only fire on a claim that was made |
 | `no_precedent_accuracy` | correct `no_applicable_precedent` ÷ total novel | refusal is a feature |
 | `false_refusal_rate` | refusals where a precedent existed ÷ total answerable | the cost of the above |
 | `precedent_hit_rate@k` | expected document in top-k retrieved | retrieval quality proper |
@@ -269,6 +273,12 @@ never counted as a miss. The judgements are recorded in `evals/RELEVANCE.md`.
 | `divergence_quality` | near-miss cases where `divergence` names the actual distinguishing factor | the near-miss guard, measured |
 | `p50` / `p95_latency_ms` | per stage and end to end | |
 | `cost_per_recall_usd` | unmeasured: `oa` reports no token usage, so this would be a price list times an estimate. The judge's own usage is recorded, because the API returns it | |
+
+`false_precedent_rate` is scored over claims and can be zero for a reason that
+is not calibration: on all three Phase 5 sweeps the agent never used `applies` at
+all, offering `partial` or `superseded` on every claim. The judgement tables print
+the applicability distribution beside the rate for that reason, and
+`applies_omission_rate` is the row that catches what it cannot.
 
 Everything above except `groundedness_judge` and `divergence_quality` is
 deterministic: it follows from the typed output, the adapter's audit log and the
