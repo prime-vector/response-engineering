@@ -77,6 +77,7 @@ from validate import (  # noqa: E402
 )
 
 API_URL = "https://api.anthropic.com/v1/messages"
+args_config_path = "evals/config.judgement.yaml"
 API_VERSION = "2023-06-01"
 
 # The paragraph of the spec's system prompt the query-strategy arm replaces,
@@ -1277,7 +1278,7 @@ def markdown(result):
     return "\n".join(lines)
 
 
-def rescore(path):
+def rescore(path, config=None):
     """Recompute every deterministic figure from a recorded sweep.
 
     The runs are what cost money; the scoring is what gets edited. A record
@@ -1324,6 +1325,15 @@ def rescore(path):
     for name in sorted(set(before) | set(result["deterministic"])):
         old_block = before.get(name)
         new_block = result["deterministic"].get(name)
+        if isinstance(new_block, dict) and "count" in new_block:
+            # understated_claims and unrelated_claims carry a count rather
+            # than a rate, and they were moving in the published table with
+            # nothing on stdout to say so.
+            was_count = (old_block or {}).get("count")
+            if was_count != new_block["count"]:
+                print(f"  {name}: {was_count}/{(old_block or {}).get('of')} "
+                      f"-> {new_block['count']}/{new_block['of']}")
+            continue
         if not isinstance(new_block, dict) or "value" not in new_block:
             continue
         if not isinstance(old_block, dict) or "value" not in old_block:
@@ -1342,6 +1352,22 @@ def rescore(path):
             print(f"  {name}: {pct(was[0])} ({was[1]}/{was[2]}) -> "
                   f"{pct(now[0])} ({now[1]}/{now[2]})")
     result["per_case"] = [{**r, "score": scores[r["case"]]} for r in records]
+    # An arm's description is a label on the experiment rather than a
+    # measurement of it, and a label that describes the arm wrongly is worse
+    # in a published table than in a config nobody reads. Refreshed from the
+    # config when it has changed, and said out loud, because editing anything
+    # in a record after the run has to be visible.
+    if config:
+        for arm in config.get("arms") or []:
+            if arm["label"] != result["label"]:
+                continue
+            fresh = arm.get("description", "")
+            if fresh and fresh != result["arm"].get("description"):
+                print(f"  arm description updated from {args_config_path}:")
+                print(f"    was: {result['arm'].get('description')}")
+                print(f"    now: {fresh}")
+                result["arm"]["description"] = fresh
+
     result["rescored_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     result["scorer"] = {
         "path": os.path.relpath(os.path.abspath(__file__)),
@@ -1577,10 +1603,12 @@ def main():
     parser.add_argument("--stamp", default=None)
     args = parser.parse_args()
 
-    if args.rescore:
-        return rescore(args.rescore)
-
     config = load_config(args.config)
+    if args.rescore:
+        global args_config_path
+        args_config_path = args.config
+        return rescore(args.rescore, config)
+
     if args.write_prompts or args.check_prompts:
         return write_prompts(config, check=args.check_prompts)
 

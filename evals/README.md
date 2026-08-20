@@ -409,6 +409,8 @@ Deterministic first, with units, because these are not the same unit:
 | `no_precedent_accuracy` | cases with no precedent | 13/13 | 13/13 | 13/13 |
 | `false_refusal_rate` | answerable cases | 0/25 | 1/25 | 8/25 |
 | `groundedness_log` | cited passage ids | 138/138 | 88/88 | 32/32 |
+| understated claims | claims offered | 10/52 | 10/56 | 6/22 |
+| claims on documents not called relevant | claims offered | 18/52 | 18/56 | 3/22 |
 | `agent_reach` | (case, document) pairs | 54/60 | 54/60 | 22/60 |
 | searches issued | calls on the surface | 182, median 5 | 163, median 4 | 43, median 1 |
 | p50 / p95 | one recall | 26.9s / 52.8s | 26.4s / 55.3s | 13.1s / 27.1s |
@@ -460,7 +462,7 @@ That is not explained here.
 
 `results/judgement-heading.md` has the table: 38 cases, no run rejected or
 unparseable, `false_precedent_rate` 0 of 52 claims, `no_precedent_accuracy` 13
-of 13, `false_refusal_rate` 0 of 25, `groundedness_log` 190 of 190,
+of 13, `false_refusal_rate` 0 of 25, `groundedness_log` 138 of 138,
 `agent_reach` 54 of 60 pairs, p50 26.9s and p95 52.8s.
 
 Three things in it are worth more than the headline rates.

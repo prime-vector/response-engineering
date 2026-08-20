@@ -210,6 +210,8 @@ counted in, because they are not the same unit:
 | `no_precedent_accuracy` | cases with no precedent | 13/13 | 13/13 | 13/13 |
 | `false_refusal_rate` | answerable cases | 0/25 | 1/25 | **8/25** |
 | `groundedness_log` | cited passage ids | 138/138 | 88/88 | 32/32 |
+| claims understated (`partial` where truth is `applies`) | claims offered | 10/52 | 10/56 | 6/22 |
+| claims on documents ground truth does not call relevant | claims offered | 18/52 | 18/56 | 3/22 |
 | `agent_reach` | (case, relevant document) pairs | 54/60 | 54/60 | **22/60** |
 | p50 / p95 latency | one recall | 26.9s / 52.8s | 26.4s / 55.3s | 13.1s / 27.1s |
 

@@ -1125,7 +1125,12 @@ def compare_judgement(path_a, a, path_b, b):
         # Some rates are scored over what the run itself produced. An arm that
         # retrieved fewer documents that apply has fewer of them to omit, so
         # its omission rate improves by doing less, and calling that better
-        # would be the fitting move in miniature.
+        # would be the fitting move in miniature. The judged rates are the
+        # same shape and were missed on the first pass: groundedness_judge is
+        # scored over claims offered, so making fewer and easier ones raises
+        # it, and divergence_quality is scored over near-miss precedents
+        # offered, so failing to offer the diverging record at all improves
+        # it. Grok found that on the second round of PR #17.
         moved = (denominator_is_an_outcome
                  and block_a["denominator"] != block_b["denominator"])
         direction = ""
@@ -1160,9 +1165,14 @@ def compare_judgement(path_a, a, path_b, b):
               f"{jb['model']}), so these two rows are not a delta")
     else:
         show("groundedness_judge", (ja or {}).get("groundedness_judge"),
-             (jb or {}).get("groundedness_judge"))
+             (jb or {}).get("groundedness_judge"),
+             denominator_is_an_outcome=True)
         show("divergence_quality", (ja or {}).get("divergence_quality"),
-             (jb or {}).get("divergence_quality"))
+             (jb or {}).get("divergence_quality"),
+             denominator_is_an_outcome=True)
+        print("        Both judged rates are scored over what the run "
+              "offered: fewer claims, or a diverging record never offered, "
+              "raise them. Read the counts, not the percentage.")
 
     print(f"\n  failures               "
           f"{da['failures']['total']}/{da['cases']} -> "

@@ -72,8 +72,10 @@ arms:
   # hand would drift into being a second prompt rather than one changed rule.
   - label: judgement-single-query
     description: >-
-      one verbose query instead of several distinctive ones, the shipped
-      prompt with rule 4 replaced
+      the shipped prompt with rule 4 replaced. That paragraph carries two
+      instructions, search more than once and ask for breadth, and the
+      replacement drops both, so the arm measures the paragraph and not query
+      count inside it
     index: corpus/index.json
     chunker: heading
     system_prompt: evals/prompts/single-query.system.txt

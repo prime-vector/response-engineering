@@ -143,7 +143,8 @@ Two things the dataset settled, both of which change what the spec asked for:
   from its `Gaps`, and that cost is unmeasured rather than mitigated: adapter-log
   groundedness proves only that a cited passage was in the returned set, so a
   citation of `Gaps` passes whenever `Gaps` was a hit, and the `groundedness` in
-  the metrics table is a separate LLM-judge check that is not written yet. It
+  the metrics table is a separate LLM-judge check, written since as
+  `groundedness_judge` and closing neither gap. It
   belongs in the results table as a stated limit.
 - **The dataset is hand-authored and has no generator.** Every other artefact
   derived from the corpus has a `--check` that fails on drift, so generating this
@@ -205,19 +206,20 @@ a passage id from it. `--compare` refuses two runs that differ in corpus, ground
 truth, relevance floor, passage budget or k list, because each of those deltas
 is that input moving rather than retrieval improving.
 
-Judgement mode is designed and not written. `false_precedent_rate`,
+Judgement mode was designed here and is written, below. What this section got
+right is why it had to be separate: `false_precedent_rate`,
 `no_precedent_accuracy`, `false_refusal_rate` and `divergence_quality` each need
 one live `oa run` per case, an API key and the `patches/` provider patch, and
-they have to score the agent on the queries it recorded in
-`search_coverage.queries_issued` rather than on the dataset's canonical probe:
-case `a04`'s probe is the reported symptom used whole, which clears the floor
-zero times, so an agent that copies it refuses where the archive held precedent
-and that refusal is a real false refusal. `groundedness` needs a judge prompt at
-temperature 0 that is not designed, and writing it would not close the
-section-level gap: document-level truth cannot tell a citation of `Resolution`
-from one of `Gaps`, and neither can the adapter log. Every one of them appears
-in the results table as unmeasured with what it needs, rather than being left
-out, because a table listing only what was measured reads as a complete one.
+they score the agent on the queries it issued rather than on the dataset's
+canonical probe. Case `a04` is why that distinction matters: its probe is the
+reported symptom used whole, which clears the floor zero times, so an agent that
+copied it would refuse where the archive held precedent, and that refusal would
+be a real false refusal. What this section got wrong is where the queries come
+from. They are read from the adapter's log, not from
+`search_coverage.queries_issued`, which is the agent's account of its own
+conduct. The retrieval table still lists every one of these as unmeasured, with
+where it is measured instead, because a table listing only what it measured
+reads as a complete one.
 
 Grok's review of the dataset (PR #14) found the first version of that figure
 inflated. Relevance had been scoped to what each case was testing rather than to
@@ -262,7 +264,7 @@ one assurance.
 **The shipped configuration, recorded.** Heading-aware index, the spec's own
 prompt, 38 cases, `claude-sonnet-4-6` at temperature 0.2, zero runs rejected or
 unparseable. `false_precedent_rate` 0 of 52 claims, `no_precedent_accuracy` 13
-of 13, `false_refusal_rate` 0 of 25, `groundedness_log` 190 of 190 cited
+of 13, `false_refusal_rate` 0 of 25, `groundedness_log` 138 of 138 cited
 passage ids in the set the surface returned, `agent_reach` 54 of 60 pairs, p50
 26.9s and p95 52.8s per recall. The full table is
 `evals/results/judgement-heading.md`.

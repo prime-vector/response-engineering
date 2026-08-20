@@ -403,15 +403,35 @@ testing: at the bridge bound the reported symptom used whole scores 79 of 82 pas
 above zero and clears the floor 0 times, while the signature type alone scores 54 and
 clears 35. The arm is the shipped system prompt with that paragraph replaced by the
 instruction someone would plausibly have written without the measurement, derived from
-the spec so the two differ in one rule and nothing else.
+the spec so the two differ in that paragraph and nothing else.
+
+**The paragraph is not one instruction, and the arm measures the paragraph.** Rule 4
+says to query more than once *and* to ask for enough breadth, because the surface caps
+how many passages a single document contributes. The replacement drops both, and the
+records show the second doing real work: the shipped arm passed `limit: 8` on 157 of
+its 182 searches, the alternative passed no limit at all on 41 of its 43 and took the
+surface default of five. So the delta belongs to the paragraph and not to query count
+inside it. Neither `--compare` nor `--check-prompts` can see this: one paragraph is one
+knob to both. Separating them needs a fourth arm that keeps the breadth instruction,
+and it is not run.
 
 Done. Three arms recorded, both comparisons run, and the README carries what was
 kept, what was rejected and the latency accepted for it. The guidance arm is the
-decisive one: one verbose query refuses 8 of 25 answerable cases against none and
-reaches 22 of 60 relevant pairs against 54, at half the latency. The chunker arm is
-a null result reported as one: the same reach, judged figures parting by a single
-case in each direction, and heading-aware kept for its citations carrying the
-heading chain rather than for a measured win.
+decisive one: replacing rule 4 refuses 8 of 25 answerable cases against none and
+reaches 22 of 60 relevant pairs against 54, at half the latency. The chunker arm is a
+result nobody should choose on rather than a null one: the same reach and the same
+order of omissions, a judged half parting by more than a wobble at 37 of 52 claims
+supported against 45 of 56, and one sweep each with a judge scoring a model is not
+enough to decide with. Heading-aware is kept for its citations carrying the heading
+chain, which is a property and not a measured win.
+
+**The headline rate could not fire, and that is the result the arms share.**
+`false_precedent_rate` is 0 in all three, and `applies` appears in none of the 130
+claims. `applies_omission_rate` is what catches the failure instead: 14 of 23
+documents the ground truth says apply here, returned to the agent and never offered,
+mostly the covering runbook procedures. It does not catch the other shape, a barred or
+unrelated document offered as `partial`, which is how the anchoring failure actually
+presented on `d01` and `g01`. Nothing scores that yet.
 
 Read the deltas across both modes, because neither mode can produce all four numbers.
 `precedent_hit_rate@5` is retrieval mode and a property of the surface;
@@ -454,7 +474,12 @@ Then the results table, with the before and after from Phase 5.
 ## 10. Guardrails
 
 - Public documentation and synthetic records only. Never client-derived material.
-- Every number in the README regenerable by the runner.
+- Every retrieval number in the README regenerable by the runner, and checked in CI.
+  The judgement numbers are not: they are records of one live run, a fresh sweep of the
+  same arm gives different figures, and each record carries the timestamp, spec, prompt,
+  model and case ids that produced it. `--rescore` recomputes the deterministic half
+  from a stored record and prints what moved. A guardrail promising regeneration for
+  those would be one the artefacts cannot keep.
 - No question, passage or answer text in span attributes if tracing is added; correlate
   by id and log separately, so the observability story survives a privacy review.
 - Prefer the honest measurement over the impressive one. The method is the artefact.

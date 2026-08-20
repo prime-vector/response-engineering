@@ -9642,9 +9642,9 @@
       }
     }
   ],
-  "rescored_at": "2026-08-20T08:03:39Z",
+  "rescored_at": "2026-08-20T08:23:34Z",
   "scorer": {
     "path": "evals/judgement.py",
-    "fingerprint": "d1cc50fdf4063e518fc8f6d1110168eea3d5a19f9a274e0dcafaaf6a888d9424"
+    "fingerprint": "a0f02197f2e5f78fa0cc4d257cf93dbfcdcfdd87234e05594e1d06d46a8d8c03"
   }
 }
