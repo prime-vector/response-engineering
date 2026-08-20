@@ -232,9 +232,11 @@ change to the retriever. The bookkeeping moved, not the retrieval.
 
 `evals/judgement.py` is the other half, and it measures the agent rather than
 the surface: one live `oa run` of `recall` per case, the arm's index, the arm's
-system prompt. Nothing it writes is regenerable, so nothing in CI diffs it. The
-record carries a timestamp, the spec, the prompt, the model and the case ids,
-because those are what a reader would otherwise take on trust.
+system prompt. The runs are not regenerable, so no CI job can diff a fresh
+sweep against a committed one, and the record carries a timestamp, the spec,
+the prompt, the model and the case ids instead. Everything derived from those
+records is diffed: the per-arm tables, the Phase 5 grid and the copies of it
+injected into the two documents that publish it.
 
 Two kinds of number, never in one table. Deterministic:
 `false_precedent_rate`, `no_precedent_accuracy`, `false_refusal_rate`,
@@ -272,8 +274,8 @@ passage ids in the set the surface returned, `agent_reach` 54 of 60 pairs, p50
 Read the two things the deterministic rates cannot say by themselves. Ten of
 the 52 claims are offered as `partial` where the truth is `applies`, so the
 zero false precedent rate is a partly cautious agent rather than a calibrated
-one, and the table says so beside it. And `groundedness_judge` is 75%: 39 of
-52 claims are supported by the passages they cite, and most of the other 13 are
+one, and the table says so beside it. And `groundedness_judge` is 71.2%: 37 of
+52 claims are supported by the passages they cite, and most of the other 15 are
 the same move, an absence asserted from silence. "INC-2411 shows no audit
 daemon" is a claim about a document from passages that simply do not mention
 one. It is a divergence in the shape the prompt asks for, resting on something
@@ -327,8 +329,8 @@ repeat instruction; it is not run.
 **The chunker is not choosable off these numbers, and saying so is the result.**
 Heading-aware and fixed reach the same 54 of 60 pairs and omit 14 and 13 of the
 23 applying documents the archive handed over. The judged half parts by more
-than a wobble: 39 of 52 claims supported against 48 of 56, nine more supported
-claims from four more claims made. One sweep each, with a judge scoring a
+than a wobble: 37 of 52 claims supported against 45 of 56, about nine points,
+against a same-arm re-judge that moves one to three claims. One sweep each, with a judge scoring a
 model, is not enough to choose on, which is a different statement from the two
 being indistinguishable, and the first version of this section made the second.
 

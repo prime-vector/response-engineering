@@ -53,6 +53,7 @@ through `oa`, which brings its own.
 
 import argparse
 import hashlib
+import inspect
 import json
 import os
 import re
@@ -719,6 +720,22 @@ def aggregate(cases, records, scores):
 # The judge
 # --------------------------------------------------------------------------
 
+def judge_code_fingerprint():
+    """The code that decides what a judge is asked and how its reply is read.
+
+    Narrow on purpose. A fingerprint over this whole file would be simpler and
+    would demand a paid re-judge for a comment, which is how a check that
+    costs money gets switched off. What actually determines a verdict is the
+    payload built for it, the request that carries it, the parse that reads it
+    back, and the claim shape it is handed. The prompts, the model and the
+    temperature are fingerprinted separately in the record.
+    """
+    source = "".join(inspect.getsource(fn)
+                     for fn in (judge_run, call_judge, extract_json,
+                                score_run))
+    return hashlib.sha256(source.encode()).hexdigest()
+
+
 def call_judge(judge, system, payload, key):
     body = json.dumps({
         "model": judge["model"],
@@ -917,11 +934,11 @@ def judge_run(config, records, scores, cases, port, key):
     return {
         "model": judge["model"],
         "temperature": judge.get("temperature", 0),
-        # The code that built these payloads and read these verdicts. It is
-        # not the same claim as the record's top-level scorer fingerprint,
-        # which moves whenever the deterministic scoring is edited and a
-        # record is rescored.
-        "scorer_fingerprint": file_fingerprint(os.path.abspath(__file__)),
+        # The code that built these payloads and read these verdicts, and
+        # only that code. Not the record's top-level scorer fingerprint,
+        # which covers this whole file and moves on any edit: that one is
+        # answered by a free rescore, this one by a paid re-judge.
+        "scorer_fingerprint": judge_code_fingerprint(),
         "prompts": {
             "groundedness": {
                 "path": judge["groundedness_prompt"],
@@ -1471,7 +1488,7 @@ def record_drift(config, arm, record):
     configuration does. The scoring code invalidates the figures and not the
     runs, and --rescore recomputes those from what the record already holds.
     """
-    rerun, rescore_owed = [], []
+    rerun, rescore_owed, rejudge_owed = [], [], []
 
     # The spec file carries the model, the sampling config and, for the two
     # arms that do not override it, the system prompt. One fingerprint over
@@ -1517,9 +1534,10 @@ def record_drift(config, arm, record):
         rerun.append("the corpus has changed since the recording, so the "
                      "archive the agent searched is not the one on disk")
 
-    # The judged half has no cheap remedy. Re-judging is a fresh call to a
-    # model against passages only a running adapter can resolve, and this
-    # file has no path to it, so a moved judge means a fresh sweep.
+    # The judged half costs a model call rather than a re-run: --rejudge
+    # re-scores stored claims against the passages they cite. So a moved
+    # judge is its own remedy, listed apart from a rescore because it spends
+    # money and apart from a re-run because it does not spend a sweep.
     judge = config["judge"]
     judged = record.get("judged")
     if judged is None:
@@ -1527,20 +1545,29 @@ def record_drift(config, arm, record):
                      "judge and divergence_quality are unmeasured for it")
     else:
         if judged.get("model") != judge["model"]:
-            rerun.append(f"the config judges with {judge['model']}, the "
-                         f"recording used {judged.get('model')}")
+            rejudge_owed.append(f"the config judges with {judge['model']}, "
+                                f"the recording used {judged.get('model')}")
         if judged.get("temperature") != judge.get("temperature", 0):
-            rerun.append(f"the config judges at temperature "
-                         f"{judge.get('temperature', 0)}, the recording used "
-                         f"{judged.get('temperature')}")
+            rejudge_owed.append(f"the config judges at temperature "
+                                f"{judge.get('temperature', 0)}, the "
+                                f"recording used {judged.get('temperature')}")
         for name in ("groundedness", "divergence"):
             path = judge[f"{name}_prompt"]
             stored = judged.get("prompts", {}).get(name, {})
             if stored.get("path") != path:
-                rerun.append(f"the config judges {name} with {path}, the "
-                             f"recording used {stored.get('path')}")
+                rejudge_owed.append(f"the config judges {name} with {path}, "
+                                    f"the recording used {stored.get('path')}")
             elif stored.get("fingerprint") != fingerprint_or_none(path):
-                rerun.append(f"{path} has changed since the recording")
+                rejudge_owed.append(f"{path} has changed since the recording")
+        # The code that built the judge payloads and read the verdicts back.
+        # A payload change is invisible in the model, the temperature and the
+        # prompts, and it is exactly what moved these figures once already.
+        if judged.get("scorer_fingerprint") != judge_code_fingerprint():
+            rejudge_owed.append(
+                "evals/judgement.py has changed since these verdicts were "
+                "produced" if judged.get("scorer_fingerprint")
+                else "the recording predates the judge fingerprint, so what "
+                     "produced its verdicts is not established")
 
     # The record pins this whole file, so a comment here trips this as
     # readily as a change to score_run. That is the right way round: the
@@ -1551,7 +1578,7 @@ def record_drift(config, arm, record):
         rescore_owed.append("evals/judgement.py has changed since these "
                             "figures were scored")
 
-    return rerun, rescore_owed
+    return rerun, rescore_owed, rejudge_owed
 
 
 def check_records(config, config_path):
@@ -1584,26 +1611,33 @@ def check_records(config, config_path):
             continue
         with open(path) as handle:
             record = json.load(handle)
-        rerun, rescore_owed = record_drift(config, arm, record)
+        rerun, rescore_owed, rejudge_owed = record_drift(config, arm, record)
         recorded = record.get("recorded_at", "an unstamped run")
-        if not rerun and not rescore_owed:
+        if not rerun and not rescore_owed and not rejudge_owed:
             print(f"{arm['label']:<24} current, recorded {recorded}")
             continue
         stale += 1
-        print(f"{arm['label']:<24} "
-              f"{'re-run owed' if rerun else 'rescore owed'}, recorded "
-              f"{recorded} in {os.path.relpath(path)}")
-        for line in rerun + rescore_owed:
+        owed = ("re-run owed" if rerun
+                else "re-judge owed" if rejudge_owed
+                else "rescore owed")
+        print(f"{arm['label']:<24} {owed}, recorded {recorded} in "
+              f"{os.path.relpath(path)}")
+        for line in rerun + rejudge_owed + rescore_owed:
             print(f"  {line}")
         if rerun:
             print(f"    python3 evals/judgement.py --config {config_path} "
                   f"--arm {arm['label']}")
+        elif rejudge_owed:
+            # Re-judging recomputes the deterministic half on its way past,
+            # so it is the whole remedy when both are owed.
+            print(f"    python3 evals/judgement.py --rejudge {path}")
         else:
             print(f"    python3 evals/judgement.py --rescore {path}")
     if stale:
         print(f"\n{stale} of {len(config['arms'])} arm(s) stale. A re-run is "
-              f"live and costs; a rescore reads what the record already "
-              f"holds and does not.")
+              f"a live sweep; a re-judge is one model call per claim against "
+              f"passages already recorded; a rescore reads what the record "
+              f"holds and spends nothing.")
     return 1 if stale else 0
 
 
@@ -2008,6 +2042,18 @@ def rejudge(record_path, config):
                for entry in result["per_case"]]
     scores = {r["case"]: score_run(by_id[r["case"]], r) for r in records}
 
+    # A passage id is chunker|source_uri|heading_path|ordinal, so it survives
+    # an edit to the text underneath it. Serving a rebuilt index would judge
+    # stored claims against passages the agent never saw, and the record would
+    # keep the old corpus and index metadata while it happened.
+    served = file_fingerprint(result["index"])
+    if served != result.get("index_fingerprint"):
+        raise SystemExit(
+            f"{result['index']} has been rebuilt since this sweep: the record "
+            f"names {str(result.get('index_fingerprint'))[:16]} and the file "
+            f"is {served[:16]}. Passage ids survive a text edit, so judging "
+            f"against it would score claims on passages the agent never saw.")
+
     spec = spec_document(config["spec"])
     port = spec_port(spec, config["spec"])
     proc = start_adapter(result["index"], port,
@@ -2027,8 +2073,20 @@ def rejudge(record_path, config):
               f"{pct(now['value'])} ({now['numerator']}/{now['denominator']})")
     result["judged"] = fresh
     result["rejudged_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    # Rejudging recomputes the deterministic half as well, because the claims
+    # handed to the judge come from it. So it owns that provenance too: a
+    # record naming one scorer fingerprint at the top and figures produced by
+    # another underneath is the same defect as one fingerprint covering both
+    # halves. Stamped like a rescore, because that is what this half is.
     result["per_case"] = [{**r, "score": scores[r["case"]]} for r in records]
     result["deterministic"] = aggregate(cases, records, scores)
+    result["rescored_at"] = result["rejudged_at"]
+    result["scorer"] = {
+        "path": os.path.relpath(os.path.abspath(__file__)),
+        "fingerprint": file_fingerprint(os.path.abspath(__file__)),
+        "scope": "the deterministic figures. The judged half carries its own "
+                 "fingerprint under judged.",
+    }
     with open(record_path, "w") as handle:
         json.dump(result, handle, indent=2, sort_keys=False)
         handle.write("\n")

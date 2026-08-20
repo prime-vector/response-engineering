@@ -231,7 +231,7 @@
   "judged": {
     "model": "claude-opus-4-6",
     "temperature": 0,
-    "scorer_fingerprint": "1e9f0ab8829e39e12ce0b4f47b7158f0673b529a889204080c2dd2d23a54e603",
+    "scorer_fingerprint": "8fb4cab63d309cb35ba7389262271ab0043e739bd340b54dd0571d40008c82c6",
     "prompts": {
       "groundedness": {
         "path": "evals/judges/groundedness-judge.txt",
@@ -244,12 +244,12 @@
     },
     "usage": {
       "input_tokens": 103351,
-      "output_tokens": 7426,
+      "output_tokens": 7688,
       "calls": 58
     },
     "groundedness_judge": {
-      "value": 0.75,
-      "numerator": 39,
+      "value": 0.7115,
+      "numerator": 37,
       "denominator": 52,
       "errors": [],
       "verdicts": [
@@ -259,11 +259,9 @@
           "verdict": {
             "supported": false,
             "unsupported_elements": [
-              "Audit analysis daemon confirmed active and consuming CPU; security module in enforcing mode with real denials being logged \u2014 both present in INC-2288 and in the current incident.",
-              "the audit denial log, which is still outstanding here, was also destroyed in INC-2288 by the same action",
-              "INC-2288 closed without identifying the source domain."
+              "Audit analysis daemon confirmed active and consuming CPU; security module in enforcing mode with real denials being logged \u2014 both present in INC-2288"
             ],
-            "reason": "The passages confirm the daemon consumed CPU and that denial volume was involved, but they never explicitly state a 'security module in enforcing mode with real denials being logged' \u2014 the passages mention denial volume and a policy change but not a security module in enforcing mode; the claim that the audit denial log was 'destroyed' by the dispatcher deactivation is not stated in the passages (the supersession notice says evidence was destroyed that would have identified the source domain, but does not specifically say the audit denial log was destroyed); and while the supersession notice says deactivating the dispatcher 'destroyed the evidence that would have identified the source domain,' the passages do not explicitly state that INC-2288 closed without identifying the source domain."
+            "reason": "The passages describe a denial-analysis daemon consuming CPU and denial volume from a policy change, but do not explicitly confirm a 'security module in enforcing mode' as a characteristic of INC-2288; the rest of the claim is supported by the passages including the supersession, resolution, evidence destruction, and failure to identify the source domain (implied by the supersession note stating the evidence was destroyed)."
           }
         },
         {
@@ -273,9 +271,10 @@
             "supported": false,
             "unsupported_elements": [
               "INC-2411 had no active audit daemon or security-module denial activity",
+              "no transfer failures reported \u2014 all present in INC-2411",
               "in INC-2411 that attribution was available and pointed to the JVM"
             ],
-            "reason": "The cited passages do not state that INC-2411 had no active audit daemon or security-module denial activity (reasoning from silence is not support), nor do they state that process-level memory attribution was available and pointed to the JVM; the passages mention only the heap change correlation and swap behavior, not per-process resident-set attribution."
+            "reason": "The cited passages do not state that INC-2411 had no active audit daemon or no security-module denial activity (reasoning from silence is not permitted), do not state that no transfer failures were reported (only that transfers ran late), and do not state that process-level memory attribution was available and pointed to the JVM \u2014 the cause was identified via change correlation, not memory attribution."
           }
         },
         {
@@ -286,7 +285,7 @@
             "unsupported_elements": [
               "INC-2419 ran unacknowledged for nine days"
             ],
-            "reason": "The passage states the memory exhaustion problem opens and auto-closes on seven of ten days (D0 to D+9), unacknowledged throughout; the claim says it 'ran unacknowledged for nine days,' but the period is ten days (D0 to D+9), not nine, and the problem occurred on seven of those ten days rather than continuously for nine days."
+            "reason": "The passage states the memory exhaustion problem opens and auto-closes on seven of ten days (D0 to D+9), unacknowledged throughout, meaning the unacknowledged period spans ten days (D0 through D+9), not nine days; however, the workload restart occurred at D+9, so the duration could be read as nine days of elapsed time, but more precisely the claim 'ran unacknowledged for nine days' is a reasonable paraphrase of D0-to-D+9 \u2014 actually, on closer review, D0 to D+9 is a ten-day span, and the claim says 'nine days,' which is inaccurate."
           }
         },
         {
@@ -315,7 +314,7 @@
             "unsupported_elements": [
               "host.memory.exhaustion signature on an integration host"
             ],
-            "reason": "The cited passages describe sustained CPU consumption by the denial-analysis daemon but never mention a host.memory.exhaustion signature or memory exhaustion of any kind, nor do they mention an integration host; all other claims about the prior record are supported."
+            "reason": "The cited passages describe sustained CPU consumption by the denial-analysis daemon but never mention a 'host.memory.exhaustion' signature or memory exhaustion of any kind, nor do they mention an 'integration host' specifically."
           }
         },
         {
@@ -324,7 +323,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about INC-2411 are supported: the passages confirm batch transfers running late, heavy swap usage, memory exhaustion on a batch integration host, no transfer failures mentioned, correlation with a heap-size change in the change registry, reversion of the JVM max heap from 28 GiB to 20 GiB, service restart outside the batch window, and swap usage returning to zero."
+            "reason": "All claims about INC-2411 are supported: the passages confirm batch transfers ran late with heavy swap usage and memory exhaustion on a batch integration host, no transfer failures mentioned, the heap was raised from 20 GiB to 28 GiB (found via change registry correlation), and the resolution was reverting the heap to 20 GiB with a service restart outside the batch window after which swap returned to zero."
           }
         },
         {
@@ -353,7 +352,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All factual claims about INC-2411 are supported by the cited passages: the signature host.memory.exhaustion on a batch integration host, heavy swapping, late batch transfers, a heap configuration change found via change history correlation, heap reverted and service restarted outside the batch window, swap curve returning to pre-change baseline within the hour, and the absence of a separate process-level memory snapshot step being called out."
+            "reason": "All claims about INC-2411 are supported: the passages confirm host.memory.exhaustion on a batch integration host with heavy swapping and late batch transfers; a heap configuration change was found and correlated via change history; the resolution was reverting the heap change and restarting the service outside the batch window with swap returning to baseline within the hour; and no process-level memory snapshot was separately called out as a required step."
           }
         },
         {
@@ -362,7 +361,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "The cited passage supports the signature overlap (host memory exhaustion, change history queried and found empty, recorded as a finding rather than treated as absence of change), the divergence (only the Gaps section was retrieved, no timeline/resolution/process attribution), the resolution claim (not recoverable from retrieved passages), and the falsifying_test's assertion about INC-2350 (the gap note flags the recording error rather than describing a workload-driven cause)."
+            "reason": "The cited passage supports the signature overlap claim about empty change history being recorded as a finding, the divergence claim that only the Gaps section was retrieved with no timeline/resolution/process attribution, the resolution claim that it is not recoverable, and the falsifying test's assertion that INC-2350's gap note flags the recording error rather than describing a workload-driven cause."
           }
         },
         {
@@ -373,7 +372,7 @@
             "unsupported_elements": [
               "the log was never collected before suppression was applied"
             ],
-            "reason": "The cited passages from INC-2288 do not state that the denial log was never collected before suppression; the runbook passage describes the general risk of not collecting before suppressing, but does not assert this happened in INC-2288, and the INC-2288 timeline does not mention the denial log collection status."
+            "reason": "The cited passages from INC-2288 do not state that the denial log was never collected before suppression was applied; the runbook passage describes the general risk of suppressing before collecting but does not assert this happened in INC-2288, and the INC-2288 passages themselves do not mention whether the log was or was not collected."
           }
         },
         {
@@ -382,7 +381,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about INC-2407 are supported: the signature type (host.cpu.saturation) is confirmed, sustained CPU over multiple days (D0 to D+2) is confirmed, the process snapshot showing no anomalous process ('No process present that was not present the week before') is confirmed, the claimed cause of a scheduled migration doubling request volume is confirmed via document_cause_claimed, and the resolution of capacity added and load rebalanced at D+2, 10:15 is explicitly stated in the timeline."
+            "reason": "All claims about INC-2407 are supported: the signature type (host.cpu.saturation) is confirmed, sustained CPU over multiple days (D0 to D+2) is confirmed, the process snapshot showing no process not present the prior week is confirmed, the claimed cause of a scheduled migration doubling request volume is confirmed via document_cause_claimed, the resolution of capacity added and load rebalanced at D+2 10:15 is confirmed in the timeline passage."
           }
         },
         {
@@ -403,7 +402,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All statements about the prior record (INC-2489) are supported: swap in use and elevated page fault rate opened by observability platform (p-c16300c887ae), host deliberately overcommitted since build (p-3a9a41f559cf), page fault rate matched year-long baseline (p-c16300c887ae), configuration confirmed intended within 35 minutes (D0 11:00 to 11:35 in p-c16300c887ae), and no incident occurred (p-3a9a41f559cf)."
+            "reason": "All factual claims about the prior record (INC-2489) are supported by the cited passages: swap in use and elevated page fault rate opened by observability platform (p-c16300c887ae), host deliberately overcommitted since build (p-3a9a41f559cf), page fault rate matched year-long baseline (p-c16300c887ae), configuration confirmed intended within 35 minutes (p-c16300c887ae timeline: 11:00 to 11:35), and no incident occurred (p-3a9a41f559cf)."
           }
         },
         {
@@ -412,7 +411,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about INC-2411 are supported: the passages confirm heavy swapping, memory exhaustion problem opened by the observability platform, JVM heap raised the previous evening identified via package and change history, heap reverted and service restarted outside the batch window with swap returning to zero, and no process-level attribution captured before the revert."
+            "reason": "All claims about INC-2411 are supported: the passages confirm the host was swapping heavily, the observability platform opened a memory exhaustion problem, the JVM heap was raised the previous evening and identified via package and change history, the heap was reverted and service restarted outside the batch window with swap returning to zero, and no process-level attribution was captured before the revert."
           }
         },
         {
@@ -421,7 +420,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about the prior record are supported: INC-2446's exhausted resource was disk not memory, memory and swap were within normal range throughout, the host was reported as exhausted, logs were rotated by hand and the rotation policy reapplied, and memory was never the issue \u2014 all confirmed by the cited passages."
+            "reason": "All claims about the prior record are supported: INC-2446 was reported as exhausted with a memory label, the exhausted resource was disk, memory and swap were normal throughout, and the resolution was logs rotated by hand with the rotation policy reapplied."
           }
         },
         {
@@ -430,10 +429,12 @@
           "verdict": {
             "supported": false,
             "unsupported_elements": [
+              "workload running directly on host",
+              "allocation failure",
               "the workload was restarted before attribution was complete, destroying the evidence",
               "The resident set of the largest consumer was never recorded"
             ],
-            "reason": "The passages state that no cause was established before the symptom stopped and that root cause was recorded as unconfirmed, but they do not state that the restart destroyed evidence, nor do they state that the resident set of the largest consumer was never recorded; these are inferences not supported by the cited text."
+            "reason": "The cited passages confirm memory exhaustion, workload restart at D+9 22:15, memory recovery, and root cause unconfirmed, but they do not state that the workload ran directly on the host (no container runtime), do not mention allocation failure specifically, do not say evidence was destroyed by the restart, and do not state that the resident set of the largest consumer was never recorded."
           }
         },
         {
@@ -442,7 +443,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about INC-2411 are supported: the passages confirm the host.memory.exhaustion signature, heavy swapping, memory exhaustion problems opened and auto-closed on preceding days, workload running directly on the host (no container runtime mentioned), the JVM heap raised from 20 GiB to 28 GiB as the most recent change, batch transfers running late as the manifestation, and the resolution of reverting the heap to 20 GiB with a service restart outside the batch window causing swap usage to return to zero."
+            "reason": "All claims about INC-2411 are supported: the passages confirm the host.memory.exhaustion signature, heavy swapping, memory exhaustion problems opened and auto-closed on preceding days, workload running directly on the host with no container runtime mentioned, the JVM heap raised from 20 GiB to 28 GiB as the most recent change, batch transfers running late as the manifestation, and the resolution of reverting the heap to 20 GiB with a service restart outside the batch window causing swap usage to return to zero."
           }
         },
         {
@@ -451,7 +452,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about the prior record (runbook) are supported: the passages confirm it covers host.memory.exhaustion on hosts running workloads directly with no container limit to read, that the first step is finding the resident set of the largest consumer and comparing against total memory, that it directs recording this as a condition not a finding, and that it describes a procedure rather than a prior incident."
+            "reason": "All claims about the prior record (a runbook procedure) are directly supported by the cited passages: the runbook covers host.memory.exhaustion on hosts running workloads directly with no container limit to read, prescribes finding the resident set of the largest consumer and comparing against total memory, directs recording it as a condition not a finding, and references 'a host that normally runs at ninety per cent'."
           }
         },
         {
@@ -462,7 +463,7 @@
             "unsupported_elements": [
               "INC-2419 is the filed incident that demonstrates the consequence described here (restart before attribution \u2192 cause unconfirmed)"
             ],
-            "reason": "The cited passages do not mention INC-2419 or any specific incident; the claim that INC-2419 demonstrates the consequence described in the runbook is not supported by the passage text."
+            "reason": "The cited passages do not mention INC-2419 or any specific filed incident; the claim that INC-2419 demonstrates the consequence described in the runbook is not supported by the passage text."
           }
         },
         {
@@ -482,7 +483,7 @@
             "unsupported_elements": [
               "INC-2419 ran for ten days"
             ],
-            "reason": "The passages state the timeline spans D0 to D+10 (incident closed at D+10), which is eleven days, not ten; the claim says INC-2419 'ran for ten days' but the cited text shows it ran for ten days of recurring symptoms plus closure on D+10, totaling eleven days overall."
+            "reason": "The passages state the timeline ran from D0 to D+10 (incident closed at D+10), which is eleven days, not ten; the claim says INC-2419 'ran for ten days' but the cited text shows it was closed on D+10."
           }
         },
         {
@@ -491,7 +492,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about the prior record are supported: the signature is host.memory.exhaustion on an intg-prod host (passage p-dd0770fac8bf), auto-close on two preceding days (passage p-b05efbf8f847), two days of auto-close before acknowledgement (passage p-b05efbf8f847 and timeline), resolution by correlating a change record (heap resize) with onset (timeline passage), heap reverted and service restarted with swap returning to zero (timeline passage), and process-level attribution obtained from the change registry (timeline passage noting 'Package and change history correlated' and 'Source: change registry')."
+            "reason": "All claims about the prior record are supported: the signature is host.memory.exhaustion on an intg-prod host (passage p-dd0770fac8bf), auto-closed on two preceding days before acknowledgement (passage p-b05efbf8f847), the heap change was correlated via the change registry (passage p-fa1b9e69fdee), the heap was reverted and service restarted with swap returning to zero (passage p-fa1b9e69fdee), and process-level attribution came from the change registry rather than a live process snapshot (passage p-fa1b9e69fdee)."
           }
         },
         {
@@ -500,18 +501,16 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about the prior record (a runbook) are directly supported by the cited passage, including the instruction to take a resident-set-by-process snapshot ordered by size with start times while the host is still exhausted, the instruction to record a gap if the snapshot cannot be taken, and the statement that evidence is destroyed if the host is restarted before the snapshot is taken."
+            "reason": "All statements about the prior record (a runbook procedure) are directly supported by the cited passage, including the instruction to take a resident-set-by-process snapshot ordered by size with start times while the host is still exhausted, the instruction to record a gap if the snapshot cannot be taken, and the statement that evidence is destroyed if the host is restarted before the snapshot is taken."
           }
         },
         {
           "case": "b07",
           "document": "corpus://incidents/INC-2407",
           "verdict": {
-            "supported": false,
-            "unsupported_elements": [
-              "change registry queried and found empty at time of investigation"
-            ],
-            "reason": "The cited passages state that in INC-2407 the change was recorded in advance and the change registry was the source for the migration entry; the claim that the change registry was 'found empty at time of investigation' in INC-2407 is not supported \u2014 the passages say the opposite (the change was recorded, only the capacity plan was missing from the change record)."
+            "supported": true,
+            "unsupported_elements": [],
+            "reason": "All claims about INC-2407 are supported: the passages confirm a scheduled migration preceded onset by one day, sustained near-full CPU for three days, no new process found (OS metrics), the capacity plan not attached to the change record (quoted verbatim), capacity added and load rebalanced at D+2 10:15, and the document_cause_claimed attributes saturation to the scheduled migration."
           }
         },
         {
@@ -520,9 +519,10 @@
           "verdict": {
             "supported": false,
             "unsupported_elements": [
-              "no planned change on the host"
+              "no planned change on the host (in the prior record)",
+              "CPU consumer identified only after a process snapshot was taken"
             ],
-            "reason": "The cited passages do not state that there was no planned change on the host in INC-2288; the cause was described as a policy change driving denial volume, but the passages do not explicitly say there was no planned change on the host itself, so the claim that INC-2288 involved 'no planned change on the host' is unsupported."
+            "reason": "The cited passages do not state that there was no planned change on the host in INC-2288; they mention a policy change caused the denial volume rise. The claim that the CPU consumer was 'identified only after a process snapshot was taken' is loosely supported by the timeline (D+6 process snapshot), but the assertion that there was 'no planned change on the host' in the prior incident is not supported \u2014 the passages reference 'a policy change' as the cause, and do not state the absence of a planned change on the host."
           }
         },
         {
@@ -531,7 +531,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "Every factual claim about INC-2350 \u2014 the memory exhaustion signature, log forwarding destination unreachable at onset, multi-day buildup, empty change history recorded as a finding, the 6 GiB process snapshot at D+4, the four-day duration, the resolution of capping the buffer and restoring the route, and the claimed cause \u2014 is directly supported by the cited passages."
+            "reason": "Every factual claim about INC-2350 \u2014 the memory exhaustion signature, log forwarding destination unreachable at onset, multi-day buildup, empty change history recorded as a finding, the 6 GiB process snapshot at D+4, four-day duration, the resolution of capping the buffer and restoring the route, and the claimed cause \u2014 is directly supported by the cited passages."
           }
         },
         {
@@ -549,16 +549,18 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about the prior record are supported: the signature type (host.cpu.saturation) is in passage p-9580a37896d8; the timeline facts (scheduled migration completing the night before, CPU sustained near full utilisation, no new process) are in passage p-64388910ad43; the resolution (capacity added and load rebalanced at D+2, 10:15, source change registry) is in the same passage; the capacity plan not being attached to the change record and the saturation reading as unexplained are in passage p-a4bc005fc1ce; and the claimed cause (a second consumer's request volume roughly doubling) is stated in the document_cause_claimed field."
+            "reason": "All claims about the prior record are supported: the signature type (host.cpu.saturation) is in passage p-9580a37896d8; the timeline facts (scheduled migration completing the night before, CPU sustained near full utilisation, no new process) are in passage p-64388910ad43; the capacity plan existing but not attached to the change record and the saturation reading as unexplained are in passage p-a4bc005fc1ce; the resolution of capacity added and load rebalanced at D+2, 10:15 is in passage p-64388910ad43; and the claimed cause (a second consumer's request volume roughly doubling) matches the document_cause_claimed field on the cited passages."
           }
         },
         {
           "case": "c03",
           "document": "corpus://incidents/INC-2288",
           "verdict": {
-            "supported": true,
-            "unsupported_elements": [],
-            "reason": "All claims about the prior record are supported: the signature type (host.cpu.saturation) is in passage p-51aad2eb05ef; sustained CPU with a daemon not visible in standard inventory is supported by the summary and timeline; onset tied to denial volume rise is in the timeline; the resolution of deactivating the audit event dispatcher is in the timeline; and the supersession by SEC-STD-14 (2026-01-30) including the statement about destroying evidence is carried in the document_superseded_by field on every cited passage."
+            "supported": false,
+            "unsupported_elements": [
+              "the consuming process was an OS-level daemon not visible in a standard process inventory"
+            ],
+            "reason": "The passages state the daemon was 'identified in a process snapshot as the top CPU consumer,' which contradicts the claim that it was 'not visible in a standard process inventory'; all other claims about the prior record are supported by the cited passages."
           }
         },
         {
@@ -567,7 +569,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about the prior record are supported: the passages confirm the validation.parity signature, the non-production environment differing in build, patch level, and installed agents, the comparison being abandoned at D0 21:45 on the bridge, the approximately 95-minute timeline (20:10 to 21:45), and build parity being discovered mid-incident rather than known in advance."
+            "reason": "All claims about the prior record are supported: the signature type (validation.parity) is confirmed in p-5b51d5a850ff; the non-production environment differing in build, patch level, and installed agents is stated in p-390c801816a2; the comparison being abandoned at D0 21:45 on the bridge is in p-8386863a5740; build parity discovered mid-incident is in p-7b23ed259efb; and the approximately 95 minutes duration (20:10 to 21:45) is derivable from the timeline in p-8386863a5740."
           }
         },
         {
@@ -585,7 +587,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "The passages support the claim: the runbook addresses the state where deciding evidence has been requested and not satisfied (passage p-85f3ebf5bc89), is written around a denial log as the specific deciding artefact (both passages), and the resolution_taken accurately paraphrases the runbook's instructions from passage p-85f3ebf5bc89."
+            "reason": "The passages support all claims about the prior record: the runbook addresses the state where deciding evidence has been requested and not satisfied (passage p-85f3ebf5bc89), the runbook is specifically about a denial log as the deciding artefact (both passages), and the resolution instructions match the passage text closely."
           }
         },
         {
@@ -594,7 +596,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about the prior record are supported: the passage is a runbook (not an incident), it states to establish onset before selecting a recovery point and to treat every point after the first unexplained symptom as suspect if onset is unknown, and it does not record a resolution from a prior incident."
+            "reason": "All claims about the prior record are supported: the passage is a runbook procedure (not a prior incident), it states to establish onset before selecting a recovery point and to treat every point after the first unexplained symptom as suspect if onset is unknown, and it does not record a resolution from a prior incident."
           }
         },
         {
@@ -603,7 +605,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about INC-2419 are supported: the passages confirm the host.memory.exhaustion signature, the multi-day unacknowledged condition (D0 to D+9), the workload restart at D+9 22:15 with memory recovery, incident closure with root cause unconfirmed, no mention of snapshots or recovery-point selection, and document_cause_claimed is null confirming unconfirmed root cause."
+            "reason": "All claims about INC-2419 are supported: the signature is host.memory.exhaustion, the condition ran unacknowledged for multiple days (D0 to D+9), the workload was restarted at D+9 22:15 with memory recovering, root cause was recorded as unconfirmed, the incident was closed, and no mention of snapshots or recovery-point selection appears in the cited passages."
           }
         },
         {
@@ -612,7 +614,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about the prior record are supported: the passage confirms host.memory.exhaustion over D0 to D+4, the traceable start event (D0 log destination unreachable), the diagnostic finding (process snapshot attributing 6 GiB resident to the shipper at D+4), the absence of a resolution step in the retrieved passage, and no snapshot restore is mentioned."
+            "reason": "All claims about the prior record are supported: the passage confirms host.memory.exhaustion over D0 to D+4, the D0 log destination unreachable start event, the process snapshot finding 6 GiB resident at D+4, no snapshot restore mentioned, and no resolution step described in the retrieved passage."
           }
         },
         {
@@ -630,7 +632,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "Every statement about the prior record (the runbook) is directly supported by the cited passage, which describes the suppression-before-collection scenario, the sequencing constraint (collect first, then suppress), and the consequence that suppressing before collection destroys evidence with no later recovery."
+            "reason": "Every statement about the prior record (the runbook) is directly supported by the cited passage: it addresses suppression proposed as relief when denial-analysis consumes CPU, states to collect the denial log first then suppress, and warns that suppressing before collection destroys evidence with no later recovery possible."
           }
         },
         {
@@ -639,7 +641,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "Every factual claim about the prior record (INC-2489) is directly supported by the cited passages: the signature type and host class (p-cc7c16614e1a), the overcommit configuration confirmed intended since build and page fault rate matching baseline (p-c16300c887ae, p-3a9a41f559cf), the resolution of correcting the alert threshold with no host change (p-afa2b73f9592), the gap about nothing linking overcommit to the alert (p-b72651149ca6), and the host being cache-prod-n3 (p-cc7c16614e1a)."
+            "reason": "Every factual claim about the prior record (INC-2489) is directly supported by the cited passages: the signature type host.memory.pressure on cache-prod-n3, the cache-prod-* host class, the overcommit configuration confirmed intended since build, the page fault rate matching the host's baseline for the past year, the resolution of correcting the alert threshold with no change to the host, and the noted gap about nothing linking the overcommit setting to the alert threshold."
           }
         },
         {
@@ -648,7 +650,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All factual claims about the prior record are supported: the passage confirms the signature type host.memory.pressure, the symptom of swap thrash during overlapping batch windows, the record_status \"draft\", the document_cause_claimed about both peak working sets being on the host simultaneously, and the absence of a reviewed resolution follows from the draft status."
+            "reason": "All factual claims about the prior record are supported: the passage confirms the signature type host.memory.pressure, the symptom of swap thrash during overlapping batch windows, the record_status \"draft\", and the document_cause_claimed asserting both peak working sets were on the host simultaneously."
           }
         },
         {
@@ -657,7 +659,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about INC-2411 are supported: the signature is host.memory.exhaustion on a batch integration host, batch transfers running late is the presenting symptom, the memory pressure was attributed to a JVM heap configuration change (document_cause_claimed), no audit analysis daemon is mentioned in the passages, the change record (heap resize) was present and confirmed, and the resolution was reverting the JVM maximum heap from 28 GiB to 20 GiB with a service restart outside the batch window after which swap usage returned to zero."
+            "reason": "All claims about INC-2411 are supported: the passages confirm host.memory.exhaustion on a batch integration host, batch transfers running late as the presenting symptom, memory pressure attributed to a JVM heap configuration change, no mention of an audit analysis daemon, the heap revert from 28 GiB to 20 GiB with service restart and swap returning to zero, and the confirmed change record (heap resize) as key evidence."
           }
         },
         {
@@ -666,7 +668,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about the prior record are supported: the timeline passage confirms the denial volume spike causing the audit dispatcher to start the analysis daemon and keep it resident with CPU impact as the primary complaint; the resolution passage confirms deactivating the audit event dispatcher; the gaps passage confirms the denial log naming the source domain was never recovered; the document_superseded_by field on the cited passages confirms SEC-STD-14 (2026-01-30) and its implications; and the passages do not mention host.memory.exhaustion or late batch transfers, which the claim correctly notes as absent from INC-2288."
+            "reason": "All claims about the prior record are supported: the timeline passage confirms the denial volume spike causing the audit dispatcher to start the analysis daemon and keep it resident with CPU impact as the primary complaint; the resolution passage confirms deactivating the audit event dispatcher; the gaps passage confirms the denial log naming the source domain was never recovered; the document_superseded_by field on the cited passages confirms SEC-STD-14 (2026-01-30) and its requirements; and no passage mentions host.memory.exhaustion or late batch transfers, which the claim correctly notes as absent from INC-2288."
           }
         },
         {
@@ -675,18 +677,20 @@
           "verdict": {
             "supported": false,
             "unsupported_elements": [
-              "process-level memory attribution ... was obtained while the host was still symptomatic and was decisive"
+              "in INC-2411 it was obtained while the host was still symptomatic and was decisive"
             ],
-            "reason": "The cited passages do not mention process-level memory attribution being obtained while the host was still symptomatic or describe it as decisive; the timeline shows change-history correlation and heap revert but says nothing about process-level memory attribution."
+            "reason": "The passages do not state that process-level memory attribution was obtained while the host was still symptomatic or that it was decisive; the timeline shows change-history correlation and heap revert, but no mention of process-level memory attribution at all."
           }
         },
         {
           "case": "d03",
           "document": "corpus://incidents/INC-2419",
           "verdict": {
-            "supported": true,
-            "unsupported_elements": [],
-            "reason": "All claims about INC-2419 are supported: the passages confirm the host.memory.exhaustion signature, recurring auto-close pattern unacknowledged throughout, ten-day duration before action (D+9 restart), workload restart with memory recovery, root cause recorded as unconfirmed, and no cause established."
+            "supported": false,
+            "unsupported_elements": [
+              "INC-2419 ran for ten days before any action was taken"
+            ],
+            "reason": "The timeline states the workload was restarted on D+9, meaning action was taken on the ninth day after D0, not after ten days; the claim that it 'ran for ten days before any action was taken' overstates the duration by one day."
           }
         },
         {
@@ -695,7 +699,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about the prior record are supported: the passages confirm the host.memory.exhaustion signature, the problem opening on consecutive days (four consecutive days unacknowledged), the process snapshot as the decisive evidence step attributing 6 GiB resident to the shipper, the snapshot being taken on D+4 (four consecutive days), and the document_cause_claimed confirms the shipper had been buffering to memory after its destination became unreachable."
+            "reason": "All claims about the prior record are supported: the passages confirm the host.memory.exhaustion signature, the problem opening on consecutive days (four consecutive days unacknowledged), the process snapshot as the decisive evidence step attributing 6 GiB resident to the shipper, the shipper buffering to memory after its destination became unreachable, and the snapshot being taken on D+4 while the host was still exhausted."
           }
         },
         {
@@ -713,7 +717,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about the prior record are directly supported: the signature type (host.memory.exhaustion) on an integration host, the auto-opening/auto-closing over nine days unacknowledged, the workload restart at D+9 22:15 with memory recovery, root cause recorded as unconfirmed, and the gap that process-level attribution was never captured while the host was exhausted."
+            "reason": "All factual claims about the prior record INC-2419 are directly supported by the cited passages: the signature type (host.memory.exhaustion) on an integration host, the auto-opening/auto-closing over nine days unacknowledged, the workload restart at D+9 22:15 with memory recovery, root cause recorded as unconfirmed, and the gap that process-level attribution was never captured."
           }
         },
         {
@@ -722,7 +726,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about the prior record are supported: the signature host.memory.exhaustion on intg-prod-j5 is confirmed, the closure without confirmed cause is stated, the gap about process-level attribution never being captured is explicitly noted, the workload restart at D+9 with memory recovery and root cause recorded as unconfirmed are all in the timeline, and the absence of swap/host-level memory telemetry is stated as a gap observation rather than a reasoning-from-silence issue since the analyst only claims the passages do not record it."
+            "reason": "All claims about the prior record are supported: the signature host.memory.exhaustion on intg-prod-j5 and its recurring daily nature are confirmed by the Signature and Timeline passages; closure without confirmed cause is stated in the Summary and Timeline; the explicit gap about process-level attribution never being captured is stated in the Gaps passage; the workload restart at D+9 with memory recovery and root cause recorded as unconfirmed is in the Timeline; and the absence of swap/host-level memory telemetry in the retrieved passages is a statement about what the analyst's own retrieved passages contain, not a reasoning-from-silence claim about the full document."
           }
         },
         {
@@ -731,16 +735,19 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All statements about the prior record (INC-2411) are supported by the cited passages: the host name intg-prod-b2, the host.memory.exhaustion signature, daily recurrence with auto-close, heavy swapping and late batch transfers as secondary symptoms, resolution by correlating a recent heap resize change and reverting to 20 GiB with swap returning to zero, and the noted gap about process-level attribution not being captured before the revert."
+            "reason": "All claims about the prior record INC-2411 are supported: the signature type host.memory.exhaustion on intg-prod-b2 with auto-close and recurring daily pattern (p-b05efbf8f847, p-dd0770fac8bf), heavy swapping and late batch transfers as secondary symptoms (p-b05efbf8f847), resolution by correlating a recent heap resize change and reverting to 20 GiB with service restart outside the batch window returning swap to zero (p-fa1b9e69fdee), and the noted gap about process-level attribution not being captured (p-9c1f38af5f11)."
           }
         },
         {
           "case": "g01",
           "document": "corpus://incidents/INC-2350",
           "verdict": {
-            "supported": true,
-            "unsupported_elements": [],
-            "reason": "The cited passages support all factual claims about INC-2350: it occurred on etl-prod-c1, involved host.memory.exhaustion recurring across consecutive days (four), the record claims a log shipper buffering to memory was the consumer, a process snapshot attributed 6 GiB to the shipper, and no resolution step is present in the retrieved passages; the signature_overlap's mention of 'process snapshot' is clarified in the divergence as pertaining to INC-2350 specifically."
+            "supported": false,
+            "unsupported_elements": [
+              "process snapshot used to attribute memory to a specific process \u2014 the claim describes this as part of the shared signature_overlap, but the cited passages show the process snapshot was specific to INC-2350's investigation steps, not a shared signature element",
+              "No resolution step was retrieved \u2014 the claim states the timeline ends at the process snapshot with no resolution, but the cited passages only show timeline entries up to D+4 11:15; the claim that no resolution step was retrieved is reasoning from silence about what was not in the passages, which is not the same as a passage stating no resolution occurred"
+            ],
+            "reason": "The signature_overlap claim elevates 'process snapshot used to attribute memory' to a shared characteristic, but the passages show it as an investigative step in INC-2350 only; additionally, the assertion that no resolution step was retrieved relies on the absence of information in the cited passages rather than an affirmative statement."
           }
         },
         {
@@ -803,7 +810,7 @@
           "verdict": {
             "names_a_distinguishing_factor": true,
             "factor_named": "the attribution is still obtainable here and is outstanding",
-            "reason": "The text explicitly states that process-level attribution is 'explicitly requested and still outstanding' in the current incident, contrasting it with INC-2419 where it was never obtained, which names the factor that the attribution is still obtainable and outstanding."
+            "reason": "The text explicitly states that process-level attribution is 'explicitly requested and still outstanding' in the current incident, directly naming the distinguishing factor that the attribution is still obtainable and outstanding."
           }
         },
         {
@@ -812,7 +819,7 @@
           "verdict": {
             "names_a_distinguishing_factor": true,
             "factor_named": "the prior saturation was a planned load increase recorded in advance",
-            "reason": "The text explicitly states that INC-2407 had a recorded, scheduled migration preceding onset, whereas the current incident has no change record of any kind, which names the factor that the prior saturation was a planned load increase recorded in advance."
+            "reason": "The text clearly states that INC-2407 had a recorded, scheduled migration preceding onset while the current incident has no change record of any kind, which names the factor that the prior saturation was a planned load increase recorded in advance."
           }
         }
       ],
@@ -10054,10 +10061,11 @@
       }
     }
   ],
-  "rescored_at": "2026-08-20T08:23:34Z",
+  "rescored_at": "2026-08-20T09:32:46Z",
   "scorer": {
     "path": "evals/judgement.py",
-    "fingerprint": "a0f02197f2e5f78fa0cc4d257cf93dbfcdcfdd87234e05594e1d06d46a8d8c03"
+    "fingerprint": "45e831c04b6460a37234260e813f9f81c12393560a86ecf26c00d025726b185e",
+    "scope": "the deterministic figures. The judged half carries its own fingerprint under judged."
   },
-  "rejudged_at": "2026-08-20T09:11:33Z"
+  "rejudged_at": "2026-08-20T09:32:46Z"
 }

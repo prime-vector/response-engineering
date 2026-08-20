@@ -67,10 +67,20 @@ harness with contract validation silently switched off.
 payload, without re-running the agent. It is a fresh measurement rather than a
 recount, so it stamps `rejudged_at`, records the fingerprint of the code that
 produced the new verdicts, and prints what moved. The three committed records
-were re-judged once, when the payload was widened from four fields of a claim to
-all of them: `groundedness_judge` moved 71.2% to 75.0%, 80.4% to 85.7% and 81.8%
-to 90.9%. The earlier figures answered a narrower question than the metric's own
-description, which is the reason to re-judge rather than to restate.
+have been re-judged twice. Once when the payload was widened from four fields of
+a claim to all of them, which moved `groundedness_judge` from 71.2% to 75.0%,
+80.4% to 85.7% and 81.8% to 90.9%: the earlier figures answered a narrower
+question than the metric's own description, which is the reason to re-judge
+rather than to restate. Then again with nothing changed but the fingerprint
+recorded, which measured something worth having.
+
+**Same claims, same prompts, same payload, same model at temperature 0, and the
+verdicts moved.** Two claims flipped on the shipped arm, three on fixed, one on
+single-query: 39/52 to 37/52, 48/56 to 45/56, 20/22 to 19/22. So a judged
+difference of about five points between two arms is inside what the same arm
+does when re-judged against itself. The deterministic figures do not move under
+`--rescore`; these do, and that difference is the reason they are never
+published in the same table.
 
 A record fingerprints two scorers, not one. The top-level `scorer` is the code
 that produced the deterministic figures, which `--rescore` can recompute; the
@@ -288,13 +298,14 @@ against the arm's index, with the arm's system prompt, and then scores what
 came back. It needs `ANTHROPIC_API_KEY` and the `patches/` provider patch: a
 stock install 400s the moment the model calls a tool.
 
-**Nothing here is regenerable and nothing in CI diffs it.** Every other table
-in this directory is a function of the corpus, the dataset and a config, and
-drift is a failure. A judgement table has a model in it. Re-running an arm
-gives different numbers, so the record carries a timestamp, the spec, the
-system prompt, the model and the case ids, and the only thing CI checks is
-the one input that is derived rather than measured: the query-strategy arm's
-prompt.
+**The runs are not regenerable. Everything derived from them is.**
+A judgement table has a model in it: re-running an arm gives different
+numbers, so no CI job can diff a fresh sweep against a committed one, and the
+record carries a timestamp, the spec, the system prompt, the model and the
+case ids instead. What CI does diff is everything downstream of the records,
+which are files like any other: the three per-arm tables, the Phase 5
+comparison grid and its two injected copies, and the query-strategy arm's
+derived prompt.
 
 The numbers cannot be checked, then. The inputs can, and that is what
 `--check-records` does: it reads back the fingerprints a record already
@@ -449,7 +460,7 @@ Applicability offered: judgement-heading `partial` 44, `superseded` 8; judgement
 
 | judged at temperature 0 | judgement-heading | judgement-fixed | judgement-single-query |
 | --- | --- | --- | --- |
-| `groundedness_judge` | 39/52 | 48/56 | 20/22 |
+| `groundedness_judge` | 37/52 | 45/56 | 19/22 |
 | `divergence_quality` | 6/6 | 6/7 | 6/7 |
 
 Both judged rates are scored over what each run offered, so offering less can raise them: judgement-heading never offered the diverging record on `b04`.
@@ -476,9 +487,9 @@ delta is the paragraph, not query count in isolation, and `--compare` cannot
 see the difference because a system prompt is one knob to it.
 
 **The chunker is not choosable off one sweep each.** Same reach, 54 of 60, and
-14 against 13 omissions. The judged half parts by more than a wobble, 39/52
-against 48/56, which is nine more supported claims from four more claims made;
-one sweep each with a judge scoring a model is not enough to choose on.
+14 against 13 omissions. The judged half parts by 37/52 against 45/56, nine
+points, which is roughly twice what re-judging the same claims moves and
+therefore not nothing and not enough to choose on either.
 Heading-aware is kept for its citations carrying the heading chain rather than
 the document title alone, which no metric here scores.
 
@@ -508,8 +519,8 @@ applies. An agent that never says `applies` cannot offer a false precedent, so
 the two figures have to be read together, and the table prints them together
 for that reason.
 
-**`groundedness_judge` at 75%, and the failures have one shape.** Most of the
-13 unsupported claims assert an absence: "the prior incident shows no audit
+**`groundedness_judge` at 71.2%, and the failures have one shape.** Most of the
+15 unsupported claims assert an absence: "the prior incident shows no audit
 daemon", from passages that simply do not mention one. It is a divergence of
 exactly the kind rule 5 asks for, resting on something the archive never said.
 `groundedness_log` cannot see it: every one of those citations is a passage the
