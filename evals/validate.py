@@ -57,8 +57,13 @@ def rpc(name, args):
 
 
 def search(case, limit=8):
-    """The canonical probe. limit 8 matches the demos, so a case that turns on
-    what fits under the limit is measured at the limit it will be run at."""
+    """The canonical probe at a fixed budget of 8 passages.
+
+    This said "limit 8 matches the demos, so a case is measured at the limit
+    it will be run at". No demo passes a limit, the surface defaults to 5, and
+    the spec tells the agent to ask for breadth without naming a number. 8 is
+    an eval parameter and the cases are scored against it consistently, which
+    is all this needs; what the agent asks for is judgement mode's question."""
     return rpc("precedent_search", {"symptom_text": case["query"],
                                     "before": case["as_of"], "limit": limit})
 

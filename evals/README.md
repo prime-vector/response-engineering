@@ -221,7 +221,7 @@ Phase 4 is done for retrieval and open for judgement.
 - [x] Dataset written, 38 cases, composition asserted
 - [x] Integrity check, both indexes, in CI
 - [x] Retrieval metrics implemented: `precedent_hit_rate@k`, `mrr@k`, and the
-      hit rate at the passage budget the agent is run at
+      hit rate at a fixed passage budget
 - [x] Runner, `--compare`, `--check`, `results/latest.md`, drift checked in CI
 - [x] Baseline recorded against the fixed chunker with no reranker
 - [ ] Judgement metrics: `false_precedent_rate`, `no_precedent_accuracy`,
@@ -235,9 +235,25 @@ Phase 4 is done for retrieval and open for judgement.
 
 **Two hit rates, because there are two questions.** Ranking documents with
 nothing truncating asks which prior records the surface orders highest.
-Counting what survives inside the passage budget the agent is actually run at
-asks what it is handed, and chunk size decides how many distinct documents fit
-in eight passages.
+Counting what survives inside a fixed passage budget asks what a caller under
+that budget gets, and chunk size decides how many distinct documents fit in
+eight passages.
+
+**The budget is an eval parameter, and an earlier version of this file called
+it the agent's.** Nothing binds the agent to eight: `mock/adapter.py` defaults
+`precedent_search` to five, `.agents/precedent-analyst.yaml` tells the agent to
+ask for enough breadth without naming a number, and no demo passes one.
+`validate.py` had said "limit 8 matches the demos" since the previous PR and
+that was never true. So `precedent_hit_rate@limit` measures the surface under a
+fixed budget, which is a real question about the retriever, and it is not an
+estimate of what the agent is handed. Sol found it at the gate. What the agent
+actually requests is recorded in `search_coverage.queries_issued`, and scoring
+it is judgement mode's job.
+
+Whether the spec should name a number at all is a genuine open question rather
+than an oversight: the qualitative guidance is deliberate, and pinning a limit
+in the prompt would fix something the agent is meant to judge. It is on the
+board, not resolved here.
 
 The chunkers differ on both, in different places. At the budget it is 38/60
 against 36/60. On the ranking they are identical at k = 1, 3, 5 and 8, and

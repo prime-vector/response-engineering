@@ -162,9 +162,12 @@ matter is not settled in advance.
 The runner turned that observation into a measurement and found the reason. It
 reports two hit rates, because the dataset supports two different questions.
 Ranking documents with nothing truncating asks which prior records the surface
-orders highest; counting what survives inside the eight-passage budget the agent
-is actually run at asks what it is handed, and chunk size decides how many
-distinct documents fit.
+orders highest; counting what survives inside a fixed eight-passage budget asks
+what a caller under that budget gets, and chunk size decides how many distinct
+documents fit. That budget is an eval parameter rather than the agent's, which
+took Sol's fifth pass to catch: nothing binds the agent to eight, the surface
+defaults to five, and the spec deliberately tells the agent to ask for breadth
+without naming a number.
 
 **The first version of this paragraph said the ranking was chunker-blind, and
 that was wrong.** Both indexes do give identical hits at k = 1, 3, 5 and 8, which

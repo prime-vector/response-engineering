@@ -78,9 +78,13 @@ DEFAULT_PORT = 8528
 # never a document, so first-appearance order is unaffected by it.
 RANK_LIMIT = 1000
 
-# The passage budget the agent is actually given: what demos/investigate.sh
-# and the governance demos pass, and what evals/validate.py's observation is
-# measured at. Overridable in config as run_limit, but changing it makes a
+# An eval parameter, and not the agent's budget however much it wants to be.
+# Nothing binds the agent to it: the surface defaults to 5, the spec tells the
+# agent to ask for breadth without naming a number, and no demo passes one. So
+# this measures the surface under a fixed budget, which is a real question
+# about the retriever and not an estimate of what the agent is handed. What
+# the agent actually requests is recorded in queries_issued and belongs to
+# judgement mode. Overridable in config as run_limit; changing it makes a
 # results file incomparable with every earlier one, which is why it is
 # recorded in the file rather than assumed by the reader.
 RUN_LIMIT = 8
@@ -454,9 +458,10 @@ def run(config, stamp):
             else None,
             "misses": at_limit_misses,
             "note": "a passage budget, not a document ranking: how many "
-                    "relevant documents survive inside the limit the agent is "
-                    "run at. The same figure evals/validate.py reports as an "
-                    "observation.",
+                    "relevant documents survive inside a fixed limit. An eval "
+                    "parameter, not the agent's: the surface defaults to 5 "
+                    "and nothing binds the agent to this number. The same "
+                    "figure evals/validate.py reports as an observation.",
         },
         "latency_ms": {
             "calls": len(latencies),
@@ -512,14 +517,22 @@ def markdown(result):
         "",
         "`precedent_hit_rate@k` ranks **documents** with nothing truncating: "
         "which prior records does the surface order highest. "
-        "`precedent_hit_rate@limit` counts what survives inside the **passage "
-        "budget the agent is actually run at**, where chunk size decides how "
-        "many distinct documents fit. The first is a property of the ranking, "
+        "`precedent_hit_rate@limit` counts what survives inside a **fixed "
+        "passage budget**, where chunk size decides how many distinct "
+        "documents fit. The first is a property of the ranking, "
         "the second of the ranking and the chunker together. How two chunkers "
         "differ on either, and at which k, is measured in "
         "`chunker-comparison.md` beside this file, which scores both indexes "
         "on both. A single-index run cannot see any of that, so this table "
         "does not claim it: the budget figure below is this index alone.",
+        "",
+        f"The budget is an eval parameter. Nothing binds the agent to it: "
+        f"the surface defaults to 5 passages, `.agents/precedent-analyst.yaml` "
+        f"tells the agent to ask for breadth without naming a number, and no "
+        f"demo passes one. So this is the surface measured under a fixed "
+        f"budget, which is a real question about the retriever, and it is not "
+        f"an estimate of what the agent is handed. What the agent requests is "
+        f"recorded in `queries_issued` and belongs to judgement mode.",
         "",
         f"**At the run limit of {result['at_run_limit']['limit']} passages: "
         f"{pct(result['at_run_limit']['precedent_hit_rate'])} "
@@ -860,7 +873,7 @@ def cross_markdown(result):
         "",
         "Hits over (case, document) pairs, ranked over distinct documents "
         "with nothing truncating. This is the ranking alone: what each "
-        "chunker delivers inside the passage budget the agent is run at is "
+        "chunker delivers inside a fixed passage budget is "
         "`precedent_hit_rate@limit` in `latest.md`, and the two answer "
         "different questions.",
         "",
@@ -1089,8 +1102,7 @@ def main():
     limit = result["at_run_limit"]
     print(f"  hit_rate@limit{limit['limit']} "
           f"{pct(limit['precedent_hit_rate']):>6} "
-          f"({limit['hits']}/{limit['pairs']}), the passage budget the agent "
-          f"is run at")
+          f"({limit['hits']}/{limit['pairs']}), at a fixed passage budget")
     print(f"  floor silence {result['floor_silence']['silent_at_the_floor']}/"
           f"{result['floor_silence']['novel_cases']} no-precedent cases")
     print(f"\nwrote {out}")

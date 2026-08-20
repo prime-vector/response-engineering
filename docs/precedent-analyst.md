@@ -284,8 +284,10 @@ table under a whole name.
 
 **Two hit rates, and the second is not a footnote.** `precedent_hit_rate@k` ranks
 documents with nothing truncating, which is a property of the ranking alone.
-`precedent_hit_rate@limit` counts what survives inside the passage budget the agent
-is run at, where chunk size decides how many distinct documents fit. They differ at
+`precedent_hit_rate@limit` counts what survives inside a fixed passage budget of
+eight, where chunk size decides how many distinct documents fit. That budget is an
+eval parameter and not the agent's: the surface defaults to five, this spec tells the
+agent to ask for breadth without naming a number, and no demo passes one. They differ at
 the budget, 38/60 against 36/60, and at k = 2, where heading-aware reaches 25 of 60
 pairs against fixed's 24. They are identical at k = 1, 3, 5 and 8, which is the grid
 the baseline reads: the one relevant document that moves, `b03`'s `INC-2446`, sits

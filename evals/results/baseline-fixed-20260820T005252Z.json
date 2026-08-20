@@ -1,10 +1,10 @@
 {
-  "recorded_at": "2026-08-20T00:42:30Z",
-  "label": "heading-aware",
+  "recorded_at": "2026-08-20T00:52:52Z",
+  "label": "baseline-fixed",
   "mode": "retrieval",
-  "index": "corpus/index.json",
-  "index_fingerprint": "221bb503e33db5b6502208e213f445df428f856b2a9e48c8240e805f823f5649",
-  "chunker": "heading",
+  "index": "corpus/index.fixed.json",
+  "index_fingerprint": "d74794b2b4b965581f837365e067a2f0aa052ea4690773c573dfd20d8063f768",
+  "chunker": "fixed",
   "reranker": "none",
   "k": [
     1,
@@ -265,14 +265,13 @@
   },
   "at_run_limit": {
     "limit": 8,
-    "hits": 36,
+    "hits": 38,
     "pairs": 60,
-    "precedent_hit_rate": 0.6,
+    "precedent_hit_rate": 0.6333,
     "misses": [
       "a01:incidents/INC-2288",
       "a01:runbooks/memory-pressure",
       "a01:runbooks/denial-log-collection",
-      "a02:runbooks/memory-pressure",
       "a03:incidents/INC-2411",
       "a03:incidents/INC-2419",
       "a03:runbooks/memory-pressure",
@@ -289,17 +288,16 @@
       "d02:incidents/INC-2288",
       "d02:runbooks/memory-pressure",
       "d02:runbooks/denial-log-collection",
-      "d03:runbooks/memory-pressure",
       "f04:incidents/INC-2411",
       "f04:incidents/INC-2419",
       "g01:runbooks/memory-pressure"
     ],
-    "note": "a passage budget, not a document ranking: how many relevant documents survive inside the limit the agent is run at. The same figure evals/validate.py reports as an observation."
+    "note": "a passage budget, not a document ranking: how many relevant documents survive inside a fixed limit. An eval parameter, not the agent's: the surface defaults to 5 and nothing binds the agent to this number. The same figure evals/validate.py reports as an observation."
   },
   "latency_ms": {
     "calls": 50,
-    "p50": 1.85,
-    "p95": 2.69,
+    "p50": 1.5,
+    "p95": 2.05,
     "note": "the mock surface over loopback JSON-RPC, and a mixture of two probes per case at two different passage limits. It measures this repo's fixture retriever, not a vector store, and is not a latency claim about anything deployable."
   },
   "not_measured": {
@@ -498,7 +496,7 @@
     "b03": {
       "relevant": 2,
       "found_at": {
-        "corpus://incidents/INC-2446": 2,
+        "corpus://incidents/INC-2446": 3,
         "corpus://runbooks/memory-pressure": 1
       },
       "per_k": {

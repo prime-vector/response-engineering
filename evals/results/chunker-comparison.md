@@ -36,6 +36,6 @@ Both figures are measured by this file. `latest.md` reports the budget for the b
 | 7 | 38/60 | 38/60 |
 | 8 | 41/60 | 41/60 |
 
-Hits over (case, document) pairs, ranked over distinct documents with nothing truncating. This is the ranking alone: what each chunker delivers inside the passage budget the agent is run at is `precedent_hit_rate@limit` in `latest.md`, and the two answer different questions.
+Hits over (case, document) pairs, ranked over distinct documents with nothing truncating. This is the ranking alone: what each chunker delivers inside a fixed passage budget is `precedent_hit_rate@limit` in `latest.md`, and the two answer different questions.
 
 Corpus `90d95cfdd67ed1a2`, ground truth `6a1014659711a8c3`, index fixed `d74794b2b4b96558`, index heading-aware `221bb503e33db5b6`. Either index changing under this comparison fails the check rather than moving the figures quietly. Regenerate and diff with `python3 evals/runner.py --config evals/config.yaml --cross-check --check`.
