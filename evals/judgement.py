@@ -30,11 +30,13 @@ elsewhere in this repo:
   agent that copies it retrieves nothing and refuses, and the archive held
   precedent, so the refusal is a real false refusal rather than an artefact.
 
-  A record from this mode is not a regenerable artefact. Two runs of the same
-  arm differ, so nothing here regenerates a table and diffs it, and nothing in
-  CI does either. It carries a timestamp, the spec and prompt it ran, and the
-  model that ran it, because those are what a reader would otherwise have to
-  take on trust. Those are also what --check-records reads back: it asks
+  A run from this mode is not a regenerable artefact. Two sweeps of the same
+  arm differ, so nothing diffs a fresh sweep against a committed one, and the
+  record carries a timestamp, the spec and prompt it ran, the runtime and the
+  model, because those are what a reader would otherwise take on trust. What
+  is derived from a record is regenerable and is treated like every other
+  generated file here: --comparison rebuilds the per-arm tables and the Phase 5
+  grid from the records, and CI diffs them. Those are also what --check-records reads back: it asks
   whether a recording still describes the configuration on disk, which is a
   different question from whether it would come back the same.
 

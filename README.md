@@ -307,11 +307,15 @@ first tool call and these made hundreds; the version is not. Later sweeps pin
 both, and `evals/judgement.py --check-records` reports the gap per arm.
 
 The retrieval tables regenerate with `python3 evals/runner.py --config
-evals/config.yaml` and are checked for drift in CI. The judgement tables do not
-regenerate: they are records of one live run, a fresh sweep of the same arm
-gives different numbers, and each carries the timestamp, spec, prompt, model
-and case ids that produced it. `evals/judgement.py --rescore` recomputes the
-deterministic half from a stored record and prints which figures moved.
+evals/config.yaml` and are checked for drift in CI. On the judgement side the
+distinction is between the runs and everything downstream of them. A run does
+not regenerate: a fresh sweep of the same arm gives different numbers, so each
+record carries the timestamp, spec, prompt, model, runtime and case ids that
+produced it, and nothing diffs a sweep against a committed one. Every table
+derived from those records does regenerate, with `evals/judgement.py
+--comparison`, and CI diffs all six: the three per-arm tables, the grid above
+and its copies in this file and in `evals/README.md`. `--rescore` recomputes
+the deterministic half from a stored record and prints which figures moved.
 
 ## Where this sits
 
