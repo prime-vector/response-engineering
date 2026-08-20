@@ -76,7 +76,7 @@
   },
   "scorer": {
     "path": "evals/judgement.py",
-    "fingerprint": "032634f91fcc635804ec8ffa4db644fdbcc0d4319be7fa686eb7b0c400eef66d",
+    "fingerprint": "a498641017c6f39754f4810f12757e8d3b26259af78845739655cad5ca59ad7a",
     "scope": "the deterministic figures. The judged half carries its own fingerprint under judged."
   },
   "deterministic": {
@@ -184,6 +184,7 @@
     "hygiene": {
       "identity_in_queries": [],
       "must_not_cite": [],
+      "wrong_time_bound": [],
       "refused_without_coverage": [],
       "self_report_overstated": [],
       "queries_per_case": {
@@ -211,7 +212,8 @@
   "judged": {
     "model": "claude-opus-4-6",
     "temperature": 0,
-    "scorer_fingerprint": "91d1afebdb3f293590c627d14058afd30a17e212012a82ec08d7cb088b7e41a7",
+    "max_tokens": 1500,
+    "scorer_fingerprint": "f69f0fb52bc36c6cbfd7441905a8980c59205d79d242d2c4ba06cf866872e3eb",
     "prompts": {
       "groundedness": {
         "path": "evals/judges/groundedness-judge.txt",
@@ -224,7 +226,7 @@
     },
     "usage": {
       "input_tokens": 40543,
-      "output_tokens": 3011,
+      "output_tokens": 3026,
       "calls": 29
     },
     "groundedness_judge": {
@@ -239,7 +241,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about the prior record are supported: the passage confirms host swapping heavily, batch work running late, memory exhaustion on a batch integration host, and the document_cause_claimed field confirms the JVM heap raise from 20 GiB to 28 GiB the prior evening leaving no headroom for page cache; the divergence statement that INC-2411's record does not indicate attribution was absent is a claim about absence which is not directly stated in the passage, but the claim is carefully hedged ('does not indicate'), and the passage indeed does not state that attribution was absent, making this a reasonable observation rather than an invented fact."
+            "reason": "All claims about the prior record are supported: the passage confirms host swapping heavily, batch work running late, memory exhaustion on a batch integration host, and the document_cause_claimed field confirms the JVM heap raise from 20 GiB to 28 GiB the prior evening leaving no headroom for page cache; the divergence statement that the record 'does not indicate that attribution was similarly absent' is not reasoning from silence but rather a hedge acknowledging what the analyst can see, and the resolution is correctly labeled as a claim in the document rather than evidence."
           }
         },
         {
@@ -248,7 +250,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "Every factual claim about the prior record is directly supported by the cited passage: the symptom profile (20% CPU sustained, spikes to full utilisation during scans, mid-prod host, six days), the supersession notice from SEC-STD-14 (2026-01-30) including the statement about destroyed evidence, and the resolution being superseded are all present in the passage text or its document metadata fields."
+            "reason": "Every factual claim about the prior record is directly supported by the cited passage: the symptom profile (20% sustained, spikes to full utilisation, mid-prod host), the six-day duration, the supersession notice from SEC-STD-14 (2026-01-30) including the statement about destroyed evidence, and the document_cause_claimed about a policy change \u2014 all match the passage text and its metadata fields."
           }
         },
         {
@@ -257,7 +259,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "Every factual claim about INC-2446 \u2014 the host being reported as exhausted with the report naming memory, the filesystem being found full, memory and swap confirmed normal, and logs rotated by hand with the rotation policy reapplied \u2014 is directly stated in the cited passage."
+            "reason": "Every factual claim about the prior record INC-2446 \u2014 the host being reported as exhausted with the report naming memory, the filesystem being found full, memory and swap confirmed normal, and logs being rotated by hand with the rotation policy reapplied \u2014 is directly stated in the cited passage."
           }
         },
         {
@@ -266,7 +268,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about the prior record are supported: the passages confirm swap usage and elevated page fault rate (signature_overlap), deliberate overcommit with page fault rate matching a year-long baseline (resolution_taken), the threshold not accounting for the host's configuration (divergence), and the problem being closed as expected behaviour."
+            "reason": "All claims about the prior record are supported: the passages confirm swap usage and elevated page fault rate (signature_overlap), deliberate overcommit with page fault rate matching a year-long baseline (resolution_taken), a threshold that did not account for the host's configuration (divergence), and the problem being closed as expected behaviour."
           }
         },
         {
@@ -293,7 +295,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about INC-2419 \u2014 seven of ten days of memory exhaustion opening and auto-closing unacknowledged, workload restarted at D+9 with memory recovery, root cause recorded as unconfirmed at closure, and the absence of documented process-level memory attribution \u2014 are directly supported by the cited passage."
+            "reason": "All factual claims about INC-2419 \u2014 seven of ten days opening/auto-closing unacknowledged, workload restarted at D+9 with memory recovery, root cause recorded as unconfirmed, and absence of documented process-level memory attribution \u2014 are directly supported by the cited passage."
           }
         },
         {
@@ -302,7 +304,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "The passage supports all prior-record claims: memory exhaustion on an integration host, the observability platform opening and auto-closing the problem on two preceding days, the two-day auto-closure window, the claimed cause being a configuration change (heap resize) the previous evening, and the resolution not being stated in the retrieved passage."
+            "reason": "All claims about the prior record are supported: the passage confirms memory exhaustion on an integration host, the observability platform opening and auto-closing the problem on each of the two preceding days, the document_cause_claimed field confirms a specific configuration change (heap resize) the previous evening as the claimed cause, and the resolution is correctly noted as not stated in the retrieved passage."
           }
         },
         {
@@ -311,7 +313,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about the prior record are supported: the passages confirm sustained CPU saturation near full utilisation for three days on an api-prod host with no anomalous process identified, a pre-recorded scheduled migration confirmed in the change registry as the load source (shown in the timeline passage p-64388910ad43), and that capacity was added and load rebalanced after the source was identified via the change registry."
+            "reason": "All claims about the prior record are supported: the passages confirm sustained CPU saturation near full utilisation for three days on an api-prod host with no anomalous process identified, a pre-recorded scheduled migration confirmed in the change registry as the load source (shown in the timeline passage p-64388910ad43), and the resolution of capacity being added and load rebalanced after the source was identified via the change registry."
           }
         },
         {
@@ -338,7 +340,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about the prior record are supported: the passage confirms a scheduled migration completing the night before, CPU near full utilisation with no new processes, the D+2 10:15 capacity addition and load rebalancing per the change registry, and the document_cause_claimed field attributes saturation to a second consumer's request volume being moved onto the host roughly doubling it."
+            "reason": "All claims about the prior record are supported: the passage confirms a scheduled migration completing the night before, CPU near full utilisation with no new processes, the document_cause_claimed attributing saturation to a second consumer's request volume being moved onto the host roughly doubling it, and capacity being added and load rebalanced at D+2, 10:15 per the change registry."
           }
         },
         {
@@ -347,7 +349,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about the prior record are supported: the passages confirm the non-production comparison was proposed as a falsifying test, that the environment differed in build, patch level, and installed agents, that the comparison was abandoned after build parity was confirmed absent at D0+21:45, and no alternative falsifying test is recorded."
+            "reason": "All claims about the prior record are supported: the passages confirm the non-production environment differed in build, patch level, and installed agents; that the comparison was proposed as a falsifying test; that it was abandoned after build parity was confirmed absent at D0+21:45; and no alternative falsifying test is recorded in the cited passages."
           }
         },
         {
@@ -356,7 +358,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about the prior record are supported: passage p-075764e95511 confirms the component was named within twenty minutes, demonstrated uninvolved the following morning, and five hours were spent on it; passage p-834deaad6bb5 confirms no direct evidence was recorded at the time of attribution, the component was shown not loaded on the affected host, and the investigation restarted from the evidence available at the original attribution point."
+            "reason": "All claims about the prior record are supported: the passages confirm the bridge named the most recently deployed component within minutes (twenty minutes) with no direct evidence recorded, the component was demonstrated uninvolved the following morning by showing it was not loaded on the affected host, the investigation restarted from the evidence available at the original attribution point, and five hours had been spent on the named component before it was cleared."
           }
         },
         {
@@ -376,7 +378,7 @@
             "unsupported_elements": [
               "overcommit configuration is confirmed intended since build"
             ],
-            "reason": "The cited passage states 'Configuration confirmed intended' but does not say 'since build'; the phrase 'since build' is an addition not present in the passage text."
+            "reason": "The cited passage states 'Configuration confirmed intended' but does not say it was intended 'since build'; the phrase 'since build' is an addition not present in the passage text."
           }
         },
         {
@@ -385,7 +387,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about the prior record are supported: the passages confirm host.memory.exhaustion on an integration host with problems opened and auto-closed on each of two preceding days, the heap change from 20 to 28 GiB found via the change registry the evening before the first alert, the revert to 20 GiB with service restart and swap returning to zero, and the correlation of package/change history as the resolution method."
+            "reason": "All claims about the prior record are supported: the passages confirm host.memory.exhaustion on an integration host with problems opened and auto-closed on each of two preceding days, correlation with a JVM heap change from the change registry (raised the evening before the first alert), and resolution by reverting the heap to 20 GiB and restarting the service outside the batch window with swap returning to zero."
           }
         },
         {
@@ -403,7 +405,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about INC-2419 \u2014 ten days, seven alert cycles, unacknowledged, workload restarted on D+9, memory recovered, root cause recorded as unconfirmed, and no confirmed cause \u2014 are directly supported by the cited passage's timeline."
+            "reason": "All statements about the prior record are directly supported by the cited passage: ten days, seven alert cycles, unacknowledged, workload restarted on D+9, memory recovered, root cause recorded as unconfirmed, and no confirmed cause."
           }
         },
         {
@@ -421,7 +423,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about the prior record\u2014host name intg-prod-j5, recurring memory exhaustion, resolution by restarting the workload, cause unconfirmed at closure, and no process-level memory attribution collected\u2014are directly supported or reasonably paraphrased from the cited passage."
+            "reason": "All claims about the prior record are supported: the passage confirms recurring memory exhaustion on intg-prod-j5, resolution by restarting the workload, no cause established before the symptom stopped, and the document_cause_claimed is null; the claim that no process-level memory attribution was collected is a reasonable inference from the passage stating no cause was established, though this is borderline \u2014 however, the passage does not contradict it and the summary's brevity supports the characterization."
           }
         },
         {
@@ -448,7 +450,7 @@
           "verdict": {
             "names_a_distinguishing_factor": true,
             "factor_named": "the prior incident had a heap change to revert and this one has no correlated change at all",
-            "reason": "The text explicitly states that INC-2411 was associated with a tuning change that could be reverted, whereas the current incident has no change in its 14-day change history, meaning the revert path is unavailable\u2014directly naming the distinguishing factor."
+            "reason": "The text explicitly states that INC-2411 was associated with a tuning change that could be reverted, whereas the current incident has no change in its 14-day change history, meaning there is no change to revert\u2014directly naming the distinguishing factor."
           }
         },
         {
@@ -457,7 +459,7 @@
           "verdict": {
             "names_a_distinguishing_factor": true,
             "factor_named": "SEC-STD-14",
-            "reason": "The text explicitly names SEC-STD-14 as the security standard that supersedes the prior resolution, and also states the other two distinguishing factors: that the dispatcher must remain active on production hosts and that deactivating it destroyed the evidence that would name the source."
+            "reason": "The text explicitly names SEC-STD-14 as the platform security standard that supersedes the prior resolution, and also states the other two distinguishing factors: that the dispatcher must remain active on production hosts, and that deactivating it destroyed the evidence that would name the source."
           }
         },
         {
@@ -466,7 +468,7 @@
           "verdict": {
             "names_a_distinguishing_factor": true,
             "factor_named": "the prior record's exhausted resource was disk and never memory",
-            "reason": "The text explicitly states that INC-2446 involved a full filesystem with normal memory/swap, which is the opposite of the current incident \u2014 directly naming the difference that the prior record's exhausted resource was disk and never memory."
+            "reason": "The text explicitly states that INC-2446 involved a full filesystem with normal memory/swap, which is the opposite of the current incident, clearly naming the difference that the prior record's exhausted resource was disk and never memory."
           }
         },
         {
@@ -475,7 +477,7 @@
           "verdict": {
             "names_a_distinguishing_factor": false,
             "factor_named": null,
-            "reason": "The text discusses the nature of the document (scope exclusion vs. incident record) and the outstanding evidence, but does not state either that the prior incident's host never entered exhaustion or that there is no container limit on this host to raise or bound."
+            "reason": "The text discusses the nature of the document (scope exclusion vs. incident record) and the outstanding evidence, but does not state either that the prior host never entered exhaustion or that there is no container limit on this host to raise or bound."
           }
         },
         {
@@ -502,7 +504,7 @@
           "verdict": {
             "names_a_distinguishing_factor": true,
             "factor_named": "the prior saturation was a planned load increase recorded in advance",
-            "reason": "The text explicitly states that INC-2407 had a pre-recorded scheduled migration confirmed in the change registry as the load source, while the current incident has an empty change registry, directly naming the distinguishing factor that the prior saturation was a planned load increase recorded in advance."
+            "reason": "The text explicitly states that INC-2407 had a pre-recorded scheduled migration confirmed in the change registry as the load source, while the current incident has an empty change registry, which names the factor that the prior saturation was a planned load increase recorded in advance."
           }
         }
       ],
@@ -604,6 +606,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "signature_terms: [\"host.memory.exhaustion\"] + symptom_text: \"Scheduled batch file transfers completing late. Business user reports the integration console is slow to respond. No transfers have failed.\"",
@@ -712,6 +715,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "host.memory.exhaustion \u2014 Memory exhaustion problem opened and auto-closed on the integration host for the second consecutive day, nobody has acknowledged either, standing condition 23 of 32 GiB resident to the existing largest consumer, process-level memory attribution outstanding"
@@ -828,6 +832,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "signature_terms: [\"host.memory.exhaustion\"], symptom_text: \"Scheduled batch file transfers completing late. Business user reports the integration console is slow to respond. No transfers have failed. Audit analysis daemon active and consuming CPU.\"",
@@ -936,6 +941,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "signature_terms: [\"host.memory.exhaustion\"] | symptom_text: \"Scheduled batch file transfers completing late. Business user reports the integration console is slow to respond. No transfers have failed. Audit analysis daemon active and consuming CPU.\""
@@ -1080,6 +1086,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "host.memory.exhaustion \u2014 Host swapping heavily. Batch work running late. Change history for the host was queried and returned nothing in the fortnight before onset."
@@ -1220,6 +1227,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "host.cpu.saturation | denial-analysis process held roughly a fifth of CPU for four days and spikes to full utilisation during scans"
@@ -1406,6 +1414,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "signature_terms: [\"host.memory.exhaustion\"] | symptom_text: \"Host reported as exhausted. Swap in use and climbing, page fault rate elevated, filesystem utilisation confirmed normal.\""
@@ -1550,6 +1559,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "host.memory.exhaustion \u2014 Workload on the host is failing to allocate. The host runs the workload directly with no container runtime. No memory limit to read."
@@ -1697,6 +1707,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "signature_terms: [\"host.memory.pressure\"] | symptom_text: \"Swap in use and an elevated page fault rate on a host that has never swapped before, host not configured to overcommit\""
@@ -1877,6 +1888,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "signature_terms: [\"host.memory.exhaustion\"] | symptom_text: \"Memory exhaustion recurring daily on the same host, auto-closed each time, unacknowledged throughout\""
@@ -2021,6 +2033,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "host.cpu.saturation \u2014 CPU near full utilisation for three days. No planned change on the host and no capacity plan recorded. Change registry empty for the fortnight before onset."
@@ -2174,6 +2187,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "host.memory.exhaustion + Memory exhaustion building over several days on a host with no recent change. A log forwarding destination has been unreachable since onset.",
@@ -2319,6 +2333,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "signature_terms: [\"container.memory.limit\"]; symptom_text: \"service container restarted nine times since midnight, host memory and swap flat throughout, container terminated on reaching its configured memory limit, process grew without bound\""
@@ -2463,6 +2478,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "signature_terms: [\"host.cpu.saturation\"], symptom_text: \"CPU near full utilisation since a scheduled migration completed the previous night. No process present that was not present last week.\""
@@ -2609,6 +2625,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "validation.parity \u2014 proposed falsifying test is a comparison against non-production, non-production differs in build and patch level, comparable environment outstanding"
@@ -2766,6 +2783,7 @@
             ]
           }
         ],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "investigation.attribution | The bridge has named the most recently deployed component as probable cause. No evidence has been recorded that distinguishes it. Deployment is the most recent change on the host."
@@ -2863,6 +2881,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "host.memory.exhaustion \u2014 restore from snapshot proposed as mitigation for memory exhaustion, onset time not established, snapshots available at daily granularity for past fortnight"
@@ -3004,6 +3023,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "signature_terms: [\"host.cpu.saturation\"], symptom_text: \"Suppressing the denial stream has been proposed as relief while the denial-analysis process is consuming CPU\""
@@ -3194,6 +3214,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "signature_terms=[\"host.memory.pressure\"], symptom_text=\"Memory pressure alert on a cache host. Page fault rate matches the host's baseline for the past year.\"",
@@ -3304,6 +3325,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "host.memory.pressure \u2014 Swap climbing overnight since two batch schedules began starting in the same hour"
@@ -3398,6 +3420,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "host.memory.exhaustion \u2014 Scheduled batch file transfers completing late. Integration console slow to respond. Audit analysis daemon active and consuming CPU."
@@ -3626,6 +3649,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "signature_terms: [\"host.memory.exhaustion\"], symptom_text: \"Memory exhaustion problem opened and auto-closed for the second consecutive day\""
@@ -3720,6 +3744,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "broker.tls.session.handshake_failure \u2014 Consumers of the order events stream are reconnecting in a loop. Queue depth climbing on two of six broker nodes. No messages lost. Handshake failures steady at roughly 1200 per hour since onset."
@@ -3813,6 +3838,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "pki.chain.validation_failure \u2014 Internal callers are rejecting the service's certificate chain. External callers are unaffected. Intermediate certificate expired at 00:00 on the day of onset."
@@ -3906,6 +3932,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "dns.resolution.intermittent_failure \u2014 Roughly one lookup in twenty returns NXDOMAIN for a name that exists. Retries succeed. Failures observed against one of three configured forwarders."
@@ -3998,6 +4025,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "database.deadlock.victim_rollback \u2014 Transactions are being chosen as deadlock victims and rolled back, all of them touching the same secondary index."
@@ -4090,6 +4118,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "auth.token.nbf_rejection \u2014 Authentication failing for subset of callers with tokens reported as not yet valid, affected callers served by same two nodes, measured offset between nodes and time source outstanding"
@@ -4182,6 +4211,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "loadbalancer.healthcheck.flapping \u2014 Backends are being taken out of the pool and returned within seconds, repeatedly, while serving traffic normally. Probe interval and timeout are equal."
@@ -4274,6 +4304,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "signature_terms: [\"auth.jwt.signature_rejected\"] | symptom_text: \"Downstream services are rejecting signatures on tokens issued since the signing key was rotated. Rejections began within a minute of the rotation. Downstream caches may not have refreshed the key set.\""
@@ -4366,6 +4397,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "search.replication.lag \u2014 Searches are returning documents that were deleted minutes earlier, but only on some requests. Lag concentrated on two of eight shards."
@@ -4458,6 +4490,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "partner integration throttled on roughly a third of requests with flat request volume, quota or accounting window may have changed"
@@ -4550,6 +4583,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "broker.ordering.violation \u2014 two messages delivered out of order after a network partition between two racks healed, both messages carry the same partition key"
@@ -4641,6 +4675,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "host.memory.exhaustion \u2014 Memory exhaustion building on an integration host over three days"
@@ -4732,6 +4767,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "signature_terms: [\"host.cpu.saturation\"], symptom_text: \"A denial-analysis process is holding sustained CPU on a mid-tier host.\""
@@ -4873,6 +4909,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "host.memory.exhaustion \u2014 Memory exhaustion on an extract host with no recent change and a log destination that has been unreachable for days."
@@ -4964,6 +5001,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "host.memory.exhaustion \u2014 A host is exhausted and a restart has been proposed as the first step."
@@ -5149,6 +5187,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "signature_terms: [\"host.memory.exhaustion\"], symptom_text: \"Memory exhaustion on the integration host, recurring daily\""
@@ -5243,6 +5282,7 @@
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [
           "host.disk.latency \u2014 Disk latency on the reporting host has doubled since a storage firmware update"
@@ -5269,8 +5309,8 @@
       }
     }
   ],
-  "rescored_at": "2026-08-20T10:48:21Z",
-  "rejudged_at": "2026-08-20T10:27:44Z",
+  "rescored_at": "2026-08-20T11:15:43Z",
+  "rejudged_at": "2026-08-20T11:15:43Z",
   "judgings": [
     {
       "at": "2026-08-20T09:19:32Z",
@@ -5288,6 +5328,11 @@
         "value": 0.8571,
         "numerator": 6,
         "denominator": 7
+      },
+      "max_tokens": null,
+      "prompts": {
+        "groundedness": "6e810b942c5dc044b0697679e5345da9a1568f3b039476ff3938ca17b5ccdf00",
+        "divergence": "178c9a0e54f03b692630ee97cafef619ed836e99ccf226c9d278a0bb75f502d1"
       }
     },
     {
@@ -5300,6 +5345,32 @@
       "groundedness_judge": {
         "value": 0.8636,
         "numerator": 19,
+        "denominator": 22
+      },
+      "divergence_quality": {
+        "value": 0.8571,
+        "numerator": 6,
+        "denominator": 7
+      },
+      "max_tokens": null,
+      "prompts": {
+        "groundedness": "6e810b942c5dc044b0697679e5345da9a1568f3b039476ff3938ca17b5ccdf00",
+        "divergence": "178c9a0e54f03b692630ee97cafef619ed836e99ccf226c9d278a0bb75f502d1"
+      }
+    },
+    {
+      "at": "2026-08-20T10:27:44Z",
+      "scorer_fingerprint": "91d1afebdb3f293590c627d14058afd30a17e212012a82ec08d7cb088b7e41a7",
+      "model": "claude-opus-4-6",
+      "temperature": 0,
+      "max_tokens": null,
+      "prompts": {
+        "groundedness": "6e810b942c5dc044b0697679e5345da9a1568f3b039476ff3938ca17b5ccdf00",
+        "divergence": "178c9a0e54f03b692630ee97cafef619ed836e99ccf226c9d278a0bb75f502d1"
+      },
+      "groundedness_judge": {
+        "value": 0.9545,
+        "numerator": 21,
         "denominator": 22
       },
       "divergence_quality": {

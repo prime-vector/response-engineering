@@ -450,6 +450,19 @@ def run_case(oa, config, case, log_path, system_prompt, timeout):
 # Deterministic scoring
 # --------------------------------------------------------------------------
 
+def offered_claim(precedent):
+    """The claim as the agent wrote it, minus the citation block.
+
+    Its own function because the judge fingerprint hashes it. Hashing the
+    whole of score_run instead meant that adding a deterministic check, the
+    time bound for instance, demanded a paid re-judge for a change the judge
+    could not see. What the judge is asked is this shape and nothing else in
+    that function.
+    """
+    return {key: value for key, value in precedent.items()
+            if key not in ("incident_ref", "grounded_in")}
+
+
 def cited_ids(precedent):
     """Every passage id this claim rests on, each counted once.
 
@@ -494,9 +507,16 @@ def score_run(case, record):
         "must_not_cite_violations": [],
         "citation_identity_violations": [],
         "cross_document_citations": [],
+        "time_bound_violations": [],
         "query_hygiene_violations": [],
         "queries_issued": [],
-        "coverage_called": "coverage_describe" in record["surface"]["calls"],
+        # A coverage call made with the wrong bound establishes coverage of a
+        # different archive, so it does not settle the question this field
+        # exists for.
+        "coverage_called": any(
+            ask["tool"] == "coverage_describe"
+            and (ask["arguments"] or {}).get("before") == case["as_of"]
+            for ask in record["surface"]["asked"]),
         "searches": len([c for c in record["surface"]["calls"]
                          if c == "precedent_search"]),
         "reach": {"relevant": len(relevant),
@@ -543,6 +563,22 @@ def score_run(case, record):
                 out["query_hygiene_violations"].append(
                     {"banned": banned, "query": query,
                      "seen_in": "queries_issued"})
+    # The bound, on every call that takes one. This is the archive's hindsight
+    # boundary: the corpus carries a working note dated inside the incident's
+    # own window, and the only thing keeping it out of a D+1 view is `before`.
+    # Nothing checked it. A run that searched with a later bound, or none,
+    # could retrieve a record written after the view and still score clean,
+    # which would hollow out the demo the same way an unbounded query does.
+    # Read from the log, because the bound the agent reports is not evidence.
+    for ask in record["surface"]["asked"]:
+        if ask["tool"] not in ("precedent_search", "coverage_describe"):
+            continue
+        bound = (ask["arguments"] or {}).get("before")
+        if bound != case["as_of"]:
+            out["time_bound_violations"].append(
+                {"tool": ask["tool"], "before": bound,
+                 "as_of": case["as_of"]})
+
     out["queries_reported_but_not_issued"] = (
         len(queries) - len(searched) if len(queries) > len(searched) else 0)
 
@@ -610,13 +646,9 @@ def score_run(case, record):
             "divergence": (precedent.get("divergence") or "").strip(),
             "grounded_in": ids,
             "ungrounded": invented,
-            # The claim as the agent wrote it, minus the citation block,
-            # which the judge is handed separately as resolved passages. The
-            # scored fields above are a reading of this; the judge gets the
-            # thing itself.
-            "offered_claim": {key: value
-                              for key, value in precedent.items()
-                              if key not in ("incident_ref", "grounded_in")},
+            # The claim as the agent wrote it. The scored fields above are a
+            # reading of it; the judge gets the thing itself.
+            "offered_claim": offered_claim(precedent),
         })
     out["applies_offered"] = sorted(
         {c["source_uri"] for c in out["claims"]}
@@ -802,6 +834,11 @@ def aggregate(cases, records, scores):
                              scores[r["case"]]["must_not_cite_violations"]]}
                 for r in usable
                 if scores[r["case"]]["must_not_cite_violations"]],
+            "wrong_time_bound": [
+                {"case": r["case"],
+                 "calls": scores[r["case"]]["time_bound_violations"]}
+                for r in usable
+                if scores[r["case"]]["time_bound_violations"]],
             "refused_without_coverage": [
                 r["case"] for r in usable
                 if scores[r["case"]]["refused"]
@@ -852,7 +889,7 @@ def judge_code_fingerprint():
     """
     source = "".join(inspect.getsource(fn)
                      for fn in (judge_run, call_judge, extract_json,
-                                score_run, cited_ids, rpc))
+                                offered_claim, cited_ids, rpc))
     # Values, not only code. The endpoint and the API version shape every
     # request, and rpc is what resolves a cited passage to the text the judge
     # is shown. Hashing the functions alone left all three able to move
@@ -1244,6 +1281,35 @@ def run_arm(config, arm, cases, stamp, judged=True):
     }
 
 
+def divergence_by_case(judged):
+    """The spec's unit for divergence_quality: near-miss cases, not claims.
+
+    docs/precedent-analyst.md section 7 defines it over cases where the
+    divergence names the distinguishing factor. The judge scores a claim at a
+    time, which is the right unit to ask a judge in, and a case offering two
+    diverging records would otherwise carry twice the weight of one offering a
+    single record. Computed here from the verdicts the record already stores,
+    so it costs nothing and needs no re-judge: this is a different aggregation
+    of the same measurement, and both are published.
+    """
+    verdicts = (judged.get("divergence_quality") or {}).get("verdicts") or []
+    by_case = {}
+    for entry in verdicts:
+        verdict = entry["verdict"]
+        if not isinstance(verdict.get("names_a_distinguishing_factor"), bool):
+            continue
+        by_case.setdefault(entry["case"], []).append(
+            verdict["names_a_distinguishing_factor"])
+    good = sum(1 for outcomes in by_case.values() if any(outcomes))
+    return {
+        "value": round(good / len(by_case), 4) if by_case else None,
+        "numerator": good,
+        "denominator": len(by_case),
+        "unit": "near-miss cases where the divergence names an actual "
+                "distinguishing factor, which is the unit section 7 defines",
+    }
+
+
 def metric_row(name, block):
     if block is None or block.get("value") is None:
         return f"| `{name}` | - | - | not scored in this run |"
@@ -1373,7 +1439,15 @@ def markdown(result):
             "| Metric | Value | Count | Denominator |",
             "| --- | --- | --- | --- |",
             metric_row("groundedness_judge", judged["groundedness_judge"]),
-            metric_row("divergence_quality", judged["divergence_quality"]),
+            metric_row("divergence_quality", divergence_by_case(judged)),
+            "",
+            f"`divergence_quality` is reported over cases, which is the unit "
+            f"section 7 of `docs/precedent-analyst.md` defines. The judge "
+            f"scores one claim at a time, and that figure, "
+            f"{judged['divergence_quality']['numerator']}/"
+            f"{judged['divergence_quality']['denominator']} claims, is in the "
+            f"record beside every verdict. They differ whenever a case offers "
+            f"more than one diverging record.",
             "",
         ]
         rounds = result.get("judgings") or []
@@ -1401,8 +1475,23 @@ def markdown(result):
                 f"{current['denominator']} | {current_div['numerator']}/"
                 f"{current_div['denominator']} |",
                 "",
-                "Same claims, same prompts, same payload, same model at the "
-                "temperature above. What moves between rounds is the judge.",
+                ("Same claims, same prompts, same payload, same model at the "
+                 "temperature above. What moves between rounds is the judge."
+                 if all(entry.get("scorer_fingerprint")
+                        == judged.get("scorer_fingerprint")
+                        and entry.get("model") == judged.get("model")
+                        and entry.get("temperature") == judged.get(
+                            "temperature")
+                        and entry.get("max_tokens") == judged.get("max_tokens")
+                        and all(entry.get("prompts", {}).get(name)
+                                == (judged.get("prompts") or {})
+                                .get(name, {}).get("fingerprint")
+                                for name in ("groundedness", "divergence"))
+                        for entry in rounds)
+                 else "These rounds did not all run the same judge inputs: "
+                      "re-judging is also the remedy for a changed prompt or "
+                      "payload, so compare the fingerprints in the record "
+                      "before reading the spread as judge variance."),
                 "",
             ]
 
@@ -1466,6 +1555,13 @@ def markdown(result):
           " has no entry that means retrieved and rejected, so a document "
           "named in prose as unusable and typed as `partial` anyway has put "
           "its caveat where the contract does not carry it.",
+        f"- Called the archive with a bound other than the view's `as_of`: "
+        f"{len(hygiene['wrong_time_bound'])} case(s)"
+        + (f" ({', '.join(h['case'] for h in hygiene['wrong_time_bound'])})"
+           if hygiene["wrong_time_bound"] else "")
+        + ". The bound is what keeps a record written after the view out of "
+          "it, so this is read from the log rather than from the agent's "
+          "account of what it asked.",
         f"- Put an entity id in a query: "
         f"{len(hygiene['identity_in_queries'])} case(s)"
         + (f" ({', '.join(h['case'] for h in hygiene['identity_in_queries'])})"
@@ -1770,6 +1866,10 @@ def record_drift(config, arm, record):
         if judged.get("model") != judge["model"]:
             rejudge_owed.append(f"the config judges with {judge['model']}, "
                                 f"the recording used {judged.get('model')}")
+        if judged.get("max_tokens") != judge.get("max_tokens", 1500):
+            rejudge_owed.append(f"the config allows the judge "
+                                f"{judge.get('max_tokens', 1500)} tokens, the "
+                                f"recording allowed {judged.get('max_tokens')}")
         if judged.get("temperature") != judge.get("temperature", 0):
             rejudge_owed.append(f"the config judges at temperature "
                                 f"{judge.get('temperature', 0)}, the "
@@ -2091,7 +2191,7 @@ def comparison_grid(records):
         + " | ".join(_fraction(j.get("groundedness_judge")) for j in judged)
         + " |",
         "| `divergence_quality` | "
-        + " | ".join(_fraction(j.get("divergence_quality")) for j in judged)
+        + " | ".join(_fraction(divergence_by_case(j)) for j in judged)
         + " |",
         "",
     ]
@@ -2311,6 +2411,10 @@ def rejudge(record_path, config):
             "scorer_fingerprint": before.get("scorer_fingerprint"),
             "model": before.get("model"),
             "temperature": before.get("temperature"),
+            "max_tokens": before.get("max_tokens"),
+            "prompts": {name: (before.get("prompts") or {})
+                        .get(name, {}).get("fingerprint")
+                        for name in ("groundedness", "divergence")},
             "groundedness_judge": {
                 k: (before.get("groundedness_judge") or {}).get(k)
                 for k in ("value", "numerator", "denominator")},

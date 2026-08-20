@@ -67,26 +67,28 @@ harness with contract validation silently switched off.
 payload, without re-running the agent. It is a fresh measurement rather than a
 recount, so it stamps `rejudged_at`, records the fingerprint of the code that
 produced the new verdicts, and prints what moved. The three committed records
-have been re-judged twice. Once when the payload was widened from four fields of
-a claim to all of them, which moved `groundedness_judge` from 71.2% to 75.0%,
-80.4% to 85.7% and 81.8% to 90.9%: the earlier figures answered a narrower
-question than the metric's own description, which is the reason to re-judge
-rather than to restate. Then again with nothing changed but the fingerprint
-recorded, which measured something worth having.
+have been judged four times each: once during the sweep, then three times
+again. The first re-judge widened the payload from four fields
+of a claim to all of them, which moved `groundedness_judge` from 71.2% to
+75.0%, 80.4% to 85.7% and 81.8% to 90.9%: the original figures answered a
+narrower question than the metric's own description, which is the reason to
+re-judge rather than to restate. The two after that changed nothing the judge
+sees, and measured something worth having.
 
 **Same claims, same prompts, same payload, same model at temperature 0, and the
-verdicts moved every time.** Three judgings of the identical claims:
+verdicts moved every time.** Four judgings of the identical claims, all of them
+in the records:
 
-| arm | first | second | third |
-| --- | --- | --- | --- |
-| `judgement-heading` | 39/52 | 37/52 | 39/52 |
-| `judgement-fixed` | 48/56 | 45/56 | 49/56 |
-| `judgement-single-query` | 20/22 | 19/22 | 21/22 |
+| arm | first | second | third | fourth |
+| --- | --- | --- | --- | --- |
+| `judgement-heading` | 39/52 | 37/52 | 39/52 | 38/52 |
+| `judgement-fixed` | 48/56 | 45/56 | 49/56 | 48/56 |
+| `judgement-single-query` | 20/22 | 19/22 | 21/22 | 21/22 |
 
 Two things in that, and they point opposite ways. Each arm moves by two to four
 claims, up to seven points on `judgement-fixed`, so a single judged percentage
 is not a precise number and should never be read as one. But the ordering holds
-in all three rounds, and the second round came out lower for every arm at once,
+in every round, and the second round came out lower for all three arms at once,
 which says the judge varies by round rather than independently per claim. So
 the gap between the chunker arms is repeatable and its size is not.
 
@@ -491,7 +493,7 @@ Applicability offered: judgement-heading `partial` 44, `superseded` 8; judgement
 
 | judged at temperature 0 | judgement-heading | judgement-fixed | judgement-single-query |
 | --- | --- | --- | --- |
-| `groundedness_judge` | 39/52 | 49/56 | 21/22 |
+| `groundedness_judge` | 38/52 | 48/56 | 21/22 |
 | `divergence_quality` | 6/6 | 6/7 | 6/7 |
 
 Both judged rates are scored over what each run offered, so offering less can raise them: judgement-heading never offered the diverging record on `b04`.
@@ -518,8 +520,8 @@ delta is the paragraph, not query count in isolation, and `--compare` cannot
 see the difference because a system prompt is one knob to it.
 
 **The chunker is not choosable off one sweep each.** Same reach, 54 of 60, and
-14 against 13 omissions. The judged half parts by 39/52 against 49/56, and
-heading came out below fixed in all three judgings, so the gap is repeatable
+14 against 13 omissions. The judged half parts by 38/52 against 48/56, and
+heading came out below fixed in all four judgings, so the gap is repeatable
 even though its size moves by several points between rounds. That is a real
 difference nobody should choose a chunker on: one sweep each, a judge scoring a
 model, and no account of why.
@@ -552,8 +554,8 @@ applies. An agent that never says `applies` cannot offer a false precedent, so
 the two figures have to be read together, and the table prints them together
 for that reason.
 
-**`groundedness_judge` at 75%, and the failures have one shape.** Most of the
-13 unsupported claims assert an absence: "the prior incident shows no audit
+**`groundedness_judge` at 73.1%, and the failures have one shape.** Most of the
+14 unsupported claims assert an absence: "the prior incident shows no audit
 daemon", from passages that simply do not mention one. It is a divergence of
 exactly the kind rule 5 asks for, resting on something the archive never said.
 `groundedness_log` cannot see it: every one of those citations is a passage the

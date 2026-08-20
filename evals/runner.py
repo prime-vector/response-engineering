@@ -1073,6 +1073,10 @@ JUDGEMENT_PINS = [
      lambda r: (r.get("judged") or {}).get("model")),
     ("judge temperature", "judged.temperature",
      lambda r: (r.get("judged") or {}).get("temperature")),
+    # Truncation decides whether a verdict is a judge error or a scored
+    # claim, so it moves a denominator without moving a prompt or a model.
+    ("judge token limit", "judged.max_tokens",
+     lambda r: (r.get("judged") or {}).get("max_tokens")),
     ("judge scorer", "judged.scorer_fingerprint",
      lambda r: (r.get("judged") or {}).get("scorer_fingerprint")),
     ("groundedness judge prompt", "judged.prompts.groundedness.fingerprint",
