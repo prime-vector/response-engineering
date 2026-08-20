@@ -75,20 +75,33 @@ rather than to restate. Then again with nothing changed but the fingerprint
 recorded, which measured something worth having.
 
 **Same claims, same prompts, same payload, same model at temperature 0, and the
-verdicts moved.** Two claims flipped on the shipped arm, three on fixed, one on
-single-query: 39/52 to 37/52, 48/56 to 45/56, 20/22 to 19/22. So a judged
-difference of about five points between two arms is inside what the same arm
-does when re-judged against itself. The deterministic figures do not move under
-`--rescore`; these do, and that difference is the reason they are never
-published in the same table.
+verdicts moved every time.** Three judgings of the identical claims:
 
-A record fingerprints two scorers, not one. The top-level `scorer` is the code
-that produced the deterministic figures, which `--rescore` can recompute; the
-judged half carries its own fingerprint, taken when the verdicts were produced,
-and a rescore leaves both the verdicts and that fingerprint alone. Re-judging is
-a fresh call to a model, so one fingerprint over both halves would certify judge
-output against code that never saw it. The three committed records predate that
-field and their tables say so.
+| arm | first | second | third |
+| --- | --- | --- | --- |
+| `judgement-heading` | 39/52 | 37/52 | 39/52 |
+| `judgement-fixed` | 48/56 | 45/56 | 49/56 |
+| `judgement-single-query` | 20/22 | 19/22 | 21/22 |
+
+Two things in that, and they point opposite ways. Each arm moves by two to four
+claims, up to seven points on `judgement-fixed`, so a single judged percentage
+is not a precise number and should never be read as one. But the ordering holds
+in all three rounds, and the second round came out lower for every arm at once,
+which says the judge varies by round rather than independently per claim. So
+the gap between the chunker arms is repeatable and its size is not.
+
+The deterministic figures do not move under `--rescore`; these do, which is the
+reason the two are never published in the same table.
+
+A record fingerprints two scorers, not one. The top-level `scorer` covers this
+whole file and is answered by a free `--rescore`; the judged half carries its
+own, narrower fingerprint over the code that decides what the judge is asked and
+how its reply is read (`judge_run`, `call_judge`, `extract_json`, `score_run`,
+`cited_ids`), and is answered by a paid `--rejudge`. The split is deliberate:
+one fingerprint over both halves would certify judge output against code that
+never saw it, and a file-level hash on the paid side would demand money for a
+comment, which is how a check that costs money gets switched off. All three
+committed records carry both.
 
 `--rescore` recomputes the deterministic figures of a recorded sweep with the
 current scoring, from what the record already holds. The runs are the half
@@ -98,19 +111,27 @@ ground truth has moved, keeps the judged verdicts as recorded, and stamps the
 record with what rescored it: a file whose numbers changed after it was
 written has to say so.
 
-`--check-records` answers the question you would otherwise answer by paying:
+`--check-records` answers the question you would otherwise answer by paying,
+and names which of three remedies each drift needs. A re-run is a live sweep. A
+re-judge is one model call per claim, against passages the record already
+holds, and it recomputes the deterministic half on its way past. A rescore
+reads the record and spends nothing.
 is the recorded sweep still about this tree. Each record names the spec,
 system prompt, index, corpus, ground truth, judge and scorer it ran against,
 by fingerprint, and the check compares every one against what is on disk now.
-It sorts what it finds into the two remedies, because they cost differently.
-An input the runs depended on means a fresh sweep, live, 38 cases. The scoring
-code means `--rescore`, which reads what the record already holds and spends
-nothing. A green line is the useful half: an arm nobody owes a sweep for.
+It sorts what it finds into the three remedies, because they cost differently.
+An input the runs depended on means a fresh sweep, live, 38 cases. A moved
+judge, or moved code that drives it, means `--rejudge`: one model call per
+claim, against passages the record already holds. Moved scoring means
+`--rescore`, which reads the record and spends nothing. A green line is the
+useful half: an arm nobody owes anything for.
 
-The scorer check is over the whole of `judgement.py`, so editing a comment in
-it reports every record as owed a rescore. That is the right way round. The
-record cannot tell a comment from a change to `score_run`, and settling the
-question costs seconds either way.
+The scoring check is over the whole of `judgement.py`, so editing a comment in
+it reports every record as owed a rescore. That is the right way round, because
+the remedy is free and settles the question either way. The judge check is
+narrower for the same reason inverted: its remedy costs money, so it covers the
+code that decides what the judge is asked and how its reply is read, and not a
+comment somewhere else in the file.
 
 Deliberately not in CI, unlike `--check-prompts`. A stale recording is a
 statement about money owed rather than a broken artefact, and a gate that
@@ -460,7 +481,7 @@ Applicability offered: judgement-heading `partial` 44, `superseded` 8; judgement
 
 | judged at temperature 0 | judgement-heading | judgement-fixed | judgement-single-query |
 | --- | --- | --- | --- |
-| `groundedness_judge` | 37/52 | 45/56 | 19/22 |
+| `groundedness_judge` | 39/52 | 49/56 | 21/22 |
 | `divergence_quality` | 6/6 | 6/7 | 6/7 |
 
 Both judged rates are scored over what each run offered, so offering less can raise them: judgement-heading never offered the diverging record on `b04`.
@@ -487,9 +508,11 @@ delta is the paragraph, not query count in isolation, and `--compare` cannot
 see the difference because a system prompt is one knob to it.
 
 **The chunker is not choosable off one sweep each.** Same reach, 54 of 60, and
-14 against 13 omissions. The judged half parts by 37/52 against 45/56, nine
-points, which is roughly twice what re-judging the same claims moves and
-therefore not nothing and not enough to choose on either.
+14 against 13 omissions. The judged half parts by 39/52 against 49/56, and
+heading came out below fixed in all three judgings, so the gap is repeatable
+even though its size moves by several points between rounds. That is a real
+difference nobody should choose a chunker on: one sweep each, a judge scoring a
+model, and no account of why.
 Heading-aware is kept for its citations carrying the heading chain rather than
 the document title alone, which no metric here scores.
 
@@ -519,8 +542,8 @@ applies. An agent that never says `applies` cannot offer a false precedent, so
 the two figures have to be read together, and the table prints them together
 for that reason.
 
-**`groundedness_judge` at 71.2%, and the failures have one shape.** Most of the
-15 unsupported claims assert an absence: "the prior incident shows no audit
+**`groundedness_judge` at 75%, and the failures have one shape.** Most of the
+13 unsupported claims assert an absence: "the prior incident shows no audit
 daemon", from passages that simply do not mention one. It is a divergence of
 exactly the kind rule 5 asks for, resting on something the archive never said.
 `groundedness_log` cannot see it: every one of those citations is a passage the

@@ -223,7 +223,7 @@ Applicability offered: judgement-heading `partial` 44, `superseded` 8; judgement
 
 | judged at temperature 0 | judgement-heading | judgement-fixed | judgement-single-query |
 | --- | --- | --- | --- |
-| `groundedness_judge` | 37/52 | 45/56 | 19/22 |
+| `groundedness_judge` | 39/52 | 49/56 | 21/22 |
 | `divergence_quality` | 6/6 | 6/7 | 6/7 |
 
 Both judged rates are scored over what each run offered, so offering less can raise them: judgement-heading never offered the diverging record on `b04`.
@@ -263,10 +263,11 @@ prompt as one knob.
 
 **Rejected: reading the chunker off these numbers.** Heading-aware and
 fixed-size chunking reach the same 54 of 60 pairs and omit 14 and 13 of 23
-applying documents. They part on the judged half, 37 of 52 claims supported
-against 45 of 56. That gap is about nine points, and re-judging the same claims
-with the same prompts moves one to three of them per arm, so it is roughly
-twice the noise: not nothing, and not enough to choose on. Heading-aware is kept for something no metric here scores: its
+applying documents. They part on the judged half, 39 of 52 claims supported
+against 49 of 56, and heading came out below fixed in all three judgings of the
+same claims. So the gap is repeatable; its size is not, because re-judging
+moves each arm by two to four claims. Not nothing, and not enough to choose a
+chunker on. Heading-aware is kept for something no metric here scores: its
 citations carry the heading chain, `INC-2411: … > Resolution`, where fixed
 chunks carry only the document title. That is the part that makes a citation
 checkable in five seconds, and it is a property rather than a result.

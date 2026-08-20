@@ -428,6 +428,8 @@ def score_run(case, record):
         "claims": [],
         "citations": {"total": 0, "in_returned_set": 0, "invented": []},
         "must_not_cite_violations": [],
+        "citation_identity_violations": [],
+        "cross_document_citations": [],
         "query_hygiene_violations": [],
         "queries_issued": [],
         "coverage_called": "coverage_describe" in record["surface"]["calls"],
@@ -482,10 +484,45 @@ def score_run(case, record):
 
     for precedent in output.get("precedents") or []:
         ref = precedent.get("incident_ref") or {}
-        uri = ref.get("source_uri") or ""
+        claimed_uri = ref.get("source_uri") or ""
+        ids = cited_ids(precedent)
+
+        # Which document this claim is really about, according to the
+        # archive rather than according to the claim. hits maps a returned
+        # passage id to the uri it came from, so a claim naming INC-2411
+        # while citing a passage of INC-2419 is visible here and was not
+        # before: groundedness_log asks only whether a cited id was
+        # returned, and the truth lookup used the model's own source_uri, so
+        # such a claim was scored against the applicability of a document it
+        # had not cited. Sol found it at the gate.
+        anchor = ref.get("passage_id")
+        resolved = (hits.get(anchor, "").split("#")[0] if anchor else "")
+        elsewhere = sorted({hits[i].split("#")[0] for i in ids if i in hits}
+                           - {claimed_uri})
+        # Two different things, kept apart. A claim whose own citation comes
+        # from a document it does not name is misnamed, and that is the hole
+        # groundedness_log cannot see. A claim that also rests on passages
+        # from other documents is doing what the contract allows, a precedent
+        # supported by a record and the procedure that covers it, and
+        # counting it as a violation would be a check inflating its own
+        # findings.
+        if bool(resolved) and resolved != claimed_uri:
+            out["citation_identity_violations"].append({
+                "named": claimed_uri,
+                "incident_ref_resolves_to": resolved,
+            })
+        if elsewhere:
+            out["cross_document_citations"].append({
+                "named": claimed_uri,
+                "also_rests_on": elsewhere,
+            })
+
+        # Truth is looked up against the document the archive says the
+        # citation came from, falling back to the claimed uri only when the
+        # anchor was never returned, which groundedness_log already counts.
+        uri = resolved or claimed_uri
         offered = precedent.get("applicability")
         expected = truth.get(uri)
-        ids = cited_ids(precedent)
         grounded = [i for i in ids if i in hits]
         invented = [i for i in ids if i not in hits]
         out["citations"]["total"] += len(ids)
@@ -651,6 +688,25 @@ def aggregate(cases, records, scores):
                               for c in scores[r["case"]]["claims"]
                               if c["understated"]}),
         },
+        # Read beside groundedness_log, which cannot see this: every id in a
+        # misnamed claim was returned by the surface, so the citation check
+        # passes while the claim is about a document it did not cite.
+        "citation_identity": {
+            "claims": len(claims),
+            "misnamed": [
+                {"case": r["case"], **entry}
+                for r in usable
+                for entry in scores[r["case"]]["citation_identity_violations"]],
+            "cross_document": [
+                {"case": r["case"], **entry}
+                for r in usable
+                for entry in scores[r["case"]]["cross_document_citations"]],
+            "unit": "misnamed: claims whose own incident_ref passage came "
+                    "from a document other than the one the claim names, "
+                    "resolved through the adapter log. cross_document: claims "
+                    "that also rest on passages from other documents, which "
+                    "the contract permits and which are reported, not scored.",
+        },
         "unrelated_claims": {
             "count": len([c for c in claims if c["unrelated"]]),
             "of": len(claims),
@@ -732,7 +788,7 @@ def judge_code_fingerprint():
     """
     source = "".join(inspect.getsource(fn)
                      for fn in (judge_run, call_judge, extract_json,
-                                score_run))
+                                score_run, cited_ids))
     return hashlib.sha256(source.encode()).hexdigest()
 
 
@@ -919,13 +975,22 @@ def judge_run(config, records, scores, cases, port, key):
                 "verdict": verdict})
 
     def rate(entries, field):
-        scored = [e for e in entries if "error" not in e["verdict"]]
-        good = [e for e in scored if e["verdict"].get(field) is True]
+        # A reply that parsed but does not carry the boolean this metric is
+        # about has said nothing, and scoring it false would put a judge's
+        # formatting into the agent's column. Same treatment as a reply that
+        # did not parse: an error, out of the denominator, listed.
+        def malformed(entry):
+            return ("error" in entry["verdict"]
+                    or not isinstance(entry["verdict"].get(field), bool))
+
+        errors = [e for e in entries if malformed(e)]
+        scored = [e for e in entries if not malformed(e)]
+        good = [e for e in scored if e["verdict"][field] is True]
         return {
             "value": round(len(good) / len(scored), 4) if scored else None,
             "numerator": len(good),
             "denominator": len(scored),
-            "errors": [e for e in entries if "error" in e["verdict"]],
+            "errors": errors,
             "verdicts": entries,
         }
 
@@ -1269,6 +1334,22 @@ def markdown(result):
         + ". A rejected output is the contract working, so it is reported "
           "here rather than folded into a rate: an agent that produced "
           "nothing usable neither offered a precedent nor refused.",
+        f"- Named one document and cited a passage of another: "
+        f"{len(summary['citation_identity']['misnamed'])} claim(s) of "
+        f"{summary['citation_identity']['claims']}"
+        + (": " + ", ".join(
+            f"`{v['case']}` names {v['named'].replace('corpus://', '')} and "
+            f"cites {v['incident_ref_resolves_to'].replace('corpus://', '')}"
+            for v in summary["citation_identity"]["misnamed"])
+           if summary["citation_identity"]["misnamed"] else "")
+        + ". Resolved through the adapter log, which is the only place the "
+          "document a passage came from is stated by anything but the claim "
+          "itself. `groundedness_log` cannot see this: every id in such a "
+          "claim was returned by the surface.",
+        f"- Rested a claim on passages from more than one document: "
+        f"{len(summary['citation_identity']['cross_document'])} claim(s). "
+        f"Reported, not scored: a precedent supported by a prior record and "
+        f"the procedure that covers it is doing what the contract allows.",
         f"- Cited a document the case bars from grounding a claim: "
         f"{len(hygiene['must_not_cite'])} case(s)"
         + (": " + "; ".join(
@@ -1541,8 +1622,12 @@ def record_drift(config, arm, record):
     judge = config["judge"]
     judged = record.get("judged")
     if judged is None:
-        rerun.append("the recording has no judged half, so groundedness_"
-                     "judge and divergence_quality are unmeasured for it")
+        # --no-judge leaves everything --rejudge consumes: the outputs, the
+        # log lines and the citations. Calling for a fresh sweep here quotes
+        # the most expensive remedy for the cheapest gap.
+        rejudge_owed.append("the recording has no judged half, so "
+                            "groundedness_judge and divergence_quality are "
+                            "unmeasured for it")
     else:
         if judged.get("model") != judge["model"]:
             rejudge_owed.append(f"the config judges with {judge['model']}, "
@@ -2056,9 +2141,14 @@ def rejudge(record_path, config):
 
     spec = spec_document(config["spec"])
     port = spec_port(spec, config["spec"])
+    # A fresh checkout has no .logs: it is gitignored, and only a sweep
+    # creates it. Without this the advertised remedy fails opening a file
+    # before it judges anything.
+    log_dir = os.path.join(RESULTS, ".logs")
+    os.makedirs(log_dir, exist_ok=True)
     proc = start_adapter(result["index"], port,
-                         log_path=os.path.join(RESULTS, ".logs",
-                                               f"rejudge-{result['label']}.log"))
+                         log_path=os.path.join(
+                             log_dir, f"rejudge-{result['label']}.log"))
     try:
         before = result.get("judged") or {}
         fresh = judge_run(config, records, scores, cases, port, key)

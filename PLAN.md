@@ -274,8 +274,8 @@ passage ids in the set the surface returned, `agent_reach` 54 of 60 pairs, p50
 Read the two things the deterministic rates cannot say by themselves. Ten of
 the 52 claims are offered as `partial` where the truth is `applies`, so the
 zero false precedent rate is a partly cautious agent rather than a calibrated
-one, and the table says so beside it. And `groundedness_judge` is 71.2%: 37 of
-52 claims are supported by the passages they cite, and most of the other 15 are
+one, and the table says so beside it. And `groundedness_judge` is 75%: 39 of
+52 claims are supported by the passages they cite, and most of the other 13 are
 the same move, an absence asserted from silence. "INC-2411 shows no audit
 daemon" is a claim about a document from passages that simply do not mention
 one. It is a divergence in the shape the prompt asks for, resting on something
@@ -329,8 +329,9 @@ repeat instruction; it is not run.
 **The chunker is not choosable off these numbers, and saying so is the result.**
 Heading-aware and fixed reach the same 54 of 60 pairs and omit 14 and 13 of the
 23 applying documents the archive handed over. The judged half parts by more
-than a wobble: 37 of 52 claims supported against 45 of 56, about nine points,
-against a same-arm re-judge that moves one to three claims. One sweep each, with a judge scoring a
+than a wobble: 39 of 52 claims supported against 49 of 56, with heading below
+fixed in all three judgings of the same claims, against a same-arm re-judge
+that moves two to four claims per round. One sweep each, with a judge scoring a
 model, is not enough to choose on, which is a different statement from the two
 being indistinguishable, and the first version of this section made the second.
 

@@ -320,7 +320,10 @@ timestamp, the spec, the prompt, the model and the case ids, and nothing in CI
 diffs it. The inputs it names can still be checked, and `--check-records` is
 the one to run before spending: it compares the spec, prompt, index, corpus,
 ground truth and judge a recording names against what is on disk, and says
-whether the arm is owed a fresh sweep or only a free `--rescore`.
+which of three remedies the arm is owed. A fresh sweep, when an input the runs
+depended on has moved. A `--rejudge`, one model call per claim against passages
+the record already holds, when the judge or the code that drives it has moved.
+Or a free `--rescore`, when only the deterministic scoring has.
 
 `--compare` on two judgement records refuses two arms that differ in more than
 one thing, refuses two records of the same arm, and says in the output that
@@ -420,9 +423,9 @@ kept, what was rejected and the latency accepted for it. The guidance arm is the
 decisive one: replacing rule 4 refuses 8 of 25 answerable cases against none and
 reaches 22 of 60 relevant pairs against 54, at half the latency. The chunker arm is a
 result nobody should choose on rather than a null one: the same reach and the same
-order of omissions, a judged half parting at 37 of 52 claims supported against 45
-of 56, which is about twice what re-judging the same claims against themselves
-moves and still not enough to decide with. Heading-aware is kept for its citations carrying the heading
+order of omissions, a judged half parting at 39 of 52 claims supported against 49
+of 56, an ordering that held in all three judgings of the same claims while its
+size moved by several points, and still not enough to decide with. Heading-aware is kept for its citations carrying the heading
 chain, which is a property and not a measured win.
 
 **The headline rate could not fire, and that is the result the arms share.**
