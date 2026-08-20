@@ -191,6 +191,25 @@ def start_adapter(index, port):
     return proc
 
 
+def check_corpus_pin(dataset):
+    """Refuse to measure ground truth judged against different documents.
+
+    Both modes need this and only one had it. --cross-check loaded the cases
+    directly, so it could write a checked-looking comparison from a dataset
+    whose judgements no longer describe the corpus, which is the failure the
+    refusal in the other mode exists to stop.
+    """
+    corpus = load_corpus()
+    got = fingerprint(corpus)
+    if got != dataset.get("corpus_fingerprint"):
+        raise SystemExit(
+            "corpus fingerprint does not match the dataset pin, so this "
+            "ground truth was judged against different documents. Run "
+            "python3 evals/validate.py first; figures recorded against an "
+            "unpinned corpus are not comparable to anything.")
+    return corpus, got
+
+
 def dataset_fingerprint(path):
     """The ground truth these figures were scored against, by content.
 
@@ -326,15 +345,7 @@ def run(config, stamp):
     with open(DATASET) as handle:
         dataset = yaml.safe_load(handle)
     cases = dataset["cases"]
-    corpus = load_corpus()
-
-    got = fingerprint(corpus)
-    if got != dataset.get("corpus_fingerprint"):
-        raise SystemExit(
-            "corpus fingerprint does not match the dataset pin, so this "
-            "ground truth was judged against different documents. Run "
-            "python3 evals/validate.py first; a baseline recorded against an "
-            "unpinned corpus is not comparable to anything.")
+    corpus, got = check_corpus_pin(dataset)
 
     with open(config["index"]) as handle:
         index = json.load(handle)
@@ -629,8 +640,10 @@ def cross_check(config):
     disagree are reported rather than chosen.
     """
     with open(DATASET) as handle:
-        cases = yaml.safe_load(handle)["cases"]
-    scored_cases = [c for c in cases if c["expect"].get("relevant")]
+        dataset = yaml.safe_load(handle)
+    check_corpus_pin(dataset)
+    scored_cases = [c for c in dataset["cases"]
+                    if c["expect"].get("relevant")]
 
     ranks, budget = {}, {}
     for entry in config["cross_check"]:
@@ -692,7 +705,8 @@ def cross_check(config):
             "moved": moved, "curve": curve, "disagree_at": disagree,
             "at_run_limit": {"limit": config["run_limit"], "hits": budget},
             "dataset_fingerprint": dataset_fingerprint(DATASET),
-            "corpus_fingerprint": fingerprint(load_corpus())}
+            "corpus_fingerprint": fingerprint(load_corpus()),
+            "rank_limit": RANK_LIMIT}
 
 
 def cross_markdown(result):
@@ -803,6 +817,11 @@ def compare(path_a, path_b):
              lambda r: r.get("surface", {}).get("floor_applied")),
             ("passage budget", "at_run_limit.limit",
              lambda r: r["at_run_limit"]["limit"]),
+            # A constant today, which is the argument for checking it: a
+            # constant that moves is the one nobody re-reads. Truncating the
+            # ranking moves both hit rate and mrr.
+            ("ranking limit", "surface.rank_limit",
+             lambda r: r.get("surface", {}).get("rank_limit")),
             ("k list", "k", lambda r: r["k"])):
         va, vb = get(a), get(b)
         if va != vb:
