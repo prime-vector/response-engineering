@@ -12,9 +12,10 @@ are the numbers Phase 5's chunker comparison turns on. The judgement metrics
 (false_precedent_rate, no_precedent_accuracy, false_refusal_rate,
 groundedness, divergence_quality) need a live `oa run` per case, an API key and
 the patches/ provider patch, and they score the agent on the queries it chose
-rather than on this dataset's canonical probe. They are not written yet. Every
-one of them appears in the results table as unmeasured rather than being left
-out, because a table that lists only what was measured reads as a full result.
+rather than on this dataset's canonical probe. They live in evals/judgement.py.
+Every one of them still appears in this mode's results table as unmeasured,
+with where it is measured instead, because a table that lists only what it
+measured reads as a full result.
 
 Stdlib plus PyYAML, same as evals/validate.py, which this borrows the corpus
 fingerprint from so a results file records the corpus it was measured against.
@@ -110,18 +111,29 @@ DEFAULTS = {
 # missing: "not measured" alone reads as an oversight.
 JUDGEMENT_METRICS = [
     ("false_precedent_rate",
-     "judgement mode: one live oa run per case, scored against expect.applicability"),
+     "evals/judgement.py: one live oa run per case, scored against "
+     "expect.applicability"),
     ("no_precedent_accuracy",
-     "judgement mode: {no_precedent} no-precedent cases, scored on no_applicable_precedent"),
+     "evals/judgement.py: {no_precedent} no-precedent cases, scored on "
+     "no_applicable_precedent"),
     ("false_refusal_rate",
-     "judgement mode: {answerable} answerable cases, scored on the same field"),
-    ("groundedness",
-     "judgement mode plus a judge prompt at temperature 0, which is not written"),
+     "evals/judgement.py: {answerable} answerable cases, scored on the same "
+     "field"),
+    ("groundedness_log",
+     "evals/judgement.py: read from the adapter's audit log, which retrieval "
+     "mode has no reason to consult because it issues the calls itself"),
+    ("groundedness_judge",
+     "evals/judgement.py plus the judge at temperature 0, prompt committed in "
+     "evals/judges/"),
     ("divergence_quality",
-     "judgement mode: {near_miss} near-miss cases, scored against expect.divergence_names"),
+     "evals/judgement.py: {near_miss} near-miss cases, scored against "
+     "expect.divergence_names"),
+    ("agent_reach",
+     "evals/judgement.py: retrieval across the queries the agent chose, which "
+     "this mode cannot see because it issues one canonical probe per case"),
     ("cost_per_recall_usd",
-     "judgement mode: no model runs in retrieval mode, so the cost is zero and "
-     "measures nothing"),
+     "unmeasured in either mode: no model runs here, and oa reports no token "
+     "usage there"),
 ]
 
 
@@ -150,7 +162,7 @@ def answering(port):
         return False
 
 
-def start_adapter(index, port):
+def start_adapter(index, port, log_path=None):
     """Start the surface, and prove it is the one we asked for.
 
     Two failures this closes, both of which produce numbers rather than an
@@ -162,6 +174,12 @@ def start_adapter(index, port):
     A passage id encodes the chunker name, so resolving one taken from the
     index file we intended proves which index is actually being served. That
     is the only check here that a leftover process cannot pass.
+
+    log_path captures the adapter's audit lines. Retrieval mode discards them:
+    it issues the calls itself and already knows what came back. Judgement
+    mode cannot, because the caller there is a model and its output claims
+    tool use it cannot prove, so the log is the only record of what the
+    surface actually returned to it.
     """
     if answering(port):
         raise SystemExit(
@@ -169,10 +187,15 @@ def start_adapter(index, port):
             f"from an adapter this run did not start are not figures about "
             f"{index}: stop it, or pass --port.")
 
+    sink = open(log_path, "w") if log_path else subprocess.DEVNULL
     proc = subprocess.Popen(
         [sys.executable, "mock/adapter.py", "--surface", "precedent_archive",
          "--port", str(port), "--index", index],
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        stdout=sink, stderr=subprocess.STDOUT if log_path else sink)
+    if log_path:
+        # The child holds its own descriptor from here; ours would otherwise
+        # stay open for the life of a sweep.
+        sink.close()
     for _ in range(50):
         if answering(port):
             break
@@ -544,8 +567,10 @@ def markdown(result):
         f"tells the agent to ask for breadth without naming a number, and no "
         f"demo passes one. So this is the surface measured under a fixed "
         f"budget, which is a real question about the retriever, and it is not "
-        f"an estimate of what the agent is handed. What the agent requests is "
-        f"recorded in `queries_issued` and belongs to judgement mode.",
+        f"an estimate of what the agent is handed. What the agent actually "
+        f"asks for is in the adapter's audit log, and judgement mode scores "
+        f"it there as `agent_reach`, because an output reporting its own "
+        f"queries is the agent's account of its own conduct.",
         "",
         f"**At the run limit of {result['at_run_limit']['limit']} passages: "
         f"{pct(result['at_run_limit']['precedent_hit_rate'])} "
@@ -604,8 +629,8 @@ def markdown(result):
         f"on the canonical probe ({pct(silence['rate'])}).",
         "",
         "This is the retrieval half of refusal and only that half. Whether "
-        "the agent refuses is `no_precedent_accuracy`, which needs judgement "
-        "mode. What is measured here is what the surface hands it.",
+        "the agent refuses is `no_precedent_accuracy`, which is measured in "
+        "judgement mode. What is measured here is what the surface hands it.",
     ]
     if silence["returning"]:
         for entry in silence["returning"]:
@@ -624,6 +649,13 @@ def markdown(result):
     ]
     for name, why in JUDGEMENT_METRICS:
         lines.append(f"| `{name}` | {why.format(**composition)} |")
+    lines += [
+        "",
+        "Every one of those is now written and lives in the other mode. They "
+        "stay listed here because this table would otherwise read as the "
+        "whole measurement: what the surface hands an agent is not what the "
+        "agent does with it.",
+    ]
 
     limits = [
         "- **Section-level citation is unmeasured, not mitigated.** Ground "
@@ -634,7 +666,9 @@ def markdown(result):
         "- **One query per case.** The spec tells the agent to issue several, "
         "so a case probing one axis of a multi-axis incident is counted here "
         "as missing what its other axis would reach. These numbers are a "
-        "floor on the surface, not an estimate of the agent.",
+        "floor on the surface, not an estimate of the agent. Judgement mode "
+        "measures the other thing, on the queries the agent chose, and the "
+        "two are not comparable: nothing truncates a rank there.",
         "- **This table is one index.** Whether a chunker changes retrieval "
         "is not visible from it at all, and a sentence here saying so would "
         "be regenerated identically whatever the other index did. "
@@ -643,7 +677,7 @@ def markdown(result):
 
     lines += [
         "",
-        f"{len(limits)} limits that survive judgement mode being written:",
+        f"{len(limits)} limits that judgement mode does not close:",
         "",
         *limits,
         "",
@@ -914,6 +948,16 @@ def compare(path_a, path_b):
     with open(path_b) as handle:
         b = json.load(handle)
 
+    modes = {a.get("mode"), b.get("mode")}
+    if modes == {"judgement"}:
+        return compare_judgement(path_a, a, path_b, b)
+    if len(modes) > 1:
+        print(f"FAIL  these are different modes ({a.get('mode')} and "
+              f"{b.get('mode')}). Retrieval measures the surface on one "
+              f"canonical query per case; judgement measures the agent on "
+              f"the queries it chose. Nothing lines up between them.")
+        return 1
+
     # Everything a delta silently absorbs if it moved between two runs. The
     # corpus was checked from the start; the rest were not, and each of them
     # produces a plausible number rather than an error.
@@ -999,6 +1043,218 @@ def compare(path_a, path_b):
     return 0
 
 
+# What must match before two judgement records can appear in one delta or one
+# published grid. One list, two callers: the grid used to check three of these
+# and --compare eleven, so CI could approve a table comparing records --compare
+# would refuse. Sol found that at the gate.
+JUDGEMENT_PINS = [
+    ("corpus", "corpus.fingerprint", lambda r: r["corpus"]["fingerprint"]),
+    ("ground truth", "dataset.fingerprint",
+     lambda r: r["dataset"]["fingerprint"]),
+    ("case set", "dataset.ids", lambda r: r["dataset"]["ids"]),
+    ("relevance floor", "surface.floor_applied",
+     lambda r: r["surface"]["floor_applied"]),
+    ("agent spec", "agent.spec_fingerprint",
+     lambda r: r["agent"]["spec_fingerprint"]),
+    ("agent model", "agent.model", lambda r: r["agent"]["model"]),
+    ("agent task", "agent.task", lambda r: r["agent"].get("task")),
+    # What ran the agent, by CLI version and by the content of the provider
+    # module the patch edits in place. Two installs reporting one version
+    # behave differently when only one is patched, and tool calling is the
+    # whole task. Records made before this was pinned carry None, which
+    # compares equal to each other and refuses against a pinned one.
+    ("agent runtime", "agent.runtime",
+     lambda r: (r["agent"].get("runtime") or {}).get("cli_version")),
+    ("provider module", "agent.runtime.provider_fingerprint",
+     lambda r: (r["agent"].get("runtime") or {}).get("provider_fingerprint")),
+    ("scorer", "scorer.fingerprint",
+     lambda r: (r.get("scorer") or {}).get("fingerprint")),
+    ("judge model", "judged.model",
+     lambda r: (r.get("judged") or {}).get("model")),
+    ("judge temperature", "judged.temperature",
+     lambda r: (r.get("judged") or {}).get("temperature")),
+    # Truncation decides whether a verdict is a judge error or a scored
+    # claim, so it moves a denominator without moving a prompt or a model.
+    ("judge token limit", "judged.max_tokens",
+     lambda r: (r.get("judged") or {}).get("max_tokens")),
+    ("judge scorer", "judged.scorer_fingerprint",
+     lambda r: (r.get("judged") or {}).get("scorer_fingerprint")),
+    ("groundedness judge prompt", "judged.prompts.groundedness.fingerprint",
+     lambda r: ((r.get("judged") or {}).get("prompts") or {})
+     .get("groundedness", {}).get("fingerprint")),
+    ("divergence judge prompt", "judged.prompts.divergence.fingerprint",
+     lambda r: ((r.get("judged") or {}).get("prompts") or {})
+     .get("divergence", {}).get("fingerprint")),
+]
+
+
+def judgement_index_mismatch(records):
+    """Two records naming one index that was not the same file.
+
+    Not a flat pin: the chunker arms name different indexes on purpose. What
+    cannot happen is two records naming the same path whose contents differ,
+    because then a delta credited to a prompt also contains a rebuilt index.
+    Sol found this at the gate: index_fingerprint was recorded and compared
+    only in retrieval mode.
+    """
+    by_path = {}
+    for record in records:
+        by_path.setdefault(record["index"], set()).add(
+            record.get("index_fingerprint"))
+    for path, fingerprints in by_path.items():
+        if len(fingerprints) > 1:
+            return path, sorted(str(f)[:16] for f in fingerprints)
+    return None
+
+
+def judgement_mismatch(records):
+    """The first pin two of these records disagree on, or None.
+
+    Returns (label, path, [(record label, value), ...]) so a caller can say
+    which records parted and on what, rather than that something did.
+    """
+    for label, path, get in JUDGEMENT_PINS:
+        seen = [(r.get("label"), get(r)) for r in records]
+        values = [v for _, v in seen]
+        if any(v != values[0] for v in values):
+            return label, path, seen
+    return None
+
+
+def compare_judgement(path_a, a, path_b, b):
+    """Two live sweeps, and what may legitimately differ between them.
+
+    The retrieval comparison refuses when an input moved because the delta
+    would be that input rather than retrieval. Here there is a second reason
+    to be strict: a judgement sweep is one sample of a stochastic system, so
+    a delta small enough to be the model having a different day must not be
+    dressed up as a result. This prints the deltas and says that plainly; it
+    does not test significance, and 38 cases would not support much of one.
+    """
+    for label, path, get in JUDGEMENT_PINS:
+        va, vb = get(a), get(b)
+        if va != vb:
+            print(f"FAIL  these sweeps used a different {label}, so the delta "
+                  f"is that changing and not the arm:")
+            print(f"        {path_a}  {path} = "
+                  f"{va if label != 'case set' else str(va)[:80]}")
+            print(f"        {path_b}  {path} = "
+                  f"{vb if label != 'case set' else str(vb)[:80]}")
+            return 1
+
+    clash = judgement_index_mismatch([a, b])
+    if clash:
+        path, fingerprints = clash
+        print(f"FAIL  both runs name {path} and the file differed between "
+              f"them: {', '.join(fingerprints)}. One index under one name, "
+              f"rebuilt underneath, so the delta contains a retrieval change "
+              f"as well as an arm change.")
+        return 1
+
+    changed = [name for name, get in (
+        ("index", lambda r: r["arm"]["index"]),
+        ("system prompt", lambda r: r["arm"]["system_prompt"]))
+        if get(a) != get(b)]
+    if len(changed) > 1:
+        print(f"FAIL  these arms differ in {' and '.join(changed)}. Two "
+              f"changes at once produce one delta that belongs to neither: "
+              f"record an arm that changes one of them.")
+        return 1
+    if not changed:
+        print(f"FAIL  these two arms are the same configuration, so the "
+              f"delta is the run-to-run variance of a live model rather "
+              f"than an experiment. That is a real number and this is not "
+              f"the tool that reports it.")
+        return 1
+
+    print(f"{a['label']} -> {b['label']}, {changed[0]} changed\n")
+    print(f"  {a['label']:<24} {a['arm'][changed[0].replace(' ', '_')]}")
+    print(f"  {b['label']:<24} {b['arm'][changed[0].replace(' ', '_')]}\n")
+
+    def show(name, block_a, block_b, lower_is_better=False,
+             denominator_is_an_outcome=False):
+        if not block_a or not block_b or block_a.get("value") is None \
+                or block_b.get("value") is None:
+            print(f"  {name:<22} {'-':>7}    {'-':>7}          not scored in "
+                  f"both runs")
+            return
+        delta = (block_b["value"] - block_a["value"]) * 100
+        # Some rates are scored over what the run itself produced. An arm that
+        # retrieved fewer documents that apply has fewer of them to omit, so
+        # its omission rate improves by doing less, and calling that better
+        # would be the fitting move in miniature. The judged rates are the
+        # same shape and were missed on the first pass: groundedness_judge is
+        # scored over claims offered, so making fewer and easier ones raises
+        # it, and divergence_quality is scored over near-miss precedents
+        # offered, so failing to offer the diverging record at all improves
+        # it. Grok found that on the second round of PR #17.
+        moved = (denominator_is_an_outcome
+                 and block_a["denominator"] != block_b["denominator"])
+        direction = ""
+        if abs(delta) >= 0.05 and not moved:
+            better = (delta < 0) if lower_is_better else (delta > 0)
+            direction = "  better" if better else "  worse"
+        elif moved:
+            direction = "  denominators differ"
+        print(f"  {name:<22} {pct(block_a['value']):>7} -> "
+              f"{pct(block_b['value']):>7}  {delta:+6.1f}pp{direction}"
+              f"   ({block_a['numerator']}/{block_a['denominator']} -> "
+              f"{block_b['numerator']}/{block_b['denominator']})")
+
+    da, db = a["deterministic"], b["deterministic"]
+    print("  Measured by code")
+    show("false_precedent_rate", da["false_precedent_rate"],
+         db["false_precedent_rate"], lower_is_better=True)
+    show("applies_omission_rate", da.get("applies_omission_rate"),
+         db.get("applies_omission_rate"), lower_is_better=True,
+         denominator_is_an_outcome=True)
+    show("no_precedent_accuracy", da["no_precedent_accuracy"],
+         db["no_precedent_accuracy"])
+    show("false_refusal_rate", da["false_refusal_rate"],
+         db["false_refusal_rate"], lower_is_better=True)
+    show("groundedness_log", da["groundedness_log"], db["groundedness_log"])
+    show("agent_reach", da["agent_reach"], db["agent_reach"])
+
+    ja, jb = a.get("judged"), b.get("judged")
+    print("\n  Judged by a model")
+    if ja and jb and ja["model"] != jb["model"]:
+        print(f"        judged by different models ({ja['model']} and "
+              f"{jb['model']}), so these two rows are not a delta")
+    else:
+        show("groundedness_judge", (ja or {}).get("groundedness_judge"),
+             (jb or {}).get("groundedness_judge"),
+             denominator_is_an_outcome=True)
+        show("divergence_quality", (ja or {}).get("divergence_quality"),
+             (jb or {}).get("divergence_quality"),
+             denominator_is_an_outcome=True)
+        print("        Both judged rates are scored over what the run "
+              "offered: fewer claims, or a diverging record never offered, "
+              "raise them. Read the counts, not the percentage.")
+
+    print(f"\n  failures               "
+          f"{da['failures']['total']}/{da['cases']} -> "
+          f"{db['failures']['total']}/{db['cases']}")
+    for key in ("p50", "p95"):
+        print(f"  {key:<22} {da['latency_ms'][key] / 1000:7.1f}s -> "
+              f"{db['latency_ms'][key] / 1000:7.1f}s")
+
+    words_a = da.get("applicability_offered") or {}
+    words_b = db.get("applicability_offered") or {}
+    if words_a or words_b:
+        print(f"\n  applicability offered   "
+              f"{words_a or 'none'}  ->  {words_b or 'none'}")
+        if not words_a.get("applies") and not words_b.get("applies"):
+            print("        Neither run used `applies`, so the false "
+                  "precedent rate above is zero over a word the agent never "
+                  "reached for. Read applies_omission_rate instead.")
+
+    print(f"\n  One sweep each, {len(a['dataset']['ids'])} cases, a model at "
+          f"temperature {a['agent']['temperature']} on both sides. A few "
+          f"points either way is what the same arm does twice; read the "
+          f"named failures in each table, not the third decimal.")
+    return 0
+
+
 def load_config(path, overrides):
     config = dict(DEFAULTS)
     if path:
@@ -1031,18 +1287,34 @@ def main():
                              "Writes nothing, so CI can run it.")
     parser.add_argument("--mode", default="retrieval",
                         choices=["retrieval", "judgement"])
-    args = parser.parse_args()
+    # Everything after -- goes to evals/judgement.py, which has flags this
+    # parser has no business knowing about (--arm, --cases, --no-judge,
+    # --dry-run). Passing them through beats mirroring them here and letting
+    # the two drift.
+    argv = sys.argv[1:]
+    judgement_extras = []
+    if "--" in argv:
+        cut = argv.index("--")
+        argv, judgement_extras = argv[:cut], argv[cut + 1:]
+    args = parser.parse_args(argv)
 
     if args.compare:
         return compare(*args.compare)
 
     if args.mode == "judgement":
-        print("judgement mode is not implemented. It needs a live oa run per "
-              "case, an API key and the patches/ provider patch, and it "
-              "scores the agent on the queries it recorded in "
-              "search_coverage.queries_issued rather than on this dataset's "
-              "canonical probe. evals/README.md holds the design.")
-        return 2
+        # Its own module, and its own config: judgement mode needs a live oa
+        # run per case, an API key and the patches/ provider patch, and it
+        # produces a record of one run rather than a regenerable artefact.
+        # Nothing it writes is checked for drift, which is the opposite of
+        # every rule this file is built on.
+        import judgement
+        argv = ["--config", args.config or "evals/config.judgement.yaml"]
+        if args.label:
+            argv += ["--arm", args.label]
+        if args.stamp:
+            argv += ["--stamp", args.stamp]
+        sys.argv = [judgement.__file__] + argv + judgement_extras
+        return judgement.main()
 
     config = load_config(args.config, {"index": args.index,
                                        "chunker": args.chunker,

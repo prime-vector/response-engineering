@@ -74,14 +74,18 @@ The fifth agent. Owns a retrieval surface over prior incident records and runboo
 - [x] `.agents/precedent-analyst.yaml` validates against OAS 1.6.0, runs standalone
 - [x] `no_applicable_precedent` path and grounding guard both exercised
 - [x] `demos/governance.sh grounding` passes fire and reject
-- [ ] Evals baseline recorded. Retrieval half done: `evals/runner.py`,
+- [x] Evals baseline recorded, both halves. Retrieval: `evals/runner.py`,
       `evals/config.yaml`, the fixed-chunker baseline in `evals/results/`, and
-      a `--check` in CI. The judgement half needs a live `oa run` per case
-      and is listed as unmeasured rather than left out
-- [ ] Measured improvement documented with before and after
+      a `--check` in CI. Judgement: `evals/judgement.py`, one live `oa run`
+      per case, the deterministic rates read off the typed output and the
+      adapter log, and `groundedness_judge` and `divergence_quality` judged at
+      temperature 0 with the prompts committed in `evals/judges/`
+- [x] Measured improvement documented with before and after. Three arms
+      recorded, both comparisons run, and the README states what was kept,
+      what was rejected and the latency accepted for it
 - [ ] `investigate.sh` composes three acts with recall in act one, typed precedent entering the board as supporting and never deciding evidence
 
-**Done when:** a board cites precedent by `passage_id`, convergence still blocks on outstanding deciding evidence, and the README carries a results table the runner can regenerate.
+**Done when:** a board cites precedent by `passage_id`, convergence still blocks on outstanding deciding evidence, and the README carries a results table generated from the records rather than typed. The retrieval half regenerates from the corpus and the dataset; the judgement half is a grid derived from three committed run records, because a live sweep does not reproduce and a promise that it does is one the artefacts cannot keep.
 
 #### Where this is up to
 
@@ -117,8 +121,8 @@ Phase 3 is done, and both halves of it are live runs rather than surface behavio
 
 Two things the reject path settled. A soft stripped prompt does not force the failure: told only that it need not look things up, the model called the archive anyway, issued verbose queries, got nothing above the floor and correctly refused, and the run exited zero with no precedent to be ungrounded. The prompt has to name the precedent it is asserting from recall, exactly as the guard-stripped prompt names the party. And the override replaces the whole system prompt, so the retrieval guidance goes with it: a stripped run is not a plain run minus one rule.
 
-Phase 4 is in progress. The dataset and the retrieval baseline are written;
-the judgement metrics are not.
+Phase 4 is done, both halves. The dataset and the retrieval baseline came
+first; the judgement metrics followed and are described after them.
 
 `evals/dataset.yaml` holds 38 cases against the 17-document corpus: 13 where no
 applicable precedent exists, 7 near misses, and the rest split across precedent
@@ -139,7 +143,8 @@ Two things the dataset settled, both of which change what the spec asked for:
   from its `Gaps`, and that cost is unmeasured rather than mitigated: adapter-log
   groundedness proves only that a cited passage was in the returned set, so a
   citation of `Gaps` passes whenever `Gaps` was a hit, and the `groundedness` in
-  the metrics table is a separate LLM-judge check that is not written yet. It
+  the metrics table is a separate LLM-judge check, written since as
+  `groundedness_judge` and closing neither gap. It
   belongs in the results table as a stated limit.
 - **The dataset is hand-authored and has no generator.** Every other artefact
   derived from the corpus has a `--check` that fails on drift, so generating this
@@ -201,19 +206,20 @@ a passage id from it. `--compare` refuses two runs that differ in corpus, ground
 truth, relevance floor, passage budget or k list, because each of those deltas
 is that input moving rather than retrieval improving.
 
-Judgement mode is designed and not written. `false_precedent_rate`,
+Judgement mode was designed here and is written, below. What this section got
+right is why it had to be separate: `false_precedent_rate`,
 `no_precedent_accuracy`, `false_refusal_rate` and `divergence_quality` each need
 one live `oa run` per case, an API key and the `patches/` provider patch, and
-they have to score the agent on the queries it recorded in
-`search_coverage.queries_issued` rather than on the dataset's canonical probe:
-case `a04`'s probe is the reported symptom used whole, which clears the floor
-zero times, so an agent that copies it refuses where the archive held precedent
-and that refusal is a real false refusal. `groundedness` needs a judge prompt at
-temperature 0 that is not designed, and writing it would not close the
-section-level gap: document-level truth cannot tell a citation of `Resolution`
-from one of `Gaps`, and neither can the adapter log. Every one of them appears
-in the results table as unmeasured with what it needs, rather than being left
-out, because a table listing only what was measured reads as a complete one.
+they score the agent on the queries it issued rather than on the dataset's
+canonical probe. Case `a04` is why that distinction matters: its probe is the
+reported symptom used whole, which clears the floor zero times, so an agent that
+copied it would refuse where the archive held precedent, and that refusal would
+be a real false refusal. What this section got wrong is where the queries come
+from. They are read from the adapter's log, not from
+`search_coverage.queries_issued`, which is the agent's account of its own
+conduct. The retrieval table still lists every one of these as unmeasured, with
+where it is measured instead, because a table listing only what it measured
+reads as a complete one.
 
 Grok's review of the dataset (PR #14) found the first version of that figure
 inflated. Relevance had been scoped to what each case was testing rather than to
@@ -223,6 +229,166 @@ which documents mattered. Relevance is now a property of (`as_of`, `symptom`,
 `evidence`, `missing_evidence`), the judgements are recorded in
 `evals/RELEVANCE.md`, and the figure moved from 36/41 to 36/60 across five rounds of review, with no
 change to the retriever. The bookkeeping moved, not the retrieval.
+
+`evals/judgement.py` is the other half, and it measures the agent rather than
+the surface: one live `oa run` of `recall` per case, the arm's index, the arm's
+system prompt. The runs are not regenerable, so no CI job can diff a fresh
+sweep against a committed one, and the record carries a timestamp, the spec,
+the prompt, the model and the case ids instead. Everything derived from those
+records is diffed: the per-arm tables, the Phase 5 grid and the copies of it
+injected into the two documents that publish it.
+
+Two kinds of number, never in one table. Deterministic:
+`false_precedent_rate`, `no_precedent_accuracy`, `false_refusal_rate`,
+`groundedness_log` and `agent_reach`, every one of them a consequence of the
+typed output, the adapter's audit log and the ground truth. Judged, by a
+different and more capable model at temperature 0 with the prompts committed in
+`evals/judges/`: `groundedness_judge` and `divergence_quality`. Putting a
+judged figure beside a deterministic one makes it read as the same kind of
+fact.
+
+`agent_reach` is the figure neither mode had. Retrieval mode issues one
+canonical probe per case, which the eval documents are careful to call a floor
+on the surface rather than an estimate of the agent. This counts relevant
+documents the archive actually returned across the queries the agent chose, so
+the one-query limit does not apply to it, and it is not comparable to
+`precedent_hit_rate@k`: no rank truncates it.
+
+**The identity rule was checkable only from the agent's own report, and now is
+not.** `queries_must_not_contain` is about what the agent asked the archive,
+and the only record of that was `search_coverage.queries_issued`, which is the
+agent's account of its own conduct. The archive now logs `args <tool>
+<arguments>` beside every call. Caller text, never archive text. On the sweep
+below, 182 searches were issued and 182 reported, no entity id in any of them,
+and both halves of that are now measurements rather than one measurement and
+one assurance.
+
+**The shipped configuration, recorded.** Heading-aware index, the spec's own
+prompt, 38 cases, `claude-sonnet-4-6` at temperature 0.2, zero runs rejected or
+unparseable. `false_precedent_rate` 0 of 52 claims, `no_precedent_accuracy` 13
+of 13, `false_refusal_rate` 0 of 25, `groundedness_log` 138 of 138 cited
+passage ids in the set the surface returned, `agent_reach` 54 of 60 pairs, p50
+26.9s and p95 52.8s per recall. The full table is
+`evals/results/judgement-heading.md`.
+
+Read the two things the deterministic rates cannot say by themselves. Ten of
+the 52 claims are offered as `partial` where the truth is `applies`, so the
+zero false precedent rate is a partly cautious agent rather than a calibrated
+one, and the table says so beside it. And `groundedness_judge` is 73.1%: 38 of
+52 claims are supported by the passages they cite, and most of the other 14 are
+the same move, an absence asserted from silence. "INC-2411 shows no audit
+daemon" is a claim about a document from passages that simply do not mention
+one. It is a divergence in the shape the prompt asks for, resting on something
+the archive never said. The log check cannot see this at all: every one of
+those citations is a passage the surface really returned.
+
+**Two cases cited a draft, and the interesting part is how.** `d01` cited
+`DRAFT-2508` and `g01` cited `DRAFT-2601`, both as `applicability: partial`,
+`confidence: speculative`, with a `divergence` that says in words that the
+document is unsubmitted, cannot be the basis of a precedent claim, and is
+surfaced only to flag that it exists. That is an agent trying to be transparent
+and having nowhere to put it: `precedents[]` has no entry meaning retrieved and
+rejected, so the choice is to drop the draft, which makes the trap invisible,
+or to type it as precedent and carry the caveat in prose. Prose is exactly
+where this project says a caveat must not live. It is a gap in the output
+contract rather than a tuning problem, it is on the board rather than fixed
+here, and it was found by measuring, which is the argument for judgement mode
+in one line.
+
+Phase 5 is done. Three arms recorded, one live sweep each, 38 cases, nothing
+rejected or unparseable in any of them. `--compare` refuses two records that
+differ in more than one thing, and says in its own output that one sweep is one
+sample of a stochastic system.
+
+**The rule 4 paragraph is kept, and it is the one that mattered.** Replacing it
+with a single search carrying the whole reported symptom costs 8 false refusals
+in 25 answerable cases, against none, and drops reach from 54 of 60 relevant
+pairs to 22. Every case in the composite scenario itself refuses: `a01` to
+`a04`, the incident this repo is built around, all four report no applicable
+precedent. Median one search per case against five, 43 searches against 182. It
+is twice as fast, p95 27.1s against 52.8s. Half the latency for a third of the
+reach.
+
+That is the Phase 2 dilution measurement reaching the agent's answers. It was a
+property of the surface then, 79 of 82 passages scoring above zero and 0
+clearing the floor; it is now a false refusal rate.
+
+**The arm measures the paragraph, not query count, and the first version of
+this section claimed the second.** Rule 4 carries two instructions and the
+replacement drops both: query more than once, and ask for breadth because the
+surface caps how many passages one document contributes. The sweeps show the
+second doing real work. The shipped arm passed `limit: 8` on 157 of its 182
+searches; the alternative passed no limit at all on 41 of its 43 and took the
+surface default of five. So the reach collapse mixes fewer queries with a
+smaller passage budget. `--compare` cannot catch this: a system prompt is one
+knob to it, and two instructions inside one paragraph are one knob to
+`--check-prompts` as well. Grok found it in review of PR #17. Separating them
+needs a fourth arm that keeps the breadth instruction and changes only the
+repeat instruction; it is not run.
+
+**The three records do not pin the runtime that produced them.** They were made
+before the CLI version and the provider module were recorded, so "one install,
+one session, one input changed per arm" is an assertion by the author rather
+than something the artefact establishes. `--check-records` reports it per arm
+and calls for a fresh sweep, which is the only remedy. The provider patch is
+evidenced by the runs themselves, because an unpatched install fails the first
+tool call and these made 388 successful ones; the CLI version is not.
+
+**The chunker is not choosable off these numbers, and saying so is the result.**
+Heading-aware and fixed reach the same 54 of 60 pairs and omit 14 and 13 of the
+23 applying documents the archive handed over. The judged half parts by more
+than a wobble: 38 of 52 claims supported against 48 of 56, with heading below
+fixed in all four judgings. Each round judged both arms with the same code,
+prompts and model, so the ordering rests on four matched comparisons; the
+rounds are not equivalent to each other, so the two to four claims an arm moves
+between them is not a clean judge-variance figure and is not published as one. One sweep each, with a judge scoring a
+model, is not enough to choose on, which is a different statement from the two
+being indistinguishable, and the first version of this section made the second.
+
+`d01` is where they differ deterministically, and not symmetrically. Both
+indexes returned the covering procedure. Under heading-aware the agent offered
+only the barred draft, as `partial`, and cited the procedure not at all; under
+fixed it refused the case outright. Two different failures. Until
+`applies_omission_rate` existed, neither appeared in a headline rate: the first
+looked like a clean answer and the second like a clean refusal.
+
+Heading-aware stays, for something no metric here scores. Its citations carry
+the heading chain, `INC-2411: ... > Resolution`; fixed chunks carry the
+document title alone, because there is no heading to carry. That is the part
+that makes a citation checkable in five seconds. It is a property, and it is
+recorded as a property rather than dressed up as a measured win.
+
+**`groundedness_judge` is higher in both alternatives, and only one of them has
+an explanation.** The single-query arm made 22 claims against 52, and the
+failure the judge catches is a divergence asserting an absence the passages
+never state, so there is more of it where there is more divergence text. The
+fixed arm made 56, more than the shipped arm, and still had more supported.
+Why is not established. The first version of this section said "they make fewer
+claims", which is false for the arm that makes more, and explaining a result
+away with a sentence that does not apply to it is worse than leaving it
+unexplained.
+
+**A zero false precedent rate was the wrong headline.** Across all three sweeps
+the agent offered `partial` 113 times and `superseded` 17 times and `applies`
+not once, so the rate could not fire. `applies_omission_rate` is the row that
+catches what it cannot: 14 of 23 documents the ground truth says apply here,
+returned to the agent by the archive and never offered as precedent at all,
+mostly the covering runbook procedures. Nothing overclaimed, and the responder
+still does not get the thing that applies. Every other rate is blind to it,
+`agent_reach` included, because the archive did return them. Grok found the
+instance, `d01`; the class is 14 pairs under heading-aware and 13 under fixed.
+
+**The second experiment is no longer the reranker, and the reason is written
+down rather than quietly dropped.** `docs/precedent-analyst.md` named "hybrid
+with versus without the reranker", and there is none in this repo to switch
+off: the mock ranks by term overlap and the runner refuses a config that
+declares one. A local cross-encoder would put a model dependency inside a
+directory whose retrieval half deliberately runs on stdlib and PyYAML. The
+retrieval guidance is the configuration this project actually decided, on a
+measurement, so it is the one worth testing. Its arm's prompt is derived from
+the spec with that one paragraph replaced, and CI fails when the spec moves
+under it: an override replaces the whole system prompt, so a hand-maintained
+one drifts into being a second prompt and the delta then belongs to nothing.
 
 ---
 

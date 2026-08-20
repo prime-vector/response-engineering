@@ -7,3 +7,8 @@ CLAUDE.local.md
 # that drives them, and a committed cache is a stale copy of a generator.
 __pycache__/
 *.pyc
+
+# The adapter's audit log from a judgement sweep. Its contents are already in
+# the run record, by id and count, and the log itself is per run rather than
+# per artefact.
+evals/results/.logs/

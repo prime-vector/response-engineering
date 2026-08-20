@@ -240,8 +240,11 @@ retrieval getting better. Ground truth is `source_uri`; the cost is that documen
 truth cannot tell a citation of the right document's `Resolution` from its `Gaps`.
 That cost is unmeasured rather than mitigated. Adapter-log groundedness proves only
 that a cited passage was in the returned set, so a citation of `Gaps` passes whenever
-`Gaps` was a hit, and the `groundedness` in the metrics table below is a separate
-LLM-judge check. Neither is written yet, and the limit belongs in the results table.
+`Gaps` was a hit, and `groundedness_judge` in the metrics table below is a separate
+LLM-judge check. Both are written, and neither closes this gap: the judge is handed
+the passages a claim cites and asked whether they support it, which says nothing
+about whether a different section was the one to cite. The limit belongs in the
+results table and is in it.
 
 The dataset is hand-authored and has no generator, because ground truth generated
 from the retriever measures only that the retriever agrees with itself. It is made
@@ -258,14 +261,31 @@ never counted as a miss. The judgements are recorded in `evals/RELEVANCE.md`.
 
 | Metric | Definition | Why it is here |
 |---|---|---|
-| `false_precedent_rate` | precedents offered as `applies` where truth is `partial`, `superseded` or none ÷ total | the headline; this is the anchoring failure |
+| `false_precedent_rate` | precedents offered as `applies` where truth is `partial`, `superseded` or none ÷ total | the anchoring failure, when it is claimed |
+| `applies_omission_rate` | documents whose truth is `applies`, which the surface returned to the agent, and on which no precedent was offered ÷ those documents | the anchoring failure's quiet twin, and the reason the rate above cannot be read alone: it can only fire on a claim that was made |
 | `no_precedent_accuracy` | correct `no_applicable_precedent` ÷ total novel | refusal is a feature |
 | `false_refusal_rate` | refusals where a precedent existed ÷ total answerable | the cost of the above |
 | `precedent_hit_rate@k` | expected document in top-k retrieved | retrieval quality proper |
 | `mrr@k` | mean reciprocal rank of first expected document | |
-| `groundedness` | fraction of precedent claims traceable to a cited passage, judged at temperature 0 with the judge prompt committed | |
+| `groundedness_log` | cited `passage_id`s that were in the set the adapter returned, read from the audit log | a citation that was never returned is invented |
+| `groundedness_judge` | precedent claims whose cited passages support what the claim says, judged at temperature 0 with the judge prompt committed | the log check cannot ask this |
+| `agent_reach` | relevant documents the archive returned across the queries the agent chose | retrieval measured on the agent's queries rather than the canonical probe |
 | `divergence_quality` | near-miss cases where `divergence` names the actual distinguishing factor | the near-miss guard, measured |
-| `p50` / `p95_latency_ms`, `cost_per_recall_usd` | per stage and end to end | |
+| `p50` / `p95_latency_ms` | per stage and end to end | |
+| `cost_per_recall_usd` | unmeasured: `oa` reports no token usage, so this would be a price list times an estimate. The judge's own usage is recorded, because the API returns it | |
+
+`false_precedent_rate` is scored over claims and can be zero for a reason that
+is not calibration: on all three Phase 5 sweeps the agent never used `applies` at
+all, offering `partial` or `superseded` on every claim. The judgement tables print
+the applicability distribution beside the rate for that reason, and
+`applies_omission_rate` is the row that catches what it cannot.
+
+Everything above except `groundedness_judge` and `divergence_quality` is
+deterministic: it follows from the typed output, the adapter's audit log and the
+ground truth, and anyone can recheck it from the JSON record. Those two are a
+model's opinion of a model. They are reported in a separate table, never beside
+the deterministic ones, because a judged number in a deterministic table reads as
+the same kind of fact.
 
 ### Runner
 
@@ -279,8 +299,35 @@ Writes timestamped JSON plus `evals/results/latest.md` as a table ready for the 
 Written, for retrieval. `--check` regenerates the table and fails if it has drifted,
 which is why the table carries no timestamp and no latency figure: it is a function
 of the dataset, the corpus and the config, and CI treats it like any other generated
-artefact. Judgement mode exits with what it would need rather than reporting a partial
-table under a whole name.
+artefact. Its table still lists every judgement metric as unmeasured, with where each
+one is measured instead, because a table listing only what it measured reads as the
+whole result.
+
+Judgement mode is written and lives in `evals/judgement.py`:
+
+```bash
+python3 evals/judgement.py --list-arms
+python3 evals/judgement.py --dry-run                 # spends nothing
+python3 evals/judgement.py --cases a01,b01,e01       # a cheap smoke run
+python3 evals/judgement.py --arm judgement-heading   # a full sweep, live
+python3 evals/judgement.py --check-prompts           # CI: derived arm prompts
+python3 evals/judgement.py --check-records          # is a sweep owed
+```
+
+One live `oa run` per case, an API key and the provider patch. Its output is a
+record of one run rather than a regenerable artefact, so it carries a
+timestamp, the spec, the prompt, the model and the case ids, and nothing in CI
+diffs it. The inputs it names can still be checked, and `--check-records` is
+the one to run before spending: it compares the spec, prompt, index, corpus,
+ground truth and judge a recording names against what is on disk, and says
+which of three remedies the arm is owed. A fresh sweep, when an input the runs
+depended on has moved. A `--rejudge`, one model call per claim against passages
+the record already holds, when the judge or the code that drives it has moved.
+Or a free `--rescore`, when only the deterministic scoring has.
+
+`--compare` on two judgement records refuses two arms that differ in more than
+one thing, refuses two records of the same arm, and says in the output that
+one sweep is one sample of a stochastic system.
 
 **Two hit rates, and the second is not a footnote.** `precedent_hit_rate@k` ranks
 documents with nothing truncating, which is a property of the ranking alone.
@@ -332,19 +379,70 @@ grounding-stripped producer is rejected by the schema. Done, as
 **Phase 4, Evals baseline.** Dataset written, metrics implemented, baseline recorded
 with the fixed-size chunker and no reranker.
 *Done when:* `latest.md` holds a complete baseline table.
-Done for retrieval, open for judgement. The dataset, its integrity check, the runner,
-the retrieval metrics and the fixed-chunker baseline are all in, and CI fails if the
-table drifts off the corpus or the dataset. `false_precedent_rate`,
-`no_precedent_accuracy`, `false_refusal_rate` and `divergence_quality` need one live
-`oa run` per case and are listed in the table as unmeasured with what each needs.
-`groundedness` needs a judge prompt at temperature 0 that is not designed, and it
-would not close the section-level gap either way.
+Done. The dataset, its integrity check, the runner, the retrieval metrics and the
+fixed-chunker baseline went in first, with CI failing if the table drifts off the
+corpus or the dataset. The judgement metrics followed: `false_precedent_rate`,
+`no_precedent_accuracy`, `false_refusal_rate` and `groundedness_log` are read off the
+typed output and the adapter's audit log, and `groundedness_judge` and
+`divergence_quality` are judged at temperature 0 with the prompts committed in
+`evals/judges/`. Neither groundedness check closes the section-level gap, and both
+tables say so.
 
 **Phase 5, Measured improvement.** At least two experiments:
-heading-aware versus fixed chunking, and hybrid with versus without the reranker.
+heading-aware versus fixed chunking, and the retrieval guidance the spec's rule 4
+fixes versus one verbose query.
 *Done when:* `--compare` shows the delta on `false_precedent_rate`,
-`precedent_hit_rate@5`, `groundedness` and `p95_latency_ms`, and the README states what
+`precedent_hit_rate@5`, groundedness and `p95_latency_ms`, and the README states what
 you kept, what you rejected, and what latency you accepted for it.
+
+**The second experiment used to say "hybrid with versus without the reranker", and
+there is no reranker in this repo to switch off.** Section 4 describes one for a real
+adapter; the mock ranks by term overlap and takes none, and `evals/runner.py` now
+refuses a config declaring one rather than recording a configuration nothing produced.
+A local cross-encoder would also put a model dependency inside a directory whose
+retrieval half deliberately runs on stdlib and PyYAML. The retrieval guidance is the
+configuration this project actually decided, on a measurement, so it is the one worth
+testing: at the bridge bound the reported symptom used whole scores 79 of 82 passages
+above zero and clears the floor 0 times, while the signature type alone scores 54 and
+clears 35. The arm is the shipped system prompt with that paragraph replaced by the
+instruction someone would plausibly have written without the measurement, derived from
+the spec so the two differ in that paragraph and nothing else.
+
+**The paragraph is not one instruction, and the arm measures the paragraph.** Rule 4
+says to query more than once *and* to ask for enough breadth, because the surface caps
+how many passages a single document contributes. The replacement drops both, and the
+records show the second doing real work: the shipped arm passed `limit: 8` on 157 of
+its 182 searches, the alternative passed no limit at all on 41 of its 43 and took the
+surface default of five. So the delta belongs to the paragraph and not to query count
+inside it. Neither `--compare` nor `--check-prompts` can see this: one paragraph is one
+knob to both. Separating them needs a fourth arm that keeps the breadth instruction,
+and it is not run.
+
+Done. Three arms recorded, both comparisons run, and the README carries what was
+kept, what was rejected and the latency accepted for it. The guidance arm is the
+decisive one: replacing rule 4 refuses 8 of 25 answerable cases against none and
+reaches 22 of 60 relevant pairs against 54, at half the latency. The chunker arm is a
+result nobody should choose on rather than a null one: the same reach and the same
+order of omissions, a judged half parting at 38 of 52 claims supported against 48
+of 56, an ordering that held in all four judgings, each of which judged both arms
+with the same code and prompts, while its size moved by several points between
+rounds that are not equivalent to each other, and still not enough to decide
+with. Heading-aware is kept for its citations carrying the heading
+chain, which is a property and not a measured win.
+
+**The headline rate could not fire, and that is the result the arms share.**
+`false_precedent_rate` is 0 in all three, and `applies` appears in none of the 130
+claims. `applies_omission_rate` is what catches the failure instead: 14 of 23
+documents the ground truth says apply here, returned to the agent and never offered,
+mostly the covering runbook procedures. It does not catch the other shape, a barred or
+unrelated document offered as `partial`, which is how the anchoring failure actually
+presented on `d01` and `g01`. Nothing scores that yet.
+
+Read the deltas across both modes, because neither mode can produce all four numbers.
+`precedent_hit_rate@5` is retrieval mode and a property of the surface;
+`false_precedent_rate`, both groundedness figures and the agent's `p95` are judgement
+mode. `agent_reach` is the bridge between them: retrieval on the queries the agent
+chose rather than on the dataset's canonical probe.
 
 **Phase 6, Composition.** `demos/investigate.sh` stays three acts: recall runs
 alongside detect, and its typed output enters the commander's input as `precedent`
@@ -381,7 +479,12 @@ Then the results table, with the before and after from Phase 5.
 ## 10. Guardrails
 
 - Public documentation and synthetic records only. Never client-derived material.
-- Every number in the README regenerable by the runner.
+- Every retrieval number in the README regenerable by the runner, and checked in CI.
+  The judgement numbers are not: they are records of one live run, a fresh sweep of the
+  same arm gives different figures, and each record carries the timestamp, spec, prompt,
+  model and case ids that produced it. `--rescore` recomputes the deterministic half
+  from a stored record and prints what moved. A guardrail promising regeneration for
+  those would be one the artefacts cannot keep.
 - No question, passage or answer text in span attributes if tracing is added; correlate
   by id and log separately, so the observability story survives a privacy review.
 - Prefer the honest measurement over the impressive one. The method is the artefact.
