@@ -424,8 +424,10 @@ decisive one: replacing rule 4 refuses 8 of 25 answerable cases against none and
 reaches 22 of 60 relevant pairs against 54, at half the latency. The chunker arm is a
 result nobody should choose on rather than a null one: the same reach and the same
 order of omissions, a judged half parting at 38 of 52 claims supported against 48
-of 56, an ordering that held in all four judgings of the same claims while its
-size moved by several points, and still not enough to decide with. Heading-aware is kept for its citations carrying the heading
+of 56, an ordering that held in all four judgings, each of which judged both arms
+with the same code and prompts, while its size moved by several points between
+rounds that are not equivalent to each other, and still not enough to decide
+with. Heading-aware is kept for its citations carrying the heading
 chain, which is a property and not a measured win.
 
 **The headline rate could not fire, and that is the result the arms share.**

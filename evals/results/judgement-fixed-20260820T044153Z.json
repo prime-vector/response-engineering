@@ -76,7 +76,7 @@
   },
   "scorer": {
     "path": "evals/judgement.py",
-    "fingerprint": "a498641017c6f39754f4810f12757e8d3b26259af78845739655cad5ca59ad7a",
+    "fingerprint": "3f03cb27857ef1616c89a538940c6acec36ace487a7366591146f5725b39eea6",
     "scope": "the deterministic figures. The judged half carries its own fingerprint under judged."
   },
   "deterministic": {
@@ -10317,7 +10317,7 @@
       }
     }
   ],
-  "rescored_at": "2026-08-20T11:13:50Z",
+  "rescored_at": "2026-08-20T11:30:29Z",
   "rejudged_at": "2026-08-20T11:13:50Z",
   "judgings": [
     {

@@ -338,8 +338,10 @@ tool call and these made 388 successful ones; the CLI version is not.
 Heading-aware and fixed reach the same 54 of 60 pairs and omit 14 and 13 of the
 23 applying documents the archive handed over. The judged half parts by more
 than a wobble: 38 of 52 claims supported against 48 of 56, with heading below
-fixed in all four judgings of the same claims, against a same-arm re-judge
-that moves two to four claims per round. One sweep each, with a judge scoring a
+fixed in all four judgings. Each round judged both arms with the same code,
+prompts and model, so the ordering rests on four matched comparisons; the
+rounds are not equivalent to each other, so the two to four claims an arm moves
+between them is not a clean judge-variance figure and is not published as one. One sweep each, with a judge scoring a
 model, is not enough to choose on, which is a different statement from the two
 being indistinguishable, and the first version of this section made the second.
 

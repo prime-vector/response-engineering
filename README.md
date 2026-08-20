@@ -264,10 +264,12 @@ prompt as one knob.
 **Rejected: reading the chunker off these numbers.** Heading-aware and
 fixed-size chunking reach the same 54 of 60 pairs and omit 14 and 13 of 23
 applying documents. They part on the judged half, 38 of 52 claims supported
-against 48 of 56, and heading came out below fixed in all four judgings of the
-same claims. So the gap is repeatable; its size is not, because re-judging
-moves each arm by two to four claims. Not nothing, and not enough to choose a
-chunker on. Heading-aware is kept for something no metric here scores: its
+against 48 of 56, and heading came out below fixed in all four judgings, each
+of which judged both arms with the same code, prompts and model. So the
+ordering is repeatable across four matched comparisons. Its size is not: the
+arms move by two to four claims between rounds, and those rounds are not
+equivalent to each other, so the spread is not a clean measurement of judge
+variance. Not nothing, and not enough to choose a chunker on. Heading-aware is kept for something no metric here scores: its
 citations carry the heading chain, `INC-2411: … > Resolution`, where fixed
 chunks carry only the document title. That is the part that makes a citation
 checkable in five seconds, and it is a property rather than a result.

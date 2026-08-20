@@ -79,6 +79,10 @@ jobs:
       # 3/22. It is generated from the three committed run records now: the
       # sweeps do not reproduce, but the records are files, so a table
       # derived from them is checkable like any other.
+      # Also fails when a record was scored by a different version of
+      # evals/judgement.py than this tree has, because the grid renders the
+      # stored deterministic block: without that, a scoring change nobody
+      # rescored would republish stale headline rates under a green check.
       - name: Judgement tables derived from the records are current
         run: python3 evals/judgement.py --comparison --check
 

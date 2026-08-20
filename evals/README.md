@@ -85,12 +85,25 @@ in the records:
 | `judgement-fixed` | 48/56 | 45/56 | 49/56 | 48/56 |
 | `judgement-single-query` | 20/22 | 19/22 | 21/22 | 21/22 |
 
-Two things in that, and they point opposite ways. Each arm moves by two to four
-claims, up to seven points on `judgement-fixed`, so a single judged percentage
-is not a precise number and should never be read as one. But the ordering holds
-in every round, and the second round came out lower for all three arms at once,
-which says the judge varies by round rather than independently per claim. So
-the gap between the chunker arms is repeatable and its size is not.
+**Read that table for what it supports, which is less than it first appears.**
+The four rounds do not share judge fingerprints: the payload was widened before
+the first, and what the fingerprint covers was changed before the second, third
+and fourth. So the spread across rounds mixes judge variance with those
+changes, and this is not a clean variance measurement. The generated per-arm
+tables say so themselves, from the fields rather than from a claim: when the
+retained rounds do not share every judge input, the sentence under the table
+changes to say so.
+
+What each round does support is the comparison inside it. Both arms in a round
+were judged by the same code, the same prompts and the same model, so the
+ordering within a round is a like-for-like reading, and heading came out below
+fixed in all four. That is the basis for calling the chunker gap repeatable:
+four matched within-round comparisons, not four measurements of one number.
+
+Each arm still moves by two to four claims between rounds, up to seven points
+on `judgement-fixed`, which is reason enough never to read a single judged
+percentage as precise. Isolating how much of that is the judge alone needs two
+rounds with no code change between them, and that has not been run.
 
 The deterministic figures do not move under `--rescore`; these do, which is the
 reason the two are never published in the same table.
