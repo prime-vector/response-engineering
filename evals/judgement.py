@@ -1122,8 +1122,21 @@ def judge_via_cursor(judge, system, payload):
     return verdict, usage
 
 
+TRANSPORTS = ("anthropic", "cursor")
+
+
 def call_judge(judge, system, payload, key):
-    if judge.get("transport", "anthropic") == "cursor":
+    # A transport this file does not implement is a typo, and falling through
+    # to the metered API for one produced plausible verdicts filed under a
+    # name nothing supports: the record kept the misspelling and dropped the
+    # sampling fields that transport pins. Refused instead.
+    transport = judge.get("transport", "anthropic")
+    if transport not in TRANSPORTS:
+        raise SystemExit(
+            f"judge transport {transport!r} is not one this runner "
+            f"implements ({', '.join(TRANSPORTS)}). Nothing is judged on a "
+            f"transport whose provenance cannot be recorded.")
+    if transport == "cursor":
         return judge_via_cursor(judge, system, payload)
     body = json.dumps({
         "model": judge["model"],
@@ -1346,11 +1359,30 @@ def judge_run(config, records, scores, cases, port, key):
     # Ordered results, whatever order they complete in: a record that changes
     # its verdict order between runs would show a diff that is not a finding.
     lanes = max(1, int(judge.get("concurrency", 4)))
+    started = time.perf_counter()
     if tasks:
+        def timed(task):
+            call_started = time.perf_counter()
+            result = run_task(task)
+            return result, (time.perf_counter() - call_started) * 1000
+
         with concurrent.futures.ThreadPoolExecutor(max_workers=lanes) as pool:
-            outcomes = list(pool.map(run_task, tasks))
+            timings = list(pool.map(timed, tasks))
+        outcomes = [result for result, _ in timings]
+        # The claims about this transport being slower per call, and about
+        # concurrency changing the wall clock, were in commit messages and
+        # nowhere a reader could check them.
+        per_call = sorted(ms for _, ms in timings)
+        pace = {
+            "lanes": lanes,
+            "calls": len(per_call),
+            "per_call_p50_ms": round(statistics.median(per_call), 1),
+            "per_call_p95_ms": round(
+                per_call[max(0, -(-len(per_call) * 95 // 100) - 1)], 1),
+            "wall_ms": round((time.perf_counter() - started) * 1000, 1),
+        }
     else:
-        outcomes = []
+        outcomes, pace = [], {"lanes": lanes, "calls": 0}
     for task, (verdict, usage) in zip(tasks, outcomes):
         account(usage)
         verdicts[task["kind"]].append({
@@ -1419,6 +1451,7 @@ def judge_run(config, records, scores, cases, port, key):
             },
         },
         "usage": usage_total,
+        "pace": pace,
         "groundedness_judge": {
             **rate(verdicts["groundedness"], "supported"),
             "unit": "precedent claims whose cited passages support them",
@@ -1846,7 +1879,14 @@ def markdown(result):
             "",
             f"Judge usage: {judged['usage']['calls']} calls, "
             f"{judged['usage']['input_tokens']} input and "
-            f"{judged['usage']['output_tokens']} output tokens.",
+            f"{judged['usage']['output_tokens']} output tokens"
+            + (f", {(judged.get('pace') or {}).get('lanes')} at a time, "
+               f"{(judged.get('pace') or {}).get('per_call_p50_ms', 0) / 1000:.1f}s "
+               f"per call at p50 and "
+               f"{(judged.get('pace') or {}).get('wall_ms', 0) / 1000:.0f}s "
+               f"for the round"
+               if (judged.get("pace") or {}).get("calls") else "")
+            + ".",
             "",
         ]
     else:
@@ -2210,6 +2250,11 @@ def record_drift(config, arm, record):
                                 f"recording used "
                                 f"{judged.get('transport', 'anthropic')}")
         elif transport == "cursor":
+            if judged.get("effort") != judge.get("effort", "high"):
+                rejudge_owed.append(
+                    f"the config judges at effort "
+                    f"{judge.get('effort', 'high')}, the recording used "
+                    f"{judged.get('effort')}")
             if judged.get("cli_version") != cursor_version():
                 rejudge_owed.append(
                     f"the recording judged with CLI "
@@ -2799,6 +2844,7 @@ def rejudge(record_path, config):
             "max_tokens": before.get("max_tokens"),
             "transport": before.get("transport", "anthropic"),
             "sampling": before.get("sampling"),
+            "pace": before.get("pace"),
             # The proof, not just the configuration. A round whose figures are
             # cited has to carry the evidence that the corpus was absent when
             # it was produced, and archiving the transport while dropping this

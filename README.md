@@ -227,7 +227,7 @@ Applicability offered: judgement-heading `partial` 44, `superseded` 8; judgement
 
 | judged by claude-opus-4-6 | judgement-heading | judgement-fixed | judgement-single-query |
 | --- | --- | --- | --- |
-| `groundedness_judge` | 38/52 | 47/56 | 21/22 |
+| `groundedness_judge` | 39/52 | 49/56 | 21/22 |
 | `divergence_quality` | 6/6 | 6/7 | 6/7 |
 
 Both judged rates are scored over what each run offered, so offering less can raise them: judgement-heading never offered the diverging record on `b04`.
@@ -267,10 +267,10 @@ prompt as one knob.
 
 **Rejected: reading the chunker off these numbers.** Heading-aware and
 fixed-size chunking reach the same 54 of 60 pairs and omit 14 and 13 of 23
-applying documents. They part on the judged half, 38 of 52 claims supported
-against 47 of 56, and heading came out below fixed in all eight judgings the
+applying documents. They part on the judged half, 39 of 52 claims supported
+against 49 of 56, and heading came out below fixed in all nine judgings the
 records carry, five under this judge and three under one of another family. The direction has never flipped; the size depends on who is
-judging. Under this judge the two chunkers are about eleven points apart,
+judging. Under this judge the two chunkers are about twelve points apart,
 outside what a re-judge moves; under the other they were two claims apart,
 inside it. Not enough to choose a chunker on, by either reading. Heading-aware is kept for something no metric here scores: its
 citations carry the heading chain, `INC-2411: … > Resolution`, where fixed
@@ -289,9 +289,12 @@ adapter. There is none in this repo, so the runner refuses a config that
 declares one rather than recording a configuration nothing produced.
 
 **Read the judged table as a comparison, never as a score.** Those figures come
-from `claude-opus-4-6` at temperature 0. The same claims judged by
-`cursor-grok-4.6-high` scored 17 of 52, 19 of 56 and 8 of 22, about forty
-points lower, with the arms in the same order. Almost all of the difference is one rule: the
+from `claude-opus-4-6` at temperature 0, through an API with no file tools. The
+same claims judged by `cursor-grok-4.6-high` scored 17 of 52, 19 of 56 and 9 of
+22, about forty points lower with the arms in the same order. That transport
+cannot set a temperature at all, and it is an agent with file access rather
+than a plain call, so the two rows differ in sampling and in what the judge
+could reach as well as in model family. Almost all of the difference is one rule: the
 prompt says a claim that the prior record lacked something is unsupported
 unless a passage states the absence, and the two families hold that rule with
 very different strictness. `divergence_quality` hardly moved between them,
