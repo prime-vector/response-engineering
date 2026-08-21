@@ -247,7 +247,7 @@ different model family with the prompts committed in `evals/judges/`:
 deterministic one makes it read as the same kind of fact.
 
 **How much that matters is now measured.** The same claims scored 38 of 52
-under `claude-opus-4-6` at temperature 0 and 15 of 52 under
+under `claude-opus-4-6` at temperature 0 and 17 of 52 under
 `cursor-grok-4.6-high`, and the ordering between arms held under both. So the
 level of a judged metric belongs to the judge. The ordering has held in five
 matched comparisons, four of them from one family, which makes it an ordering
@@ -284,9 +284,9 @@ passage ids in the set the surface returned, `agent_reach` 54 of 60 pairs, p50
 Read the two things the deterministic rates cannot say by themselves. Ten of
 the 52 claims are offered as `partial` where the truth is `applies`, so the
 zero false precedent rate is a partly cautious agent rather than a calibrated
-one, and the table says so beside it. And `groundedness_judge` is 28.8% under
-the judge now configured: 15 of 52 claims are supported by the passages they
-cite, and nearly all of the other 37 are the same move, an absence asserted
+one, and the table says so beside it. And `groundedness_judge` is 32.7% under
+the judge now configured: 17 of 52 claims are supported by the passages they
+cite, and nearly all of the other 35 are the same move, an absence asserted
 from silence. Under the previous judge the same claims scored 38 of 52, which
 is why that figure is a comparison and not a score. "INC-2411 shows no audit
 daemon" is a claim about a document from passages that simply do not mention
@@ -349,8 +349,10 @@ tool call and these made 388 successful ones; the CLI version is not.
 **The chunker is not choosable off these numbers, and saying so is the result.**
 Heading-aware and fixed reach the same 54 of 60 pairs and omit 14 and 13 of the
 23 applying documents the archive handed over. The judged half parts by more
-than a wobble: 15 of 52 claims supported against 17 of 56, with heading below
-fixed in every judging, four under one judge family and one under another. Each
+than a wobble under one judge and inside it under the other: 38 of 52 against
+48 of 56 under Opus, about nine points, and 17 of 52 against 19 of 56 under
+Grok, two claims. Heading is below fixed in every judging, four under one
+family and one under the other. Each
 round judged both arms with the same code, prompts and model, so the ordering
 rests on five matched comparisons; the rounds are not equivalent to each other,
 so neither the two to four claims an arm moves within a family nor the

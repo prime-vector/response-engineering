@@ -897,7 +897,8 @@ def judge_code_fingerprint():
     """
     source = "".join(inspect.getsource(fn)
                      for fn in (judge_run, call_judge, judge_via_cursor,
-                                extract_json, offered_claim, cited_ids, rpc))
+                                judge_jail, verify_jail, extract_json,
+                                offered_claim, cited_ids, rpc))
     # Values, not only code. The endpoint and the API version shape every
     # request, and rpc is what resolves a cited passage to the text the judge
     # is shown. Hashing the functions alone left all three able to move
@@ -950,8 +951,12 @@ def judge_jail(repo_root):
             f"  unshare said: {probe.stderr.decode(errors='replace')[:200]}")
     wrapper = tempfile.NamedTemporaryFile(
         "w", suffix=".sh", prefix="judge-jail-", delete=False)
+    # /proc is remounted, not just the repository masked. A new PID namespace
+    # without it leaves the host's procfs in place, and /proc/<pid>/root/ is a
+    # second door to every path the tmpfs hides. Sol found that at the gate.
     wrapper.write("#!/bin/bash\n"
                   f"mount -t tmpfs none {repo_root} 2>/dev/null || exit 97\n"
+                  "mount -t proc proc /proc 2>/dev/null || exit 96\n"
                   'exec "$@"\n')
     wrapper.close()
     os.chmod(wrapper.name, 0o700)
@@ -972,6 +977,20 @@ def verify_jail(judge, prefix, repo_root):
     """
     target = os.path.join(repo_root, "corpus", "documents", "incidents",
                           "INC-2411.md")
+    # A shell first, because a boundary checked by asking a model whether it
+    # got through is a boundary checked by self-report. Both the masked path
+    # and the /proc route into another process's root, inside the same
+    # namespace the judge will run in.
+    script = (f'cat {target} >/dev/null 2>&1 && echo DIRECT_OK; '
+              f'cat /proc/*/root{target} >/dev/null 2>&1 && echo PROC_OK; '
+              f'echo SHELL_DONE')
+    shell = subprocess.run(prefix + ["bash", "-c", script],
+                           capture_output=True, text=True, timeout=60)
+    routes = shell.stdout.strip().replace("\n", " ")
+    if "DIRECT_OK" in routes or "PROC_OK" in routes:
+        raise SystemExit(
+            f"the corpus is reachable from inside the namespace ({routes}), "
+            f"so masking it did not work and nothing should be scored on it.")
     probe = subprocess.run(
         prefix + ["agent", "-p",
                   f"Use your file reading tool on the absolute path {target}. "
@@ -995,13 +1014,15 @@ def verify_jail(judge, prefix, repo_root):
             "whether the judge can read the corpus it is scoring against is "
             "unestablished. Nothing is scored on that.\n"
             f"  probe answered: {answer.strip()[:200] or '(nothing)'}")
-    return {"probe": "read a corpus document from inside the jail, by its "
-                     "usual path",
-            "answer": answer.strip()[:120],
-            "path_reachable": False,
-            "scope": "this tests the masked pathname, not every route to the "
-                     "same bytes. The namespace hides a path; it is not a "
-                     "container."}
+    return {"shell_probe": "direct path and /proc/*/root, both refused",
+            "shell_answer": routes,
+            "model_probe": "read a corpus document by its usual path",
+            "model_answer": answer.strip()[:120],
+            "reachable": False,
+            "scope": "two routes tested, not every route. The namespace masks "
+                     "paths and remounts /proc; it is not a container, and "
+                     "the metered transport is the one that needs no mask "
+                     "because it has no file tools."}
 
 
 def cursor_version():
@@ -1175,6 +1196,13 @@ def judge_run(config, records, scores, cases, port, key):
     isolation = None
     if judge.get("transport", "anthropic") == "cursor":
         repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        effort = judge.get("effort", "high")
+        if not judge["model"].endswith(f"-{effort}"):
+            raise SystemExit(
+                f"the config declares effort {effort!r} and the model id is "
+                f"{judge['model']!r}, which does not carry it. This transport "
+                f"has no effort flag: the id is the control, so the two have "
+                f"to agree or the config is describing an input nobody set.")
         judge["_jail"] = judge_jail(repo_root)
         isolation = verify_jail(judge, judge["_jail"], repo_root)
         isolation["namespace"] = f"tmpfs over {repo_root}"
@@ -1330,7 +1358,8 @@ def judge_run(config, records, scores, cases, port, key):
         "sampling": ("temperature 0" if transport == "anthropic"
                      else "no temperature; effort is carried by the model id, "
                           "which is pinned and compared like any other input"),
-        "effort": ("in the model id" if transport == "cursor" else None),
+        "effort": (judge.get("effort", "high") if transport == "cursor"
+                   else None),
         "cli_version": (cursor_version() if transport == "cursor" else None),
         # Whether the judge could reach the corpus, tested rather than
         # asserted. The metered transport has no file tools, so it records
@@ -1667,12 +1696,13 @@ def markdown(result):
             (f"It ran with the repository replaced by an empty tmpfs inside a "
              f"private mount namespace, so the documents behind the passages "
              f"were absent rather than forbidden, and that is tested before "
-             f"any claim is scored rather than asserted: the probe asked it "
-             f"to read a corpus document and it answered "
-             f"`{(judged.get('isolation') or {}).get('answer', '')[-20:].strip()}`. "
+             f"any claim is scored rather than asserted: a shell tried the "
+             f"masked path and the /proc route into another process's root "
+             f"and both failed, then the judge itself was asked and answered "
+             f"`{(judged.get('isolation') or {}).get('model_answer', '')[-20:].strip()}`. "
              f"Without the namespace this judge reads the corpus straight "
              f"through an empty workspace and read-only mode, which was "
-             f"measured rather than assumed. The namespace masks a path "
+             f"measured rather than assumed. The namespace masks paths and remounts /proc "
              f"rather than building a container, so read it as a control "
              f"against the obvious route and not as containment; the metered "
              f"transport, which has no file tools at all, is the structural "

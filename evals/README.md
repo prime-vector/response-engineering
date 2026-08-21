@@ -87,15 +87,22 @@ temperature 0, and under `cursor-grok-4.6-high` through the CLI:
 
 | arm | opus, four rounds | grok |
 | --- | --- | --- |
-| `judgement-heading` | 39, 37, 39, 38 of 52 | 15 of 52 |
-| `judgement-fixed` | 48, 45, 49, 48 of 56 | 17 of 56 |
+| `judgement-heading` | 39, 37, 39, 38 of 52 | 17 of 52 |
+| `judgement-fixed` | 48, 45, 49, 48 of 56 | 19 of 56 |
 | `judgement-single-query` | 20, 19, 21, 21 of 22 | 9 of 22 |
 
-Forty-five points of level, and the ordering survived intact: heading below
-fixed below single-query under both. So `groundedness_judge` is readable as a
-comparison and not as a score. A published figure of 73% or 29% says as much
-about which judge ran as about the agent, and the arms' order says something
-about the arms.
+Forty points of level, and the ordering survived: heading below fixed below
+single-query under both families. So `groundedness_judge` is readable as a
+comparison and not as a score. A published figure of 73% or 33% says as much
+about which judge ran as about the agent.
+
+**The chunker pair is a different story under the two judges, though.** Under
+Opus heading and fixed part by about nine points, comfortably outside what a
+re-judge moves. Under Grok they are 17 of 52 against 19 of 56, a point apart
+and two claims apart, which is inside it. So the direction has never flipped
+and the size has collapsed, and the honest reading is that this judge cannot
+distinguish the two chunkers at all. The single-query arm stays clear of both
+under either judge.
 
 **The difference is one rule doing almost all the work.** Both judges apply the
 prompt's instruction that a claim about the prior record lacking something is
@@ -544,7 +551,7 @@ Applicability offered: judgement-heading `partial` 44, `superseded` 8; judgement
 
 | judged by cursor-grok-4.6-high | judgement-heading | judgement-fixed | judgement-single-query |
 | --- | --- | --- | --- |
-| `groundedness_judge` | 15/52 | 17/56 | 9/22 |
+| `groundedness_judge` | 17/52 | 19/56 | 9/22 |
 | `divergence_quality` | 6/6 | 6/7 | 6/7 |
 
 Both judged rates are scored over what each run offered, so offering less can raise them: judgement-heading never offered the diverging record on `b04`.
@@ -571,7 +578,7 @@ delta is the paragraph, not query count in isolation, and `--compare` cannot
 see the difference because a system prompt is one knob to it.
 
 **The chunker is not choosable off one sweep each.** Same reach, 54 of 60, and
-14 against 13 omissions. The judged half parts by 15/52 against 17/56, and
+14 against 13 omissions. The judged half parts by 17/52 against 19/56, and
 heading came out below fixed in every judging, so the gap is repeatable
 even though its size moves by several points between rounds. That is a real
 difference nobody should choose a chunker on: one sweep each, a judge scoring a
@@ -605,8 +612,8 @@ applies. An agent that never says `applies` cannot offer a false precedent, so
 the two figures have to be read together, and the table prints them together
 for that reason.
 
-**`groundedness_judge` at 28.8% under the judge now configured, and the
-failures have one shape.** Nearly all of the 37 unsupported claims assert an
+**`groundedness_judge` at 32.7% under the judge now configured, and the
+failures have one shape.** Nearly all of the 35 unsupported claims assert an
 absence: "the prior incident shows no audit
 daemon", from passages that simply do not mention one. It is a divergence of
 exactly the kind rule 5 asks for, resting on something the archive never said.

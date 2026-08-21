@@ -225,7 +225,7 @@ Applicability offered: judgement-heading `partial` 44, `superseded` 8; judgement
 
 | judged by cursor-grok-4.6-high | judgement-heading | judgement-fixed | judgement-single-query |
 | --- | --- | --- | --- |
-| `groundedness_judge` | 15/52 | 17/56 | 9/22 |
+| `groundedness_judge` | 17/52 | 19/56 | 9/22 |
 | `divergence_quality` | 6/6 | 6/7 | 6/7 |
 
 Both judged rates are scored over what each run offered, so offering less can raise them: judgement-heading never offered the diverging record on `b04`.
@@ -265,15 +265,15 @@ prompt as one knob.
 
 **Rejected: reading the chunker off these numbers.** Heading-aware and
 fixed-size chunking reach the same 54 of 60 pairs and omit 14 and 13 of 23
-applying documents. They part on the judged half, 15 of 52 claims supported
-against 17 of 56, and heading came out below fixed in every judging: four
+applying documents. They part on the judged half, 17 of 52 claims supported
+against 19 of 56, and heading came out below fixed in every judging: four
 rounds under one judge family and one under another, each of which judged both
-arms with the same code, prompts and model. That is five matched comparisons,
-four of them from one family, so it is an ordering that has not yet been seen
-to flip rather than an established property of the arms. Its size is not stable
-either: within a family the arms move by two to four claims between rounds, and
-across families the level moves by forty-five points. Not nothing, and not
-enough to choose a chunker on. Heading-aware is kept for something no metric here scores: its
+arms with the same code, prompts and model. The direction has never flipped
+across five matched comparisons; the size has collapsed. Under the earlier
+judge the two chunkers were about nine points apart, comfortably outside what a
+re-judge moves. Under this one they are two claims apart, which is inside it,
+so this judge cannot tell them apart at all. Not enough to choose a chunker on,
+by either reading. Heading-aware is kept for something no metric here scores: its
 citations carry the heading chain, `INC-2411: … > Resolution`, where fixed
 chunks carry only the document title. That is the part that makes a citation
 checkable in five seconds, and it is a property rather than a result.
@@ -291,7 +291,7 @@ declares one rather than recording a configuration nothing produced.
 
 **Read the judged table as a comparison, never as a score.** Those figures come
 from `cursor-grok-4.6-high`. The same claims judged by `claude-opus-4-6` at
-temperature 0 scored 38 of 52, 48 of 56 and 21 of 22, well over forty points higher,
+temperature 0 scored 38 of 52, 48 of 56 and 21 of 22, about forty points higher,
 with the arms in the same order. Almost all of the difference is one rule: the
 prompt says a claim that the prior record lacked something is unsupported
 unless a passage states the absence, and the two families hold that rule with

@@ -46,8 +46,11 @@ judge:
   # preamble rather than the model. Six lanes is deliberately modest: the
   # point is to stop waiting on spawn overhead, not to find a rate limit.
   concurrency: 6
-  # The one sampling control this transport has. Set explicitly so it is an
-  # input the record names rather than a default that moves verdicts quietly.
+  # The one sampling control this transport has, and it is carried by the
+  # model id rather than by a flag: cursor-grok-4.6-high is the high-effort
+  # variant, and the CLI rejects a bracket override on it. Declared here so
+  # the config states the input, and checked against the id at run time, since
+  # a config key nothing reads is worse than no key at all.
   effort: high
   groundedness_prompt: evals/judges/groundedness-judge.txt
   divergence_prompt: evals/judges/divergence-judge.txt
