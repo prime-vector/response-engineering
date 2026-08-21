@@ -250,10 +250,10 @@ deterministic one makes it read as the same kind of fact.
 under `claude-opus-4-6` at temperature 0 and 17 of 52 under
 `cursor-grok-4.6-high`, the first of which is what the published figures use
 because that transport has no file tools, and the ordering between arms held under both. So the
-level of a judged metric belongs to the judge. The ordering has held in five
-matched comparisons, four of them from one family, which makes it an ordering
-nobody has seen flip rather than a property of the arms established across
-judges. `divergence_quality` moved by one claim in total across three arms,
+level of a judged metric belongs to the judge. The ordering has held in every round the records
+carry, five under the metered judge and three under the CLI one, which makes it
+an ordering nobody has seen flip rather than a property of the arms established
+across judges. `divergence_quality` moved by one claim in total across three arms,
 because that judge is given the dataset's distinguishing factors and asked
 whether the text names one: a closed question ports across families, an open
 one does not.
@@ -287,8 +287,8 @@ the 52 claims are offered as `partial` where the truth is `applies`, so the
 zero false precedent rate is a partly cautious agent rather than a calibrated
 one, and the table says so beside it. And `groundedness_judge` is 73.1%: 38 of
 52 claims are supported by the passages they cite, and most of the other 14 are
-the same move, an absence asserted from silence. Under the previous judge the same claims scored 38 of 52, which
-is why that figure is a comparison and not a score. "INC-2411 shows no audit
+the same move, an absence asserted from silence. Judged by the other family the same claims scored 17 of
+52, which is why that figure is a comparison and not a score. "INC-2411 shows no audit
 daemon" is a claim about a document from passages that simply do not mention
 one. It is a divergence in the shape the prompt asks for, resting on something
 the archive never said. The log check cannot see this at all: every one of
@@ -351,12 +351,12 @@ Heading-aware and fixed reach the same 54 of 60 pairs and omit 14 and 13 of the
 23 applying documents the archive handed over. The judged half parts by more
 than a wobble under one judge and inside it under the other: 38 of 52 against
 47 of 56 under Opus, about eleven points, and 17 of 52 against 19 of 56 under
-Grok, two claims. Heading is below fixed in every judging, four under one
-family and one under the other. Each
-round judged both arms with the same code, prompts and model, so the ordering
-rests on five matched comparisons; the rounds are not equivalent to each other,
-so neither the two to four claims an arm moves within a family nor the
-forty-five points it moves across families is published as a variance figure. One sweep each, with a judge scoring a
+Grok, two claims. Heading is below fixed in every judging the records carry,
+five under the metered judge and three under the CLI one. Each round judged
+both arms with the same code, prompts and model, so the ordering rests on
+eight matched comparisons; the rounds are not equivalent to each other, so
+neither the two to four claims an arm moves within a family nor the forty
+points it moves across families is published as a variance figure. One sweep each, with a judge scoring a
 model, is not enough to choose on, which is a different statement from the two
 being indistinguishable, and the first version of this section made the second.
 

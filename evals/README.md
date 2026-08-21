@@ -91,10 +91,15 @@ than the metric's own description. That is the reason to re-judge rather than
 restate. Later rounds changed nothing the judge sees, and measured something
 worth having.
 
-**Every figure in this section below the current row is historical.** The
-current judge is the one named in `config.judgement.yaml`; the Opus figures are
-kept because the comparison between them is the finding, not because they
-describe this tree.
+**Every round each record has had is in it, with the transport that produced
+it and whether the corpus was reachable from that transport.** The current
+judge is the one named in `config.judgement.yaml`, which is the metered API and
+has no file tools. The Cursor rounds are kept because the comparison between
+families is the finding. Two of the three Cursor rounds per arm carry no
+isolation evidence: they ran while the mount namespace was being built, and the
+record says "not recorded" rather than guessing in either direction. Their
+figures sit within a claim or two of the isolated round, which is evidence they
+were not reading the corpus and not proof of it.
 
 **The judged level is a property of the judge, not of the agent.** The same
 claims have now been scored by two model families. Under `claude-opus-4-6` at

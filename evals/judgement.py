@@ -1770,26 +1770,43 @@ def markdown(result):
                 + f"{len(rounds) + 1} times over the same claims. Earlier "
                   "rounds, kept because the spread is part of the result:",
                 "",
-                "| judged at | groundedness_judge | divergence_quality |",
-                "| --- | --- | --- |",
+                "| judged at | transport | corpus reachable? | "
+                "groundedness_judge | divergence_quality |",
+                "| --- | --- | --- | --- | --- |",
             ]
             for entry in rounds:
                 grounded = entry["groundedness_judge"]
                 diverged = entry["divergence_quality"]
                 failed = not (grounded["denominator"]
                               or diverged["denominator"])
+                transport = entry.get("transport", "anthropic")
+                if transport == "anthropic":
+                    proof = "no file tools"
+                elif (entry.get("isolation") or {}).get("scope"):
+                    proof = "namespace, probed"
+                else:
+                    # Not the same as "it ran unisolated": for these rounds
+                    # the evidence is not in the record, which for a cited
+                    # figure is the thing to say rather than a guess either
+                    # way.
+                    proof = "**not recorded**"
                 lines.append(
-                    f"| {entry['at']} | {grounded['numerator']}/"
-                    f"{grounded['denominator']} | {diverged['numerator']}/"
-                    f"{diverged['denominator']}"
+                    f"| {entry['at']} | {transport} | {proof} | "
+                    f"{grounded['numerator']}/{grounded['denominator']} | "
+                    f"{diverged['numerator']}/{diverged['denominator']}"
                     + (" (every call failed)" if failed else "") + " |")
             current = judged["groundedness_judge"]
             current_div = judged["divergence_quality"]
+            current_transport = judged.get("transport", "anthropic")
+            current_proof = ("no file tools" if current_transport == "anthropic"
+                             else "namespace, probed"
+                             if (judged.get("isolation") or {}).get("scope")
+                             else "**not recorded**")
             lines += [
                 f"| {result.get('rejudged_at', result['recorded_at'])} "
-                f"(current) | {current['numerator']}/"
-                f"{current['denominator']} | {current_div['numerator']}/"
-                f"{current_div['denominator']} |",
+                f"(current) | {current_transport} | {current_proof} | "
+                f"{current['numerator']}/{current['denominator']} | "
+                f"{current_div['numerator']}/{current_div['denominator']} |",
                 "",
                 ("Same claims, same prompts and same payload. What moves "
                  "between rounds is the judge."
@@ -2782,6 +2799,13 @@ def rejudge(record_path, config):
             "max_tokens": before.get("max_tokens"),
             "transport": before.get("transport", "anthropic"),
             "sampling": before.get("sampling"),
+            # The proof, not just the configuration. A round whose figures are
+            # cited has to carry the evidence that the corpus was absent when
+            # it was produced, and archiving the transport while dropping this
+            # left exactly the rounds the write-up quotes unable to show it.
+            # None is a real answer for the metered transport, which has no
+            # file tools, and for a round that predates the namespace.
+            "isolation": before.get("isolation"),
             "cli_version": before.get("cli_version"),
             "effort": before.get("effort"),
             "prompts": {name: (before.get("prompts") or {})

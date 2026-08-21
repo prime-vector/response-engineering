@@ -268,8 +268,8 @@ prompt as one knob.
 **Rejected: reading the chunker off these numbers.** Heading-aware and
 fixed-size chunking reach the same 54 of 60 pairs and omit 14 and 13 of 23
 applying documents. They part on the judged half, 38 of 52 claims supported
-against 47 of 56, and heading came out below fixed in every judging under both
-judge families. The direction has never flipped; the size depends on who is
+against 47 of 56, and heading came out below fixed in all eight judgings the
+records carry, five under this judge and three under one of another family. The direction has never flipped; the size depends on who is
 judging. Under this judge the two chunkers are about eleven points apart,
 outside what a re-judge moves; under the other they were two claims apart,
 inside it. Not enough to choose a chunker on, by either reading. Heading-aware is kept for something no metric here scores: its
