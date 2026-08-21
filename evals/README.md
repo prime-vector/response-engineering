@@ -82,8 +82,8 @@ temperature 0, and under `cursor-grok-4.6-high` through the CLI:
 | arm | opus, four rounds | grok |
 | --- | --- | --- |
 | `judgement-heading` | 39, 37, 39, 38 of 52 | 15 of 52 |
-| `judgement-fixed` | 48, 45, 49, 48 of 56 | 18 of 56 |
-| `judgement-single-query` | 20, 19, 21, 21 of 22 | 10 of 22 |
+| `judgement-fixed` | 48, 45, 49, 48 of 56 | 17 of 56 |
+| `judgement-single-query` | 20, 19, 21, 21 of 22 | 9 of 22 |
 
 Forty-five points of level, and the ordering survived intact: heading below
 fixed below single-query under both. So `groundedness_judge` is readable as a
@@ -98,7 +98,8 @@ quarter of claims; Grok applies it to nearly all of them, because most
 divergence text asserts an absence somewhere. The rule is the metric's opinion
 and the judge is how strictly that opinion is held.
 
-**`divergence_quality` barely moved: 6/6, 6/7, 5/7 against 6/6, 6/7, 6/7.**
+**`divergence_quality` barely moved: 6/6, 6/7, 6/7 under Opus against 6/6,
+6/7, 6/7 under Grok, one claim apart across three arms.**
 That judge is handed the dataset's list of distinguishing factors and asked
 whether the text names one. The constrained question ported across families
 almost perfectly; the open one did not. If a judged metric has to be comparable
@@ -534,8 +535,8 @@ Applicability offered: judgement-heading `partial` 44, `superseded` 8; judgement
 
 | judged by cursor-grok-4.6-high | judgement-heading | judgement-fixed | judgement-single-query |
 | --- | --- | --- | --- |
-| `groundedness_judge` | 15/52 | 18/56 | 10/22 |
-| `divergence_quality` | 6/6 | 6/7 | 5/7 |
+| `groundedness_judge` | 15/52 | 17/56 | 9/22 |
+| `divergence_quality` | 6/6 | 6/7 | 6/7 |
 
 Both judged rates are scored over what each run offered, so offering less can raise them: judgement-heading never offered the diverging record on `b04`.
 
@@ -561,7 +562,7 @@ delta is the paragraph, not query count in isolation, and `--compare` cannot
 see the difference because a system prompt is one knob to it.
 
 **The chunker is not choosable off one sweep each.** Same reach, 54 of 60, and
-14 against 13 omissions. The judged half parts by 15/52 against 18/56, and
+14 against 13 omissions. The judged half parts by 15/52 against 17/56, and
 heading came out below fixed in every judging, so the gap is repeatable
 even though its size moves by several points between rounds. That is a real
 difference nobody should choose a chunker on: one sweep each, a judge scoring a

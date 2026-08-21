@@ -46,6 +46,9 @@ judge:
   # preamble rather than the model. Six lanes is deliberately modest: the
   # point is to stop waiting on spawn overhead, not to find a rate limit.
   concurrency: 6
+  # The one sampling control this transport has. Set explicitly so it is an
+  # input the record names rather than a default that moves verdicts quietly.
+  effort: high
   groundedness_prompt: evals/judges/groundedness-judge.txt
   divergence_prompt: evals/judges/divergence-judge.txt
 

@@ -423,10 +423,10 @@ kept, what was rejected and the latency accepted for it. The guidance arm is the
 decisive one: replacing rule 4 refuses 8 of 25 answerable cases against none and
 reaches 22 of 60 relevant pairs against 54, at half the latency. The chunker arm is a
 result nobody should choose on rather than a null one: the same reach and the same
-order of omissions, a judged half parting at 15 of 52 claims supported against 18
+order of omissions, a judged half parting at 15 of 52 claims supported against 17
 of 56 under the judge now configured, an ordering that held in every judging
-across two judge families while the level moved by forty-five points between
-them, and still not enough to decide with. Heading-aware is kept for its citations carrying the heading
+across two judge families while the level moved by more than forty points
+between them, and still not enough to decide with. Heading-aware is kept for its citations carrying the heading
 chain, which is a property and not a measured win.
 
 **The headline rate could not fire, and that is the result the arms share.**

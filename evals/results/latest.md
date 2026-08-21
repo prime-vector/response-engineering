@@ -54,7 +54,7 @@ This is the retrieval half of refusal and only that half. Whether the agent refu
 | `no_precedent_accuracy` | evals/judgement.py: 13 no-precedent cases, scored on no_applicable_precedent |
 | `false_refusal_rate` | evals/judgement.py: 25 answerable cases, scored on the same field |
 | `groundedness_log` | evals/judgement.py: read from the adapter's audit log, which retrieval mode has no reason to consult because it issues the calls itself |
-| `groundedness_judge` | evals/judgement.py plus the judge at temperature 0, prompt committed in evals/judges/ |
+| `groundedness_judge` | evals/judgement.py plus the judge named in evals/config.judgement.yaml, prompts committed in evals/judges/. Its level is judge-relative: read it as a comparison between arms, not as a score |
 | `divergence_quality` | evals/judgement.py: 7 near-miss cases, scored against expect.divergence_names |
 | `agent_reach` | evals/judgement.py: retrieval across the queries the agent chose, which this mode cannot see because it issues one canonical probe per case |
 | `cost_per_recall_usd` | unmeasured in either mode: no model runs here, and oa reports no token usage there |

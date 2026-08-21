@@ -249,8 +249,10 @@ deterministic one makes it read as the same kind of fact.
 **How much that matters is now measured.** The same claims scored 38 of 52
 under `claude-opus-4-6` at temperature 0 and 15 of 52 under
 `cursor-grok-4.6-high`, and the ordering between arms held under both. So the
-level of a judged metric belongs to the judge and the ordering belongs to the
-arms. `divergence_quality` moved by one claim in total across three arms,
+level of a judged metric belongs to the judge. The ordering has held in five
+matched comparisons, four of them from one family, which makes it an ordering
+nobody has seen flip rather than a property of the arms established across
+judges. `divergence_quality` moved by one claim in total across three arms,
 because that judge is given the dataset's distinguishing factors and asked
 whether the text names one: a closed question ports across families, an open
 one does not.
@@ -347,7 +349,7 @@ tool call and these made 388 successful ones; the CLI version is not.
 **The chunker is not choosable off these numbers, and saying so is the result.**
 Heading-aware and fixed reach the same 54 of 60 pairs and omit 14 and 13 of the
 23 applying documents the archive handed over. The judged half parts by more
-than a wobble: 15 of 52 claims supported against 18 of 56, with heading below
+than a wobble: 15 of 52 claims supported against 17 of 56, with heading below
 fixed in every judging, four under one judge family and one under another. Each
 round judged both arms with the same code, prompts and model, so the ordering
 rests on five matched comparisons; the rounds are not equivalent to each other,

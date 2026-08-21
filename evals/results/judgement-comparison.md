@@ -21,8 +21,8 @@ Applicability offered: judgement-heading `partial` 44, `superseded` 8; judgement
 
 | judged by cursor-grok-4.6-high | judgement-heading | judgement-fixed | judgement-single-query |
 | --- | --- | --- | --- |
-| `groundedness_judge` | 15/52 | 18/56 | 10/22 |
-| `divergence_quality` | 6/6 | 6/7 | 5/7 |
+| `groundedness_judge` | 15/52 | 17/56 | 9/22 |
+| `divergence_quality` | 6/6 | 6/7 | 6/7 |
 
 Both judged rates are scored over what each run offered, so offering less can raise them: judgement-heading never offered the diverging record on `b04`.
 

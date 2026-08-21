@@ -123,8 +123,9 @@ JUDGEMENT_METRICS = [
      "evals/judgement.py: read from the adapter's audit log, which retrieval "
      "mode has no reason to consult because it issues the calls itself"),
     ("groundedness_judge",
-     "evals/judgement.py plus the judge at temperature 0, prompt committed in "
-     "evals/judges/"),
+     "evals/judgement.py plus the judge named in evals/config.judgement.yaml, "
+     "prompts committed in evals/judges/. Its level is judge-relative: read "
+     "it as a comparison between arms, not as a score"),
     ("divergence_quality",
      "evals/judgement.py: {near_miss} near-miss cases, scored against "
      "expect.divergence_names"),
@@ -1073,6 +1074,12 @@ JUDGEMENT_PINS = [
      lambda r: (r.get("judged") or {}).get("model")),
     ("judge transport", "judged.transport",
      lambda r: (r.get("judged") or {}).get("transport", "anthropic")),
+    # Recorded since the transport switch and compared nowhere, so two cursor
+    # runs on different CLI builds or different efforts read as one judge.
+    ("judge CLI", "judged.cli_version",
+     lambda r: (r.get("judged") or {}).get("cli_version")),
+    ("judge effort", "judged.effort",
+     lambda r: (r.get("judged") or {}).get("effort")),
     ("judge sampling", "judged.sampling",
      lambda r: (r.get("judged") or {}).get("sampling")),
     ("judge temperature", "judged.temperature",

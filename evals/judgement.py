@@ -906,6 +906,86 @@ def judge_code_fingerprint():
         (source + API_URL + API_VERSION).encode()).hexdigest()
 
 
+def judge_jail(repo_root):
+    """A mount namespace with nothing to read, or a refusal.
+
+    The threat is specific: the CLI judge is a general-purpose agent with file
+    tools, and it is asked whether a claim is supported by the passages it
+    cites. Given this repository it can open the document those passages came
+    from and answer from that instead, which is a different question with the
+    same shape.
+
+    --mode ask does not close it: ask mode forbids writes, not reads. An empty
+    --workspace does not close it either, and neither does a different cwd:
+    absolute paths still resolve. Both were claimed as locks here and a probe
+    showed the judge reading corpus/documents through them.
+
+    What closes it is not having the files. An empty tmpfs over the repository
+    root inside a private mount namespace means the corpus is absent rather
+    than forbidden, which is the same reason a sandbox allow list names tools
+    rather than asking the model not to call them.
+
+    Returns the command prefix, or raises when the namespace cannot be made:
+    a judge that could read the corpus is not a judge this metric can use, and
+    the metered transport needs none of this because it has no tools at all.
+    """
+    probe = subprocess.run(["unshare", "--map-root-user", "--mount", "true"],
+                           capture_output=True)
+    if probe.returncode != 0:
+        raise SystemExit(
+            "cannot create a mount namespace on this host, so the CLI judge "
+            "would run with read access to the corpus it is scoring claims "
+            "against. Judge through transport: anthropic instead, which has "
+            "no file tools at all, or run where unshare works.\n"
+            f"  unshare said: {probe.stderr.decode(errors='replace')[:200]}")
+    wrapper = tempfile.NamedTemporaryFile(
+        "w", suffix=".sh", prefix="judge-jail-", delete=False)
+    wrapper.write("#!/bin/bash\n"
+                  f"mount -t tmpfs none {repo_root} 2>/dev/null || exit 97\n"
+                  'exec "$@"\n')
+    wrapper.close()
+    os.chmod(wrapper.name, 0o700)
+    return ["unshare", "--map-root-user", "--mount", wrapper.name]
+
+
+def verify_jail(judge, prefix, repo_root):
+    """Ask the judge to read a file it must not be able to read.
+
+    One call, before any claim is scored. A boundary this file asserts and
+    never tests is the kind of claim the rest of this repository refuses to
+    make, and the record carries the answer so a reader does not have to take
+    the comment above on trust.
+    """
+    target = os.path.join(repo_root, "corpus", "documents", "incidents",
+                          "INC-2411.md")
+    probe = subprocess.run(
+        prefix + ["agent", "-p",
+                  f"Use your file reading tool on the absolute path {target}. "
+                  f"Reply with one word and nothing else: READ_OK if you "
+                  f"read it, READ_FAILED if you could not. Do not explain.",
+                  "--model", judge["model"], "--output-format", "json",
+                  "--mode", "ask", "--trust"],
+        capture_output=True, text=True, timeout=judge.get("timeout", 300))
+    try:
+        answer = (json.loads(probe.stdout).get("result") or "").upper()
+    except (json.JSONDecodeError, AttributeError):
+        answer = ""
+    # Only an explicit failure passes. An answer with neither word in it
+    # proves nothing, and reading "no READ_OK" as "cannot read" is how a probe
+    # comes to certify a boundary it never tested: the first version of this
+    # did exactly that and passed on a truncated preamble.
+    blocked = "READ_FAILED" in answer and "READ_OK" not in answer
+    if not blocked:
+        raise SystemExit(
+            "the jail probe did not come back with a clear refusal, so "
+            "whether the judge can read the corpus it is scoring against is "
+            "unestablished. Nothing is scored on that.\n"
+            f"  probe answered: {answer.strip()[:200] or '(nothing)'}")
+    return {"probe": "read a corpus document from inside the jail",
+            "answer": answer.strip()[:120],
+            "corpus_reachable": False}
+
+
 def cursor_version():
     """The CLI that judged, by version. Same reason the agent runtime is
     pinned: two installs behave differently and a record should not need a
@@ -935,11 +1015,17 @@ def judge_via_cursor(judge, system, payload):
     claims per arm, so the determinism the phrase implied was not there.
     """
     prompt = system + "\n\n" + json.dumps(payload, indent=2)
+    prefix = judge["_jail"]
     with tempfile.TemporaryDirectory(prefix="judge-") as empty:
         proc = subprocess.run(
-            ["agent", "-p", prompt, "--model", judge["model"],
-             "--output-format", "json", "--mode", "ask", "--trust",
-             "--workspace", empty],
+            # The model id carries its own effort on this family:
+            # cursor-grok-4.6-high is the high-effort variant, and the
+            # bracket override the CLI documents applies to parameterised
+            # models only, which this is not. Appending one is rejected with
+            # the full model list, so effort is pinned by choosing the id.
+            prefix + ["agent", "-p", prompt, "--model", judge["model"],
+                      "--output-format", "json", "--mode", "ask", "--trust",
+                      "--workspace", empty],
             capture_output=True, text=True, timeout=judge.get("timeout", 300),
             cwd=empty)
     if proc.returncode != 0:
@@ -1067,7 +1153,13 @@ def judge_run(config, records, scores, cases, port, key):
     scored: there is no divergence to judge, and counting it as a failure
     would fold a retrieval miss into a judgement metric.
     """
-    judge = config["judge"]
+    judge = dict(config["judge"])
+    isolation = None
+    if judge.get("transport", "anthropic") == "cursor":
+        repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        judge["_jail"] = judge_jail(repo_root)
+        isolation = verify_jail(judge, judge["_jail"], repo_root)
+        isolation["namespace"] = f"tmpfs over {repo_root}"
     with open(judge["groundedness_prompt"]) as handle:
         grounding_system = handle.read()
     with open(judge["divergence_prompt"]) as handle:
@@ -1218,9 +1310,14 @@ def judge_run(config, records, scores, cases, port, key):
         "max_tokens": (judge.get("max_tokens", 1500)
                        if transport == "anthropic" else None),
         "sampling": ("temperature 0" if transport == "anthropic"
-                     else "not settable through this transport: the CLI takes "
-                          "a model and an effort, not a temperature"),
+                     else "no temperature; effort is carried by the model id, "
+                          "which is pinned and compared like any other input"),
+        "effort": ("in the model id" if transport == "cursor" else None),
         "cli_version": (cursor_version() if transport == "cursor" else None),
+        # Whether the judge could reach the corpus, tested rather than
+        # asserted. The metered transport has no file tools, so it records
+        # None: there is nothing to isolate.
+        "isolation": isolation,
         # The code that built these payloads and read these verdicts, and
         # only that code. Not the record's top-level scorer fingerprint,
         # which covers this whole file and moves on any edit: that one is
@@ -1549,6 +1646,19 @@ def markdown(result):
             f"opinion of a model, reported apart from the table above so it "
             f"cannot be read as the same kind of number.",
             "",
+            (f"It ran with the repository replaced by an empty tmpfs inside a "
+             f"private mount namespace, so the documents behind the passages "
+             f"were absent rather than forbidden, and that is tested before "
+             f"any claim is scored rather than asserted: the probe asked it "
+             f"to read a corpus document and it answered "
+             f"`{(judged.get('isolation') or {}).get('answer', '')[-20:].strip()}`. "
+             f"Without the namespace this judge reads the corpus straight "
+             f"through an empty workspace and read-only mode, which was "
+             f"measured rather than assumed."
+             if (judged.get("isolation") or {}).get("namespace")
+             else "This transport has no file tools, so there is nothing for "
+                  "the judge to read but the passages it is given."),
+            "",
             "| Metric | Value | Count | Denominator |",
             "| --- | --- | --- | --- |",
             metric_row("groundedness_judge", judged["groundedness_judge"]),
@@ -1595,6 +1705,11 @@ def markdown(result):
                         and entry.get("model") == judged.get("model")
                         and entry.get("temperature") == judged.get(
                             "temperature")
+                        and entry.get("transport", "anthropic")
+                        == judged.get("transport", "anthropic")
+                        and entry.get("cli_version") == judged.get(
+                            "cli_version")
+                        and entry.get("effort") == judged.get("effort")
                         and entry.get("max_tokens") == judged.get("max_tokens")
                         and all(entry.get("prompts", {}).get(name)
                                 == (judged.get("prompts") or {})
@@ -2553,6 +2668,10 @@ def rejudge(record_path, config):
             "model": before.get("model"),
             "temperature": before.get("temperature"),
             "max_tokens": before.get("max_tokens"),
+            "transport": before.get("transport", "anthropic"),
+            "sampling": before.get("sampling"),
+            "cli_version": before.get("cli_version"),
+            "effort": before.get("effort"),
             "prompts": {name: (before.get("prompts") or {})
                         .get(name, {}).get("fingerprint")
                         for name in ("groundedness", "divergence")},
