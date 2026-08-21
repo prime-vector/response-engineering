@@ -920,10 +920,20 @@ def judge_jail(repo_root):
     absolute paths still resolve. Both were claimed as locks here and a probe
     showed the judge reading corpus/documents through them.
 
-    What closes it is not having the files. An empty tmpfs over the repository
-    root inside a private mount namespace means the corpus is absent rather
-    than forbidden, which is the same reason a sandbox allow list names tools
-    rather than asking the model not to call them.
+    What closes the obvious path is not having the files. An empty tmpfs over
+    the repository root inside a private mount namespace means the corpus is
+    absent rather than forbidden, which is the same reason a sandbox allow
+    list names tools rather than asking the model not to call them.
+
+    Be exact about how much that buys, because it is less than a sandbox. It
+    masks one pathname. It does not build a new root, and a determined reader
+    could still find the same bytes through another mount of the same
+    filesystem or through /proc. The judge is a model answering a question,
+    not an adversary looking for a way around, so masking the path it would
+    otherwise take is a proportionate control and not a containment boundary.
+    The structural version of this is the metered transport, which has no file
+    tools at all: if the groundedness figure has to be unimpeachable rather
+    than cheap, judge through that.
 
     Returns the command prefix, or raises when the namespace cannot be made:
     a judge that could read the corpus is not a judge this metric can use, and
@@ -945,7 +955,11 @@ def judge_jail(repo_root):
                   'exec "$@"\n')
     wrapper.close()
     os.chmod(wrapper.name, 0o700)
-    return ["unshare", "--map-root-user", "--mount", wrapper.name]
+    # --pid --fork so the judge cannot walk /proc back to a process outside
+    # the namespace and reach the filesystem through its root link. Cheap, and
+    # it removes the most obvious route around the mask.
+    return ["unshare", "--map-root-user", "--mount", "--pid", "--fork",
+            wrapper.name]
 
 
 def verify_jail(judge, prefix, repo_root):
@@ -981,9 +995,13 @@ def verify_jail(judge, prefix, repo_root):
             "whether the judge can read the corpus it is scoring against is "
             "unestablished. Nothing is scored on that.\n"
             f"  probe answered: {answer.strip()[:200] or '(nothing)'}")
-    return {"probe": "read a corpus document from inside the jail",
+    return {"probe": "read a corpus document from inside the jail, by its "
+                     "usual path",
             "answer": answer.strip()[:120],
-            "corpus_reachable": False}
+            "path_reachable": False,
+            "scope": "this tests the masked pathname, not every route to the "
+                     "same bytes. The namespace hides a path; it is not a "
+                     "container."}
 
 
 def cursor_version():
@@ -1654,7 +1672,11 @@ def markdown(result):
              f"`{(judged.get('isolation') or {}).get('answer', '')[-20:].strip()}`. "
              f"Without the namespace this judge reads the corpus straight "
              f"through an empty workspace and read-only mode, which was "
-             f"measured rather than assumed."
+             f"measured rather than assumed. The namespace masks a path "
+             f"rather than building a container, so read it as a control "
+             f"against the obvious route and not as containment; the metered "
+             f"transport, which has no file tools at all, is the structural "
+             f"version."
              if (judged.get("isolation") or {}).get("namespace")
              else "This transport has no file tools, so there is nothing for "
                   "the judge to read but the passages it is given."),
@@ -1686,10 +1708,13 @@ def markdown(result):
             for entry in rounds:
                 grounded = entry["groundedness_judge"]
                 diverged = entry["divergence_quality"]
+                failed = not (grounded["denominator"]
+                              or diverged["denominator"])
                 lines.append(
                     f"| {entry['at']} | {grounded['numerator']}/"
                     f"{grounded['denominator']} | {diverged['numerator']}/"
-                    f"{diverged['denominator']} |")
+                    f"{diverged['denominator']}"
+                    + (" (every call failed)" if failed else "") + " |")
             current = judged["groundedness_judge"]
             current_div = judged["divergence_quality"]
             lines += [
@@ -2099,6 +2124,12 @@ def record_drift(config, arm, record):
             rejudge_owed.append(f"the config judges through {transport}, the "
                                 f"recording used "
                                 f"{judged.get('transport', 'anthropic')}")
+        elif transport == "cursor":
+            if judged.get("cli_version") != cursor_version():
+                rejudge_owed.append(
+                    f"the recording judged with CLI "
+                    f"{judged.get('cli_version')}, this host has "
+                    f"{cursor_version()}")
         elif transport == "anthropic":
             if judged.get("max_tokens") != judge.get("max_tokens", 1500):
                 rejudge_owed.append(
@@ -2601,9 +2632,11 @@ def rejudge(record_path, config):
     against the text of the passages it cites.
     """
     key = os.environ.get("ANTHROPIC_API_KEY")
-    if not key:
-        raise SystemExit("ANTHROPIC_API_KEY is not set; re-judging calls a "
-                         "model.")
+    if not key and config["judge"].get("transport", "anthropic") == "anthropic":
+        raise SystemExit("ANTHROPIC_API_KEY is not set and the configured "
+                         "judge transport is the metered API. Set the key, or "
+                         "configure transport: cursor, which needs only "
+                         "CURSOR_API_KEY.")
     with open(record_path) as handle:
         result = json.load(handle)
     if result.get("mode") != "judgement":
@@ -2649,6 +2682,17 @@ def rejudge(record_path, config):
     finally:
         proc.terminate()
         proc.wait(timeout=5)
+
+    scored = (fresh["groundedness_judge"]["denominator"]
+              + fresh["divergence_quality"]["denominator"])
+    if not scored:
+        raise SystemExit(
+            "every judge call in this round failed, so there is nothing to "
+            "record. The previous verdicts are left in place rather than "
+            "overwritten with an empty round: a failed run is not a "
+            "measurement of anything.\n"
+            f"  first error: "
+            f"{((fresh['groundedness_judge'].get('errors') or [{}])[0].get('verdict') or {}).get('error', 'unknown')[:200]}")
 
     for name in ("groundedness_judge", "divergence_quality"):
         was, now = before.get(name) or {}, fresh[name]

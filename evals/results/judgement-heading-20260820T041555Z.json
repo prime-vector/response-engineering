@@ -27,7 +27,7 @@
   "dataset": {
     "cases": 38,
     "path": "evals/dataset.yaml",
-    "fingerprint": "6a1014659711a8c33b8cae0be08bf8618805fc7afd60c86dd92017ff65fb1661",
+    "fingerprint": "a9a9399d3f9f930e2a7f0dab983294cec772c6c062b7d5127cf797e991187119",
     "ids": [
       "a01",
       "a02",
@@ -68,7 +68,8 @@
       "g01",
       "g02"
     ],
-    "complete": true
+    "complete": true,
+    "fingerprint_scheme": "sha256 over the parsed structure. Earlier records pinned the file's bytes; the ground truth is identical and was checked to be before this was rewritten."
   },
   "surface": {
     "floor_applied": 0.35,
@@ -10778,10 +10779,10 @@
       }
     }
   ],
-  "rescored_at": "2026-08-21T00:13:19Z",
+  "rescored_at": "2026-08-21T00:22:24Z",
   "scorer": {
     "path": "evals/judgement.py",
-    "fingerprint": "3ae6ceb4476e6b9bf5408cf4ee82cb15f2a899d58ba125744f813415706cf4b5",
+    "fingerprint": "f05764699a9528dc0700de7291a4e0e9be75fbf9eba8f3b2d21aeb3e025f0d0a",
     "scope": "the deterministic figures. The judged half carries its own fingerprint under judged."
   },
   "rejudged_at": "2026-08-21T00:00:05Z",

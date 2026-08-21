@@ -258,9 +258,18 @@ def dataset_fingerprint(path):
     the judgements over them, and a comparison across two datasets is the
     truth moving rather than retrieval improving, which is the same lie the
     corpus refusal exists to stop.
+
+    Over the parsed structure rather than the file's bytes, deliberately. The
+    byte version moved when a comment in dataset.yaml was corrected, and the
+    remedy this pin prescribes is a fresh sweep: an expensive check that fires
+    on prose is one that gets worked around. The scorer pin is byte-level for
+    the opposite reason, that its remedy is free. What is pinned here is the
+    ground truth, which is the data.
     """
-    with open(path, "rb") as handle:
-        return hashlib.sha256(handle.read()).hexdigest()
+    with open(path) as handle:
+        content = yaml.safe_load(handle)
+    return hashlib.sha256(
+        json.dumps(content, sort_keys=True).encode()).hexdigest()
 
 
 def ranked_documents(passages):

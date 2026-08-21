@@ -47,7 +47,10 @@
 #     whenever Gaps was among the hits, which the 2-passages-per-document cap
 #     makes common.
 #   - The `groundedness` in the metrics table is a different check again, an
-#     LLM judge at temperature 0, and neither it nor the log check is written.
+#     LLM judge. Both are written now, in evals/judgement.py, and neither
+#     closes this gap: the judge is handed the passages a claim cites and
+#     asked whether they support it, which says nothing about whether a
+#     different section of the same document was the one to cite.
 #
 # So the section-level gap is unmeasured, not mitigated. It belongs in the
 # results table as such. Do not let a later edit quietly promote either check

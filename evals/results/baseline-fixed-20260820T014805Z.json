@@ -21,7 +21,7 @@
     "scored_cases": 25,
     "pairs": 60,
     "path": "evals/dataset.yaml",
-    "fingerprint": "6a1014659711a8c33b8cae0be08bf8618805fc7afd60c86dd92017ff65fb1661",
+    "fingerprint": "a9a9399d3f9f930e2a7f0dab983294cec772c6c062b7d5127cf797e991187119",
     "composition": {
       "by_group": {
         "composite": 4,
@@ -296,8 +296,8 @@
   },
   "latency_ms": {
     "calls": 50,
-    "p50": 1.56,
-    "p95": 2.21,
+    "p50": 1.77,
+    "p95": 2.12,
     "note": "the mock surface over loopback JSON-RPC, and a mixture of two probes per case at two different passage limits. It measures this repo's fixture retriever, not a vector store, and is not a latency claim about anything deployable."
   },
   "not_measured": {
@@ -305,7 +305,7 @@
     "no_precedent_accuracy": "evals/judgement.py: 13 no-precedent cases, scored on no_applicable_precedent",
     "false_refusal_rate": "evals/judgement.py: 25 answerable cases, scored on the same field",
     "groundedness_log": "evals/judgement.py: read from the adapter's audit log, which retrieval mode has no reason to consult because it issues the calls itself",
-    "groundedness_judge": "evals/judgement.py plus the judge at temperature 0, prompt committed in evals/judges/",
+    "groundedness_judge": "evals/judgement.py plus the judge named in evals/config.judgement.yaml, prompts committed in evals/judges/. Its level is judge-relative: read it as a comparison between arms, not as a score",
     "divergence_quality": "evals/judgement.py: 7 near-miss cases, scored against expect.divergence_names",
     "agent_reach": "evals/judgement.py: retrieval across the queries the agent chose, which this mode cannot see because it issues one canonical probe per case",
     "cost_per_recall_usd": "unmeasured in either mode: no model runs here, and oa reports no token usage there"

@@ -66,14 +66,20 @@ harness with contract validation silently switched off.
 `--rejudge` re-runs the judge over a recorded sweep with the current prompts and
 payload, without re-running the agent. It is a fresh measurement rather than a
 recount, so it stamps `rejudged_at`, records the fingerprint of the code that
-produced the new verdicts, and prints what moved. The three committed records
-have been judged four times each: once during the sweep, then three times
-again. The first re-judge widened the payload from four fields
-of a claim to all of them, which moved `groundedness_judge` from 71.2% to
-75.0%, 80.4% to 85.7% and 81.8% to 90.9%: the original figures answered a
-narrower question than the metric's own description, which is the reason to
-re-judge rather than to restate. The two after that changed nothing the judge
-sees, and measured something worth having.
+produced the new verdicts, and prints what moved. Each committed record carries every
+judging it has had, and the per-arm tables list them: the sweep's own, then a
+re-judge for each change to what the judge was asked or how its provenance was
+recorded. The first of those widened the payload from four fields of a claim to
+all of them and moved `groundedness_judge` from 71.2% to 75.0%, 80.4% to 85.7%
+and 81.8% to 90.9%, because the original figures answered a narrower question
+than the metric's own description. That is the reason to re-judge rather than
+restate. Later rounds changed nothing the judge sees, and measured something
+worth having.
+
+**Every figure in this section below the current row is historical.** The
+current judge is the one named in `config.judgement.yaml`; the Opus figures are
+kept because the comparison between them is the finding, not because they
+describe this tree.
 
 **The judged level is a property of the judge, not of the agent.** The same
 claims have now been scored by two model families. Under `claude-opus-4-6` at
@@ -98,8 +104,11 @@ quarter of claims; Grok applies it to nearly all of them, because most
 divergence text asserts an absence somewhere. The rule is the metric's opinion
 and the judge is how strictly that opinion is held.
 
-**`divergence_quality` barely moved: 6/6, 6/7, 6/7 under Opus against 6/6,
-6/7, 6/7 under Grok, one claim apart across three arms.**
+**`divergence_quality` moved once, on one arm, in one round.** Heading is 6/6
+and fixed 6/7 in every judging under both families; single-query is 6/7 in
+every round but one, where it was 5/7. Against forty points of movement on
+`groundedness_judge`, that is the same measurement surviving a change of judge
+family.
 That judge is handed the dataset's list of distinguishing factors and asked
 whether the text names one. The constrained question ported across families
 almost perfectly; the open one did not. If a judged metric has to be comparable
@@ -242,8 +251,8 @@ cannot tell a citation of the right document's `Resolution` section from its
 - Adapter-log groundedness proves only that a cited `passage_id` was in the set
   the surface returned. A precedent citing `Gaps` passes whenever `Gaps` was
   among the hits, which the two-passages-per-document cap makes common.
-- `groundedness_judge` is a different check again, an LLM judge at temperature
-  0. Both are written now and neither closes this gap: the judge is given the
+- `groundedness_judge` is a different check again, an LLM judge. Both are
+  written now and neither closes this gap: the judge is given the
   passages the claim cites and asked whether they support it, which says
   nothing about whether a different section of the same document was the one
   to cite.

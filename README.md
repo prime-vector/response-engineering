@@ -336,13 +336,16 @@ model. The baseline this project is built against is a change correlation that
 was available for fifteen days and got run two hours and twenty-one minutes
 into the bridge call.
 
-**The contract is what makes a slow recall survivable, not a timeout.**
-Precedent is supporting evidence and can never be deciding evidence, so a
-recall that is slow, fails, or refuses does not block the board: convergence
-blocks while deciding evidence is outstanding, which is a different field. An
-agent that never answers costs the board its precedent column and nothing else.
-In the three-act composition recall runs alongside detection rather than after
-it, so its latency overlaps rather than accumulates.
+**The contract is meant to be what makes a slow recall survivable, rather than
+a timeout, and that part is designed and not yet built.** The intent is that
+precedent is supporting evidence and can never be deciding evidence, so a
+recall that is slow, fails or refuses costs the board its precedent column and
+nothing else, while convergence goes on blocking against outstanding deciding
+evidence, which is a different field. Today the commander spec has no
+`precedent` input and `demos/investigate.sh` does not compose recall: that
+wiring is Phase 6 of `docs/precedent-analyst.md`, and until it exists this
+paragraph describes a design rather than a measured property. What is
+measured is the latency above.
 
 If latency ever does bind, the levers are measured rather than guessed. One
 query instead of several halves it, p95 27.1s against 52.8s, and reaches 22 of
