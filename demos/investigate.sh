@@ -1,11 +1,17 @@
 #!/usr/bin/env bash
 # The three-act investigation pipeline, composed as dataflow rather than
 # narrated: the correlator's typed output becomes the commander's correlation
-# input, and the commander's live board becomes the Scribe's timeline input.
-# No agent consumes another's evidence surface, only its typed output.
+# input, the analyst's typed recall becomes its precedent input, and the
+# commander's live board becomes the Scribe's timeline input. No agent
+# consumes another's evidence surface, only its typed output.
+#
+# Precedent enters the board as supporting evidence and cannot leave it as
+# deciding evidence: the commander's contract closes blocking_evidence
+# against a citation and blocks convergence while any item is outstanding, so
+# act two asserts what the precedent did rather than that it arrived.
 #
 #   demos/investigate.sh act1   # D+1: recurrence detected in the problem feed
-#   demos/investigate.sh act2   # bridge: correlate, then assess on the live correlation
+#   demos/investigate.sh act2   # bridge: correlate and recall, then assess on both
 #   demos/investigate.sh act3   # Scribe files the timeline from the act-two board
 #   demos/investigate.sh all    # default: the full pipeline, composed
 #
@@ -125,10 +131,12 @@ PY
 }
 
 act2() {
-  echo "== Act two: the bridge. Correlation first, then the board =="
-  # Only the correlator's surface. The commander binds no tools: it works from
-  # the view it is handed and the typed outputs composed into it, so an adapter
-  # on 8422 here would only be a surface it is not permitted to reach.
+  echo "== Act two: the bridge. Correlation and recall first, then the board =="
+  # The two collecting agents' surfaces, one at a time. The commander binds no
+  # tools: it works from the view it is handed and the typed outputs composed
+  # into it, so an adapter on 8422 here would only be a surface it is not
+  # permitted to reach, and 8426 is the archive the analyst owns rather than
+  # something the board may go and query for itself.
   start_adapter change_registry 8423
   local cor
   cor=$(oa run --spec .agents/change-correlator.yaml --task correlate \
@@ -144,14 +152,57 @@ for x in c["correlations"]:
           f"{x['statement']}")
 print(f"  registry caveats: {len(c['registry_caveats'])}")
 PY
+  stop_adapter change_registry 8423
+  # Recall, at the same bound as the view the board will reason over, because
+  # what act two has to demonstrate is a property of the board. Recall at the
+  # D+1 bound works and is covered by eval case a02; it would have the board
+  # cite the archive as it stood a fortnight earlier, and it drops DRAFT-2601,
+  # whose being returned and not cited is the archive's strongest live moment
+  # and exists at this bound only.
+  start_adapter precedent_archive 8426
+  local pre
+  pre=$(oa run --spec .agents/precedent-analyst.yaml --task recall \
+    --input "$(cat fixtures/composite-incident.json)" --quiet)
+  require_json "recall" "$pre" no_applicable_precedent search_coverage precedents
+  printf '%s' "$pre" > "$OUT/act2-recall.json"
+  # Tool-use claims are verified from the adapter log, never from the output:
+  # the runner cannot bind tool results into outputs, so a passage id in a
+  # citation is a string the model wrote either way.
+  for tool in coverage_describe precedent_search; do
+    if ! grep -q "tools/call $tool" "$OUT/adapter-precedent_archive.log"; then
+      echo "FAIL: recall reported without calling $tool. Output" >&2
+      echo "self-attestation; see $OUT/adapter-precedent_archive.log" >&2
+      return 1
+    fi
+  done
+  OUTJSON="$pre" python3 - <<'RECALL'
+import json, os
+p = json.loads(os.environ["OUTJSON"])
+cov = p.get("search_coverage") or {}
+print(f"  queries: {len(cov.get('queries_issued') or [])}, archive at this "
+      f"bound: {cov.get('date_range')}")
+if p["no_applicable_precedent"]:
+    print("  no applicable precedent, with its coverage. The board gets no "
+          "precedent column and blocks on the same evidence either way.")
+for x in p["precedents"]:
+    ref = x.get("incident_ref") or {}
+    print(f"  [{x['confidence']}] {ref.get('source_uri')}, "
+          f"{x['applicability']}, grounded in "
+          f"{len(x.get('grounded_in') or [])} passages")
+    print(f"    divergence: {(x.get('divergence') or '')[:130]}")
+RECALL
+  stop_adapter precedent_archive 8426
   # The handoff itself: the correlator's typed output replaces the fixture's
-  # scripted stand-in before the commander runs. The rows in `changes` never
-  # reach it.
+  # scripted stand-in, and the analyst's replaces the empty precedent object,
+  # before the commander runs. The rows in `changes` never reach it and the
+  # archive is not on its input at all. What reaches it is one typed recall,
+  # citations and divergences intact.
   local composed
-  composed=$(COR="$cor" python3 -c '
+  composed=$(COR="$cor" PRE="$pre" python3 -c '
 import json, os
 view = json.load(open("fixtures/composite-incident.json"))
 view["correlation"] = json.loads(os.environ["COR"])
+view["precedent"] = json.loads(os.environ["PRE"])
 print(json.dumps(view))')
   BOARD=$(oa run --spec .agents/incident-commander.yaml --task assess \
     --input "$composed" --quiet)
@@ -171,10 +222,83 @@ print(f"  convergence_allowed: {b['convergence_allowed']}"
       + (f" ({b.get('convergence_block_reason')})"
          if not b["convergence_allowed"] else ""))
 for e in b["blocking_evidence"]:
-    if e.get("still_outstanding", True):
+    if e["still_outstanding"]:
         print(f"  outstanding: {e['description']}")
 PY
-  stop_adapter change_registry 8423
+  # What the composition is for, checked rather than narrated. A cited
+  # passage id has to be one the analyst handed over and one the archive
+  # actually returned, and the board has to still be blocked on the evidence
+  # nobody has collected. Precedent cannot appear anywhere else on the board:
+  # blocking_evidence is closed against it in the contract, so this checks
+  # what precedent did, not where it went.
+  BOARD_JSON="$BOARD" RECALL_JSON="$pre" \
+    LOG="$(cat "$OUT/adapter-precedent_archive.log")" python3 - <<'CITE'
+import json, os, re, sys
+
+board = json.loads(os.environ["BOARD_JSON"])
+recall = json.loads(os.environ["RECALL_JSON"])
+log = os.environ["LOG"]
+
+# Ids the archive put on the wire this run, and ids the analyst handed the
+# commander. The board may cite from the second; the second is only real if
+# it is a subset of the first.
+returned = dict(re.findall(r"^\[mock-precedent_archive\] hit (\S+) (\S+)$", log, re.M))
+handed = {i for x in recall["precedents"]
+          for i in list(x.get("grounded_in") or [])
+                 + [(x.get("incident_ref") or {}).get("passage_id")] if i}
+
+cited = {i for h in board["hypotheses"] for i in (h.get("precedent_cited") or [])}
+invented = sorted(cited - handed)
+if invented:
+    sys.exit("FAIL: the board cites passage ids the analyst never handed it: "
+             + ", ".join(invented))
+unreturned = sorted(cited - set(returned))
+if unreturned:
+    sys.exit("FAIL: the board cites passage ids the archive never returned: "
+             + ", ".join(unreturned))
+
+# A cited id proves the archive returned it. It does not prove the hypothesis
+# is about the document that id belongs to: a claim naming one record while
+# citing a passage of another passes a membership check, which is a mismatch
+# the judgement scorer has already been caught by. Resolve every id to its
+# document through the adapter log, never through a uri the model wrote, and
+# hold the prose to it.
+record = re.compile(r"\b(?:INC|DRAFT)-\d{4}\b")
+for h in board["hypotheses"]:
+    ids = h.get("precedent_cited") or []
+    if not ids:
+        continue
+    docs = {returned[i].split("#")[0] for i in ids}
+    named = set(record.findall(json.dumps(h)))
+    astray = sorted(n for n in named if not any(u.endswith(n) for u in docs))
+    if astray:
+        sys.exit(f"FAIL: a hypothesis names {', '.join(astray)} and cites "
+                 f"passages of {', '.join(sorted(docs))}:\n"
+                 + json.dumps(h, indent=2))
+
+if recall["precedents"] and not cited:
+    sys.exit("FAIL: precedent was handed over and no hypothesis rests on it. "
+             "Either every precedent was judged not to bear on any hypothesis, "
+             "which the board should say in a hypothesis it argues against, or "
+             "the citation was dropped in the handoff:\n"
+             + json.dumps(board["hypotheses"], indent=2))
+
+outstanding = [e for e in board["blocking_evidence"] if e["still_outstanding"]]
+if outstanding and board["convergence_allowed"]:
+    sys.exit("FAIL: convergence allowed with deciding evidence outstanding.")
+for h in board["hypotheses"]:
+    if h.get("precedent_cited") and h["confidence"] == "confirmed":
+        sys.exit("FAIL: a hypothesis resting on precedent reached confirmed.")
+
+for h in board["hypotheses"]:
+    for i in h.get("precedent_cited") or []:
+        print(f"  {h['confidence']}: cites {i}, which the archive returned "
+              f"this run from {returned[i]}")
+print(f"  precedent supports {sum(1 for h in board['hypotheses'] if h.get('precedent_cited'))} "
+      f"of {len(board['hypotheses'])} hypotheses and settles none of them: "
+      f"{len(outstanding)} item(s) still outstanding, convergence "
+      f"{'blocked' if not board['convergence_allowed'] else 'ALLOWED'}.")
+CITE
   echo
 }
 

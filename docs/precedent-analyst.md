@@ -444,12 +444,114 @@ Read the deltas across both modes, because neither mode can produce all four num
 mode. `agent_reach` is the bridge between them: retrieval on the queries the agent
 chose rather than on the dataset's canonical probe.
 
-**Phase 6, Composition.** `demos/investigate.sh` stays three acts: recall runs
-alongside detect, and its typed output enters the commander's input as `precedent`
-next to `findings` and `correlation`. The commander's board must be able to cite a
-precedent as supporting evidence without it counting as deciding evidence.
+**Phase 6, Composition.** `demos/investigate.sh` stays three acts, and the
+analyst's typed recall enters the commander's input as `precedent` next to
+`correlation`. The commander's board must be able to cite a precedent as
+supporting evidence without it counting as deciding evidence.
 *Done when:* one run produces a board whose hypotheses reference precedent by
 `passage_id`, and convergence still blocks on outstanding deciding evidence.
+
+Done, with recall in act two next to correlate rather than in act one next to
+detect. **The acceptance test is a property of the board, and the board is
+assembled at the bridge.** A recall bounded at D+1 would have the board cite the
+archive as it stood a fortnight earlier, and would drop `DRAFT-2601`: the working
+note being returned and not cited is the archive's strongest live moment, and it
+exists at this bound only. So act one stays detect alone, and act two collects
+twice, once from the registry and once from the archive, before the board is drawn.
+
+**Act-one recall is a real path, and a tested one.** Eval case `a02` runs at the
+D+1 bound, where the reported symptom is not yet on the view and the query reduces
+to the signature type alone, which is the measured good query rather than a
+degraded one; the case expects three documents and the trap unreachable by the
+bound rather than retrieved and rejected. Run standalone against the D+1 view with
+`symptom` passed empty, the command the README now carries, it returned `INC-2419`,
+`INC-2411` and `INC-2350` as `partial` over an archive it reported as running to
+2026-02-11: the working note dated inside this incident's window does not exist at
+that bound, so nothing had to reject it. It is the wrong bound for this board,
+not a broken path, and the day-one claim stays narration backed by `a02` and the
+standalone command in the README rather than by a second live recall in the
+pipeline. M3 still wants the demo deterministic enough to record without retakes,
+and every act is a live model run.
+
+This also settles a disagreement the docs already carried: this phase said recall
+runs alongside detect, while the definition of done for the demo in `PLAN.md`
+describes act one as recurrence and the standing condition with no precedent in
+it. It resolves to `PLAN.md`.
+
+**The boundary is in the contract rather than in the prompt.** A prompt saying
+precedent is supporting evidence is a prompt, and the failure this agent exists
+against is precedent arriving already believed. Four changes to
+`.agents/incident-commander.yaml` make the board unable to express precedent
+deciding anything:
+
+- `hypotheses[].precedent_cited`, an array of passage ids, is the only field on
+  the board where a citation is expressible.
+- `blocking_evidence[]` is closed. It is the list convergence blocks on, so it is
+  the slot where a citation would stop being supporting evidence, and no field
+  beyond the five declared ones exists on it.
+- `convergence_allowed` must be false while any blocking item has
+  `still_outstanding` true, and `still_outstanding` is now required so the rule
+  cannot be dodged by omitting the flag. Rule 4 was prompt-only until now.
+- A hypothesis carrying `precedent_cited` cannot be `confirmed`. Confirmation
+  takes a direct observation in `evidence`, and a prior incident is a direct
+  observation of a different incident.
+
+What none of that prevents is a passage paraphrased into `supporting_evidence`
+with no citation anywhere. The typed field makes the resting place checkable; it
+does not make paraphrase impossible, and the spec says so where the field is
+declared.
+
+**Verifying the convergence rule against boards that already existed found a
+different defect.** Three live `assess` runs on the attribution fixture, before
+any of this was added, were all rejected: `'false within incident window if
+security control is altered'`, `'depends_on_specific_action'` and `'true'`, each
+in `next_actions[].reversible`, which is a boolean. Under convergence pressure the
+board qualifies reversibility, and the contract was rejecting the qualification
+while the demo counted the rejection as a failure. `demos/governance.sh
+attribution` was failing on its main path for that reason and nothing else. The
+fix is a sentence in the prompt and a description on the field: the value is false
+where reversibility depends on anything, and the condition goes in `blast_radius`.
+The two stripped-prompt reject paths carry the same sentence, because a stripped
+prompt has to differ from the shipped one only in the control it removes, or the
+demo asserts the wrong rejection.
+
+**The acceptance run then failed on the same class again**, this time an
+optional string emitted as `null` and rejected as not a string. The prompt told
+the board to omit an optional field it had nothing for and never said that
+`null` is not how a field is omitted. Same fix, same three prompts. Neither
+defect has anything to do with precedent: both are the board hedging a field
+whose type does not allow hedging, both cost a whole run, and both were only
+visible because something ran the demo rather than validating a captured board.
+
+**Every generated view carries `precedent: {}`, and unlike `correlation` it has no
+scripted stand-in.** A citation is a passage id the archive computes from passage
+text, so a scripted precedent in a fixture would be a claim about the archive that
+nothing in CI checks and that goes stale the next time a document is edited. The
+empty object is also what a board sees when recall was too slow to wait for or
+failed, which is the degradation the composition is supposed to survive: the
+governance demos run the commander with no precedent at all and produce the same
+blocked board.
+
+**A cited id proves the archive returned it, and nothing about what the
+hypothesis is about.** A claim naming one record while citing a passage of
+another passes a membership check, which is a mismatch the judgement scorer has
+already been caught by. So `demos/investigate.sh` resolves every cited id to
+its document through the adapter log, never through a uri the model wrote, and
+fails when a hypothesis names a record its citations do not resolve to. The
+field itself stays ids only: a uri in it would be a second copy of something
+the log already establishes.
+
+**What the live runs produced.** Recall at the bridge bound returned the same
+three precedents on both composed runs, `INC-2411` and `INC-2419` as `partial`
+and `INC-2288` as `superseded`. The board recorded here is the second one: the
+composed run was rejected on the `null` above, so `assess` was re-run on that
+run's captured correlation and recall, one model call rather than three. It cited
+five distinct passages six times across three of its four hypotheses, every id
+resolving through the adapter log to the document the archive returned it from,
+no hypothesis above `plausible`, five blocking items outstanding and convergence
+blocked. The supersession travelled with the citation on both: `SEC-STD-14` is
+named where `INC-2288` is used, which is the qualifier the analyst is pinned to
+copy rather than paraphrase.
 
 **Phase 7, Documentation.** README section, architecture diagram updated to five
 agents and three evidence surfaces, results table, design decisions.

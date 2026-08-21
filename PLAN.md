@@ -83,7 +83,7 @@ The fifth agent. Owns a retrieval surface over prior incident records and runboo
 - [x] Measured improvement documented with before and after. Three arms
       recorded, both comparisons run, and the README states what was kept,
       what was rejected and the latency accepted for it
-- [ ] `investigate.sh` composes three acts with recall in act one, typed precedent entering the board as supporting and never deciding evidence
+- [x] `investigate.sh` composes three acts with recall in act two, typed precedent entering the board as supporting and never deciding evidence
 
 **Done when:** a board cites precedent by `passage_id`, convergence still blocks on outstanding deciding evidence, and the README carries a results table generated from the records rather than typed. The retrieval half regenerates from the corpus and the dataset; the judgement half is a grid derived from three committed run records, because a live sweep does not reproduce and a promise that it does is one the artefacts cannot keep.
 
@@ -408,6 +408,57 @@ measurement, so it is the one worth testing. Its arm's prompt is derived from
 the spec with that one paragraph replaced, and CI fails when the spec moves
 under it: an override replaces the whole system prompt, so a hand-maintained
 one drifts into being a second prompt and the delta then belongs to nothing.
+
+Phase 6 is done. `demos/investigate.sh act2` runs correlate and recall against
+the bridge view, composes both typed outputs into the commander's input, and
+asserts what the precedent did rather than that it arrived: on the recorded
+board, five distinct passages cited six times across three of its four
+hypotheses, every id resolving through the adapter log to the document the
+archive returned it from, no hypothesis above `plausible`, five blocking items
+outstanding and convergence blocked. `SEC-STD-14` is named where the superseded
+record is used, so the qualifier travelled with the citation.
+
+**Recall moved to act two, and the phase spec said act one.** The acceptance
+test is a property of the board and the board is assembled at the bridge: a
+recall bounded at D+1 would have it cite the archive as it stood a fortnight
+earlier, and would drop `DRAFT-2601`, whose being returned and not cited is the
+archive's strongest live moment and exists at this bound only. Act one stays
+detect alone. Recall at the D+1 bound is a real path and a tested one, eval
+case `a02`, where the query reduces to the signature type alone and the trap is
+unreachable rather than rejected; the day-one claim is narration backed by that
+case and by the standalone command in the README, not a second live recall in a
+demo that has to record without retakes. The definition of done below already
+described act one as recurrence and the standing condition with no precedent in
+it, so this resolves a disagreement between two documents rather than changing
+one.
+
+**The supporting-not-deciding property is in the contract now, not in the
+prompt.** `precedent_cited` on a hypothesis is the only field on the board a
+passage id can appear in; `blocking_evidence` is closed, so the list
+convergence blocks on cannot carry one; `convergence_allowed` must be false
+while any item is `still_outstanding`, which is now a required field; and a
+hypothesis carrying a citation cannot be `confirmed`. What none of it prevents
+is a passage paraphrased into `supporting_evidence` uncited, and the spec says
+so where the field is declared.
+
+**Checking that convergence rule against boards that already existed found a
+different defect, which is the argument for checking.** Three `assess` runs on
+the attribution fixture, before any of this went in, were all rejected on
+`next_actions[].reversible`: `'false within incident window if security
+control is altered'`, `'depends_on_specific_action'`, `'true'`. Under
+convergence pressure the board qualifies reversibility and the field is a
+boolean, so `demos/governance.sh attribution` was failing on its main path for
+that and nothing else. Fixed in the prompt and in the field's description, in
+the shipped prompt and in both stripped ones: a stripped prompt has to differ
+from the shipped one only in the control it removes, or the demo asserts the
+wrong rejection. Both governance modes pass again.
+
+The acceptance run then failed the same way once more, on an optional string
+emitted as `null` where the prompt had said to omit a field it has nothing for
+and never said that `null` is not an omission. Same fix and the same three
+prompts. Neither defect touches precedent: both are the board hedging a field
+whose type does not allow it, and both were only visible from running the
+thing.
 
 ---
 

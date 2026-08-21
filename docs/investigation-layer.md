@@ -84,7 +84,7 @@ that goes to the bridge and the update that goes to a customer are different
 artefacts derived from different inputs, and only one of them is allowed near
 a hypothesis.
 
-![Three acts. Act one at D+1 runs the Telemetry Analyst detect task and the Precedent Analyst recall task. Act two at the D+15 bridge runs the Change Correlator, whose correlation feeds the Incident Commander assess task alongside the findings and precedent from act one. Act three runs the commander's mitigate task, which is blocked pre-dispatch, and the Scribe, which drafts the change record and files the timeline.](diagrams/three-acts.svg)
+![Three acts. Act one at D+1 runs the Telemetry Analyst detect task against the near-empty day one view. Act two at the D+15 bridge runs the Change Correlator and the Precedent Analyst, whose correlation and typed precedent both feed the Incident Commander assess task. Act three runs the commander's mitigate task, which is blocked pre-dispatch, and the Scribe, which drafts the change record and files the timeline.](diagrams/three-acts.svg)
 
 *Do not open at the bridge.* Opening at the bridge sells two hours of saved call
 time. Opening at D+1 sells fifteen days of degraded production and an
@@ -92,11 +92,16 @@ unnecessary vendor escalation. Act one is a separate invocation against the
 near-empty D+1 view, which is the predictive half and the part nobody else
 demonstrates.
 
-> **Current state.** `demos/investigate.sh` composes three acts across four
-> agents. The Precedent Analyst runs standalone against the archive and in two
-> of the five `demos/governance.sh` modes; composing it into the investigation
-> is the next phase, so the diagram above shows the intended shape rather than
-> what one `investigate.sh` run does today.
+> **Current state.** `demos/investigate.sh` composes three acts across five
+> agents. Act two collects twice, from the change registry and from the
+> archive, and both typed outputs reach the commander: on the board recorded in
+> `docs/precedent-analyst.md`, five cited passages across three of its four
+> hypotheses, and five outstanding items it is still blocked on. Two things the
+> diagram does not claim. Act one is a separate invocation and its findings are
+> not composed into the board, which reads the bridge view's own signals; and
+> recall runs at the bridge bound because that is where the board is assembled,
+> though the archive answers at the D+1 bound too, which eval case `a02`
+> covers.
 
 ---
 
@@ -259,6 +264,19 @@ This is the composition claim, and it is narrower than it looks. Precedent
 enters the commander's hypothesis board as supporting evidence. It can never be
 the deciding evidence, because precedent describes what happened somewhere
 else.
+
+*Narrower, and structural.* Four rules in the commander's output contract, not
+four instructions in its prompt: `hypotheses[].precedent_cited` is the only
+field on the board a passage id may appear in; `blocking_evidence` is closed,
+so the list convergence blocks on cannot carry one; `convergence_allowed` must
+be false while any blocking item is `still_outstanding`, which is a required
+field; and a hypothesis carrying a citation cannot be `confirmed`. A board on
+which precedent decided something is a board the contract cannot express. What
+it cannot prevent is a passage paraphrased into `supporting_evidence` with no
+citation at all, and `demos/investigate.sh` checks the rest of it against the
+adapter log rather than against the board's own word: every cited id resolves
+to the document the archive returned it from, so a hypothesis naming one record
+while citing a passage of another fails the demo.
 
 ![The Precedent Analyst's typed output enters the Incident Commander's board as supporting evidence. A crossed path shows it can never enter the blocking evidence slot, which still holds the audit denial log that was never produced. Convergence stays disallowed while blocking evidence is outstanding.](diagrams/precedent-on-board.svg)
 
