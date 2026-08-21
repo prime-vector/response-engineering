@@ -63,6 +63,21 @@ makes iterating on the dataset affordable. Judgement mode needs both, plus the
 `behavioural-contracts` extra, which it checks for rather than measuring a
 harness with contract validation silently switched off.
 
+**Which judge, and why it is the metered one.** Published figures come from
+`claude-opus-4-6` through the Messages API. That transport has no file tools,
+so "the judge answered from the passages this claim cites" is structural rather
+than enforced. The Cursor CLI transport is kept for exploring on a
+subscription, and it is an agent with file access: a private mount namespace
+masks every checkout git knows about, `/proc` is remounted, and a shell tests
+both routes before anything is scored. That is a good mask and still a mask,
+because a copy of the corpus outside those checkouts cannot be covered. Three
+review rounds went into hardening it, which is what decided this: the number
+whose whole claim is that the judge had not read the answer is worth about a
+dollar an arm.
+
+`--compare`, `--comparison` and `--check-records` all refuse to put figures
+from the two transports beside each other.
+
 `--rejudge` re-runs the judge over a recorded sweep with the current prompts and
 payload, without re-running the agent. It is a fresh measurement rather than a
 recount, so it stamps `rejudged_at`, records the fingerprint of the code that
@@ -85,24 +100,24 @@ describe this tree.
 claims have now been scored by two model families. Under `claude-opus-4-6` at
 temperature 0, and under `cursor-grok-4.6-high` through the CLI:
 
-| arm | opus, four rounds | grok |
+| arm | `claude-opus-4-6`, five rounds | `cursor-grok-4.6-high`, three |
 | --- | --- | --- |
-| `judgement-heading` | 39, 37, 39, 38 of 52 | 17 of 52 |
-| `judgement-fixed` | 48, 45, 49, 48 of 56 | 19 of 56 |
-| `judgement-single-query` | 20, 19, 21, 21 of 22 | 9 of 22 |
+| `judgement-heading` | 39, 37, 39, 38, 38 of 52 | 15, 15, 17 of 52 |
+| `judgement-fixed` | 48, 45, 49, 48, 47 of 56 | 18, 17, 19 of 56 |
+| `judgement-single-query` | 20, 19, 21, 21, 21 of 22 | 10, 9, 8 of 22 |
 
-Forty points of level, and the ordering survived: heading below fixed below
-single-query under both families. So `groundedness_judge` is readable as a
+Around forty points of level, and the ordering survived: heading below fixed
+below single-query in every round of both families. So `groundedness_judge` is readable as a
 comparison and not as a score. A published figure of 73% or 33% says as much
 about which judge ran as about the agent.
 
-**The chunker pair is a different story under the two judges, though.** Under
-Opus heading and fixed part by about nine points, comfortably outside what a
-re-judge moves. Under Grok they are 17 of 52 against 19 of 56, a point apart
-and two claims apart, which is inside it. So the direction has never flipped
-and the size has collapsed, and the honest reading is that this judge cannot
-distinguish the two chunkers at all. The single-query arm stays clear of both
-under either judge.
+**The chunker pair is a different story under the two judges.** Under Opus
+heading and fixed part by about eleven points, outside what a re-judge moves.
+Under Grok they are two claims apart, which is inside it. The direction has
+never flipped and the size collapsed, so whether the two chunkers are
+distinguishable at all is itself judge-dependent. The single-query arm stays
+clear of both under either judge, which is the one comparison that does not
+depend on who is judging.
 
 **The difference is one rule doing almost all the work.** Both judges apply the
 prompt's instruction that a claim about the prior record lacking something is
@@ -549,9 +564,9 @@ The grid is generated from the three records and diffed in CI:
 
 Applicability offered: judgement-heading `partial` 44, `superseded` 8; judgement-fixed `partial` 48, `superseded` 8; judgement-single-query `partial` 21, `superseded` 1. `false_precedent_rate` fires only on `applies`.
 
-| judged by cursor-grok-4.6-high | judgement-heading | judgement-fixed | judgement-single-query |
+| judged by claude-opus-4-6 | judgement-heading | judgement-fixed | judgement-single-query |
 | --- | --- | --- | --- |
-| `groundedness_judge` | 17/52 | 19/56 | 9/22 |
+| `groundedness_judge` | 38/52 | 47/56 | 21/22 |
 | `divergence_quality` | 6/6 | 6/7 | 6/7 |
 
 Both judged rates are scored over what each run offered, so offering less can raise them: judgement-heading never offered the diverging record on `b04`.
@@ -578,7 +593,7 @@ delta is the paragraph, not query count in isolation, and `--compare` cannot
 see the difference because a system prompt is one knob to it.
 
 **The chunker is not choosable off one sweep each.** Same reach, 54 of 60, and
-14 against 13 omissions. The judged half parts by 17/52 against 19/56, and
+14 against 13 omissions. The judged half parts by 38/52 against 47/56, and
 heading came out below fixed in every judging, so the gap is repeatable
 even though its size moves by several points between rounds. That is a real
 difference nobody should choose a chunker on: one sweep each, a judge scoring a
@@ -612,8 +627,8 @@ applies. An agent that never says `applies` cannot offer a false precedent, so
 the two figures have to be read together, and the table prints them together
 for that reason.
 
-**`groundedness_judge` at 32.7% under the judge now configured, and the
-failures have one shape.** Nearly all of the 35 unsupported claims assert an
+**`groundedness_judge` at 73.1% under the judge now configured, and the
+failures have one shape.** Most of the 14 unsupported claims assert an
 absence: "the prior incident shows no audit
 daemon", from passages that simply do not mention one. It is a divergence of
 exactly the kind rule 5 asks for, resting on something the archive never said.

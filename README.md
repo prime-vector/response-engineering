@@ -196,8 +196,10 @@ with no model in the loop and re-runs for free, and judgement, which runs the
 agent live, one `oa run` per case over 38 hand-authored cases. Deterministic
 figures come from the typed output, the adapter's audit log and the ground
 truth. Two more are scored by a separate model with the judge prompts
-committed, and they are reported in their own table so they cannot be read as
-the same kind of number. How much that separation matters is measured rather
+committed, through an API with no file tools, so that the judge answering only
+from the passages a claim cites is a property of the transport rather than an
+instruction to it. They are reported in their own table so they cannot be read
+as the same kind of number. How much that separation matters is measured rather
 than asserted: the same claims scored 73% under one judge family and 29% under
 another, while the ordering between arms survived both.
 
@@ -223,9 +225,9 @@ that drifts:
 
 Applicability offered: judgement-heading `partial` 44, `superseded` 8; judgement-fixed `partial` 48, `superseded` 8; judgement-single-query `partial` 21, `superseded` 1. `false_precedent_rate` fires only on `applies`.
 
-| judged by cursor-grok-4.6-high | judgement-heading | judgement-fixed | judgement-single-query |
+| judged by claude-opus-4-6 | judgement-heading | judgement-fixed | judgement-single-query |
 | --- | --- | --- | --- |
-| `groundedness_judge` | 17/52 | 19/56 | 9/22 |
+| `groundedness_judge` | 38/52 | 47/56 | 21/22 |
 | `divergence_quality` | 6/6 | 6/7 | 6/7 |
 
 Both judged rates are scored over what each run offered, so offering less can raise them: judgement-heading never offered the diverging record on `b04`.
@@ -265,15 +267,12 @@ prompt as one knob.
 
 **Rejected: reading the chunker off these numbers.** Heading-aware and
 fixed-size chunking reach the same 54 of 60 pairs and omit 14 and 13 of 23
-applying documents. They part on the judged half, 17 of 52 claims supported
-against 19 of 56, and heading came out below fixed in every judging: four
-rounds under one judge family and one under another, each of which judged both
-arms with the same code, prompts and model. The direction has never flipped
-across five matched comparisons; the size has collapsed. Under the earlier
-judge the two chunkers were about nine points apart, comfortably outside what a
-re-judge moves. Under this one they are two claims apart, which is inside it,
-so this judge cannot tell them apart at all. Not enough to choose a chunker on,
-by either reading. Heading-aware is kept for something no metric here scores: its
+applying documents. They part on the judged half, 38 of 52 claims supported
+against 47 of 56, and heading came out below fixed in every judging under both
+judge families. The direction has never flipped; the size depends on who is
+judging. Under this judge the two chunkers are about eleven points apart,
+outside what a re-judge moves; under the other they were two claims apart,
+inside it. Not enough to choose a chunker on, by either reading. Heading-aware is kept for something no metric here scores: its
 citations carry the heading chain, `INC-2411: … > Resolution`, where fixed
 chunks carry only the document title. That is the part that makes a citation
 checkable in five seconds, and it is a property rather than a result.
@@ -290,9 +289,9 @@ adapter. There is none in this repo, so the runner refuses a config that
 declares one rather than recording a configuration nothing produced.
 
 **Read the judged table as a comparison, never as a score.** Those figures come
-from `cursor-grok-4.6-high`. The same claims judged by `claude-opus-4-6` at
-temperature 0 scored 38 of 52, 48 of 56 and 21 of 22, about forty points higher,
-with the arms in the same order. Almost all of the difference is one rule: the
+from `claude-opus-4-6` at temperature 0. The same claims judged by
+`cursor-grok-4.6-high` scored 17 of 52, 19 of 56 and 8 of 22, about forty
+points lower, with the arms in the same order. Almost all of the difference is one rule: the
 prompt says a claim that the prior record lacked something is unsupported
 unless a passage states the absence, and the two families hold that rule with
 very different strictness. `divergence_quality` hardly moved between them,

@@ -22,6 +22,23 @@ task: recall
 timeout: 600
 
 judge:
+  # Published figures come from the metered API, and the reason is not cost.
+  # This metric's whole claim is that the judge answered from the passages a
+  # claim cites and nothing else. The Messages API has no file tools at all,
+  # so that is structural. The CLI is an agent with file access, and three
+  # review rounds went into masking the routes to the corpus: a private mount
+  # namespace, /proc remounted, every checkout git knows about, both routes
+  # probed by a shell before anything is scored. It is a good mask and it is
+  # still a mask: a copy of the corpus outside those checkouts cannot be
+  # covered by any of it.
+  #
+  # So transport: anthropic for anything published, transport: cursor for
+  # exploring on the subscription, and --compare refuses to put figures from
+  # the two beside each other. Judging costs about a dollar an arm, which is
+  # worth it for the one number here that rests on the judge not having read
+  # the answer. The cost lesson from building this stands and was never about
+  # the transport: it was judging four times because four review findings
+  # changed what the judge was asked. Judge once, at the end.
   # Through the Cursor CLI, which puts judging on a subscription rather than
   # metered per claim. Judging was the recurring cost here: a review finding
   # that changes what the judge is asked owes a re-judge of every arm, and
@@ -37,8 +54,10 @@ judge:
   #
   # transport: anthropic is still supported and still pins temperature and a
   # token limit. --check-records refuses to compare records across the two.
-  transport: cursor
-  model: cursor-grok-4.6-high
+  transport: anthropic
+  model: claude-opus-4-6
+  temperature: 0
+  max_tokens: 1500
   timeout: 300
   # Judgements are independent by construction, so they run concurrently.
   # Sequentially an arm took the better part of an hour through this
@@ -46,11 +65,10 @@ judge:
   # preamble rather than the model. Six lanes is deliberately modest: the
   # point is to stop waiting on spawn overhead, not to find a rate limit.
   concurrency: 6
-  # The one sampling control this transport has, and it is carried by the
-  # model id rather than by a flag: cursor-grok-4.6-high is the high-effort
-  # variant, and the CLI rejects a bracket override on it. Declared here so
-  # the config states the input, and checked against the id at run time, since
-  # a config key nothing reads is worse than no key at all.
+  # For transport: cursor only. That transport has no temperature and no
+  # effort flag; effort rides in the model id, so this is checked against the
+  # id at run time rather than passed. A config key nothing reads would be
+  # worse than no key at all.
   effort: high
   groundedness_prompt: evals/judges/groundedness-judge.txt
   divergence_prompt: evals/judges/divergence-judge.txt

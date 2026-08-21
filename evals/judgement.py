@@ -897,7 +897,8 @@ def judge_code_fingerprint():
     """
     source = "".join(inspect.getsource(fn)
                      for fn in (judge_run, call_judge, judge_via_cursor,
-                                judge_jail, verify_jail, extract_json,
+                                judge_jail, verify_jail, repo_checkouts,
+                                extract_json,
                                 offered_claim, cited_ids, rpc))
     # Values, not only code. The endpoint and the API version shape every
     # request, and rpc is what resolves a cited passage to the text the judge
@@ -905,6 +906,29 @@ def judge_code_fingerprint():
     # without the record noticing.
     return hashlib.sha256(
         (source + API_URL + API_VERSION).encode()).hexdigest()
+
+
+def repo_checkouts(repo_root):
+    """Every checkout of this repository, not just the one running.
+
+    A worktree masks its own path and leaves the primary checkout, and any
+    sibling worktree, holding the same corpus at a different path. The review
+    that found this ran in a worktree while /home/.../response-engineering sat
+    readable beside it. git knows where they all are, so ask git.
+
+    This still masks paths rather than content: a copy of the corpus outside
+    any checkout git knows about is not covered, and nothing here can cover
+    it. The transport with no file tools is the only version of this that is
+    structural, and the record says so.
+    """
+    paths = {repo_root}
+    listing = subprocess.run(
+        ["git", "-C", repo_root, "worktree", "list", "--porcelain"],
+        capture_output=True, text=True)
+    for line in listing.stdout.splitlines():
+        if line.startswith("worktree "):
+            paths.add(line.split(" ", 1)[1].strip())
+    return sorted(paths)
 
 
 def judge_jail(repo_root):
@@ -954,10 +978,12 @@ def judge_jail(repo_root):
     # /proc is remounted, not just the repository masked. A new PID namespace
     # without it leaves the host's procfs in place, and /proc/<pid>/root/ is a
     # second door to every path the tmpfs hides. Sol found that at the gate.
-    wrapper.write("#!/bin/bash\n"
-                  f"mount -t tmpfs none {repo_root} 2>/dev/null || exit 97\n"
-                  "mount -t proc proc /proc 2>/dev/null || exit 96\n"
-                  'exec "$@"\n')
+    masks = "".join(
+        f"mount -t tmpfs none {path} 2>/dev/null || exit 97\n"
+        for path in repo_checkouts(repo_root))
+    wrapper.write("#!/bin/bash\n" + masks
+                  + "mount -t proc proc /proc 2>/dev/null || exit 96\n"
+                  + 'exec "$@"\n')
     wrapper.close()
     os.chmod(wrapper.name, 0o700)
     # --pid --fork so the judge cannot walk /proc back to a process outside
@@ -981,9 +1007,16 @@ def verify_jail(judge, prefix, repo_root):
     # got through is a boundary checked by self-report. Both the masked path
     # and the /proc route into another process's root, inside the same
     # namespace the judge will run in.
-    script = (f'cat {target} >/dev/null 2>&1 && echo DIRECT_OK; '
-              f'cat /proc/*/root{target} >/dev/null 2>&1 && echo PROC_OK; '
-              f'echo SHELL_DONE')
+    # Every checkout, by both routes. Testing only the one this process runs
+    # from is what let a worktree pass while the primary checkout beside it
+    # was readable.
+    checks = "".join(
+        f'cat {os.path.join(path, "corpus", "documents", "incidents", "INC-2411.md")}'
+        f' >/dev/null 2>&1 && echo DIRECT_OK; '
+        f'cat /proc/*/root{os.path.join(path, "corpus")}/documents/incidents/'
+        f'INC-2411.md >/dev/null 2>&1 && echo PROC_OK; '
+        for path in repo_checkouts(repo_root))
+    script = checks + "echo SHELL_DONE"
     shell = subprocess.run(prefix + ["bash", "-c", script],
                            capture_output=True, text=True, timeout=60)
     routes = shell.stdout.strip().replace("\n", " ")
@@ -1014,15 +1047,19 @@ def verify_jail(judge, prefix, repo_root):
             "whether the judge can read the corpus it is scoring against is "
             "unestablished. Nothing is scored on that.\n"
             f"  probe answered: {answer.strip()[:200] or '(nothing)'}")
-    return {"shell_probe": "direct path and /proc/*/root, both refused",
+    return {"shell_probe": f"direct path and /proc/*/root refused in "
+                          f"{len(repo_checkouts(repo_root))} checkout(s)",
+            "checkouts_masked": repo_checkouts(repo_root),
             "shell_answer": routes,
             "model_probe": "read a corpus document by its usual path",
             "model_answer": answer.strip()[:120],
             "reachable": False,
-            "scope": "two routes tested, not every route. The namespace masks "
-                     "paths and remounts /proc; it is not a container, and "
-                     "the metered transport is the one that needs no mask "
-                     "because it has no file tools."}
+            "scope": "two routes into every checkout git knows about. Not "
+                     "every route and not every copy: a corpus outside those "
+                     "checkouts is not masked and cannot be. This is a "
+                     "control against a model taking an available path, not "
+                     "a container, and the metered transport is the "
+                     "structural version because it has no file tools."}
 
 
 def cursor_version():
@@ -1355,7 +1392,8 @@ def judge_run(config, records, scores, cases, port, key):
                         if transport == "anthropic" else None),
         "max_tokens": (judge.get("max_tokens", 1500)
                        if transport == "anthropic" else None),
-        "sampling": ("temperature 0" if transport == "anthropic"
+        "sampling": (f"temperature {judge.get('temperature', 0)}"
+                     if transport == "anthropic"
                      else "no temperature; effort is carried by the model id, "
                           "which is pinned and compared like any other input"),
         "effort": (judge.get("effort", "high") if transport == "cursor"
