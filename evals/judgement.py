@@ -2878,12 +2878,17 @@ def rejudge(record_path, config):
             "prompts": {name: (before.get("prompts") or {})
                         .get(name, {}).get("fingerprint")
                         for name in ("groundedness", "divergence")},
+            # Verdicts, not just counts. A round archived as three numbers
+            # cannot support a claim about why it differs from another round,
+            # and the reason the two judge families disagree is one of this
+            # change's findings. The records grow; re-judging is rare and the
+            # evidence is the point of keeping them.
             "groundedness_judge": {
                 k: (before.get("groundedness_judge") or {}).get(k)
-                for k in ("value", "numerator", "denominator")},
+                for k in ("value", "numerator", "denominator", "verdicts")},
             "divergence_quality": {
                 k: (before.get("divergence_quality") or {}).get(k)
-                for k in ("value", "numerator", "denominator")},
+                for k in ("value", "numerator", "denominator", "verdicts")},
         })
     result["judgings"] = history
     result["judged"] = fresh

@@ -301,10 +301,12 @@ belongs to the judge, which is what they are for, rather than as a figure
 verified to the current boundary. That transport
 cannot set a temperature at all, and it is an agent with file access rather
 than a plain call, so the two rows differ in sampling and in what the judge
-could reach as well as in model family. Almost all of the difference is one rule: the
-prompt says a claim that the prior record lacked something is unsupported
-unless a passage states the absence, and the two families hold that rule with
-very different strictness. `divergence_quality` hardly moved between them,
+could reach as well as in model family. Most of the difference has one shape, counted from
+the per-claim verdicts both rounds carry: of the claims the CLI judge rejected
+and the metered one did not, 75 to 90 per cent across the three arms are
+rejected because the cited passages never state what the claim asserts about
+the prior record. The two families hold the instruction to judge only from the
+cited text with very different literalness. `divergence_quality` hardly moved between them,
 because that judge is handed the dataset's list of distinguishing factors and
 asked whether the text names one. A judged metric is portable to the degree the
 question is closed.

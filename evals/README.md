@@ -75,8 +75,8 @@ review rounds went into hardening it, which is what decided this: the number
 whose whole claim is that the judge had not read the answer is worth about a
 dollar an arm. The metered transport turned out to be faster too. The records
 carry per-round pace for every round judged since the field was added, which is
-the metered ones: about four seconds a call and under a minute for a whole arm
-at six lanes. The CLI figure is not in any record, because those rounds ran
+the metered ones: about four seconds a call and about a minute for a whole arm
+at six lanes, the slowest recorded being 61.7 seconds. The CLI figure is not in any record, because those rounds ran
 before the field existed. It was measured directly instead, on a representative
 payload: 12.0s wall against 5.8s reported server-side, and 11,298 input tokens
 billed for a 1,599-character prompt, so roughly half of each call is process
@@ -161,16 +161,25 @@ distinguishable at all is itself judge-dependent. The single-query arm stays
 clear of both under either judge, which is the one comparison that does not
 depend on who is judging.
 
-**The difference is one rule doing almost all the work.** Both judges apply the
-prompt's instruction that a claim about the prior record lacking something is
-unsupported unless a passage states the absence. Opus applies it to about a
-quarter of claims; Grok applies it to nearly all of them, because most
-divergence text asserts an absence somewhere. The rule is the metric's opinion
-and the judge is how strictly that opinion is held.
+**The difference has a shape, and it is checkable from the records.** Every
+archived round now carries its per-claim verdicts, so the claim below is
+counted rather than asserted. On the shipped arm the CLI judge called 35 claims
+unsupported against the metered judge's 13. Of the 22 it rejected and the other
+did not, 20 give the same reason: the cited passages never state the thing the
+claim asserts about the prior record. Across the three arms that pattern covers
+75 to 90 per cent of the divergent verdicts.
 
-**`divergence_quality` moved once, on one arm, in one round.** Heading is 6/6
-and fixed 6/7 in every judging under both families; single-query is 6/7 in
-every round but one, where it was 5/7. Against forty points of movement on
+An earlier version of this paragraph called it the absence rule specifically,
+and the verdicts do not support that narrowing. Absence claims are a subset. A
+divergence saying the prior incident "had no transfer failures" is rejected on
+the same ground as one saying a process snapshot "was not required": the
+passages say neither. What separates the families is not one rule about
+absence, it is how literally each holds the instruction to judge only from the
+cited text.
+
+**`divergence_quality` barely moves at all.** Heading is 6/6 and fixed 6/7 in
+every judging under both families; single-query is 6/7 in every round but two,
+where it was 5/7. Against forty points of movement on
 `groundedness_judge`, that is the same measurement surviving a change of judge
 family.
 That judge is handed the dataset's list of distinguishing factors and asked
