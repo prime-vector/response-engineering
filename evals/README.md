@@ -119,8 +119,8 @@ table, with the transport and the isolation state of each.
 
 | arm | `claude-opus-4-6`, metered, no file tools | `cursor-grok-4.6-high`, isolated |
 | --- | --- | --- |
-| `judgement-heading` | 39 of 52 | 17 of 52 |
-| `judgement-fixed` | 47 of 56 | 19 of 56 |
+| `judgement-heading` | 38 of 52 | 17 of 52 |
+| `judgement-fixed` | 48 of 56 | 19 of 56 |
 | `judgement-single-query` | 21 of 22 | 9 of 22 |
 
 Matched deliberately. The single-query arm has six Cursor attempts and its
@@ -154,20 +154,22 @@ comparison and not as a score. A published figure of 75% or 33% says as much
 about which judge ran as about the agent.
 
 **The chunker pair is a different story under the two judges.** Under Opus
-heading and fixed part by about nine points, outside what a re-judge moves.
+heading and fixed part by about ten points, outside what a re-judge moves.
 Under Grok they are two claims apart, which is inside it. The direction has
 never flipped and the size collapsed, so whether the two chunkers are
 distinguishable at all is itself judge-dependent. The single-query arm stays
 clear of both under either judge, which is the one comparison that does not
 depend on who is judging.
 
-**The difference has a shape, and it is checkable from the records.** Every
-archived round now carries its per-claim verdicts, so the claim below is
-counted rather than asserted. On the shipped arm the CLI judge called 35 claims
-unsupported against the metered judge's 13. Of the 22 it rejected and the other
-did not, 20 give the same reason: the cited passages never state the thing the
+**The difference has a shape, and it is checkable from the records.** The
+matched rounds either side of the comparison carry their per-claim verdicts,
+the Cursor ones recovered from the commits that held them, so the claim below
+is counted rather than asserted. Rounds archived before verdicts were kept hold
+counts only, and are not what it is counted from. On the shipped arm the CLI judge called 35 claims
+unsupported against the metered judge's 14. Of the 21 it rejected and the other
+did not, 19 give the same reason: the cited passages never state the thing the
 claim asserts about the prior record. Across the three arms that pattern covers
-75 to 90 per cent of the divergent verdicts.
+52 of 62 divergent verdicts, 83 per cent, and no arm falls below 75.
 
 An earlier version of this paragraph called it the absence rule specifically,
 and the verdicts do not support that narrowing. Absence claims are a subset. A
@@ -615,9 +617,9 @@ The grid is generated from the three records and diffed in CI:
 
 Applicability offered: judgement-heading `partial` 44, `superseded` 8; judgement-fixed `partial` 48, `superseded` 8; judgement-single-query `partial` 21, `superseded` 1. `false_precedent_rate` fires only on `applies`.
 
-| judged by claude-opus-4-6 | judgement-heading | judgement-fixed | judgement-single-query |
+| judged by claude-opus-4-6 via anthropic, no file tools, temperature 0 | judgement-heading | judgement-fixed | judgement-single-query |
 | --- | --- | --- | --- |
-| `groundedness_judge` | 39/52 | 47/56 | 21/22 |
+| `groundedness_judge` | 38/52 | 48/56 | 21/22 |
 | `divergence_quality` | 6/6 | 6/7 | 6/7 |
 
 Both judged rates are scored over what each run offered, so offering less can raise them: judgement-heading never offered the diverging record on `b04`.
@@ -644,7 +646,7 @@ delta is the paragraph, not query count in isolation, and `--compare` cannot
 see the difference because a system prompt is one knob to it.
 
 **The chunker is not choosable off one sweep each.** Same reach, 54 of 60, and
-14 against 13 omissions. The judged half parts by 39/52 against 47/56, and
+14 against 13 omissions. The judged half parts by 38/52 against 48/56, and
 heading came out below fixed in every judging, so the gap is repeatable
 even though its size moves by several points between rounds. That is a real
 difference nobody should choose a chunker on: one sweep each, a judge scoring a
@@ -678,9 +680,9 @@ applies. An agent that never says `applies` cannot offer a false precedent, so
 the two figures have to be read together, and the table prints them together
 for that reason.
 
-**`groundedness_judge` at 75% under the judge now configured, and the
-failures have one shape.** Most of the 13 unsupported claims assert an
-absence: "the prior incident shows no audit
+**`groundedness_judge` at 73.1% under the judge now configured, and the
+failures have one shape.** Most of the 14 unsupported claims assert something
+the cited passages never state: "the prior incident shows no audit
 daemon", from passages that simply do not mention one. It is a divergence of
 exactly the kind rule 5 asks for, resting on something the archive never said.
 `groundedness_log` cannot see it: every one of those citations is a passage the

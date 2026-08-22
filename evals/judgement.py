@@ -48,7 +48,7 @@ of a model, scored with the prompt committed beside this file and whatever
 sampling the transport can pin, which the record states rather than assumes.
 Mixing them into one table would launder the second as the first. Their level
 is judge-relative and measured to be so: on the shipped arm the same claims
-score 39 of 52 under one judge family and 17 of 52 under another, while the
+score 38 of 52 under one judge family and 17 of 52 under another, while the
 ordering between arms survives both.
 
 Stdlib plus PyYAML, like runner.py and validate.py. The judge calls the
@@ -895,8 +895,15 @@ def judge_code_fingerprint(transport="anthropic"):
     back, and the claim shape it is handed. The prompts, the model and the
     temperature are fingerprinted separately in the record.
     """
+    # score_run is here because judge_run builds its task list from the claims
+    # score_run produces: which claims are judged at all, and the divergence
+    # filter, come from it. It was removed once to stop a deterministic check
+    # like the time bound from demanding a paid re-judge, and that traded the
+    # fingerprint's correctness for its convenience. The honest version
+    # over-triggers; the way out is to extract claim construction into its own
+    # function rather than to hash less than the payload depends on.
     functions = [judge_run, call_judge, extract_json, offered_claim,
-                 cited_ids, rpc]
+                 cited_ids, score_run, rpc]
     # The isolation code determines a verdict only where the judge has file
     # tools. Hashing it for a metered round made an edit to the jail invalidate
     # rounds it could not possibly have touched, and the remedy for that is
@@ -1091,12 +1098,15 @@ def judge_via_cursor(judge, system, payload):
 
     Two things this has to get right, and the second is not about cost.
 
-    The harness is an agent with workspace access, and the judge's whole job
-    is to answer from the passages it is handed. Given the repository it would
-    be able to open corpus/documents and confirm a claim from the document
-    rather than from the citation, which is precisely the check being run. So
-    it runs in an empty directory: there is nothing to read, and read-only
-    mode is a second lock rather than the only one.
+    The harness is an agent with file tools, and the judge's whole job is to
+    answer from the passages it is handed. Given the repository it can open
+    corpus/documents and confirm a claim from the document rather than from
+    the citation, which is precisely the check being run. The empty workspace
+    and read-only mode do not stop that: ask mode forbids writes, not reads,
+    and an absolute path resolves regardless of the workspace. A probe showed
+    exactly that. What stops it is judge_jail, the mount namespace, and the
+    only structural version is the metered transport, which has no file tools
+    at all.
 
     Sampling cannot be set here. The CLI takes a model and effort, not a
     temperature, so a run through this transport cannot claim temperature 0.
@@ -2605,8 +2615,13 @@ def comparison_grid(records):
             for label, d in zip(labels, dets))
         + ". `false_precedent_rate` fires only on `applies`.",
         "",
-        "| judged by " + (judged[0].get("model") or "a model") + " | "
-        + head + " |",
+        "| judged by " + (judged[0].get("model") or "a model") + " via "
+        + (judged[0].get("transport") or "an unrecorded transport")
+        + (", no file tools"
+           if judged[0].get("transport") == "anthropic"
+           else ", an agent behind a mount namespace")
+        + ", " + (judged[0].get("sampling") or "sampling unstated")
+        + " | " + head + " |",
         "| --- | " + " | ".join("---" for _ in labels) + " |",
         "| `groundedness_judge` | "
         + " | ".join(_fraction(j.get("groundedness_judge")) for j in judged)

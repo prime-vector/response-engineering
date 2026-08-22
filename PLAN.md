@@ -246,7 +246,7 @@ different model family with the prompts committed in `evals/judges/`:
 `groundedness_judge` and `divergence_quality`. Putting a judged figure beside a
 deterministic one makes it read as the same kind of fact.
 
-**How much that matters is now measured.** The same claims scored 39 of 52
+**How much that matters is now measured.** The same claims scored 38 of 52
 under `claude-opus-4-6` at temperature 0 and 17 of 52 under
 `cursor-grok-4.6-high`, which cannot be set to a temperature at all and whose
 rounds were probed on two routes rather than against every checkout, the
@@ -287,8 +287,8 @@ passage ids in the set the surface returned, `agent_reach` 54 of 60 pairs, p50
 Read the two things the deterministic rates cannot say by themselves. Ten of
 the 52 claims are offered as `partial` where the truth is `applies`, so the
 zero false precedent rate is a partly cautious agent rather than a calibrated
-one, and the table says so beside it. And `groundedness_judge` is 75%: 39 of
-52 claims are supported by the passages they cite, and most of the other 13 are
+one, and the table says so beside it. And `groundedness_judge` is 73.1%: 38 of
+52 claims are supported by the passages they cite, and most of the other 14 are
 the same move, an absence asserted from silence. Judged by the other family the same claims scored 17 of
 52, which is why that figure is a comparison and not a score. "INC-2411 shows no audit
 daemon" is a claim about a document from passages that simply do not mention
@@ -351,12 +351,12 @@ tool call and these made 388 successful ones; the CLI version is not.
 **The chunker is not choosable off these numbers, and saying so is the result.**
 Heading-aware and fixed reach the same 54 of 60 pairs and omit 14 and 13 of the
 23 applying documents the archive handed over. The judged half parts by more
-than a wobble under one judge and inside it under the other: 39 of 52 against
-47 of 56 under Opus, about nine points, and 17 of 52 against 19 of 56 under
-Grok, two claims. Heading is below fixed in every judging the records carry,
-five under the metered judge and three under the CLI one. Each round judged
-both arms with the same code, prompts and model, so the ordering rests on
-every matched comparison the records hold, three metered and three CLI, plus
+than a wobble under one judge and inside it under the other: 38 of 52 against
+48 of 56 under Opus, about ten points, and 17 of 52 against 19 of 56 under
+Grok, two claims. Heading is below fixed in every judging the records carry.
+Each round judged both arms with the same code, prompts and model, so the
+ordering rests on every matched comparison the records hold, three metered and
+three CLI, plus
 four earlier rounds whose transport predates the field and is therefore not
 recorded rather than assumed to be either; the rounds are not equivalent to each other, so
 neither the two to four claims an arm moves within a family nor the forty

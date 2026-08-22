@@ -200,7 +200,7 @@ committed, through an API with no file tools, so that the judge answering only
 from the passages a claim cites is a property of the transport rather than an
 instruction to it. They are reported in their own table so they cannot be read
 as the same kind of number. How much that separation matters is measured rather
-than asserted: on the shipped arm the same claims scored 39 of 52 under one
+than asserted: on the shipped arm the same claims scored 38 of 52 under one
 judge family and 17 of 52 under another, while the ordering between arms
 survived both.
 
@@ -226,9 +226,9 @@ that drifts:
 
 Applicability offered: judgement-heading `partial` 44, `superseded` 8; judgement-fixed `partial` 48, `superseded` 8; judgement-single-query `partial` 21, `superseded` 1. `false_precedent_rate` fires only on `applies`.
 
-| judged by claude-opus-4-6 | judgement-heading | judgement-fixed | judgement-single-query |
+| judged by claude-opus-4-6 via anthropic, no file tools, temperature 0 | judgement-heading | judgement-fixed | judgement-single-query |
 | --- | --- | --- | --- |
-| `groundedness_judge` | 39/52 | 47/56 | 21/22 |
+| `groundedness_judge` | 38/52 | 48/56 | 21/22 |
 | `divergence_quality` | 6/6 | 6/7 | 6/7 |
 
 Both judged rates are scored over what each run offered, so offering less can raise them: judgement-heading never offered the diverging record on `b04`.
@@ -268,8 +268,8 @@ prompt as one knob.
 
 **Rejected: reading the chunker off these numbers.** Heading-aware and
 fixed-size chunking reach the same 54 of 60 pairs and omit 14 and 13 of 23
-applying documents. They part on the judged half, 39 of 52 claims supported
-against 47 of 56, and heading came out below fixed in every judging the
+applying documents. They part on the judged half, 38 of 52 claims supported
+against 48 of 56, and heading came out below fixed in every judging the
 records carry: three under this judge, three under one of another family, and
 four more whose transport predates the field that records it. The direction has never flipped; the size depends on who is
 judging. Under this judge the two chunkers are about nine points apart,
@@ -302,10 +302,9 @@ verified to the current boundary. That transport
 cannot set a temperature at all, and it is an agent with file access rather
 than a plain call, so the two rows differ in sampling and in what the judge
 could reach as well as in model family. Most of the difference has one shape, counted from
-the per-claim verdicts both rounds carry: of the claims the CLI judge rejected
-and the metered one did not, 75 to 90 per cent across the three arms are
-rejected because the cited passages never state what the claim asserts about
-the prior record. The two families hold the instruction to judge only from the
+the per-claim verdicts both rounds carry: of the 62 claims the CLI judge rejected
+and the metered one did not, 52 are rejected because the cited passages never
+state what the claim asserts about the prior record. The two families hold the instruction to judge only from the
 cited text with very different literalness. `divergence_quality` hardly moved between them,
 because that judge is handed the dataset's list of distinguishing factors and
 asked whether the text names one. A judged metric is portable to the degree the
