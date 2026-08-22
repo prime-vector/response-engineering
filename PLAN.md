@@ -246,7 +246,7 @@ different model family with the prompts committed in `evals/judges/`:
 `groundedness_judge` and `divergence_quality`. Putting a judged figure beside a
 deterministic one makes it read as the same kind of fact.
 
-**How much that matters is now measured.** The same claims scored 38 of 52
+**How much that matters is now measured.** The same claims scored 39 of 52
 under `claude-opus-4-6` at temperature 0 and 17 of 52 under
 `cursor-grok-4.6-high`, which cannot be set to a temperature at all. The first
 is what the published figures use, because that transport has no file tools, and the ordering between arms held under both. So the
@@ -350,7 +350,7 @@ tool call and these made 388 successful ones; the CLI version is not.
 Heading-aware and fixed reach the same 54 of 60 pairs and omit 14 and 13 of the
 23 applying documents the archive handed over. The judged half parts by more
 than a wobble under one judge and inside it under the other: 39 of 52 against
-49 of 56 under Opus, about twelve points, and 17 of 52 against 19 of 56 under
+47 of 56 under Opus, about nine points, and 17 of 52 against 19 of 56 under
 Grok, two claims. Heading is below fixed in every judging the records carry,
 five under the metered judge and three under the CLI one. Each round judged
 both arms with the same code, prompts and model, so the ordering rests on

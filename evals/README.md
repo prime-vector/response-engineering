@@ -73,11 +73,15 @@ both routes before anything is scored. That is a good mask and still a mask,
 because a copy of the corpus outside those checkouts cannot be covered. Three
 review rounds went into hardening it, which is what decided this: the number
 whose whole claim is that the judge had not read the answer is worth about a
-dollar an arm. The metered transport turned out to be faster too, and the
-records carry the figures rather than the impression: about four seconds a call
-and under a minute for a whole arm at six lanes, against twenty to thirty
-seconds a call through the CLI, where roughly half of each call is process
-spawn and harness preamble.
+dollar an arm. The metered transport turned out to be faster too. The records
+carry per-round pace for every round judged since the field was added, which is
+the metered ones: about four seconds a call and under a minute for a whole arm
+at six lanes. The CLI figure is not in any record, because those rounds ran
+before the field existed. It was measured directly instead, on a representative
+payload: 12.0s wall against 5.8s reported server-side, and 11,298 input tokens
+billed for a 1,599-character prompt, so roughly half of each call is process
+spawn and harness preamble. Cite it as that, a one-off measurement, rather than
+as something a record substantiates.
 
 `--compare`, `--comparison` and `--check-records` all refuse to put figures
 from the two transports beside each other.
@@ -116,7 +120,7 @@ table, with the transport and the isolation state of each.
 | arm | `claude-opus-4-6`, metered, no file tools | `cursor-grok-4.6-high`, isolated |
 | --- | --- | --- |
 | `judgement-heading` | 39 of 52 | 17 of 52 |
-| `judgement-fixed` | 49 of 56 | 19 of 56 |
+| `judgement-fixed` | 47 of 56 | 19 of 56 |
 | `judgement-single-query` | 21 of 22 | 9 of 22 |
 
 Matched deliberately. The single-query arm has six Cursor attempts and its
@@ -129,11 +133,11 @@ Around forty points of level, and the ordering survived: heading below fixed
 below single-query in every round of both families. The metered judge is set at
 temperature 0; the CLI cannot set a temperature at all, so the two differ in
 sampling as well as in family and neither figure carries the other's controls. So `groundedness_judge` is readable as a
-comparison and not as a score. A published figure of 73% or 33% says as much
+comparison and not as a score. A published figure of 75% or 33% says as much
 about which judge ran as about the agent.
 
 **The chunker pair is a different story under the two judges.** Under Opus
-heading and fixed part by about twelve points, outside what a re-judge moves.
+heading and fixed part by about nine points, outside what a re-judge moves.
 Under Grok they are two claims apart, which is inside it. The direction has
 never flipped and the size collapsed, so whether the two chunkers are
 distinguishable at all is itself judge-dependent. The single-query arm stays
@@ -587,7 +591,7 @@ Applicability offered: judgement-heading `partial` 44, `superseded` 8; judgement
 
 | judged by claude-opus-4-6 | judgement-heading | judgement-fixed | judgement-single-query |
 | --- | --- | --- | --- |
-| `groundedness_judge` | 39/52 | 49/56 | 21/22 |
+| `groundedness_judge` | 39/52 | 47/56 | 21/22 |
 | `divergence_quality` | 6/6 | 6/7 | 6/7 |
 
 Both judged rates are scored over what each run offered, so offering less can raise them: judgement-heading never offered the diverging record on `b04`.
@@ -614,7 +618,7 @@ delta is the paragraph, not query count in isolation, and `--compare` cannot
 see the difference because a system prompt is one knob to it.
 
 **The chunker is not choosable off one sweep each.** Same reach, 54 of 60, and
-14 against 13 omissions. The judged half parts by 39/52 against 49/56, and
+14 against 13 omissions. The judged half parts by 39/52 against 47/56, and
 heading came out below fixed in every judging, so the gap is repeatable
 even though its size moves by several points between rounds. That is a real
 difference nobody should choose a chunker on: one sweep each, a judge scoring a

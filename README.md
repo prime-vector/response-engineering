@@ -200,8 +200,9 @@ committed, through an API with no file tools, so that the judge answering only
 from the passages a claim cites is a property of the transport rather than an
 instruction to it. They are reported in their own table so they cannot be read
 as the same kind of number. How much that separation matters is measured rather
-than asserted: the same claims scored 73% under one judge family and 29% under
-another, while the ordering between arms survived both.
+than asserted: on the shipped arm the same claims scored 39 of 52 under one
+judge family and 17 of 52 under another, while the ordering between arms
+survived both.
 
 Three configurations, one live sweep each, 38 cases, nothing rejected or
 unparseable in any of them. The grid below is generated from the three
@@ -227,7 +228,7 @@ Applicability offered: judgement-heading `partial` 44, `superseded` 8; judgement
 
 | judged by claude-opus-4-6 | judgement-heading | judgement-fixed | judgement-single-query |
 | --- | --- | --- | --- |
-| `groundedness_judge` | 39/52 | 49/56 | 21/22 |
+| `groundedness_judge` | 39/52 | 47/56 | 21/22 |
 | `divergence_quality` | 6/6 | 6/7 | 6/7 |
 
 Both judged rates are scored over what each run offered, so offering less can raise them: judgement-heading never offered the diverging record on `b04`.
@@ -268,9 +269,9 @@ prompt as one knob.
 **Rejected: reading the chunker off these numbers.** Heading-aware and
 fixed-size chunking reach the same 54 of 60 pairs and omit 14 and 13 of 23
 applying documents. They part on the judged half, 39 of 52 claims supported
-against 49 of 56, and heading came out below fixed in all nine judgings the
+against 47 of 56, and heading came out below fixed in all ten judgings the
 records carry, five under this judge and three under one of another family. The direction has never flipped; the size depends on who is
-judging. Under this judge the two chunkers are about twelve points apart,
+judging. Under this judge the two chunkers are about nine points apart,
 outside what a re-judge moves; under the other they were two claims apart,
 inside it. Not enough to choose a chunker on, by either reading. Heading-aware is kept for something no metric here scores: its
 citations carry the heading chain, `INC-2411: … > Resolution`, where fixed

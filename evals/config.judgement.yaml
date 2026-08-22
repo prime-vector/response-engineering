@@ -39,31 +39,23 @@ judge:
   # the answer. The cost lesson from building this stands and was never about
   # the transport: it was judging four times because four review findings
   # changed what the judge was asked. Judge once, at the end.
-  # Through the Cursor CLI, which puts judging on a subscription rather than
-  # metered per claim. Judging was the recurring cost here: a review finding
-  # that changes what the judge is asked owes a re-judge of every arm, and
-  # four of those rounds happened while this was built.
   #
-  # A different family from the model under test, which is the better reason.
-  # Opus judging Sonnet is one house scoring its own work; a Grok judge is not.
-  #
-  # What this transport cannot do is set sampling. The CLI takes a model and
-  # an effort, not a temperature, so nothing here claims temperature 0 any
-  # more. That claim was worth less than it read: four judgings at temperature
-  # 0 through the metered API moved two to four claims per arm.
-  #
-  # transport: anthropic is still supported and still pins temperature and a
-  # token limit. --check-records refuses to compare records across the two.
+  # transport: cursor is the other option and is what the cross-family
+  # comparison was produced with. It cannot set sampling, taking a model and an
+  # effort rather than a temperature, and it is an agent with file tools, so it
+  # runs behind the mount namespace and the probe in judgement.py. Use it to
+  # explore on the subscription, not to publish.
   transport: anthropic
   model: claude-opus-4-6
   temperature: 0
   max_tokens: 1500
   timeout: 300
-  # Judgements are independent by construction, so they run concurrently.
-  # Sequentially an arm took the better part of an hour through this
-  # transport, where roughly half of each call is process spawn and harness
-  # preamble rather than the model. Six lanes is deliberately modest: the
-  # point is to stop waiting on spawn overhead, not to find a rate limit.
+  # Judgements are independent by construction, so they run concurrently on
+  # either transport. Six lanes is deliberately modest: the point is to stop
+  # waiting on per-call overhead, not to find a rate limit. It matters most on
+  # transport: cursor, where an arm took the better part of an hour
+  # sequentially because roughly half of each call there is process spawn and
+  # harness preamble rather than the model.
   concurrency: 6
   # For transport: cursor only. That transport has no temperature and no
   # effort flag; effort rides in the model id, so this is checked against the

@@ -47,9 +47,9 @@ ground truth. groundedness_judge and divergence_quality are a model's opinion
 of a model, scored with the prompt committed beside this file and whatever
 sampling the transport can pin, which the record states rather than assumes.
 Mixing them into one table would launder the second as the first. Their level
-is judge-relative and measured to be so: the same claims score 73% under one
-judge family and 29% under another, while the ordering between arms survives
-both.
+is judge-relative and measured to be so: on the shipped arm the same claims
+score 39 of 52 under one judge family and 17 of 52 under another, while the
+ordering between arms survives both.
 
 Stdlib plus PyYAML, like runner.py and validate.py. The judge calls the
 Messages API over raw HTTP rather than through the anthropic SDK, so that
@@ -885,7 +885,7 @@ def aggregate(cases, records, scores):
 # The judge
 # --------------------------------------------------------------------------
 
-def judge_code_fingerprint():
+def judge_code_fingerprint(transport="anthropic"):
     """The code that decides what a judge is asked and how its reply is read.
 
     Narrow on purpose. A fingerprint over this whole file would be simpler and
@@ -895,11 +895,17 @@ def judge_code_fingerprint():
     back, and the claim shape it is handed. The prompts, the model and the
     temperature are fingerprinted separately in the record.
     """
-    source = "".join(inspect.getsource(fn)
-                     for fn in (judge_run, call_judge, judge_via_cursor,
-                                judge_jail, verify_jail, repo_checkouts,
-                                extract_json,
-                                offered_claim, cited_ids, rpc))
+    functions = [judge_run, call_judge, extract_json, offered_claim,
+                 cited_ids, rpc]
+    # The isolation code determines a verdict only where the judge has file
+    # tools. Hashing it for a metered round made an edit to the jail invalidate
+    # rounds it could not possibly have touched, and the remedy for that is
+    # paid. Transport-aware, so each round is pinned to the code that could
+    # have changed it.
+    if transport == "cursor":
+        functions += [judge_via_cursor, judge_jail, verify_jail,
+                      repo_checkouts]
+    source = "".join(inspect.getsource(fn) for fn in functions)
     # Values, not only code. The endpoint and the API version shape every
     # request, and rpc is what resolves a cited passage to the text the judge
     # is shown. Hashing the functions alone left all three able to move
@@ -925,6 +931,15 @@ def repo_checkouts(repo_root):
     listing = subprocess.run(
         ["git", "-C", repo_root, "worktree", "list", "--porcelain"],
         capture_output=True, text=True)
+    if listing.returncode != 0:
+        # Failing open here masks one checkout, and the probe then repeats the
+        # same short list and passes, so an alternate checkout holding the
+        # corpus stays readable while isolation reports clean. The whole point
+        # of the probe is that it cannot be satisfied by the thing it checks.
+        raise SystemExit(
+            f"cannot enumerate this repository's checkouts, so the corpus "
+            f"cannot be shown absent from all of them: "
+            f"{listing.stderr.strip()[:200]}")
     for line in listing.stdout.splitlines():
         if line.startswith("worktree "):
             paths.add(line.split(" ", 1)[1].strip())
@@ -1439,7 +1454,7 @@ def judge_run(config, records, scores, cases, port, key):
         # only that code. Not the record's top-level scorer fingerprint,
         # which covers this whole file and moves on any edit: that one is
         # answered by a free rescore, this one by a paid re-judge.
-        "scorer_fingerprint": judge_code_fingerprint(),
+        "scorer_fingerprint": judge_code_fingerprint(transport),
         "prompts": {
             "groundedness": {
                 "path": judge["groundedness_prompt"],
@@ -2282,7 +2297,8 @@ def record_drift(config, arm, record):
         # The code that built the judge payloads and read the verdicts back.
         # A payload change is invisible in the model, the temperature and the
         # prompts, and it is exactly what moved these figures once already.
-        if judged.get("scorer_fingerprint") != judge_code_fingerprint():
+        if judged.get("scorer_fingerprint") != judge_code_fingerprint(
+                transport):
             rejudge_owed.append(
                 "evals/judgement.py has changed since these verdicts were "
                 "produced" if judged.get("scorer_fingerprint")

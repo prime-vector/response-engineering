@@ -21,7 +21,7 @@ Applicability offered: judgement-heading `partial` 44, `superseded` 8; judgement
 
 | judged by claude-opus-4-6 | judgement-heading | judgement-fixed | judgement-single-query |
 | --- | --- | --- | --- |
-| `groundedness_judge` | 39/52 | 49/56 | 21/22 |
+| `groundedness_judge` | 39/52 | 47/56 | 21/22 |
 | `divergence_quality` | 6/6 | 6/7 | 6/7 |
 
 Both judged rates are scored over what each run offered, so offering less can raise them: judgement-heading never offered the diverging record on `b04`.
