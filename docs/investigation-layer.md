@@ -183,6 +183,16 @@ requires a separate search per distinct behaviour the evidence describes, and
 every query issued goes into `queries_issued` including the ones that returned
 nothing.
 
+*And `queries_issued` is the agent's account of that, so it is not what the rule
+is checked against.* The archive logs the arguments of every call it receives,
+so what was actually asked is on the record beside what was actually returned.
+An agent that put the host in a query and reported it stripped would pass a
+check read from its own output and fail one read from the log. The same log is
+what verifies the time bound below: `before` is checked per call against the
+view's `as_of` rather than taken from the reply. Across the three recorded
+sweeps, 388 searches carried the right bound and none carried an entity id, and
+both of those are measurements rather than assurances.
+
 ### What the surface refuses on the agent's behalf
 
 ![The same precedent query issued with two different time bounds. Bounded at D+1 the working note dated inside the incident window is excluded. Bounded at D+15 the same query returns it, flagged as a claimed cause rather than evidence.](diagrams/time-bound.svg)
@@ -206,6 +216,15 @@ path requires it populated.
 
 The figures above are the ones `corpus/eval.py` reports for its novel-incident
 case against `corpus/index.json`. They move when the corpus does.
+
+What the surface hands an agent and what the agent does with it are measured
+separately, in `evals/`: retrieval mode scores the surface with no model in the
+loop, and judgement mode runs the agent live over 38 hand-authored cases. The
+result table is in the README, and the finding worth carrying here is that a
+clean headline can hide the failure underneath it. The agent offered no false
+precedent in any arm, and in the shipped configuration 14 of the 23 documents
+the ground truth says apply here were returned by the archive and never reached
+the board at all.
 
 ### Three qualifiers travel with every passage
 

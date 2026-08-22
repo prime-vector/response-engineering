@@ -22,18 +22,46 @@ task: recall
 timeout: 600
 
 judge:
-  # A different model from the one under test, and a more capable one. Same
-  # family scoring itself is the cheapest way to launder a producer's habits
-  # into a metric.
+  # Published figures come from the metered API, and the reason is not cost.
+  # This metric's whole claim is that the judge answered from the passages a
+  # claim cites and nothing else. The Messages API has no file tools at all,
+  # so that is structural. The CLI is an agent with file access, and three
+  # review rounds went into masking the routes to the corpus: a private mount
+  # namespace, /proc remounted, every checkout git knows about, both routes
+  # probed by a shell before anything is scored. It is a good mask and it is
+  # still a mask: a copy of the corpus outside those checkouts cannot be
+  # covered by any of it.
   #
-  # Pinned to a model that still accepts temperature, deliberately.
-  # docs/precedent-analyst.md fixes this check at temperature 0 and the
-  # current generation rejects the parameter outright, so a newer judge would
-  # be one whose sampling nobody set while the documents still claimed 0.
-  # Revisit when the doc is rewritten around effort rather than temperature.
+  # So transport: anthropic for anything published, transport: cursor for
+  # exploring on the subscription, and --compare refuses to put figures from
+  # the two beside each other. Judging costs about a dollar an arm, which is
+  # worth it for the one number here that rests on the judge not having read
+  # the answer. The cost lesson from building this stands and was never about
+  # the transport: it was judging four times because four review findings
+  # changed what the judge was asked. Judge once, at the end.
+  #
+  # transport: cursor is the other option and is what the cross-family
+  # comparison was produced with. It cannot set sampling, taking a model and an
+  # effort rather than a temperature, and it is an agent with file tools, so it
+  # runs behind the mount namespace and the probe in judgement.py. Use it to
+  # explore on the subscription, not to publish.
+  transport: anthropic
   model: claude-opus-4-6
   temperature: 0
   max_tokens: 1500
+  timeout: 300
+  # Judgements are independent by construction, so they run concurrently on
+  # either transport. Six lanes is deliberately modest: the point is to stop
+  # waiting on per-call overhead, not to find a rate limit. It matters most on
+  # transport: cursor, where an arm took the better part of an hour
+  # sequentially because roughly half of each call there is process spawn and
+  # harness preamble rather than the model.
+  concurrency: 6
+  # For transport: cursor only. That transport has no temperature and no
+  # effort flag; effort rides in the model id, so this is checked against the
+  # id at run time rather than passed. A config key nothing reads would be
+  # worse than no key at all.
+  effort: high
   groundedness_prompt: evals/judges/groundedness-judge.txt
   divergence_prompt: evals/judges/divergence-judge.txt
 

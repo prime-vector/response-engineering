@@ -44,8 +44,12 @@ Deterministic and judged metrics are reported apart, always. false_precedent_
 rate, no_precedent_accuracy, false_refusal_rate and groundedness_log are read
 off the typed output and the adapter log by code: they are as reliable as the
 ground truth. groundedness_judge and divergence_quality are a model's opinion
-of a model, scored at temperature 0 with the prompt committed beside this
-file. Mixing them into one table would launder the second as the first.
+of a model, scored with the prompt committed beside this file and whatever
+sampling the transport can pin, which the record states rather than assumes.
+Mixing them into one table would launder the second as the first. Their level
+is judge-relative and measured to be so: on the shipped arm the same claims
+score 38 of 52 under one judge family and 17 of 52 under another, while the
+ordering between arms survives both.
 
 Stdlib plus PyYAML, like runner.py and validate.py. The judge calls the
 Messages API over raw HTTP rather than through the anthropic SDK, so that
@@ -54,6 +58,7 @@ through `oa`, which brings its own.
 """
 
 import argparse
+import concurrent.futures
 import hashlib
 import inspect
 import json
@@ -63,6 +68,7 @@ import shutil
 import statistics
 import subprocess
 import sys
+import tempfile
 import time
 import urllib.error
 import urllib.parse
@@ -879,7 +885,7 @@ def aggregate(cases, records, scores):
 # The judge
 # --------------------------------------------------------------------------
 
-def judge_code_fingerprint():
+def judge_code_fingerprint(transport="anthropic"):
     """The code that decides what a judge is asked and how its reply is read.
 
     Narrow on purpose. A fingerprint over this whole file would be simpler and
@@ -889,9 +895,24 @@ def judge_code_fingerprint():
     back, and the claim shape it is handed. The prompts, the model and the
     temperature are fingerprinted separately in the record.
     """
-    source = "".join(inspect.getsource(fn)
-                     for fn in (judge_run, call_judge, extract_json,
-                                offered_claim, cited_ids, rpc))
+    # score_run is here because judge_run builds its task list from the claims
+    # score_run produces: which claims are judged at all, and the divergence
+    # filter, come from it. It was removed once to stop a deterministic check
+    # like the time bound from demanding a paid re-judge, and that traded the
+    # fingerprint's correctness for its convenience. The honest version
+    # over-triggers; the way out is to extract claim construction into its own
+    # function rather than to hash less than the payload depends on.
+    functions = [judge_run, call_judge, extract_json, offered_claim,
+                 cited_ids, score_run, rpc]
+    # The isolation code determines a verdict only where the judge has file
+    # tools. Hashing it for a metered round made an edit to the jail invalidate
+    # rounds it could not possibly have touched, and the remedy for that is
+    # paid. Transport-aware, so each round is pinned to the code that could
+    # have changed it.
+    if transport == "cursor":
+        functions += [judge_via_cursor, judge_jail, verify_jail,
+                      repo_checkouts]
+    source = "".join(inspect.getsource(fn) for fn in functions)
     # Values, not only code. The endpoint and the API version shape every
     # request, and rpc is what resolves a cited passage to the text the judge
     # is shown. Hashing the functions alone left all three able to move
@@ -900,7 +921,248 @@ def judge_code_fingerprint():
         (source + API_URL + API_VERSION).encode()).hexdigest()
 
 
+def repo_checkouts(repo_root):
+    """Every checkout of this repository, not just the one running.
+
+    A worktree masks its own path and leaves the primary checkout, and any
+    sibling worktree, holding the same corpus at a different path. The review
+    that found this ran in a worktree while /home/.../response-engineering sat
+    readable beside it. git knows where they all are, so ask git.
+
+    This still masks paths rather than content: a copy of the corpus outside
+    any checkout git knows about is not covered, and nothing here can cover
+    it. The transport with no file tools is the only version of this that is
+    structural, and the record says so.
+    """
+    paths = {repo_root}
+    listing = subprocess.run(
+        ["git", "-C", repo_root, "worktree", "list", "--porcelain"],
+        capture_output=True, text=True)
+    if listing.returncode != 0:
+        # Failing open here masks one checkout, and the probe then repeats the
+        # same short list and passes, so an alternate checkout holding the
+        # corpus stays readable while isolation reports clean. The whole point
+        # of the probe is that it cannot be satisfied by the thing it checks.
+        raise SystemExit(
+            f"cannot enumerate this repository's checkouts, so the corpus "
+            f"cannot be shown absent from all of them: "
+            f"{listing.stderr.strip()[:200]}")
+    for line in listing.stdout.splitlines():
+        if line.startswith("worktree "):
+            paths.add(line.split(" ", 1)[1].strip())
+    return sorted(paths)
+
+
+def judge_jail(repo_root):
+    """A mount namespace with nothing to read, or a refusal.
+
+    The threat is specific: the CLI judge is a general-purpose agent with file
+    tools, and it is asked whether a claim is supported by the passages it
+    cites. Given this repository it can open the document those passages came
+    from and answer from that instead, which is a different question with the
+    same shape.
+
+    --mode ask does not close it: ask mode forbids writes, not reads. An empty
+    --workspace does not close it either, and neither does a different cwd:
+    absolute paths still resolve. Both were claimed as locks here and a probe
+    showed the judge reading corpus/documents through them.
+
+    What closes the obvious path is not having the files. An empty tmpfs over
+    the repository root inside a private mount namespace means the corpus is
+    absent rather than forbidden, which is the same reason a sandbox allow
+    list names tools rather than asking the model not to call them.
+
+    Be exact about how much that buys, because it is less than a sandbox. It
+    masks one pathname. It does not build a new root, and a determined reader
+    could still find the same bytes through another mount of the same
+    filesystem or through /proc. The judge is a model answering a question,
+    not an adversary looking for a way around, so masking the path it would
+    otherwise take is a proportionate control and not a containment boundary.
+    The structural version of this is the metered transport, which has no file
+    tools at all: if the groundedness figure has to be unimpeachable rather
+    than cheap, judge through that.
+
+    Returns the command prefix, or raises when the namespace cannot be made:
+    a judge that could read the corpus is not a judge this metric can use, and
+    the metered transport needs none of this because it has no tools at all.
+    """
+    probe = subprocess.run(["unshare", "--map-root-user", "--mount", "true"],
+                           capture_output=True)
+    if probe.returncode != 0:
+        raise SystemExit(
+            "cannot create a mount namespace on this host, so the CLI judge "
+            "would run with read access to the corpus it is scoring claims "
+            "against. Judge through transport: anthropic instead, which has "
+            "no file tools at all, or run where unshare works.\n"
+            f"  unshare said: {probe.stderr.decode(errors='replace')[:200]}")
+    wrapper = tempfile.NamedTemporaryFile(
+        "w", suffix=".sh", prefix="judge-jail-", delete=False)
+    # /proc is remounted, not just the repository masked. A new PID namespace
+    # without it leaves the host's procfs in place, and /proc/<pid>/root/ is a
+    # second door to every path the tmpfs hides. Sol found that at the gate.
+    masks = "".join(
+        f"mount -t tmpfs none {path} 2>/dev/null || exit 97\n"
+        for path in repo_checkouts(repo_root))
+    wrapper.write("#!/bin/bash\n" + masks
+                  + "mount -t proc proc /proc 2>/dev/null || exit 96\n"
+                  + 'exec "$@"\n')
+    wrapper.close()
+    os.chmod(wrapper.name, 0o700)
+    # --pid --fork so the judge cannot walk /proc back to a process outside
+    # the namespace and reach the filesystem through its root link. Cheap, and
+    # it removes the most obvious route around the mask.
+    return ["unshare", "--map-root-user", "--mount", "--pid", "--fork",
+            wrapper.name]
+
+
+def verify_jail(judge, prefix, repo_root):
+    """Ask the judge to read a file it must not be able to read.
+
+    One call, before any claim is scored. A boundary this file asserts and
+    never tests is the kind of claim the rest of this repository refuses to
+    make, and the record carries the answer so a reader does not have to take
+    the comment above on trust.
+    """
+    target = os.path.join(repo_root, "corpus", "documents", "incidents",
+                          "INC-2411.md")
+    # A shell first, because a boundary checked by asking a model whether it
+    # got through is a boundary checked by self-report. Both the masked path
+    # and the /proc route into another process's root, inside the same
+    # namespace the judge will run in.
+    # Every checkout, by both routes. Testing only the one this process runs
+    # from is what let a worktree pass while the primary checkout beside it
+    # was readable.
+    checks = "".join(
+        f'cat {os.path.join(path, "corpus", "documents", "incidents", "INC-2411.md")}'
+        f' >/dev/null 2>&1 && echo DIRECT_OK; '
+        f'cat /proc/*/root{os.path.join(path, "corpus")}/documents/incidents/'
+        f'INC-2411.md >/dev/null 2>&1 && echo PROC_OK; '
+        for path in repo_checkouts(repo_root))
+    script = checks + "echo SHELL_DONE"
+    shell = subprocess.run(prefix + ["bash", "-c", script],
+                           capture_output=True, text=True, timeout=60)
+    routes = shell.stdout.strip().replace("\n", " ")
+    if "DIRECT_OK" in routes or "PROC_OK" in routes:
+        raise SystemExit(
+            f"the corpus is reachable from inside the namespace ({routes}), "
+            f"so masking it did not work and nothing should be scored on it.")
+    probe = subprocess.run(
+        prefix + ["agent", "-p",
+                  f"Use your file reading tool on the absolute path {target}. "
+                  f"Reply with one word and nothing else: READ_OK if you "
+                  f"read it, READ_FAILED if you could not. Do not explain.",
+                  "--model", judge["model"], "--output-format", "json",
+                  "--mode", "ask", "--trust"],
+        capture_output=True, text=True, timeout=judge.get("timeout", 300))
+    try:
+        answer = (json.loads(probe.stdout).get("result") or "").upper()
+    except (json.JSONDecodeError, AttributeError):
+        answer = ""
+    # Only an explicit failure passes. An answer with neither word in it
+    # proves nothing, and reading "no READ_OK" as "cannot read" is how a probe
+    # comes to certify a boundary it never tested: the first version of this
+    # did exactly that and passed on a truncated preamble.
+    blocked = "READ_FAILED" in answer and "READ_OK" not in answer
+    if not blocked:
+        raise SystemExit(
+            "the jail probe did not come back with a clear refusal, so "
+            "whether the judge can read the corpus it is scoring against is "
+            "unestablished. Nothing is scored on that.\n"
+            f"  probe answered: {answer.strip()[:200] or '(nothing)'}")
+    return {"shell_probe": f"direct path and /proc/*/root refused in "
+                          f"{len(repo_checkouts(repo_root))} checkout(s)",
+            "checkouts_masked": repo_checkouts(repo_root),
+            "shell_answer": routes,
+            "model_probe": "read a corpus document by its usual path",
+            "model_answer": answer.strip()[:120],
+            "reachable": False,
+            "scope": "two routes into every checkout git knows about. Not "
+                     "every route and not every copy: a corpus outside those "
+                     "checkouts is not masked and cannot be. This is a "
+                     "control against a model taking an available path, not "
+                     "a container, and the metered transport is the "
+                     "structural version because it has no file tools."}
+
+
+def cursor_version():
+    """The CLI that judged, by version. Same reason the agent runtime is
+    pinned: two installs behave differently and a record should not need a
+    reader to assume which one ran."""
+    probe = subprocess.run(["agent", "--version"], capture_output=True,
+                           text=True)
+    return probe.stdout.strip() or None
+
+
+def judge_via_cursor(judge, system, payload):
+    """Judge through the Cursor CLI, on the subscription rather than metered.
+
+    Two things this has to get right, and the second is not about cost.
+
+    The harness is an agent with file tools, and the judge's whole job is to
+    answer from the passages it is handed. Given the repository it can open
+    corpus/documents and confirm a claim from the document rather than from
+    the citation, which is precisely the check being run. The empty workspace
+    and read-only mode do not stop that: ask mode forbids writes, not reads,
+    and an absolute path resolves regardless of the workspace. A probe showed
+    exactly that. What stops it is judge_jail, the mount namespace, and the
+    only structural version is the metered transport, which has no file tools
+    at all.
+
+    Sampling cannot be set here. The CLI takes a model and effort, not a
+    temperature, so a run through this transport cannot claim temperature 0.
+    That is a real reduction in what the harness pins, and the documents say
+    so rather than carrying the old phrase. It costs less than it reads:
+    four judgings at temperature 0 through the metered API moved two to four
+    claims per arm, so the determinism the phrase implied was not there.
+    """
+    prompt = system + "\n\n" + json.dumps(payload, indent=2)
+    prefix = judge["_jail"]
+    with tempfile.TemporaryDirectory(prefix="judge-") as empty:
+        proc = subprocess.run(
+            # The model id carries its own effort on this family:
+            # cursor-grok-4.6-high is the high-effort variant, and the
+            # bracket override the CLI documents applies to parameterised
+            # models only, which this is not. Appending one is rejected with
+            # the full model list, so effort is pinned by choosing the id.
+            prefix + ["agent", "-p", prompt, "--model", judge["model"],
+                      "--output-format", "json", "--mode", "ask", "--trust",
+                      "--workspace", empty],
+            capture_output=True, text=True, timeout=judge.get("timeout", 300),
+            cwd=empty)
+    if proc.returncode != 0:
+        return {"error": f"agent exited {proc.returncode}: "
+                         f"{(proc.stderr or proc.stdout)[-300:]}"}, {}
+    try:
+        envelope = json.loads(proc.stdout)
+    except json.JSONDecodeError as exc:
+        return {"error": f"agent output did not parse ({exc}): "
+                         f"{proc.stdout[:200]}"}, {}
+    if envelope.get("is_error"):
+        return {"error": f"agent reported an error: {str(envelope)[:300]}"}, {}
+    usage = envelope.get("usage") or {}
+    verdict = extract_json(envelope.get("result", ""))
+    if verdict is None:
+        return {"error": "judge output did not parse: "
+                         f"{str(envelope.get('result'))[:300]}"}, usage
+    return verdict, usage
+
+
+TRANSPORTS = ("anthropic", "cursor")
+
+
 def call_judge(judge, system, payload, key):
+    # A transport this file does not implement is a typo, and falling through
+    # to the metered API for one produced plausible verdicts filed under a
+    # name nothing supports: the record kept the misspelling and dropped the
+    # sampling fields that transport pins. Refused instead.
+    transport = judge.get("transport", "anthropic")
+    if transport not in TRANSPORTS:
+        raise SystemExit(
+            f"judge transport {transport!r} is not one this runner "
+            f"implements ({', '.join(TRANSPORTS)}). Nothing is judged on a "
+            f"transport whose provenance cannot be recorded.")
+    if transport == "cursor":
+        return judge_via_cursor(judge, system, payload)
     body = json.dumps({
         "model": judge["model"],
         "max_tokens": judge.get("max_tokens", 1500),
@@ -1005,7 +1267,20 @@ def judge_run(config, records, scores, cases, port, key):
     scored: there is no divergence to judge, and counting it as a failure
     would fold a retrieval miss into a judgement metric.
     """
-    judge = config["judge"]
+    judge = dict(config["judge"])
+    isolation = None
+    if judge.get("transport", "anthropic") == "cursor":
+        repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        effort = judge.get("effort", "high")
+        if not judge["model"].endswith(f"-{effort}"):
+            raise SystemExit(
+                f"the config declares effort {effort!r} and the model id is "
+                f"{judge['model']!r}, which does not carry it. This transport "
+                f"has no effort flag: the id is the control, so the two have "
+                f"to agree or the config is describing an input nobody set.")
+        judge["_jail"] = judge_jail(repo_root)
+        isolation = verify_jail(judge, judge["_jail"], repo_root)
+        isolation["namespace"] = f"tmpfs over {repo_root}"
     with open(judge["groundedness_prompt"]) as handle:
         grounding_system = handle.read()
     with open(judge["divergence_prompt"]) as handle:
@@ -1016,10 +1291,30 @@ def judge_run(config, records, scores, cases, port, key):
     usage_total = {"input_tokens": 0, "output_tokens": 0, "calls": 0}
 
     def account(usage):
+        # The two transports name these differently: the Messages API returns
+        # input_tokens, the CLI envelope returns inputTokens. Reading one
+        # spelling recorded zeros for the other and made a real cost look free.
         usage_total["calls"] += 1
-        usage_total["input_tokens"] += usage.get("input_tokens", 0)
-        usage_total["output_tokens"] += usage.get("output_tokens", 0)
+        usage_total["input_tokens"] += (usage.get("input_tokens")
+                                        or usage.get("inputTokens") or 0)
+        usage_total["output_tokens"] += (usage.get("output_tokens")
+                                         or usage.get("outputTokens") or 0)
+        for extra in ("cacheReadTokens", "cacheWriteTokens"):
+            if usage.get(extra):
+                usage_total[extra] = usage_total.get(extra, 0) + usage[extra]
 
+    # Every judgement is independent by construction: a claim is scored
+    # against the passages it cites and nothing else, which is what makes the
+    # metric mean anything. So they are built as a list first and then run
+    # concurrently. Sequentially, one arm took the better part of an hour
+    # through the CLI transport, where about half of each call is process
+    # spawn and preamble rather than the model thinking.
+    #
+    # The two speedups not taken, because both trade the measurement for the
+    # clock: reusing one session across claims would remove the spawn and let
+    # claims see each other, and batching several claims into one call would
+    # change what the judge is answering.
+    tasks = []
     for record in records:
         if record["failure"]:
             continue
@@ -1031,8 +1326,28 @@ def judge_run(config, records, scores, cases, port, key):
                 # Nothing to judge: every id it cited is one the archive never
                 # returned, which groundedness_log has already counted.
                 continue
+            tasks.append({"kind": "groundedness", "case": record["case"],
+                          "document": claim["source_uri"], "claim": claim,
+                          "grounded": grounded, "as_of": case["as_of"],
+                          "symptom": case["symptom"].strip()})
+        if case["group"] != "near_miss":
+            continue
+        for claim in scores[record["case"]]["claims"]:
+            if claim["truth"] not in ("partial", "superseded"):
+                continue
+            tasks.append({"kind": "divergence", "case": record["case"],
+                          "document": claim["source_uri"], "claim": claim,
+                          "symptom": case["symptom"].strip(),
+                          "missing_evidence": case.get("missing_evidence")
+                          or [],
+                          "wanted": case["expect"].get("divergence_names")
+                          or []})
+
+    def run_task(task):
+        claim = task["claim"]
+        if task["kind"] == "groundedness":
             passages = []
-            for passage_id in grounded:
+            for passage_id in task["grounded"]:
                 try:
                     # The passage as the archive returned it, whole. An
                     # earlier version sent text and heading_path only, and
@@ -1052,35 +1367,52 @@ def judge_run(config, records, scores, cases, port, key):
             # citations support: an invented resolution_taken or
             # signature_overlap scored as grounded because the judge was
             # never shown it. Sol found that at the gate.
-            verdict, usage = call_judge(judge, grounding_system, {
-                "incident": {"symptom": case["symptom"].strip(),
-                             "as_of": case["as_of"]},
+            return call_judge(judge, grounding_system, {
+                "incident": {"symptom": task["symptom"],
+                             "as_of": task["as_of"]},
                 "precedent_claim": claim["offered_claim"],
                 "cited_passages": passages,
             }, key)
-            account(usage)
-            verdicts["groundedness"].append({
-                "case": record["case"], "document": claim["source_uri"],
-                "verdict": verdict})
+        return call_judge(judge, divergence_system, {
+            "incident": {"symptom": task["symptom"],
+                         "missing_evidence": task["missing_evidence"]},
+            "precedent_document": task["document"],
+            "distinguishing_factors": task["wanted"],
+            "divergence_text": claim["divergence"],
+        }, key)
 
-        if case["group"] != "near_miss":
-            continue
-        wanted = case["expect"].get("divergence_names") or []
-        for claim in scores[record["case"]]["claims"]:
-            if claim["truth"] not in ("partial", "superseded"):
-                continue
-            verdict, usage = call_judge(judge, divergence_system, {
-                "incident": {"symptom": case["symptom"].strip(),
-                             "missing_evidence": case.get("missing_evidence")
-                             or []},
-                "precedent_document": claim["source_uri"],
-                "distinguishing_factors": wanted,
-                "divergence_text": claim["divergence"],
-            }, key)
-            account(usage)
-            verdicts["divergence"].append({
-                "case": record["case"], "document": claim["source_uri"],
-                "verdict": verdict})
+    # Ordered results, whatever order they complete in: a record that changes
+    # its verdict order between runs would show a diff that is not a finding.
+    lanes = max(1, int(judge.get("concurrency", 4)))
+    started = time.perf_counter()
+    if tasks:
+        def timed(task):
+            call_started = time.perf_counter()
+            result = run_task(task)
+            return result, (time.perf_counter() - call_started) * 1000
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=lanes) as pool:
+            timings = list(pool.map(timed, tasks))
+        outcomes = [result for result, _ in timings]
+        # The claims about this transport being slower per call, and about
+        # concurrency changing the wall clock, were in commit messages and
+        # nowhere a reader could check them.
+        per_call = sorted(ms for _, ms in timings)
+        pace = {
+            "lanes": lanes,
+            "calls": len(per_call),
+            "per_call_p50_ms": round(statistics.median(per_call), 1),
+            "per_call_p95_ms": round(
+                per_call[max(0, -(-len(per_call) * 95 // 100) - 1)], 1),
+            "wall_ms": round((time.perf_counter() - started) * 1000, 1),
+        }
+    else:
+        outcomes, pace = [], {"lanes": lanes, "calls": 0}
+    for task, (verdict, usage) in zip(tasks, outcomes):
+        account(usage)
+        verdicts[task["kind"]].append({
+            "case": task["case"], "document": task["document"],
+            "verdict": verdict})
 
     def rate(entries, field):
         # A reply that parsed but does not carry the boolean this metric is
@@ -1104,18 +1436,35 @@ def judge_run(config, records, scores, cases, port, key):
 
     near_miss_cases = [c["id"] for c in cases if c["group"] == "near_miss"]
     judged_cases = {e["case"] for e in verdicts["divergence"]}
+    transport = judge.get("transport", "anthropic")
     return {
         "model": judge["model"],
-        "temperature": judge.get("temperature", 0),
-        # Recorded because it truncates: a verdict cut off mid-object is a
-        # judge error rather than an unsupported claim, and which of those a
-        # reader is looking at depends on this number.
-        "max_tokens": judge.get("max_tokens", 1500),
+        "transport": transport,
+        # What the harness can pin, per transport, said as itself. The metered
+        # API takes a temperature and a token limit; the CLI takes a model and
+        # an effort and neither of the other two. A record that carried
+        # "temperature: 0" from a transport that cannot set one would be
+        # asserting a control nobody exercised.
+        "temperature": (judge.get("temperature", 0)
+                        if transport == "anthropic" else None),
+        "max_tokens": (judge.get("max_tokens", 1500)
+                       if transport == "anthropic" else None),
+        "sampling": (f"temperature {judge.get('temperature', 0)}"
+                     if transport == "anthropic"
+                     else "no temperature; effort is carried by the model id, "
+                          "which is pinned and compared like any other input"),
+        "effort": (judge.get("effort", "high") if transport == "cursor"
+                   else None),
+        "cli_version": (cursor_version() if transport == "cursor" else None),
+        # Whether the judge could reach the corpus, tested rather than
+        # asserted. The metered transport has no file tools, so it records
+        # None: there is nothing to isolate.
+        "isolation": isolation,
         # The code that built these payloads and read these verdicts, and
         # only that code. Not the record's top-level scorer fingerprint,
         # which covers this whole file and moves on any edit: that one is
         # answered by a free rescore, this one by a paid re-judge.
-        "scorer_fingerprint": judge_code_fingerprint(),
+        "scorer_fingerprint": judge_code_fingerprint(transport),
         "prompts": {
             "groundedness": {
                 "path": judge["groundedness_prompt"],
@@ -1127,6 +1476,7 @@ def judge_run(config, records, scores, cases, port, key):
             },
         },
         "usage": usage_total,
+        "pace": pace,
         "groundedness_judge": {
             **rate(verdicts["groundedness"], "supported"),
             "unit": "precedent claims whose cited passages support them",
@@ -1426,8 +1776,9 @@ def markdown(result):
         lines += [
             "## Judged by a model",
             "",
-            f"A separate judge, {judged['model']} at temperature "
-            f"{judged['temperature']}, scored by "
+            f"A separate judge, {judged['model']} through the "
+            f"{judged.get('transport', 'anthropic')} transport, "
+            f"{judged.get('sampling') or 'sampling unstated'}, scored by "
             + (f"`{judged['scorer_fingerprint'][:16]}`"
                if judged.get("scorer_fingerprint")
                else "a scorer this record does not fingerprint, because it "
@@ -1437,6 +1788,24 @@ def markdown(result):
             f"`{judged['prompts']['divergence']['path']}`. This is a model's "
             f"opinion of a model, reported apart from the table above so it "
             f"cannot be read as the same kind of number.",
+            "",
+            (f"It ran with the repository replaced by an empty tmpfs inside a "
+             f"private mount namespace, so the documents behind the passages "
+             f"were absent rather than forbidden, and that is tested before "
+             f"any claim is scored rather than asserted: a shell tried the "
+             f"masked path and the /proc route into another process's root "
+             f"and both failed, then the judge itself was asked and answered "
+             f"`{(judged.get('isolation') or {}).get('model_answer', '')[-20:].strip()}`. "
+             f"Without the namespace this judge reads the corpus straight "
+             f"through an empty workspace and read-only mode, which was "
+             f"measured rather than assumed. The namespace masks paths and remounts /proc "
+             f"rather than building a container, so read it as a control "
+             f"against the obvious route and not as containment; the metered "
+             f"transport, which has no file tools at all, is the structural "
+             f"version."
+             if (judged.get("isolation") or {}).get("namespace")
+             else "This transport has no file tools, so there is nothing for "
+                  "the judge to read but the passages it is given."),
             "",
             "| Metric | Value | Count | Denominator |",
             "| --- | --- | --- | --- |",
@@ -1459,31 +1828,61 @@ def markdown(result):
                 + f"{len(rounds) + 1} times over the same claims. Earlier "
                   "rounds, kept because the spread is part of the result:",
                 "",
-                "| judged at | groundedness_judge | divergence_quality |",
-                "| --- | --- | --- |",
+                "| judged at | transport | corpus reachable? | "
+                "groundedness_judge | divergence_quality |",
+                "| --- | --- | --- | --- | --- |",
             ]
             for entry in rounds:
                 grounded = entry["groundedness_judge"]
                 diverged = entry["divergence_quality"]
+                failed = not (grounded["denominator"]
+                              or diverged["denominator"])
+                transport = entry.get("transport")
+                if transport is None:
+                    # Predates the field. Inferring anthropic here would let a
+                    # round with unknown provenance report "no file tools",
+                    # which is the opposite of the promise this record makes.
+                    transport, proof = "not recorded", "**not recorded**"
+                elif transport == "anthropic":
+                    proof = "no file tools"
+                elif (entry.get("isolation") or {}).get("scope"):
+                    proof = "namespace, probed"
+                else:
+                    # Not the same as "it ran unisolated": for these rounds
+                    # the evidence is not in the record, which for a cited
+                    # figure is the thing to say rather than a guess either
+                    # way.
+                    proof = "**not recorded**"
                 lines.append(
-                    f"| {entry['at']} | {grounded['numerator']}/"
-                    f"{grounded['denominator']} | {diverged['numerator']}/"
-                    f"{diverged['denominator']} |")
+                    f"| {entry['at']} | {transport} | {proof} | "
+                    f"{grounded['numerator']}/{grounded['denominator']} | "
+                    f"{diverged['numerator']}/{diverged['denominator']}"
+                    + (" (every call failed)" if failed else "") + " |")
             current = judged["groundedness_judge"]
             current_div = judged["divergence_quality"]
+            current_transport = judged.get("transport", "anthropic")
+            current_proof = ("no file tools" if current_transport == "anthropic"
+                             else "namespace, probed"
+                             if (judged.get("isolation") or {}).get("scope")
+                             else "**not recorded**")
             lines += [
                 f"| {result.get('rejudged_at', result['recorded_at'])} "
-                f"(current) | {current['numerator']}/"
-                f"{current['denominator']} | {current_div['numerator']}/"
-                f"{current_div['denominator']} |",
+                f"(current) | {current_transport} | {current_proof} | "
+                f"{current['numerator']}/{current['denominator']} | "
+                f"{current_div['numerator']}/{current_div['denominator']} |",
                 "",
-                ("Same claims, same prompts, same payload, same model at the "
-                 "temperature above. What moves between rounds is the judge."
+                ("Same claims, same prompts and same payload. What moves "
+                 "between rounds is the judge."
                  if all(entry.get("scorer_fingerprint")
                         == judged.get("scorer_fingerprint")
                         and entry.get("model") == judged.get("model")
                         and entry.get("temperature") == judged.get(
                             "temperature")
+                        and entry.get("transport", "anthropic")
+                        == judged.get("transport", "anthropic")
+                        and entry.get("cli_version") == judged.get(
+                            "cli_version")
+                        and entry.get("effort") == judged.get("effort")
                         and entry.get("max_tokens") == judged.get("max_tokens")
                         and all(entry.get("prompts", {}).get(name)
                                 == (judged.get("prompts") or {})
@@ -1510,7 +1909,14 @@ def markdown(result):
             "",
             f"Judge usage: {judged['usage']['calls']} calls, "
             f"{judged['usage']['input_tokens']} input and "
-            f"{judged['usage']['output_tokens']} output tokens.",
+            f"{judged['usage']['output_tokens']} output tokens"
+            + (f", {(judged.get('pace') or {}).get('lanes')} at a time, "
+               f"{(judged.get('pace') or {}).get('per_call_p50_ms', 0) / 1000:.1f}s "
+               f"per call at p50 and "
+               f"{(judged.get('pace') or {}).get('wall_ms', 0) / 1000:.0f}s "
+               f"for the round"
+               if (judged.get("pace") or {}).get("calls") else "")
+            + ".",
             "",
         ]
     else:
@@ -1868,14 +2274,33 @@ def record_drift(config, arm, record):
         if judged.get("model") != judge["model"]:
             rejudge_owed.append(f"the config judges with {judge['model']}, "
                                 f"the recording used {judged.get('model')}")
-        if judged.get("max_tokens") != judge.get("max_tokens", 1500):
-            rejudge_owed.append(f"the config allows the judge "
-                                f"{judge.get('max_tokens', 1500)} tokens, the "
-                                f"recording allowed {judged.get('max_tokens')}")
-        if judged.get("temperature") != judge.get("temperature", 0):
-            rejudge_owed.append(f"the config judges at temperature "
-                                f"{judge.get('temperature', 0)}, the "
-                                f"recording used {judged.get('temperature')}")
+        transport = judge.get("transport", "anthropic")
+        if judged.get("transport", "anthropic") != transport:
+            rejudge_owed.append(f"the config judges through {transport}, the "
+                                f"recording used "
+                                f"{judged.get('transport', 'anthropic')}")
+        elif transport == "cursor":
+            if judged.get("effort") != judge.get("effort", "high"):
+                rejudge_owed.append(
+                    f"the config judges at effort "
+                    f"{judge.get('effort', 'high')}, the recording used "
+                    f"{judged.get('effort')}")
+            if judged.get("cli_version") != cursor_version():
+                rejudge_owed.append(
+                    f"the recording judged with CLI "
+                    f"{judged.get('cli_version')}, this host has "
+                    f"{cursor_version()}")
+        elif transport == "anthropic":
+            if judged.get("max_tokens") != judge.get("max_tokens", 1500):
+                rejudge_owed.append(
+                    f"the config allows the judge "
+                    f"{judge.get('max_tokens', 1500)} tokens, the recording "
+                    f"allowed {judged.get('max_tokens')}")
+            if judged.get("temperature") != judge.get("temperature", 0):
+                rejudge_owed.append(
+                    f"the config judges at temperature "
+                    f"{judge.get('temperature', 0)}, the recording used "
+                    f"{judged.get('temperature')}")
         for name in ("groundedness", "divergence"):
             path = judge[f"{name}_prompt"]
             stored = judged.get("prompts", {}).get(name, {})
@@ -1887,7 +2312,8 @@ def record_drift(config, arm, record):
         # The code that built the judge payloads and read the verdicts back.
         # A payload change is invisible in the model, the temperature and the
         # prompts, and it is exactly what moved these figures once already.
-        if judged.get("scorer_fingerprint") != judge_code_fingerprint():
+        if judged.get("scorer_fingerprint") != judge_code_fingerprint(
+                transport):
             rejudge_owed.append(
                 "evals/judgement.py has changed since these verdicts were "
                 "produced" if judged.get("scorer_fingerprint")
@@ -2060,9 +2486,11 @@ def main():
         print(f"arm {arm['label']}: {len(cases)} case(s) against "
               f"{arm['index']}, agent {spec['intelligence']['model']}, "
               f"prompt {arm.get('system_prompt') or config['spec']}")
+        judge = config["judge"]
         print(f"adapter on port {spec_port(spec, config['spec'])}, "
-              f"judge {config['judge']['model']} at temperature "
-              f"{config['judge'].get('temperature', 0)}")
+              f"judge {judge['model']} through "
+              f"{judge.get('transport', 'anthropic')}, "
+              f"{judge.get('concurrency', 4)} lanes")
         for case in cases:
             expects = ("precedent exists"
                        if case["expect"]["precedent_exists"]
@@ -2187,7 +2615,13 @@ def comparison_grid(records):
             for label, d in zip(labels, dets))
         + ". `false_precedent_rate` fires only on `applies`.",
         "",
-        "| judged at temperature 0 | " + head + " |",
+        "| judged by " + (judged[0].get("model") or "a model") + " via "
+        + (judged[0].get("transport") or "an unrecorded transport")
+        + (", no file tools"
+           if judged[0].get("transport") == "anthropic"
+           else ", an agent behind a mount namespace")
+        + ", " + (judged[0].get("sampling") or "sampling unstated")
+        + " | " + head + " |",
         "| --- | " + " | ".join("---" for _ in labels) + " |",
         "| `groundedness_judge` | "
         + " | ".join(_fraction(j.get("groundedness_judge")) for j in judged)
@@ -2364,9 +2798,11 @@ def rejudge(record_path, config):
     against the text of the passages it cites.
     """
     key = os.environ.get("ANTHROPIC_API_KEY")
-    if not key:
-        raise SystemExit("ANTHROPIC_API_KEY is not set; re-judging calls a "
-                         "model.")
+    if not key and config["judge"].get("transport", "anthropic") == "anthropic":
+        raise SystemExit("ANTHROPIC_API_KEY is not set and the configured "
+                         "judge transport is the metered API. Set the key, or "
+                         "configure transport: cursor, which needs only "
+                         "CURSOR_API_KEY.")
     with open(record_path) as handle:
         result = json.load(handle)
     if result.get("mode") != "judgement":
@@ -2413,6 +2849,17 @@ def rejudge(record_path, config):
         proc.terminate()
         proc.wait(timeout=5)
 
+    scored = (fresh["groundedness_judge"]["denominator"]
+              + fresh["divergence_quality"]["denominator"])
+    if not scored:
+        raise SystemExit(
+            "every judge call in this round failed, so there is nothing to "
+            "record. The previous verdicts are left in place rather than "
+            "overwritten with an empty round: a failed run is not a "
+            "measurement of anything.\n"
+            f"  first error: "
+            f"{((fresh['groundedness_judge'].get('errors') or [{}])[0].get('verdict') or {}).get('error', 'unknown')[:200]}")
+
     for name in ("groundedness_judge", "divergence_quality"):
         was, now = before.get(name) or {}, fresh[name]
         print(f"  {name}: {pct(was.get('value'))} "
@@ -2431,15 +2878,32 @@ def rejudge(record_path, config):
             "model": before.get("model"),
             "temperature": before.get("temperature"),
             "max_tokens": before.get("max_tokens"),
+            "transport": before.get("transport", "anthropic"),
+            "sampling": before.get("sampling"),
+            "pace": before.get("pace"),
+            # The proof, not just the configuration. A round whose figures are
+            # cited has to carry the evidence that the corpus was absent when
+            # it was produced, and archiving the transport while dropping this
+            # left exactly the rounds the write-up quotes unable to show it.
+            # None is a real answer for the metered transport, which has no
+            # file tools, and for a round that predates the namespace.
+            "isolation": before.get("isolation"),
+            "cli_version": before.get("cli_version"),
+            "effort": before.get("effort"),
             "prompts": {name: (before.get("prompts") or {})
                         .get(name, {}).get("fingerprint")
                         for name in ("groundedness", "divergence")},
+            # Verdicts, not just counts. A round archived as three numbers
+            # cannot support a claim about why it differs from another round,
+            # and the reason the two judge families disagree is one of this
+            # change's findings. The records grow; re-judging is rare and the
+            # evidence is the point of keeping them.
             "groundedness_judge": {
                 k: (before.get("groundedness_judge") or {}).get(k)
-                for k in ("value", "numerator", "denominator")},
+                for k in ("value", "numerator", "denominator", "verdicts")},
             "divergence_quality": {
                 k: (before.get("divergence_quality") or {}).get(k)
-                for k in ("value", "numerator", "denominator")},
+                for k in ("value", "numerator", "denominator", "verdicts")},
         })
     result["judgings"] = history
     result["judged"] = fresh

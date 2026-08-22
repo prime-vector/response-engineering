@@ -268,7 +268,7 @@ never counted as a miss. The judgements are recorded in `evals/RELEVANCE.md`.
 | `precedent_hit_rate@k` | expected document in top-k retrieved | retrieval quality proper |
 | `mrr@k` | mean reciprocal rank of first expected document | |
 | `groundedness_log` | cited `passage_id`s that were in the set the adapter returned, read from the audit log | a citation that was never returned is invented |
-| `groundedness_judge` | precedent claims whose cited passages support what the claim says, judged at temperature 0 with the judge prompt committed | the log check cannot ask this |
+| `groundedness_judge` | precedent claims whose cited passages support what the claim says, judged with the prompt committed and the transport's sampling recorded | the log check cannot ask this. Its level is judge-relative, so read it as a comparison between arms rather than as a score |
 | `agent_reach` | relevant documents the archive returned across the queries the agent chose | retrieval measured on the agent's queries rather than the canonical probe |
 | `divergence_quality` | near-miss cases where `divergence` names the actual distinguishing factor | the near-miss guard, measured |
 | `p50` / `p95_latency_ms` | per stage and end to end | |
@@ -384,8 +384,8 @@ fixed-chunker baseline went in first, with CI failing if the table drifts off th
 corpus or the dataset. The judgement metrics followed: `false_precedent_rate`,
 `no_precedent_accuracy`, `false_refusal_rate` and `groundedness_log` are read off the
 typed output and the adapter's audit log, and `groundedness_judge` and
-`divergence_quality` are judged at temperature 0 with the prompts committed in
-`evals/judges/`. Neither groundedness check closes the section-level gap, and both
+`divergence_quality` are judged with the prompts committed in `evals/judges/`
+and whatever sampling the transport can pin. Neither groundedness check closes the section-level gap, and both
 tables say so.
 
 **Phase 5, Measured improvement.** At least two experiments:
@@ -424,10 +424,10 @@ decisive one: replacing rule 4 refuses 8 of 25 answerable cases against none and
 reaches 22 of 60 relevant pairs against 54, at half the latency. The chunker arm is a
 result nobody should choose on rather than a null one: the same reach and the same
 order of omissions, a judged half parting at 38 of 52 claims supported against 48
-of 56, an ordering that held in all four judgings, each of which judged both arms
-with the same code and prompts, while its size moved by several points between
-rounds that are not equivalent to each other, and still not enough to decide
-with. Heading-aware is kept for its citations carrying the heading
+of 56 under the judge now configured, about ten points, against two claims
+under a judge of another family. The
+direction held in every judging across both families and the size did not, so
+this is not something to decide a chunker with. Heading-aware is kept for its citations carrying the heading
 chain, which is a property and not a measured win.
 
 **The headline rate could not fire, and that is the result the arms share.**

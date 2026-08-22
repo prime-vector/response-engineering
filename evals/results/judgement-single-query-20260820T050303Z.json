@@ -27,7 +27,7 @@
   "dataset": {
     "cases": 38,
     "path": "evals/dataset.yaml",
-    "fingerprint": "6a1014659711a8c33b8cae0be08bf8618805fc7afd60c86dd92017ff65fb1661",
+    "fingerprint": "a9a9399d3f9f930e2a7f0dab983294cec772c6c062b7d5127cf797e991187119",
     "ids": [
       "a01",
       "a02",
@@ -68,7 +68,8 @@
       "g01",
       "g02"
     ],
-    "complete": true
+    "complete": true,
+    "fingerprint_scheme": "sha256 over the parsed structure. Earlier records pinned the file's bytes; the ground truth is identical and was checked to be before this was rewritten."
   },
   "surface": {
     "floor_applied": 0.35,
@@ -76,7 +77,7 @@
   },
   "scorer": {
     "path": "evals/judgement.py",
-    "fingerprint": "57a8d24a818bda2ac5b9a2e04f156ffa0415f0187e800a0380bd1b5a880f269b",
+    "fingerprint": "d67e5ee46381f051cef90d104aebe7e163421b1a47b9f00d686aa8725af1ec74",
     "scope": "the deterministic figures. The judged half carries its own fingerprint under judged."
   },
   "deterministic": {
@@ -211,9 +212,14 @@
   },
   "judged": {
     "model": "claude-opus-4-6",
+    "transport": "anthropic",
     "temperature": 0,
     "max_tokens": 1500,
-    "scorer_fingerprint": "f69f0fb52bc36c6cbfd7441905a8980c59205d79d242d2c4ba06cf866872e3eb",
+    "sampling": "temperature 0",
+    "effort": null,
+    "cli_version": null,
+    "isolation": null,
+    "scorer_fingerprint": "8b44eae98206448085796aadad82b82a17f2072d0736330be0479a5d6305e338",
     "prompts": {
       "groundedness": {
         "path": "evals/judges/groundedness-judge.txt",
@@ -226,8 +232,15 @@
     },
     "usage": {
       "input_tokens": 40543,
-      "output_tokens": 3026,
+      "output_tokens": 3005,
       "calls": 29
+    },
+    "pace": {
+      "lanes": 6,
+      "calls": 29,
+      "per_call_p50_ms": 3649.2,
+      "per_call_p95_ms": 5040.5,
+      "wall_ms": 19442.4
     },
     "groundedness_judge": {
       "value": 0.9545,
@@ -241,7 +254,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about the prior record are supported: the passage confirms host swapping heavily, batch work running late, memory exhaustion on a batch integration host, and the document_cause_claimed field confirms the JVM heap raise from 20 GiB to 28 GiB the prior evening leaving no headroom for page cache; the divergence statement that the record 'does not indicate that attribution was similarly absent' is not reasoning from silence but rather a hedge acknowledging what the analyst can see, and the resolution is correctly labeled as a claim in the document rather than evidence."
+            "reason": "All claims about the prior record are supported: the passage confirms host swapping heavily, batch work running late, memory exhaustion on a batch integration host, and the document_cause_claimed field confirms the JVM heap raise from 20 GiB to 28 GiB the prior evening leaving no headroom for page cache; the divergence statement that INC-2411's record does not indicate attribution was absent is a claim about absence which is not explicitly stated in the passage, but the claim is carefully worded ('does not indicate') reflecting what the analyst observed in the retrieved passages, and the resolution_taken correctly notes the cause as a claim in the document (matching document_cause_claimed)."
           }
         },
         {
@@ -250,7 +263,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "Every factual claim about the prior record is directly supported by the cited passage: the symptom profile (20% sustained, spikes to full utilisation, mid-prod host), the six-day duration, the supersession notice from SEC-STD-14 (2026-01-30) including the statement about destroyed evidence, and the document_cause_claimed about a policy change \u2014 all match the passage text and its metadata fields."
+            "reason": "Every factual claim about the prior record is directly supported by the cited passage: the symptom profile (20% CPU sustained, spikes to full utilisation during scans, mid-prod host, six days), the supersession notice matching the quoted text exactly, and the note about destroyed evidence identifying the source domain."
           }
         },
         {
@@ -259,7 +272,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "Every factual claim about the prior record INC-2446 \u2014 the host being reported as exhausted with the report naming memory, the filesystem being found full, memory and swap confirmed normal, and logs being rotated by hand with the rotation policy reapplied \u2014 is directly stated in the cited passage."
+            "reason": "Every factual claim about INC-2446 \u2014 the host being reported as exhausted with the report naming memory, the filesystem being found full, memory and swap confirmed normal, and logs rotated by hand with the rotation policy reapplied \u2014 is directly stated in the cited passage."
           }
         },
         {
@@ -268,7 +281,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about the prior record are supported: the passages confirm swap usage and elevated page fault rate (signature_overlap), deliberate overcommit with page fault rate matching a year-long baseline (resolution_taken), a threshold that did not account for the host's configuration (divergence), and the problem being closed as expected behaviour."
+            "reason": "All claims about the prior record INC-2489 are supported: the passages confirm swap usage and elevated page fault rate, deliberate overcommitment, page fault rate matching a year-long baseline, the problem being opened by a threshold not accounting for the host's configuration, and the problem being closed as expected behaviour."
           }
         },
         {
@@ -277,7 +290,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "Every statement about the prior record is supported: the passage explicitly names hosts running workloads directly without a container runtime as a distinct case with no limit to read, states the standing condition must be established from the resident set of the largest existing consumer, points to the host memory exhaustion runbook as the applicable procedure, and records no resolution."
+            "reason": "Every statement about the prior record is supported: the passage explicitly names hosts running workloads directly without a container runtime as a distinct case, states there is no limit to read, says the standing condition must be established from the resident set of the largest existing consumer, points to the host memory exhaustion runbook as the applicable procedure, and records no resolution."
           }
         },
         {
@@ -295,7 +308,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All factual claims about INC-2419 \u2014 seven of ten days opening/auto-closing unacknowledged, workload restarted at D+9 with memory recovery, root cause recorded as unconfirmed, and absence of documented process-level memory attribution \u2014 are directly supported by the cited passage."
+            "reason": "All factual claims about INC-2419 \u2014 seven of ten days of memory exhaustion opening and auto-closing unacknowledged, workload restarted at D+9 with memory recovery, root cause recorded as unconfirmed at closure, and the absence of documented process-level memory attribution \u2014 are directly supported by the cited passage."
           }
         },
         {
@@ -304,7 +317,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about the prior record are supported: the passage confirms memory exhaustion on an integration host, the observability platform opening and auto-closing the problem on each of the two preceding days, the document_cause_claimed field confirms a specific configuration change (heap resize) the previous evening as the claimed cause, and the resolution is correctly noted as not stated in the retrieved passage."
+            "reason": "The passage supports all prior-record claims: memory exhaustion on an integration host, the observability platform opening and auto-closing the problem on two preceding days, the two-day auto-closure window, the claimed cause being a configuration change (heap resize) the previous evening, and the resolution not being stated in the retrieved passage."
           }
         },
         {
@@ -313,7 +326,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about the prior record are supported: the passages confirm sustained CPU saturation near full utilisation for three days on an api-prod host with no anomalous process identified, a pre-recorded scheduled migration confirmed in the change registry as the load source (shown in the timeline passage p-64388910ad43), and the resolution of capacity being added and load rebalanced after the source was identified via the change registry."
+            "reason": "All claims about the prior record are supported: the passages confirm sustained CPU saturation near full utilisation for three days on an api-prod host with no anomalous process identified, a pre-recorded scheduled migration confirmed in the change registry as the load source (shown in the timeline passage p-64388910ad43), capacity added and load rebalanced as the resolution, and the document_cause_claimed confirms the migration as the known source."
           }
         },
         {
@@ -331,7 +344,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about the prior record are supported: the passage confirms eleven restarts over two days (D0 to D+1), host memory and swap flat, orchestrator-driven restarts, the container reaching its configured memory limit, the resolution of bounding the cache and raising the limit (D+1, 13:40, change registry), and the document_cause_claimed confirms the in-process cache was the unbounded grower."
+            "reason": "All claims about the prior record are supported: the passage confirms eleven restarts over two days (D0 to D+1), host memory and swap flat, orchestrator-driven restarts, the container reaching its configured memory limit, the resolution of bounding the cache and raising the limit at D+1 13:40 via change registry, and the document_cause_claimed confirms the in-process cache was the unbounded grower."
           }
         },
         {
@@ -349,7 +362,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about the prior record are supported: the passages confirm the non-production environment differed in build, patch level, and installed agents; that the comparison was proposed as a falsifying test; that it was abandoned after build parity was confirmed absent at D0+21:45; and no alternative falsifying test is recorded in the cited passages."
+            "reason": "All claims about the prior record are supported: the passages confirm the non-production comparison was proposed as a falsifying test, that the environment differed in build, patch level, and installed agents, that the comparison was abandoned after build parity was confirmed absent at D0+21:45, and that no alternative falsifying test is recorded in the retrieved passages."
           }
         },
         {
@@ -358,7 +371,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about the prior record are supported: the passages confirm the bridge named the most recently deployed component within minutes (twenty minutes) with no direct evidence recorded, the component was demonstrated uninvolved the following morning by showing it was not loaded on the affected host, the investigation restarted from the evidence available at the original attribution point, and five hours had been spent on the named component before it was cleared."
+            "reason": "All claims about the prior record are supported: the passages confirm the bridge named the most recently deployed component within minutes (twenty minutes per the summary), no direct evidence was recorded at attribution time, the component was demonstrated uninvolved the following morning by showing it was not loaded on the affected host, the investigation restarted from the evidence available at the original attribution point, and five hours had been spent on the named component before it was cleared."
           }
         },
         {
@@ -367,7 +380,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "Every statement about the prior record (the runbook passage) is directly supported by the cited passage text, including the exact quote about evidence loss, the prescribed sequence of collecting before suppressing, and the scenario of denial-analysis consuming CPU with suppression proposed as relief."
+            "reason": "Every factual claim about the prior record \u2014 the CPU-consuming denial-analysis process, suppression proposed as relief, the warning about evidence destruction if suppression precedes log collection, and the prescribed sequence (collect first, then suppress) \u2014 is directly stated in the cited passage."
           }
         },
         {
@@ -378,7 +391,7 @@
             "unsupported_elements": [
               "overcommit configuration is confirmed intended since build"
             ],
-            "reason": "The cited passage states 'Configuration confirmed intended' but does not say it was intended 'since build'; the phrase 'since build' is an addition not present in the passage text."
+            "reason": "The cited passage states 'Configuration confirmed intended' but does not say 'since build'; the phrase 'since build' is an addition not present in the passage text."
           }
         },
         {
@@ -396,7 +409,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "The cited passage supports all claims about the prior record: the problem opened for four consecutive days (D+4 meaning fourth consecutive day), the process snapshot attributed 6 GiB resident to the shipper, and the passage describes what the snapshot showed without describing a resolution step beyond that identification."
+            "reason": "The cited passage supports all claims about the prior record: the problem opened for four consecutive days (D+4 being the fourth consecutive day), the process snapshot attributed 6 GiB resident to the shipper, and the passage describes what the snapshot showed without describing any resolution step beyond that identification."
           }
         },
         {
@@ -405,7 +418,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All statements about the prior record are directly supported by the cited passage: ten days, seven alert cycles, unacknowledged, workload restarted on D+9, memory recovered, root cause recorded as unconfirmed, and no confirmed cause."
+            "reason": "All claims about INC-2419 \u2014 ten days, seven alert cycles, unacknowledged, workload restarted on D+9, memory recovered, root cause recorded as unconfirmed, and no confirmed cause \u2014 are directly supported by the cited passage's timeline."
           }
         },
         {
@@ -423,7 +436,7 @@
           "verdict": {
             "supported": true,
             "unsupported_elements": [],
-            "reason": "All claims about the prior record are supported: the passage confirms recurring memory exhaustion on intg-prod-j5, resolution by restarting the workload, no cause established before the symptom stopped, and the document_cause_claimed is null; the claim that no process-level memory attribution was collected is a reasonable inference from the passage stating no cause was established, though this is borderline \u2014 however, the passage does not contradict it and the summary's brevity supports the characterization."
+            "reason": "All claims about the prior record\u2014host intg-prod-j5, recurring memory exhaustion, workload restarted, cause unconfirmed at closure, and no process-level memory attribution collected\u2014are supported by the cited passage text and its metadata (document_cause_claimed is null)."
           }
         },
         {
@@ -450,7 +463,7 @@
           "verdict": {
             "names_a_distinguishing_factor": true,
             "factor_named": "the prior incident had a heap change to revert and this one has no correlated change at all",
-            "reason": "The text explicitly states that INC-2411 was associated with a tuning change that could be reverted, whereas the current incident has no change in its 14-day change history, meaning there is no change to revert\u2014directly naming the distinguishing factor."
+            "reason": "The text explicitly states that INC-2411 was associated with a tuning change that could be reverted, whereas the current incident has no change in its 14-day change history, meaning the revert path is unavailable\u2014directly naming the distinguishing factor."
           }
         },
         {
@@ -459,7 +472,7 @@
           "verdict": {
             "names_a_distinguishing_factor": true,
             "factor_named": "SEC-STD-14",
-            "reason": "The text explicitly names SEC-STD-14 as the platform security standard that supersedes the prior resolution, and also states the other two distinguishing factors: that the dispatcher must remain active on production hosts, and that deactivating it destroyed the evidence that would name the source."
+            "reason": "The text explicitly names SEC-STD-14 as the platform security standard that now governs the situation, and also states that the dispatcher must remain active on production hosts and that deactivating it destroyed the evidence that would name the source, covering all three distinguishing factors."
           }
         },
         {
@@ -468,7 +481,7 @@
           "verdict": {
             "names_a_distinguishing_factor": true,
             "factor_named": "the prior record's exhausted resource was disk and never memory",
-            "reason": "The text explicitly states that INC-2446 involved a full filesystem with normal memory/swap, which is the opposite of the current incident, clearly naming the difference that the prior record's exhausted resource was disk and never memory."
+            "reason": "The text explicitly states that in INC-2446 the filesystem was full and memory/swap were normal, which is the opposite of the current incident \u2014 directly naming the difference that the prior record's exhausted resource was disk and never memory."
           }
         },
         {
@@ -477,7 +490,7 @@
           "verdict": {
             "names_a_distinguishing_factor": false,
             "factor_named": null,
-            "reason": "The text discusses the nature of the document (scope exclusion vs. incident record) and the outstanding evidence, but does not state either that the prior host never entered exhaustion or that there is no container limit on this host to raise or bound."
+            "reason": "The text discusses the nature of the document (scope exclusion vs. incident record) and the outstanding evidence, but does not state either distinguishing factor: that the prior host never entered exhaustion, or that there is no container limit on this host to raise or bound."
           }
         },
         {
@@ -504,7 +517,7 @@
           "verdict": {
             "names_a_distinguishing_factor": true,
             "factor_named": "the prior saturation was a planned load increase recorded in advance",
-            "reason": "The text explicitly states that INC-2407 had a pre-recorded scheduled migration confirmed in the change registry as the load source, while the current incident has an empty change registry, which names the factor that the prior saturation was a planned load increase recorded in advance."
+            "reason": "The text explicitly states that INC-2407 had a pre-recorded scheduled migration confirmed in the change registry as the load source, while the current incident has an empty change registry, directly naming the distinguishing factor that the prior saturation was a planned load increase recorded in advance."
           }
         }
       ],
@@ -5309,8 +5322,8 @@
       }
     }
   ],
-  "rescored_at": "2026-08-20T11:35:10Z",
-  "rejudged_at": "2026-08-20T11:15:43Z",
+  "rescored_at": "2026-08-22T08:20:10Z",
+  "rejudged_at": "2026-08-22T08:18:43Z",
   "judgings": [
     {
       "at": "2026-08-20T09:19:32Z",
@@ -5333,7 +5346,8 @@
       "prompts": {
         "groundedness": "6e810b942c5dc044b0697679e5345da9a1568f3b039476ff3938ca17b5ccdf00",
         "divergence": "178c9a0e54f03b692630ee97cafef619ed836e99ccf226c9d278a0bb75f502d1"
-      }
+      },
+      "isolation": null
     },
     {
       "at": "2026-08-20T09:45:38Z",
@@ -5356,7 +5370,8 @@
       "prompts": {
         "groundedness": "6e810b942c5dc044b0697679e5345da9a1568f3b039476ff3938ca17b5ccdf00",
         "divergence": "178c9a0e54f03b692630ee97cafef619ed836e99ccf226c9d278a0bb75f502d1"
-      }
+      },
+      "isolation": null
     },
     {
       "at": "2026-08-20T10:27:44Z",
@@ -5377,6 +5392,1459 @@
         "value": 0.8571,
         "numerator": 6,
         "denominator": 7
+      },
+      "isolation": null
+    },
+    {
+      "at": "2026-08-20T11:15:43Z",
+      "scorer_fingerprint": "f69f0fb52bc36c6cbfd7441905a8980c59205d79d242d2c4ba06cf866872e3eb",
+      "model": "claude-opus-4-6",
+      "temperature": 0,
+      "max_tokens": 1500,
+      "prompts": {
+        "groundedness": "6e810b942c5dc044b0697679e5345da9a1568f3b039476ff3938ca17b5ccdf00",
+        "divergence": "178c9a0e54f03b692630ee97cafef619ed836e99ccf226c9d278a0bb75f502d1"
+      },
+      "groundedness_judge": {
+        "value": 0.9545,
+        "numerator": 21,
+        "denominator": 22
+      },
+      "divergence_quality": {
+        "value": 0.8571,
+        "numerator": 6,
+        "denominator": 7
+      },
+      "isolation": null
+    },
+    {
+      "at": "2026-08-20T22:06:52Z",
+      "scorer_fingerprint": "5d71402ff8c7b8b565a27e2db365cc24f83272f46d0c50fa436fa57840b4f6a5",
+      "model": "cursor-grok-4.6-high",
+      "temperature": null,
+      "max_tokens": null,
+      "transport": "cursor",
+      "sampling": "not settable through this transport: the CLI takes a model and an effort, not a temperature",
+      "cli_version": "2026.08.11-e8db854",
+      "effort": null,
+      "prompts": {
+        "groundedness": "6e810b942c5dc044b0697679e5345da9a1568f3b039476ff3938ca17b5ccdf00",
+        "divergence": "178c9a0e54f03b692630ee97cafef619ed836e99ccf226c9d278a0bb75f502d1"
+      },
+      "groundedness_judge": {
+        "value": 0.4545,
+        "numerator": 10,
+        "denominator": 22,
+        "verdicts": [
+          {
+            "case": "b01",
+            "document": "corpus://incidents/INC-2411",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "INC-2411's record does not indicate that attribution was similarly absent at the time of investigation.",
+                "a JVM heap overrun"
+              ],
+              "reason": "The cited summary never states that process-level attribution was present or that its absence was not an issue, so the lack-of-indication claim is silence, and the passages describe a claimed heap raise that starved page cache rather than a JVM heap overrun."
+            }
+          },
+          {
+            "case": "b02",
+            "document": "corpus://incidents/INC-2288",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "any policy-change event in the INC-2288 timeline"
+              ],
+              "reason": "The passage gives only a claimed cause of denial volume from a policy change, not policy-change events in an INC-2288 timeline."
+            }
+          },
+          {
+            "case": "b03",
+            "document": "corpus://incidents/INC-2446",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "The cited INC-2446 timeline states the memory-named exhaustion report, filesystem-full with memory and swap normal, and hand log rotation with the policy reapplied, which covers every prior-record assertion in the claim."
+            }
+          },
+          {
+            "case": "b03",
+            "document": "corpus://incidents/INC-2489",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "Every prior-record statement is in the cited passages: swap and elevated page faults on cache-prod-n3, a threshold that ignored host configuration, intended overcommit, a year-long page-fault baseline, and that the condition was expected with no incident."
+            }
+          },
+          {
+            "case": "b04",
+            "document": "corpus://runbooks/container-resource-limits",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "The cited runbook text names hosts running a workload directly with no container runtime and no limit to read as a distinct excluded case, says standing condition comes from the largest consumer's resident set, and sends the procedure to the host memory exhaustion runbook rather than recording a resolution here."
+            }
+          },
+          {
+            "case": "b05",
+            "document": "corpus://incidents/INC-2489",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "on a host flagged by a host.memory.pressure signal"
+              ],
+              "reason": "The passages report swap usage, an elevated page fault rate, and a memory-pressure problem opening from the observability platform, but they never name a host.memory.pressure signal."
+            }
+          },
+          {
+            "case": "b06",
+            "document": "corpus://incidents/INC-2419",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "INC-2419 does not document whether that evidence was ever collected",
+                "the prior record cannot indicate what that evidence will show here"
+              ],
+              "reason": "The passage supports the seven-of-ten-day auto-close pattern, the D+9 restart with memory recovery, and unconfirmed root cause at closure, but it never states that process-level memory attribution was uncollected or undocumented."
+            }
+          },
+          {
+            "case": "b06",
+            "document": "corpus://incidents/INC-2411",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "The cited passage and document_cause_claimed support an integration-host memory-exhaustion incident with two preceding days of open-and-auto-close alerts and a claimed prior-evening heap/tuning change, and they do not state a resolution."
+            }
+          },
+          {
+            "case": "b07",
+            "document": "corpus://incidents/INC-2407",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "Every prior-record statement in the claim is a paraphrase of the cited summary, timeline, and document fields: three-day api-prod CPU saturation with nothing anomalous running, a pre-recorded scheduled migration in the change registry as the load source, and capacity added with load rebalanced after that source."
+            }
+          },
+          {
+            "case": "c01",
+            "document": "corpus://incidents/INC-2350",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "no change event cited",
+                "the record does not describe a remediation step beyond that attribution"
+              ],
+              "reason": "The passage supports the shipper snapshot, 6 GiB resident attribution, unreachable log destination, and multi-day host memory exhaustion, but it never states that no change event was cited or that the record lacks a remediation step."
+            }
+          },
+          {
+            "case": "c02",
+            "document": "corpus://incidents/INC-2305",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "rested on evidence that the in-process cache was the unbounded grower",
+                "the prior incident's pattern"
+              ],
+              "reason": "The timeline supports eleven orchestrator restarts over D0\u2013D+1 with flat host memory/swap and the D+1 cache-bound and limit-raise action, but document_cause_claimed is only a claimed cause, so treating an unbounded in-process cache as evidenced fact or as the prior incident's established pattern is unsupported."
+            }
+          },
+          {
+            "case": "c03",
+            "document": "corpus://incidents/INC-2407",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "rests on a capacity plan that was evidently available at resolution time",
+                "The settling evidence in INC-2407 is precisely the evidence that has not yet been collected in this incident"
+              ],
+              "reason": "The passage and document_cause_claimed support the migration timeline, sustained saturation with no new processes, the D+2 capacity add, and the claimed doubling of request volume, but they never mention a capacity plan or other settling evidence used to reach that cause."
+            }
+          },
+          {
+            "case": "c04",
+            "document": "corpus://incidents/INC-2377",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "No alternative falsifying test is recorded in the retrieved passages."
+              ],
+              "reason": "The passages support the non-prod comparison, agent/build/patch differences, and abandonment at D0 21:45 after absent build parity, but they never state that no alternative falsifying test was recorded or taken, so that absence claim is reasoning from silence."
+            }
+          },
+          {
+            "case": "c05",
+            "document": "corpus://incidents/INC-2402",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "Every prior-record assertion in the claim is a paraphrase of the INC-2402 summary and timeline: newest component named as probable cause shortly after the bridge opened with no direct evidence, later shown not loaded on the affected host, five hours spent on it, then the investigation restarted from the original attribution-point evidence."
+            }
+          },
+          {
+            "case": "c07",
+            "document": "corpus://runbooks/denial-log-collection",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "The cited runbook states that deactivating the event dispatcher is often proposed as CPU relief, that suppression before collection permanently destroys source-identifying evidence, and that the prescribed sequence is collect first then suppress if still wanted."
+            }
+          },
+          {
+            "case": "c08",
+            "document": "corpus://incidents/INC-2489",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "overcommit configuration is confirmed intended since build",
+                "the prior record does not name the specific alert threshold logic involved"
+              ],
+              "reason": "The timeline supports a memory-pressure event on an overcommitted cache host with intended configuration and a year-matching page-fault baseline, but it does not say that configuration was intended since build, and it never states that threshold logic is unnamed (it describes a threshold that does not account for host configuration)."
+            }
+          },
+          {
+            "case": "d03",
+            "document": "corpus://incidents/INC-2411",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "The cited summary, timeline, and document_cause_claimed field state the two-day auto-closed memory exhaustion on the batch integration host, the claimed evening heap raise in the change registry, the change-history correlation, and the revert to 20 GiB with a restart outside the batch window after which swap returned to zero."
+            }
+          },
+          {
+            "case": "d03",
+            "document": "corpus://incidents/INC-2350",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "auto-closed",
+                "The record does not describe a resolution step beyond the process snapshot identifying the shipper as the source; it records what the snapshot showed, not what was done afterward."
+              ],
+              "reason": "The timeline supports consecutive unacknowledged memory-exhaustion openings, four days before a snapshot, and 6 GiB resident on the shipper, but it never states auto-close and never states that no resolution followed the snapshot."
+            }
+          },
+          {
+            "case": "d03",
+            "document": "corpus://incidents/INC-2419",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "Every prior-record statement in the claim is in the cited timeline: memory exhaustion opening and auto-closing on seven of ten days unacknowledged, a D+9 workload restart with memory recovery, and root cause recorded as unconfirmed."
+            }
+          },
+          {
+            "case": "f03",
+            "document": "corpus://incidents/INC-2350",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "a process snapshot attributing resident memory to the shipper (6 GiB) was the key piece of evidence that settled the incident"
+              ],
+              "reason": "The timeline records a process snapshot attributing 6 GiB resident to the shipper but does not say that snapshot was the key evidence or that it settled the incident."
+            }
+          },
+          {
+            "case": "g01",
+            "document": "corpus://incidents/INC-2419",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "No process-level memory attribution was collected.",
+                "INC-2419's (unrecorded) investigation"
+              ],
+              "reason": "The passage supports restart, unconfirmed cause, recurring exhaustion on intg-prod-j5, but does not state that process-level attribution was never collected or that investigation was unrecorded."
+            }
+          },
+          {
+            "case": "g01",
+            "document": "corpus://incidents/INC-2411",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "The cited passages state heavy swapping and recurring memory-exhaustion alerts on a batch integration host, a JVM heap change as the most recent host change and the record's claimed cause, and a revert to 20 GiB with a restart after which swap returned to zero."
+            }
+          }
+        ]
+      },
+      "divergence_quality": {
+        "value": 0.7143,
+        "numerator": 5,
+        "denominator": 7,
+        "verdicts": [
+          {
+            "case": "b01",
+            "document": "corpus://incidents/INC-2411",
+            "verdict": {
+              "names_a_distinguishing_factor": true,
+              "factor_named": "the prior incident had a heap change to revert and this one has no correlated change at all",
+              "reason": "The text states that INC-2411 had a prior-evening tuning change that could be identified and reverted, while this host's 14-day change history returned nothing, so there is no change to attribute."
+            }
+          },
+          {
+            "case": "b02",
+            "document": "corpus://incidents/INC-2288",
+            "verdict": {
+              "names_a_distinguishing_factor": true,
+              "factor_named": "the dispatcher must remain active on production hosts",
+              "reason": "The analyst states that SEC-STD-14 requires the audit event dispatcher to remain active on production hosts, withdrawing INC-2288\u2019s deactivation resolution."
+            }
+          },
+          {
+            "case": "b03",
+            "document": "corpus://incidents/INC-2446",
+            "verdict": {
+              "names_a_distinguishing_factor": true,
+              "factor_named": "the prior record's exhausted resource was disk and never memory",
+              "reason": "The text states that INC-2446 had a full filesystem with memory and swap confirmed normal, the opposite of this incident\u2019s climbing swap, so the prior exhaustion was disk and not memory."
+            }
+          },
+          {
+            "case": "b04",
+            "document": "corpus://runbooks/container-resource-limits",
+            "verdict": {
+              "names_a_distinguishing_factor": false,
+              "factor_named": null,
+              "reason": "The text discusses document type, missing retrieval, and outstanding resident-set evidence, and does not state that the prior host stayed flat without exhaustion or that this host has no container limit to raise or bound."
+            }
+          },
+          {
+            "case": "b05",
+            "document": "corpus://incidents/INC-2489",
+            "verdict": {
+              "names_a_distinguishing_factor": true,
+              "factor_named": "the prior host was deliberately overcommitted and had run that way since it was built",
+              "reason": "The text states that the retrieved record\u2019s host was deliberately overcommitted from build and that the current host has never swapped and is not configured to overcommit, which matches both listed factors in the correct direction."
+            }
+          },
+          {
+            "case": "b06",
+            "document": "corpus://incidents/INC-2419",
+            "verdict": {
+              "names_a_distinguishing_factor": false,
+              "factor_named": null,
+              "reason": "The text restates that the prior closed unconfirmed and that attribution is outstanding here, but it never states that a restart resolved the prior symptom and destroyed its evidence or that attribution is still obtainable here, and the contrast it does draw\u2014that INC-2419 does not document whether that evidence was collected and cannot indicate what it will show\u2014is not on the list."
+            }
+          },
+          {
+            "case": "b07",
+            "document": "corpus://incidents/INC-2407",
+            "verdict": {
+              "names_a_distinguishing_factor": true,
+              "factor_named": "the prior saturation was a planned load increase recorded in advance",
+              "reason": "The text states that INC-2407 had a pre-recorded scheduled migration as the confirmed load source, which is the same difference as the prior saturation being a planned load increase recorded in advance."
+            }
+          }
+        ]
+      },
+      "isolation": null,
+      "verdicts_recovered_from": "19fad8a5ffa2"
+    },
+    {
+      "at": "2026-08-20T23:40:06Z",
+      "scorer_fingerprint": "bb32c829db41d086c842e7f9d8db451f7149190f9251d473aa486f10d034e58f",
+      "model": "cursor-grok-4.6-high",
+      "temperature": null,
+      "max_tokens": null,
+      "transport": "cursor",
+      "sampling": "effort high; the CLI takes a model and an effort, not a temperature",
+      "cli_version": "2026.08.11-e8db854",
+      "effort": "high",
+      "prompts": {
+        "groundedness": "6e810b942c5dc044b0697679e5345da9a1568f3b039476ff3938ca17b5ccdf00",
+        "divergence": "178c9a0e54f03b692630ee97cafef619ed836e99ccf226c9d278a0bb75f502d1"
+      },
+      "groundedness_judge": {
+        "value": null,
+        "numerator": 0,
+        "denominator": 0
+      },
+      "divergence_quality": {
+        "value": null,
+        "numerator": 0,
+        "denominator": 0
+      },
+      "isolation": null
+    },
+    {
+      "at": "2026-08-20T23:47:22Z",
+      "scorer_fingerprint": "d8c4e05256bdab7f3fee77a2966c5a6d855daab9d1187845f1c3e84d393ba0df",
+      "model": "cursor-grok-4.6-high",
+      "temperature": null,
+      "max_tokens": null,
+      "transport": "cursor",
+      "sampling": "no temperature; effort is carried by the model id, which is pinned and compared like any other input",
+      "cli_version": "2026.08.11-e8db854",
+      "effort": "in the model id",
+      "prompts": {
+        "groundedness": "6e810b942c5dc044b0697679e5345da9a1568f3b039476ff3938ca17b5ccdf00",
+        "divergence": "178c9a0e54f03b692630ee97cafef619ed836e99ccf226c9d278a0bb75f502d1"
+      },
+      "groundedness_judge": {
+        "value": 0.4091,
+        "numerator": 9,
+        "denominator": 22,
+        "verdicts": [
+          {
+            "case": "b01",
+            "document": "corpus://incidents/INC-2411",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "INC-2411's record does not indicate that attribution was similarly absent at the time of investigation.",
+                "a JVM heap overrun"
+              ],
+              "reason": "The cited summary never addresses process-level attribution, so saying the record does not indicate it was absent is reasoning from silence, and the document claims a heap raise that starved page cache rather than a JVM heap overrun."
+            }
+          },
+          {
+            "case": "b02",
+            "document": "corpus://incidents/INC-2288",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "any policy-change event in the INC-2288 timeline"
+              ],
+              "reason": "The passages record only a claimed cause involving a policy change and do not state that INC-2288 had policy-change events on a timeline."
+            }
+          },
+          {
+            "case": "b03",
+            "document": "corpus://incidents/INC-2446",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "The cited timeline states the host was reported exhausted with the report naming memory, filesystem found full with memory and swap confirmed normal, and logs rotated by hand with the rotation policy reapplied."
+            }
+          },
+          {
+            "case": "b03",
+            "document": "corpus://incidents/INC-2489",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "Every prior-record statement in the claim is a paraphrase of the cited INC-2489 text: swap and elevated page faults, deliberate overcommit, year-long page-fault baseline, a threshold that ignored host configuration, and confirmation that the behaviour was expected with no incident."
+            }
+          },
+          {
+            "case": "b04",
+            "document": "corpus://runbooks/container-resource-limits",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "The cited runbook passages name hosts running a workload directly without a container runtime, state there is no limit to read, require establishing the standing condition from the largest consumer's resident set, and defer procedure to the host memory exhaustion runbook as a scope exclusion rather than a resolved incident."
+            }
+          },
+          {
+            "case": "b05",
+            "document": "corpus://incidents/INC-2489",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "on a host flagged by a host.memory.pressure signal"
+              ],
+              "reason": "The passages report a memory pressure problem from the observability platform but do not name or identify a host.memory.pressure signal."
+            }
+          },
+          {
+            "case": "b06",
+            "document": "corpus://incidents/INC-2419",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "INC-2419 does not document whether that evidence was ever collected",
+                "the prior record cannot indicate what that evidence will show here"
+              ],
+              "reason": "The cited passage never addresses process-level memory attribution, so claiming INC-2419 does not document whether that evidence was collected (and therefore cannot indicate what it will show) is reasoning from silence."
+            }
+          },
+          {
+            "case": "b06",
+            "document": "corpus://incidents/INC-2411",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "The passage and its document fields support an integration-host memory-exhaustion problem auto-opened and auto-closed on the two preceding days, a claimed prior-evening heap/tuning change as cause, and no stated resolution."
+            }
+          },
+          {
+            "case": "b07",
+            "document": "corpus://incidents/INC-2407",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "The cited INC-2407 passages state three-day near-full CPU on api-prod-d4 with nothing anomalous running, a pre-recorded scheduled migration sourced from the change registry as the load cause, and capacity added with load rebalanced after that change."
+            }
+          },
+          {
+            "case": "c01",
+            "document": "corpus://incidents/INC-2350",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "no change event cited",
+                "the record does not describe a remediation step beyond that attribution"
+              ],
+              "reason": "The cited timeline supports multi-day host memory exhaustion, an unreachable log destination from D0, a D+4 snapshot attributing 6 GiB resident to the shipper, and a log-shipper-backlog cause, but it never states that no change event occurred or that the record lacks a remediation step."
+            }
+          },
+          {
+            "case": "c02",
+            "document": "corpus://incidents/INC-2305",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "The prior record's resolution (bounding the cache and raising the limit) rested on evidence that the in-process cache was the unbounded grower"
+              ],
+              "reason": "The cited passage records an unbounded in-process cache only as document_cause_claimed, not as evidence or as what occurred, so the divergence's statement that the resolution rested on such evidence is unsupported."
+            }
+          },
+          {
+            "case": "c03",
+            "document": "corpus://incidents/INC-2407",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "rests on a capacity plan that was evidently available at resolution time",
+                "The settling evidence in INC-2407 is precisely the evidence that has not yet been collected in this incident"
+              ],
+              "reason": "The cited passage supports the claimed cause, the overnight migration, sustained CPU saturation with no new processes, and the D+2 capacity add, but it never mentions a capacity plan or other settling evidence available at resolution time."
+            }
+          },
+          {
+            "case": "c04",
+            "document": "corpus://incidents/INC-2377",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "No alternative falsifying test is recorded in the retrieved passages."
+              ],
+              "reason": "The passages support the abandoned non-prod comparison, missing build parity at D0 21:45, and the installed-agents difference, but they never state that no alternative falsifying test existed or was recorded."
+            }
+          },
+          {
+            "case": "c05",
+            "document": "corpus://incidents/INC-2402",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "The cited INC-2402 passages state that the newest deployment was named probable cause within twenty minutes with no direct evidence recorded, that it was shown uninvolved the next morning because it was not loaded on the affected host after five hours spent on it, and that the investigation then restarted from the original 17:20 evidence."
+            }
+          },
+          {
+            "case": "c07",
+            "document": "corpus://runbooks/denial-log-collection",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "The cited runbook passage states that deactivating the dispatcher is often proposed as CPU relief, that suppressing before the log is taken permanently destroys source-identifying evidence, and that the prescribed sequence is collect first then suppress if still wanted."
+            }
+          },
+          {
+            "case": "c08",
+            "document": "corpus://incidents/INC-2489",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "host.memory.pressure alert",
+                "overcommit configuration is confirmed intended since build",
+                "the prior record does not name the specific alert threshold logic involved"
+              ],
+              "reason": "The timeline supports a memory-pressure opening on an overcommitted cache host, intended configuration, and a year-matching page-fault baseline, but not the alert name host.memory.pressure, a since-build origin, or a stated absence of named threshold logic."
+            }
+          },
+          {
+            "case": "d03",
+            "document": "corpus://incidents/INC-2411",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "The cited passages state two preceding days of opened-and-auto-closed memory exhaustion on a batch integration host, a change-registry heap raise the evening before the first alert with later change-history correlation, and a revert to 20 GiB plus restart outside the batch window after which swap returned to zero."
+            }
+          },
+          {
+            "case": "d03",
+            "document": "corpus://incidents/INC-2350",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "auto-closed",
+                "The record does not describe a resolution step beyond the process snapshot identifying the shipper as the source; it records what the snapshot showed, not what was done afterward."
+              ],
+              "reason": "The timeline supports consecutive unacknowledged memory-exhaustion opens and a 6 GiB shipper snapshot, but it never says problems were auto-closed, and the claim that no resolution was recorded after the snapshot infers absence from silence."
+            }
+          },
+          {
+            "case": "d03",
+            "document": "corpus://incidents/INC-2419",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "problem opens and auto-closes on consecutive days",
+                "INC-2419 offers no settled resolution"
+              ],
+              "reason": "The passage says the problem opened and auto-closed on seven of ten days and that a D+9 restart recovered memory before closure with an unconfirmed cause, and it does not describe a consecutive-day pattern or state that there was no settled resolution."
+            }
+          },
+          {
+            "case": "f03",
+            "document": "corpus://incidents/INC-2350",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "on an extract host",
+                "the key piece of evidence that settled the incident"
+              ],
+              "reason": "The passages name etl-prod-c1 and record a D+4 11:15 snapshot attributing 6 GiB resident to the shipper, but they never call that host an extract host and never say the snapshot was the key evidence that settled the incident."
+            }
+          },
+          {
+            "case": "g01",
+            "document": "corpus://incidents/INC-2419",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "No process-level memory attribution was collected.",
+                "INC-2419's (unrecorded) investigation"
+              ],
+              "reason": "The passage supports restart-with-unconfirmed-cause on intg-prod-j5, but it never states that process-level memory attribution was not collected or that the investigation was unrecorded."
+            }
+          },
+          {
+            "case": "g01",
+            "document": "corpus://incidents/INC-2411",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "Every factual statement about INC-2411 (memory exhaustion with heavy swapping over multiple days on a batch integration host, heap change as most recent change and claimed cause, and the stated revert/restart with swap returning to zero) is present in or fairly paraphrased from the cited passage text and document_cause_claimed field."
+            }
+          }
+        ]
+      },
+      "divergence_quality": {
+        "value": 0.8571,
+        "numerator": 6,
+        "denominator": 7,
+        "verdicts": [
+          {
+            "case": "b01",
+            "document": "corpus://incidents/INC-2411",
+            "verdict": {
+              "names_a_distinguishing_factor": true,
+              "factor_named": "the prior incident had a heap change to revert and this one has no correlated change at all",
+              "reason": "The text states that INC-2411 had a revertible tuning/configuration change while this host\u2019s 14-day change-history query found nothing, which is the listed contrast of a prior change to revert versus no correlated change here."
+            }
+          },
+          {
+            "case": "b02",
+            "document": "corpus://incidents/INC-2288",
+            "verdict": {
+              "names_a_distinguishing_factor": true,
+              "factor_named": "the dispatcher must remain active on production hosts",
+              "reason": "The analyst states that SEC-STD-14 now requires the audit event dispatcher to remain active on production hosts, so INC-2288's deactivation is no longer an available resolution."
+            }
+          },
+          {
+            "case": "b03",
+            "document": "corpus://incidents/INC-2446",
+            "verdict": {
+              "names_a_distinguishing_factor": true,
+              "factor_named": "the prior record's exhausted resource was disk and never memory",
+              "reason": "The analyst states that INC-2446 was a full filesystem with memory and swap confirmed normal, the opposite of this incident, so the prior exhausted resource was disk and never memory."
+            }
+          },
+          {
+            "case": "b04",
+            "document": "corpus://runbooks/container-resource-limits",
+            "verdict": {
+              "names_a_distinguishing_factor": false,
+              "factor_named": null,
+              "reason": "The text names that the retrieved passage is a scope exclusion rather than a resolved incident, that the host-exhaustion runbook was not retrieved, and that resident-set evidence is still outstanding\u2014none of which is either listed factor about the prior host staying flat or this host having no container limit to raise."
+            }
+          },
+          {
+            "case": "b05",
+            "document": "corpus://incidents/INC-2489",
+            "verdict": {
+              "names_a_distinguishing_factor": true,
+              "factor_named": "this host has never swapped before and is not overcommitted",
+              "reason": "The analyst states that the current host has never swapped and is not configured to overcommit, which is the same difference as the second listed factor."
+            }
+          },
+          {
+            "case": "b06",
+            "document": "corpus://incidents/INC-2419",
+            "verdict": {
+              "names_a_distinguishing_factor": true,
+              "factor_named": "the attribution is still obtainable here and is outstanding",
+              "reason": "The text states that process-level memory attribution is still outstanding on the live incident, which is the same difference as that attribution remaining obtainable and uncollected here."
+            }
+          },
+          {
+            "case": "b07",
+            "document": "corpus://incidents/INC-2407",
+            "verdict": {
+              "names_a_distinguishing_factor": true,
+              "factor_named": "the prior saturation was a planned load increase recorded in advance",
+              "reason": "The text states that INC-2407 had a pre-recorded scheduled migration as the confirmed load source, while this incident has an empty change registry before onset."
+            }
+          }
+        ]
+      },
+      "isolation": {
+        "probe": "read a corpus document from inside the jail",
+        "answer": "I'LL READ THAT FILE NOW.READ_FAILED",
+        "corpus_reachable": false,
+        "namespace": "tmpfs over /home/scott/repos/response-engineering"
+      },
+      "verdicts_recovered_from": "9c8799af9a1b"
+    },
+    {
+      "at": "2026-08-21T00:34:44Z",
+      "scorer_fingerprint": "28d4eaebaeda2581958af57d964005d941418895eb22f636a1b4af7c4103337f",
+      "model": "cursor-grok-4.6-high",
+      "temperature": null,
+      "max_tokens": null,
+      "transport": "cursor",
+      "sampling": "no temperature; effort is carried by the model id, which is pinned and compared like any other input",
+      "cli_version": "2026.08.11-e8db854",
+      "effort": "high",
+      "prompts": {
+        "groundedness": "6e810b942c5dc044b0697679e5345da9a1568f3b039476ff3938ca17b5ccdf00",
+        "divergence": "178c9a0e54f03b692630ee97cafef619ed836e99ccf226c9d278a0bb75f502d1"
+      },
+      "groundedness_judge": {
+        "value": 0.4091,
+        "numerator": 9,
+        "denominator": 22
+      },
+      "divergence_quality": {
+        "value": 0.8571,
+        "numerator": 6,
+        "denominator": 7
+      },
+      "isolation": null
+    },
+    {
+      "at": "2026-08-21T00:40:48Z",
+      "scorer_fingerprint": "4d505a9db8f3cd620b572089fbac2369cb8a7b4d7e430ddbb42ed86cbfb45a27",
+      "model": "cursor-grok-4.6-high",
+      "temperature": null,
+      "max_tokens": null,
+      "transport": "cursor",
+      "sampling": "no temperature; effort is carried by the model id, which is pinned and compared like any other input",
+      "cli_version": "2026.08.11-e8db854",
+      "effort": "high",
+      "prompts": {
+        "groundedness": "6e810b942c5dc044b0697679e5345da9a1568f3b039476ff3938ca17b5ccdf00",
+        "divergence": "178c9a0e54f03b692630ee97cafef619ed836e99ccf226c9d278a0bb75f502d1"
+      },
+      "groundedness_judge": {
+        "value": 0.4091,
+        "numerator": 9,
+        "denominator": 22,
+        "verdicts": [
+          {
+            "case": "b01",
+            "document": "corpus://incidents/INC-2411",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "INC-2411's record does not indicate that attribution was similarly absent at the time of investigation."
+              ],
+              "reason": "The cited passage never addresses process-level memory attribution, so a claim that INC-2411's record does not indicate that attribution was absent is an inference from silence the passages do not state."
+            }
+          },
+          {
+            "case": "b02",
+            "document": "corpus://incidents/INC-2288",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "any policy-change event in the INC-2288 timeline"
+              ],
+              "reason": "The cited passage records a claimed policy-change cause but does not describe any policy-change event in the INC-2288 timeline, which the falsifying test treats as a fact about the prior record."
+            }
+          },
+          {
+            "case": "b03",
+            "document": "corpus://incidents/INC-2446",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "The cited INC-2446 timeline states the host was reported exhausted with the report naming memory, filesystem full with memory and swap normal, and logs rotated by hand with the rotation policy reapplied, which is all the claim asserts about the prior record."
+            }
+          },
+          {
+            "case": "b03",
+            "document": "corpus://incidents/INC-2489",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "The cited passages state swap usage and an elevated page fault rate, deliberate overcommit with configuration confirmed intended, a page-fault match to the host's baseline for the past year, a threshold that ignored that configuration, and that the symptoms were expected with no incident occurring."
+            }
+          },
+          {
+            "case": "b04",
+            "document": "corpus://runbooks/container-resource-limits",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "The cited passages affirmatively describe a container-resource-limits runbook scope exclusion for hosts running a workload directly without a container runtime, with no limit to read and a pointer to the host memory exhaustion runbook to establish standing condition from the largest consumer's resident set."
+            }
+          },
+          {
+            "case": "b05",
+            "document": "corpus://incidents/INC-2489",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "on a host flagged by a host.memory.pressure signal"
+              ],
+              "reason": "The cited passages report a memory pressure problem opening from the observability platform, but they do not name a host.memory.pressure signal."
+            }
+          },
+          {
+            "case": "b06",
+            "document": "corpus://incidents/INC-2419",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "INC-2419 does not document whether that evidence was ever collected",
+                "the prior record cannot indicate what that evidence will show here"
+              ],
+              "reason": "The cited passage never states that process-level memory attribution was uncollected or undocumented; those claims rest on silence rather than an asserted absence."
+            }
+          },
+          {
+            "case": "b06",
+            "document": "corpus://incidents/INC-2411",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "The cited passage and its document_cause_claimed field support the prior record as memory exhaustion on a batch integration host with two preceding days of open-and-auto-close alerts, a claimed prior-evening heap/tuning change, and no stated resolution."
+            }
+          },
+          {
+            "case": "b07",
+            "document": "corpus://incidents/INC-2407",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "The cited passages state three days of near-full CPU on api-prod-d4 with nothing anomalous running, a scheduled migration recorded in advance and sourced from the change registry, and capacity added with load rebalanced after that entry."
+            }
+          },
+          {
+            "case": "c01",
+            "document": "corpus://incidents/INC-2350",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "no change event cited",
+                "the record does not describe a remediation step beyond that attribution"
+              ],
+              "reason": "The passage supports multi-day host memory exhaustion, an unreachable log destination from D0, the D+4 shipper RSS attribution of 6 GiB, and the log-shipper-backlog cause, but it never states that no change event was cited or that the record describes no remediation."
+            }
+          },
+          {
+            "case": "c02",
+            "document": "corpus://incidents/INC-2305",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "rested on evidence that the in-process cache was the unbounded grower"
+              ],
+              "reason": "The passage records a claimed cause of unbounded in-process cache and the D+1 action that bounded the cache and raised the limit, but it does not state that this resolution rested on evidence that the cache was the unbounded grower."
+            }
+          },
+          {
+            "case": "c03",
+            "document": "corpus://incidents/INC-2407",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "rests on a capacity plan that was evidently available at resolution time",
+                "The settling evidence in INC-2407 is precisely the evidence that has not yet been collected in this incident"
+              ],
+              "reason": "The cited passage and document_cause_claimed support the migration, doubling, sustained saturation, and D+2 rebalance, but they never mention a capacity plan or any settling evidence of that kind."
+            }
+          },
+          {
+            "case": "c04",
+            "document": "corpus://incidents/INC-2377",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "No alternative falsifying test is recorded in the retrieved passages."
+              ],
+              "reason": "The passages support abandoning the non-prod comparison after missing build parity and the installed-agents difference, but they never state that no alternative falsifying test was recorded."
+            }
+          },
+          {
+            "case": "c05",
+            "document": "corpus://incidents/INC-2402",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "The INC-2402 passages state the twenty-minute attribution without direct evidence, the next-morning demonstration that the component was not loaded, the five hours spent on it, and the restart from the original 17:20 evidence, which is what the claim asserts about the prior record."
+            }
+          },
+          {
+            "case": "c07",
+            "document": "corpus://runbooks/denial-log-collection",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "The cited runbook states that deactivating the event dispatcher is often proposed when denial-analysis consumes CPU, that suppression before the log is taken makes source-identifying evidence unrecoverable, and that the prescribed sequence is collect first then suppress if still wanted."
+            }
+          },
+          {
+            "case": "c08",
+            "document": "corpus://incidents/INC-2489",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "host.memory.pressure alert",
+                "overcommit configuration is confirmed intended since build",
+                "the prior record does not name the specific alert threshold logic involved"
+              ],
+              "reason": "The timeline supports a memory-pressure opening on an overcommitted cache host, a year-matching page-fault baseline, and configuration confirmed intended, but it does not name the alert host.memory.pressure, does not date that intent to build, and does not state that specific threshold logic is unnamed."
+            }
+          },
+          {
+            "case": "d03",
+            "document": "corpus://incidents/INC-2411",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "Every prior-record statement is in the cited summary, timeline, or document_cause_claimed: two days of open-and-auto-closed memory exhaustion on a batch integration host, a change-registry JVM heap raise the evening before the first alert, correlation of that change, and revert to 20 GiB with a restart outside the batch window after which swap returned to zero."
+            }
+          },
+          {
+            "case": "d03",
+            "document": "corpus://incidents/INC-2350",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "auto-closed",
+                "The record does not describe a resolution step beyond the process snapshot identifying the shipper as the source; it records what the snapshot showed, not what was done afterward."
+              ],
+              "reason": "The timeline supports consecutive unacknowledged memory-exhaustion openings and a D+4 snapshot attributing 6 GiB RSS to the shipper, but it never says problems auto-closed and it never states that no resolution followed the snapshot."
+            }
+          },
+          {
+            "case": "d03",
+            "document": "corpus://incidents/INC-2419",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "problem opens and auto-closes on consecutive days",
+                "INC-2419 offers no settled resolution"
+              ],
+              "reason": "The passage reports open/auto-close on seven of ten days, not consecutive days, and it records a D+9 restart with memory recovery and closure, so it does not support a consecutive-day overlap or the claim that INC-2419 offers no settled resolution."
+            }
+          },
+          {
+            "case": "f03",
+            "document": "corpus://incidents/INC-2350",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "on an extract host",
+                "a process snapshot attributing resident memory to the shipper (6 GiB) was the key piece of evidence that settled the incident"
+              ],
+              "reason": "The passages name etl-prod-c1 and record a 6 GiB shipper snapshot, but they never call the host an extract host and never say that snapshot was the evidence that settled the incident."
+            }
+          },
+          {
+            "case": "g01",
+            "document": "corpus://incidents/INC-2419",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "No process-level memory attribution was collected.",
+                "INC-2419's (unrecorded) investigation"
+              ],
+              "reason": "The cited passage states that recurring memory exhaustion on intg-prod-j5 was resolved by restarting the workload with no cause established, but it does not say process-level memory attribution was never collected or that the investigation was unrecorded."
+            }
+          },
+          {
+            "case": "g01",
+            "document": "corpus://incidents/INC-2411",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "Every prior-record statement in the claim is present in the cited passages or their document fields, including memory exhaustion with heavy swapping over consecutive days, the heap change as the most recent host change and claimed cause, and the revert-and-restart resolution."
+            }
+          }
+        ]
+      },
+      "divergence_quality": {
+        "value": 0.8571,
+        "numerator": 6,
+        "denominator": 7,
+        "verdicts": [
+          {
+            "case": "b01",
+            "document": "corpus://incidents/INC-2411",
+            "verdict": {
+              "names_a_distinguishing_factor": true,
+              "factor_named": "the prior incident had a heap change to revert and this one has no correlated change at all",
+              "reason": "The text states that INC-2411 had a tuning change that could be identified and reverted, while this incident\u2019s change-history query returned nothing, so that revert path is unavailable."
+            }
+          },
+          {
+            "case": "b02",
+            "document": "corpus://incidents/INC-2288",
+            "verdict": {
+              "names_a_distinguishing_factor": true,
+              "factor_named": "the dispatcher must remain active on production hosts",
+              "reason": "The analyst states that SEC-STD-14 requires the audit event dispatcher to remain active on production hosts, which is that listed difference."
+            }
+          },
+          {
+            "case": "b03",
+            "document": "corpus://incidents/INC-2446",
+            "verdict": {
+              "names_a_distinguishing_factor": true,
+              "factor_named": "the prior record's exhausted resource was disk and never memory",
+              "reason": "The text states that INC-2446 was a full filesystem with memory and swap normal, the opposite of this incident\u2019s climbing swap, and that the disk-full finding is already ruled out."
+            }
+          },
+          {
+            "case": "b04",
+            "document": "corpus://runbooks/container-resource-limits",
+            "verdict": {
+              "names_a_distinguishing_factor": false,
+              "factor_named": null,
+              "reason": "The text treats the precedent as an unrecovered scope-exclusion runbook with outstanding resident-set evidence, and never states that this host has no container limit or that the prior host stayed flat without exhaustion."
+            }
+          },
+          {
+            "case": "b05",
+            "document": "corpus://incidents/INC-2489",
+            "verdict": {
+              "names_a_distinguishing_factor": true,
+              "factor_named": "the prior host was deliberately overcommitted and had run that way since it was built",
+              "reason": "The text states that the retrieved record\u2019s host was deliberately overcommitted from build time, and that the current host has never swapped and is not configured to overcommit."
+            }
+          },
+          {
+            "case": "b06",
+            "document": "corpus://incidents/INC-2419",
+            "verdict": {
+              "names_a_distinguishing_factor": true,
+              "factor_named": "the attribution is still obtainable here and is outstanding",
+              "reason": "The text states that process-level memory attribution is still outstanding on the current incident, which is the listed difference that the attribution remains obtainable and uncollected here."
+            }
+          },
+          {
+            "case": "b07",
+            "document": "corpus://incidents/INC-2407",
+            "verdict": {
+              "names_a_distinguishing_factor": true,
+              "factor_named": "the prior saturation was a planned load increase recorded in advance",
+              "reason": "The text states that INC-2407 had a pre-recorded scheduled migration as the known load source, which is the prior saturation being a planned load increase recorded in advance."
+            }
+          }
+        ]
+      },
+      "isolation": {
+        "shell_probe": "direct path and /proc/*/root, both refused",
+        "shell_answer": "SHELL_DONE",
+        "model_probe": "read a corpus document by its usual path",
+        "model_answer": "I'LL READ THAT FILE NOW.READ_FAILED",
+        "reachable": false,
+        "scope": "two routes tested, not every route. The namespace masks paths and remounts /proc; it is not a container, and the metered transport is the one that needs no mask because it has no file tools.",
+        "namespace": "tmpfs over /home/scott/repos/response-engineering"
+      },
+      "verdicts_recovered_from": "b3179e3ad9bd"
+    },
+    {
+      "at": "2026-08-21T01:19:54Z",
+      "scorer_fingerprint": "3edec8a2b7cfe68494a993d900bd45227ba7ffa266d3f10f5d821c1754c3b38d",
+      "model": "cursor-grok-4.6-high",
+      "temperature": null,
+      "max_tokens": null,
+      "transport": "cursor",
+      "sampling": "no temperature; effort is carried by the model id, which is pinned and compared like any other input",
+      "cli_version": "2026.08.11-e8db854",
+      "effort": "high",
+      "prompts": {
+        "groundedness": "6e810b942c5dc044b0697679e5345da9a1568f3b039476ff3938ca17b5ccdf00",
+        "divergence": "178c9a0e54f03b692630ee97cafef619ed836e99ccf226c9d278a0bb75f502d1"
+      },
+      "groundedness_judge": {
+        "value": 0.3636,
+        "numerator": 8,
+        "denominator": 22
+      },
+      "divergence_quality": {
+        "value": 0.7143,
+        "numerator": 5,
+        "denominator": 7
+      },
+      "isolation": null
+    },
+    {
+      "at": "2026-08-21T01:27:33Z",
+      "scorer_fingerprint": "3edec8a2b7cfe68494a993d900bd45227ba7ffa266d3f10f5d821c1754c3b38d",
+      "model": "claude-opus-4-6",
+      "temperature": 0,
+      "max_tokens": 1500,
+      "transport": "anthropic",
+      "sampling": "temperature 0",
+      "pace": null,
+      "isolation": null,
+      "cli_version": null,
+      "effort": null,
+      "prompts": {
+        "groundedness": "6e810b942c5dc044b0697679e5345da9a1568f3b039476ff3938ca17b5ccdf00",
+        "divergence": "178c9a0e54f03b692630ee97cafef619ed836e99ccf226c9d278a0bb75f502d1"
+      },
+      "groundedness_judge": {
+        "value": 0.9545,
+        "numerator": 21,
+        "denominator": 22
+      },
+      "divergence_quality": {
+        "value": 0.8571,
+        "numerator": 6,
+        "denominator": 7
+      }
+    },
+    {
+      "at": "2026-08-21T01:51:15Z",
+      "scorer_fingerprint": "e488a24929d54c0f3f5f5c2e4ae195fc82ce387e4ebc4e85f1b14150e7c64b30",
+      "model": "claude-opus-4-6",
+      "temperature": 0,
+      "max_tokens": 1500,
+      "transport": "anthropic",
+      "sampling": "temperature 0",
+      "pace": {
+        "lanes": 6,
+        "calls": 29,
+        "per_call_p50_ms": 3654.7,
+        "per_call_p95_ms": 5378.8,
+        "wall_ms": 20186.2
+      },
+      "isolation": null,
+      "cli_version": null,
+      "effort": null,
+      "prompts": {
+        "groundedness": "6e810b942c5dc044b0697679e5345da9a1568f3b039476ff3938ca17b5ccdf00",
+        "divergence": "178c9a0e54f03b692630ee97cafef619ed836e99ccf226c9d278a0bb75f502d1"
+      },
+      "groundedness_judge": {
+        "value": 0.9545,
+        "numerator": 21,
+        "denominator": 22
+      },
+      "divergence_quality": {
+        "value": 0.8571,
+        "numerator": 6,
+        "denominator": 7
+      }
+    },
+    {
+      "at": "2026-08-22T07:47:41Z",
+      "scorer_fingerprint": "472312472a1fca39b0bfec64e6882c91a7ddc5ba76d4d32a5c4074e10445f0e5",
+      "model": "claude-opus-4-6",
+      "temperature": 0,
+      "max_tokens": 1500,
+      "transport": "anthropic",
+      "sampling": "temperature 0",
+      "pace": {
+        "lanes": 6,
+        "calls": 29,
+        "per_call_p50_ms": 3961.7,
+        "per_call_p95_ms": 4855.2,
+        "wall_ms": 20377.5
+      },
+      "isolation": null,
+      "cli_version": null,
+      "effort": null,
+      "prompts": {
+        "groundedness": "6e810b942c5dc044b0697679e5345da9a1568f3b039476ff3938ca17b5ccdf00",
+        "divergence": "178c9a0e54f03b692630ee97cafef619ed836e99ccf226c9d278a0bb75f502d1"
+      },
+      "groundedness_judge": {
+        "value": 0.9545,
+        "numerator": 21,
+        "denominator": 22,
+        "verdicts": [
+          {
+            "case": "b01",
+            "document": "corpus://incidents/INC-2411",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "All claims about the prior record are supported: the passage confirms host swapping heavily, batch work running late, memory exhaustion on a batch integration host, and the document_cause_claimed field confirms the JVM heap raise from 20 GiB to 28 GiB the prior evening leaving no headroom for page cache; the divergence statement that the record 'does not indicate that attribution was similarly absent' is not reasoning from silence about an unstated absence but rather a careful hedge ('does not indicate'), and the resolution_taken correctly notes the cause as a claim in the document."
+            }
+          },
+          {
+            "case": "b02",
+            "document": "corpus://incidents/INC-2288",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "All factual claims about the prior record are supported by the cited passage: the symptom profile (20% CPU sustained, spikes to full utilisation during scans, mid-prod host), the six-day duration, the supersession notice from SEC-STD-14 (2026-01-30) including the statement about destroyed evidence, and the resolution being superseded."
+            }
+          },
+          {
+            "case": "b03",
+            "document": "corpus://incidents/INC-2446",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "Every factual claim about INC-2446 \u2014 the host being reported as exhausted with the report naming memory, the filesystem being found full, memory and swap confirmed normal, and logs rotated by hand with the rotation policy reapplied \u2014 is directly stated in the cited passage."
+            }
+          },
+          {
+            "case": "b03",
+            "document": "corpus://incidents/INC-2489",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "All claims about the prior record are supported: the passages confirm swap usage and elevated page fault rate (signature_overlap), deliberate overcommit with page fault rate matching a year-long baseline (resolution_taken), the threshold not accounting for the host's configuration (divergence), and the problem being closed as expected behaviour (resolution_taken)."
+            }
+          },
+          {
+            "case": "b04",
+            "document": "corpus://runbooks/container-resource-limits",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "Every statement about the prior record is supported: the passage explicitly names hosts running workloads directly without a container runtime as a distinct case excluded from this runbook, states there is no limit to read, states the standing condition must be established from the resident set of the largest existing consumer, points to the host memory exhaustion runbook as the applicable procedure, and records no resolution."
+            }
+          },
+          {
+            "case": "b05",
+            "document": "corpus://incidents/INC-2489",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "All claims about the prior record are supported: the passages confirm the host was deliberately overcommitted since it was built, the page fault rate matched a year-long baseline, the alert threshold did not account for the host's configuration, and no incident was declared once the configuration was confirmed intentional."
+            }
+          },
+          {
+            "case": "b06",
+            "document": "corpus://incidents/INC-2419",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "All factual claims about INC-2419 \u2014 seven of ten days of memory exhaustion opening and auto-closing unacknowledged, workload restarted at D+9 with memory recovery, root cause recorded as unconfirmed at closure, and the absence of documented process-level memory attribution \u2014 are directly supported by the cited passage."
+            }
+          },
+          {
+            "case": "b06",
+            "document": "corpus://incidents/INC-2411",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "The passage supports all prior-record claims: memory exhaustion on an integration host, the observability platform opening and auto-closing the problem on two preceding days, the two-day auto-closure window, and the claimed cause (a configuration change the prior evening raising the JVM heap); the resolution being 'not stated' is accurate since the passage does not describe what resolution was taken."
+            }
+          },
+          {
+            "case": "b07",
+            "document": "corpus://incidents/INC-2407",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "All claims about the prior record are supported: the passages confirm sustained CPU saturation near full utilisation for three days on an api-prod host with no anomalous process identified, a pre-recorded scheduled migration confirmed in the change registry as the load source (shown in the timeline passage p-64388910ad43), and the resolution of capacity being added and load rebalanced after the source was identified via the change registry."
+            }
+          },
+          {
+            "case": "c01",
+            "document": "corpus://incidents/INC-2350",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "All claims about the prior record are supported: the passage confirms multi-day memory exhaustion, unreachable log destination since onset, no change event cited, a process snapshot at D+4 attributing 6 GiB resident to the shipper, and no remediation step described beyond that attribution."
+            }
+          },
+          {
+            "case": "c02",
+            "document": "corpus://incidents/INC-2305",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "All claims about the prior record are supported: the passage confirms eleven restarts over two days (D0 to D+1), host memory and swap flat, orchestrator-driven restarts, the container reaching its configured memory limit, the resolution of bounding the cache and raising the limit at D+1 13:40 via change registry, and the document_cause_claimed confirms the in-process cache was the unbounded grower."
+            }
+          },
+          {
+            "case": "c03",
+            "document": "corpus://incidents/INC-2407",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "All claims about the prior record are supported: the passage confirms a scheduled migration completing the night before, CPU near full utilisation with no new processes, the document_cause_claimed attributing saturation to a second consumer's request volume being moved onto the host roughly doubling it, and capacity being added and load rebalanced at D+2, 10:15 per the change registry."
+            }
+          },
+          {
+            "case": "c04",
+            "document": "corpus://incidents/INC-2377",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "All claims about the prior record are supported: the passages confirm the non-production environment differed in build, patch level, and installed agents; that the comparison was proposed as a falsifying test; that it was abandoned after build parity was confirmed absent at D0+21:45; and no alternative falsifying test is recorded in the retrieved passages."
+            }
+          },
+          {
+            "case": "c05",
+            "document": "corpus://incidents/INC-2402",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "All claims about the prior record are supported: the passages confirm the bridge named the most recently deployed component within minutes (twenty minutes) with no direct evidence recorded, the component was demonstrated uninvolved the following morning (shown not loaded on the affected host), the investigation restarted from the evidence available at the original attribution point, and five hours had been spent on the named component before it was cleared."
+            }
+          },
+          {
+            "case": "c07",
+            "document": "corpus://runbooks/denial-log-collection",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "Every statement about the prior record (the runbook passage) is directly supported by the cited passage text, including the exact quote about evidence loss, the prescribed sequence of collecting before suppressing, and the scenario of denial-analysis consuming CPU with suppression proposed as relief."
+            }
+          },
+          {
+            "case": "c08",
+            "document": "corpus://incidents/INC-2489",
+            "verdict": {
+              "supported": false,
+              "unsupported_elements": [
+                "overcommit configuration is confirmed intended since build"
+              ],
+              "reason": "The cited passage states 'Configuration confirmed intended' but does not say it was intended 'since build'; the phrase 'since build' is an addition not present in the passage text."
+            }
+          },
+          {
+            "case": "d03",
+            "document": "corpus://incidents/INC-2411",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "All claims about the prior record are supported: the passages confirm host.memory.exhaustion on an integration host with problems opened and auto-closed on each of two preceding days, correlation with a JVM heap change raised the evening before the first alert via the change registry, and reversion of the heap to 20 GiB with service restart after which swap usage returned to zero."
+            }
+          },
+          {
+            "case": "d03",
+            "document": "corpus://incidents/INC-2350",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "The cited passage supports all claims about the prior record: the problem opened on four consecutive days (D+4 being the fourth consecutive day), the process snapshot at D+4 attributed 6 GiB resident to the shipper, and the passage describes what the snapshot showed without describing any resolution step beyond that identification."
+            }
+          },
+          {
+            "case": "d03",
+            "document": "corpus://incidents/INC-2419",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "All claims about INC-2419 \u2014 ten days, seven alert cycles, unacknowledged, workload restarted on D+9, memory recovered, root cause recorded as unconfirmed, and no confirmed cause \u2014 are directly supported by the cited passage's timeline and the document_cause_claimed field being null."
+            }
+          },
+          {
+            "case": "f03",
+            "document": "corpus://incidents/INC-2350",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "All claims about the prior record are supported: the summary confirms memory exhaustion on an extract host with no recent change, the timeline confirms the log destination was unreachable for multiple days, the process snapshot at D+4 11:15 attributing 6 GiB resident to the shipper is explicitly stated, and the claim that resolution was not reported in the retrieved passages is accurate since the passages cover only the summary and timeline."
+            }
+          },
+          {
+            "case": "g01",
+            "document": "corpus://incidents/INC-2419",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "All claims about the prior record are supported: the passage confirms recurring memory exhaustion on intg-prod-j5, resolution by restarting the workload, no cause established before the symptom stopped, and the document_cause_claimed is null; the claim that no process-level memory attribution was collected is supported by the passage stating no cause was established and no such data is mentioned."
+            }
+          },
+          {
+            "case": "g01",
+            "document": "corpus://incidents/INC-2411",
+            "verdict": {
+              "supported": true,
+              "unsupported_elements": [],
+              "reason": "All claims about the prior record are supported: the passages confirm host memory exhaustion on an integration host recurring on multiple consecutive days with heavy swapping, a recent JVM heap configuration change as the most recent change, the claimed cause of heap resize leaving no headroom for page cache, and the resolution of reverting the heap to 20 GiB and restarting the service with swap usage returning to zero."
+            }
+          }
+        ]
+      },
+      "divergence_quality": {
+        "value": 0.8571,
+        "numerator": 6,
+        "denominator": 7,
+        "verdicts": [
+          {
+            "case": "b01",
+            "document": "corpus://incidents/INC-2411",
+            "verdict": {
+              "names_a_distinguishing_factor": true,
+              "factor_named": "the prior incident had a heap change to revert and this one has no correlated change at all",
+              "reason": "The text explicitly states that INC-2411 was associated with a tuning change that could be reverted, whereas the current incident has no change in its 14-day change history, meaning the revert path is unavailable\u2014directly naming the distinguishing factor."
+            }
+          },
+          {
+            "case": "b02",
+            "document": "corpus://incidents/INC-2288",
+            "verdict": {
+              "names_a_distinguishing_factor": true,
+              "factor_named": "SEC-STD-14",
+              "reason": "The text explicitly names SEC-STD-14 as the platform security standard that now governs the situation, and also states the other two distinguishing factors: that the dispatcher must remain active on production hosts and that deactivating it destroyed the evidence that would name the source."
+            }
+          },
+          {
+            "case": "b03",
+            "document": "corpus://incidents/INC-2446",
+            "verdict": {
+              "names_a_distinguishing_factor": true,
+              "factor_named": "the prior record's exhausted resource was disk and never memory",
+              "reason": "The text explicitly states that in INC-2446 the filesystem was full and memory/swap were normal, which is the opposite of the current incident \u2014 directly naming the difference that the prior record's exhausted resource was disk, not memory."
+            }
+          },
+          {
+            "case": "b04",
+            "document": "corpus://runbooks/container-resource-limits",
+            "verdict": {
+              "names_a_distinguishing_factor": false,
+              "factor_named": null,
+              "reason": "The text discusses the nature of the document (scope exclusion vs. incident record) and the outstanding evidence, but does not state either distinguishing factor: that the prior host never entered exhaustion, or that there is no container limit on this host to raise or bound."
+            }
+          },
+          {
+            "case": "b05",
+            "document": "corpus://incidents/INC-2489",
+            "verdict": {
+              "names_a_distinguishing_factor": true,
+              "factor_named": "the prior host was deliberately overcommitted and had run that way since it was built",
+              "reason": "The text explicitly states that the retrieved record describes a host that was deliberately overcommitted and had run that way since it was built, and contrasts this with the current host which has never swapped and is not configured to overcommit, naming both distinguishing factors."
+            }
+          },
+          {
+            "case": "b06",
+            "document": "corpus://incidents/INC-2419",
+            "verdict": {
+              "names_a_distinguishing_factor": true,
+              "factor_named": "the attribution is still obtainable here and is outstanding",
+              "reason": "The text explicitly states that the current incident has process-level memory attribution still outstanding, which directly names the distinguishing factor that the attribution is still obtainable and outstanding in the live incident."
+            }
+          },
+          {
+            "case": "b07",
+            "document": "corpus://incidents/INC-2407",
+            "verdict": {
+              "names_a_distinguishing_factor": true,
+              "factor_named": "the prior saturation was a planned load increase recorded in advance",
+              "reason": "The text explicitly states that INC-2407 had a pre-recorded scheduled migration confirmed in the change registry as the load source, while the current incident has an empty change registry, which names the same difference as the prior saturation being a planned load increase recorded in advance."
+            }
+          }
+        ]
       }
     }
   ]

@@ -63,21 +63,134 @@ makes iterating on the dataset affordable. Judgement mode needs both, plus the
 `behavioural-contracts` extra, which it checks for rather than measuring a
 harness with contract validation silently switched off.
 
+**Which judge, and why it is the metered one.** Published figures come from
+`claude-opus-4-6` through the Messages API. That transport has no file tools,
+so "the judge answered from the passages this claim cites" is structural rather
+than enforced. The Cursor CLI transport is kept for exploring on a
+subscription, and it is an agent with file access: a private mount namespace
+masks every checkout git knows about, `/proc` is remounted, and a shell tests
+both routes before anything is scored. That is a good mask and still a mask,
+because a copy of the corpus outside those checkouts cannot be covered. Three
+review rounds went into hardening it, which is what decided this: the number
+whose whole claim is that the judge had not read the answer is worth about a
+dollar an arm. The metered transport turned out to be faster too. The records
+carry per-round pace for every round judged since the field was added, which is
+the metered ones: about four seconds a call and about a minute for a whole arm
+at six lanes, the slowest recorded being 61.7 seconds. The CLI figure is not in any record, because those rounds ran
+before the field existed. It was measured directly instead, on a representative
+payload: 12.0s wall against 5.8s reported server-side, and 11,298 input tokens
+billed for a 1,599-character prompt, so roughly half of each call is process
+spawn and harness preamble. Cite it as that, a one-off measurement, rather than
+as something a record substantiates.
+
+`--compare`, `--comparison` and `--check-records` all refuse to put figures
+from the two transports beside each other.
+
 `--rejudge` re-runs the judge over a recorded sweep with the current prompts and
 payload, without re-running the agent. It is a fresh measurement rather than a
 recount, so it stamps `rejudged_at`, records the fingerprint of the code that
-produced the new verdicts, and prints what moved. The three committed records
-have been judged four times each: once during the sweep, then three times
-again. The first re-judge widened the payload from four fields
-of a claim to all of them, which moved `groundedness_judge` from 71.2% to
-75.0%, 80.4% to 85.7% and 81.8% to 90.9%: the original figures answered a
-narrower question than the metric's own description, which is the reason to
-re-judge rather than to restate. The two after that changed nothing the judge
-sees, and measured something worth having.
+produced the new verdicts, and prints what moved. Each committed record carries every
+judging it has had, and the per-arm tables list them: the sweep's own, then a
+re-judge for each change to what the judge was asked or how its provenance was
+recorded. The first of those widened the payload from four fields of a claim to
+all of them and moved `groundedness_judge` from 71.2% to 75.0%, 80.4% to 85.7%
+and 81.8% to 90.9%, because the original figures answered a narrower question
+than the metric's own description. That is the reason to re-judge rather than
+restate. Later rounds changed nothing the judge sees, and measured something
+worth having.
 
-**Same claims, same prompts, same payload, same model at temperature 0, and the
-verdicts moved every time.** Four judgings of the identical claims, all of them
-in the records:
+**Every round each record has had is in it, with the transport that produced
+it and whether the corpus was reachable from that transport.** The current
+judge is the one named in `config.judgement.yaml`, which is the metered API and
+has no file tools. The Cursor rounds are kept because the comparison between
+families is the finding. Two of the three Cursor rounds per arm carry no
+isolation evidence: they ran while the mount namespace was being built, and the
+record says "not recorded" rather than guessing in either direction. Their
+figures sit within a claim or two of the isolated round, which is evidence they
+were not reading the corpus and not proof of it.
+
+**The judged level is a property of the judge, not of the agent.** The same
+claims have now been scored by two model families. Under `claude-opus-4-6` at
+temperature 0, and under `cursor-grok-4.6-high` through the CLI:
+
+One round from each family, matched: the current metered round, and the Cursor
+round that carries isolation evidence. Each arm's other rounds are in its own
+table, with the transport and the isolation state of each.
+
+| arm | `claude-opus-4-6`, metered, no file tools | `cursor-grok-4.6-high`, isolated |
+| --- | --- | --- |
+| `judgement-heading` | 38 of 52 | 17 of 52 |
+| `judgement-fixed` | 48 of 56 | 19 of 56 |
+| `judgement-single-query` | 21 of 22 | 9 of 22 |
+
+Matched deliberately. The single-query arm has six Cursor attempts and its
+latest scored 8 of 22, which is the number a careless comparison would take;
+the round that sits beside heading's 17 and fixed's 19, judged by the same code
+under the same probed namespace, is 9. Comparing a family against a family
+means comparing rounds that were run the same way.
+
+**Which boundary those Cursor rounds ran under, exactly.** Their own records
+say: the direct path and `/proc/*/root` were tried by a shell inside the
+namespace and both refused, and the scope recorded is "two routes tested, not
+every route". The masking of *every* checkout git knows about came later, so no
+Cursor round has been verified against that. They have not been re-run under it,
+deliberately: the cross-family finding does not turn on a perfect jail, it turns
+on whether the judge read the corpus, and three things say it did not. The
+probe passed on the routes it did test. The scores moved by a claim or two when
+the jail was first added, where a judge reading whole documents would have moved
+much further, and in the direction of confirming absences rather than rejecting
+them. And the isolated round lands within a claim of the unisolated ones on
+every arm.
+
+That is evidence and not verification, and the difference is the point. If the
+cross-family figures ever carry more weight than "the level belongs to the
+judge", re-run them under the current jail first.
+
+Around forty points of level, and the ordering survived: heading below fixed
+below single-query in every round of both families. The metered judge is set at
+temperature 0; the CLI cannot set a temperature at all, so the two differ in
+sampling as well as in family and neither figure carries the other's controls. So `groundedness_judge` is readable as a
+comparison and not as a score. A published figure of 75% or 33% says as much
+about which judge ran as about the agent.
+
+**The chunker pair is a different story under the two judges.** Under Opus
+heading and fixed part by about ten points, outside what a re-judge moves.
+Under Grok they are two claims apart, which is inside it. The direction has
+never flipped and the size collapsed, so whether the two chunkers are
+distinguishable at all is itself judge-dependent. The single-query arm stays
+clear of both under either judge, which is the one comparison that does not
+depend on who is judging.
+
+**The difference has a shape, and it is checkable from the records.** The
+matched rounds either side of the comparison carry their per-claim verdicts,
+the Cursor ones recovered from the commits that held them, so the claim below
+is counted rather than asserted. Rounds archived before verdicts were kept hold
+counts only, and are not what it is counted from. On the shipped arm the CLI judge called 35 claims
+unsupported against the metered judge's 14. Of the 21 it rejected and the other
+did not, 19 give the same reason: the cited passages never state the thing the
+claim asserts about the prior record. Across the three arms that pattern covers
+52 of 62 divergent verdicts, 83 per cent, and no arm falls below 75.
+
+An earlier version of this paragraph called it the absence rule specifically,
+and the verdicts do not support that narrowing. Absence claims are a subset. A
+divergence saying the prior incident "had no transfer failures" is rejected on
+the same ground as one saying a process snapshot "was not required": the
+passages say neither. What separates the families is not one rule about
+absence, it is how literally each holds the instruction to judge only from the
+cited text.
+
+**`divergence_quality` barely moves at all.** Heading is 6/6 and fixed 6/7 in
+every judging under both families; single-query is 6/7 in every round but two,
+where it was 5/7. Against forty points of movement on
+`groundedness_judge`, that is the same measurement surviving a change of judge
+family.
+That judge is handed the dataset's list of distinguishing factors and asked
+whether the text names one. The constrained question ported across families
+almost perfectly; the open one did not. If a judged metric has to be comparable
+across models, give the judge the answer key and ask it to match.
+
+**Within one judge, the verdicts still move.** Four judgings of the identical
+claims under Opus, all of them in the records:
 
 | arm | first | second | third | fourth |
 | --- | --- | --- | --- | --- |
@@ -213,8 +326,8 @@ cannot tell a citation of the right document's `Resolution` section from its
 - Adapter-log groundedness proves only that a cited `passage_id` was in the set
   the surface returned. A precedent citing `Gaps` passes whenever `Gaps` was
   among the hits, which the two-passages-per-document cap makes common.
-- `groundedness_judge` is a different check again, an LLM judge at temperature
-  0. Both are written now and neither closes this gap: the judge is given the
+- `groundedness_judge` is a different check again, an LLM judge. Both are
+  written now and neither closes this gap: the judge is given the
   passages the claim cites and asked whether they support it, which says
   nothing about whether a different section of the same document was the one
   to cite.
@@ -362,8 +475,8 @@ ground truth. Anyone can recheck them from the JSON record:
 | `groundedness_log` | cited `passage_id`s that were in the set the surface returned |
 | `agent_reach` | relevant documents the archive returned across the queries the agent chose |
 
-Judged, by a separate model at temperature 0 with the prompt committed in
-`judges/`. This is a model's opinion of a model:
+Judged, by a separate model with the prompt committed in `judges/`. This is a
+model's opinion of a model, and how much that matters is measured below:
 
 | Metric | What it asks |
 |---|---|
@@ -465,9 +578,9 @@ Phase 4 and Phase 5 are done.
 - [x] Baseline recorded against the fixed chunker with no reranker
 - [x] Judgement metrics: `false_precedent_rate`, `no_precedent_accuracy`,
       `false_refusal_rate`, `groundedness_log`, `agent_reach`, deterministic
-- [x] `groundedness_judge` and `divergence_quality`, judged at temperature 0
-      with the prompts in `judges/`. Neither closes the section-level gap
-      above, and the tables say so
+- [x] `groundedness_judge` and `divergence_quality`, with the prompts in
+      `judges/` and whatever sampling the transport pins. Neither closes the
+      section-level gap above, and the tables say so
 - [x] `judgement-heading` recorded, the shipped configuration
 - [x] `judgement-fixed` and `judgement-single-query` recorded, both
       comparisons run, and the result written up in the top-level README
@@ -504,7 +617,7 @@ The grid is generated from the three records and diffed in CI:
 
 Applicability offered: judgement-heading `partial` 44, `superseded` 8; judgement-fixed `partial` 48, `superseded` 8; judgement-single-query `partial` 21, `superseded` 1. `false_precedent_rate` fires only on `applies`.
 
-| judged at temperature 0 | judgement-heading | judgement-fixed | judgement-single-query |
+| judged by claude-opus-4-6 via anthropic, no file tools, temperature 0 | judgement-heading | judgement-fixed | judgement-single-query |
 | --- | --- | --- | --- |
 | `groundedness_judge` | 38/52 | 48/56 | 21/22 |
 | `divergence_quality` | 6/6 | 6/7 | 6/7 |
@@ -534,7 +647,7 @@ see the difference because a system prompt is one knob to it.
 
 **The chunker is not choosable off one sweep each.** Same reach, 54 of 60, and
 14 against 13 omissions. The judged half parts by 38/52 against 48/56, and
-heading came out below fixed in all four judgings, so the gap is repeatable
+heading came out below fixed in every judging, so the gap is repeatable
 even though its size moves by several points between rounds. That is a real
 difference nobody should choose a chunker on: one sweep each, a judge scoring a
 model, and no account of why.
@@ -567,8 +680,9 @@ applies. An agent that never says `applies` cannot offer a false precedent, so
 the two figures have to be read together, and the table prints them together
 for that reason.
 
-**`groundedness_judge` at 73.1%, and the failures have one shape.** Most of the
-14 unsupported claims assert an absence: "the prior incident shows no audit
+**`groundedness_judge` at 73.1% under the judge now configured, and the
+failures have one shape.** Most of the 14 unsupported claims assert something
+the cited passages never state: "the prior incident shows no audit
 daemon", from passages that simply do not mention one. It is a divergence of
 exactly the kind rule 5 asks for, resting on something the archive never said.
 `groundedness_log` cannot see it: every one of those citations is a passage the
