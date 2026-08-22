@@ -91,10 +91,16 @@ python3 mock/adapter.py --surface change_registry          # 8423
 
 export ANTHROPIC_API_KEY=...
 
-# one upstream patch: the Anthropic provider (still, through OAS 1.6.0) does
-# not translate tool messages to Anthropic's format. See the patch file header.
+# two patches to the Anthropic provider, in this order. The first is required:
+# through OAS 1.6.0 the provider does not translate tool messages to
+# Anthropic's format, so the first tool call 400s. The second is optional and
+# pays for itself on anything multi-round: without it every round re-sends the
+# system prompt, the tool definitions and the whole incident view uncached.
+# Both file headers say what they change and how to check it.
 patch "$(python3 -c 'import oas_cli.providers.anthropic_http as m; print(m.__file__)')" \
   < patches/oas-1.5.1-anthropic-tool-messages.diff
+patch "$(python3 -c 'import oas_cli.providers.anthropic_http as m; print(m.__file__)')" \
+  < patches/oas-1.6.0-anthropic-prompt-caching.diff
 
 # the three acts, composed: recurrence at D+1, the correlator's typed output
 # into the commander's correlation input, the live board into the Scribe's

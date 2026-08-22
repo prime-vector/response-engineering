@@ -1,0 +1,157 @@
+Prompt caching for the Anthropic provider, Open Agent Spec CLI through 1.6.0.
+The provider sends `system` as a plain string and the messages untouched, so
+every round of a tool loop re-sends, and is re-charged for, the system prompt,
+the tool definitions and the whole incident view. This adds two cache
+breakpoints: one at the end of the system block, which covers the tools with it
+because Anthropic orders the prefix tools, system, messages; and one at the end
+of the first user turn, which is where the view sits.
+
+Apply the tool-messages patch beside this one first. The tool-loop hunk's
+context is a line that patch introduces, so this one does not apply to a stock
+1.6.0 provider on its own.
+
+    patch "$(python3 -c 'import oas_cli.providers.anthropic_http as m; print(m.__file__)')" \
+        < patches/oas-1.6.0-anthropic-prompt-caching.diff
+
+Set `intelligence.config.cache_prompt: false` in a spec to switch it off.
+
+WHY THE SECOND BREAKPOINT IS THE ONE THAT MATTERS. Counted with Anthropic's
+token counter against this repository's own specs: the Precedent Analyst's
+system prompt is about 1,700 tokens and the bridge view it is handed is about
+22,000, so a system-only breakpoint covers roughly seven per cent of a recall
+request and four per cent of an assess. The first user turn is the rest.
+
+VERIFIED 23 Aug 2026 against the live API. Two identical requests carrying a
+22,400 character system prompt and a 40,000 character first turn: the second
+reported cache_read_input_tokens 20,623 and cache_creation_input_tokens 0. To
+re-check after a change, read `usage` off any two consecutive calls. A run that
+caches nothing reports both as zero and costs exactly what it did before.
+
+WHAT THIS DELIBERATELY DOES NOT DO. It does not move a breakpoint with the
+conversation, so the tool results a long recall accumulates are still re-sent
+uncached each round. That is worth more again, and it is worth measuring on its
+own rather than being inherited from this. It also leaves single-shot calls'
+message content alone: with no second round there is nothing to reuse, and a
+sweep sends a different view per case.
+
+THE THRESHOLD IS IN CHARACTERS, and the model-specific minimum is in tokens,
+roughly 1,024 for Sonnet and Opus and 2,048 for Haiku. 4,096 characters
+approximates the lower of those. A breakpoint under a model's minimum is not an
+error: the request simply is not cached and costs what it always did. Of the six
+specs here, only the commander and the Precedent Analyst clear it; the other
+four sit at 700 to 850 tokens and could not be cached at any threshold.
+
+--- a/oas_cli/providers/anthropic_http.py	2026-08-23 09:40:13.000942179 +1000
++++ b/oas_cli/providers/anthropic_http.py	2026-08-23 09:43:16.256518389 +1000
+@@ -31,6 +31,80 @@
+ )
+ 
+ 
++# Prompt caching. The system prompt and the tool definitions are identical on
++# every round of a tool loop and on every run of a sweep, and without a cache
++# breakpoint they are re-sent, and re-charged, each time. A breakpoint at the
++# end of the system block covers the whole cacheable prefix, because Anthropic
++# orders it tools, then system, then messages.
++#
++# Off by setting intelligence.config.cache_prompt to false, for a caller who
++# needs byte-identical payloads to something that predates this.
++_CACHE_MIN_CHARS = 4096
++
++
++def _system_field(system: str, config: dict) -> object:
++    """The `system` field, as a cached text block where that is worth doing.
++
++    Returns the plain string when caching is disabled or the prompt is too
++    short to be worth a breakpoint. The threshold is deliberately in
++    characters: the model-specific minimum is in tokens and differs per model,
++    so this approximates it conservatively rather than guessing per model. A
++    breakpoint under the minimum is not an error, it simply does not cache,
++    and this keeps the request shape unchanged in the case where the feature
++    would do nothing.
++    """
++    if not config.get("cache_prompt", True):
++        return system
++    if len(system) < _CACHE_MIN_CHARS:
++        return system
++    return [
++        {
++            "type": "text",
++            "text": system,
++            "cache_control": {"type": "ephemeral"},
++        }
++    ]
++
++
++def _cache_first_turn(messages: list[dict[str, Any]], config: dict) -> list[dict[str, Any]]:
++    """Put a second cache breakpoint at the end of the first user turn.
++
++    The system prompt is not where a tool loop spends its input. The first user
++    turn carries the incident view, and every round of the loop re-sends it
++    along with every tool result so far. Measured on this repository's own
++    specs: the recall system prompt is about 1,700 tokens against a view of
++    22,000, so a system-only breakpoint covers roughly seven per cent of a
++    request and this one covers most of the rest.
++
++    Only the first turn, and only in the tool loop. A breakpoint that moves
++    with the conversation would cache the accumulated tool results too, which
++    is worth more again and is worth measuring on its own rather than
++    inheriting from this.
++    """
++    if not messages:
++        return messages
++    out = [dict(m) for m in messages]
++    first = out[0]
++    content = first.get("content")
++    if isinstance(content, str):
++        if len(content) < _CACHE_MIN_CHARS:
++            return messages
++        first["content"] = [
++            {"type": "text", "text": content,
++             "cache_control": {"type": "ephemeral"}}
++        ]
++    elif isinstance(content, list) and content:
++        blocks = [dict(b) if isinstance(b, dict) else b for b in content]
++        if not isinstance(blocks[-1], dict):
++            return messages
++        blocks[-1] = dict(blocks[-1])
++        blocks[-1]["cache_control"] = {"type": "ephemeral"}
++        first["content"] = blocks
++    else:
++        return messages
++    return out
++
++
+ def _supports_temperature(model: str) -> bool:
+     """False for models that reject `temperature` (Opus 4.7/4.8, Fable 5)."""
+     return not any(model.startswith(prefix) for prefix in _NO_SAMPLING_PARAM_MODELS)
+@@ -186,7 +260,7 @@
+         if _supports_temperature(model):
+             payload["temperature"] = temperature
+         if system:
+-            payload["system"] = system
++            payload["system"] = _system_field(system, config)
+         _apply_reasoning(payload, config.get("reasoning_effort"))
+ 
+         headers = {
+@@ -259,15 +333,19 @@
+             for t in tools
+         ]
+ 
++        anthropic_messages = _to_anthropic_messages(messages)
++        if config.get("cache_prompt", True):
++            anthropic_messages = _cache_first_turn(anthropic_messages, config)
++
+         payload: dict[str, Any] = {
+             "model": model,
+-            "messages": _to_anthropic_messages(messages),
++            "messages": anthropic_messages,
+             "max_tokens": max_tokens,
+         }
+         if _supports_temperature(model):
+             payload["temperature"] = temperature
+         if system:
+-            payload["system"] = system
++            payload["system"] = _system_field(system, config)
+         if anthropic_tools:
+             payload["tools"] = anthropic_tools
+         _apply_reasoning(payload, config.get("reasoning_effort"))
