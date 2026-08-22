@@ -293,7 +293,12 @@ declares one rather than recording a configuration nothing produced.
 **Read the judged table as a comparison, never as a score.** Those figures come
 from `claude-opus-4-6` at temperature 0, through an API with no file tools. The
 same claims judged by `cursor-grok-4.6-high` scored 17 of 52, 19 of 56 and 9 of
-22, about forty points lower with the arms in the same order. That transport
+22, about forty points lower with the arms in the same order. Those rounds ran
+behind a mount namespace that was probed on two routes, the direct path and
+`/proc`, in the checkout they ran from; masking every checkout came later and
+they have not been re-run under it. Read them as evidence that the level
+belongs to the judge, which is what they are for, rather than as a figure
+verified to the current boundary. That transport
 cannot set a temperature at all, and it is an agent with file access rather
 than a plain call, so the two rows differ in sampling and in what the judge
 could reach as well as in model family. Almost all of the difference is one rule: the

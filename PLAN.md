@@ -248,7 +248,9 @@ deterministic one makes it read as the same kind of fact.
 
 **How much that matters is now measured.** The same claims scored 39 of 52
 under `claude-opus-4-6` at temperature 0 and 17 of 52 under
-`cursor-grok-4.6-high`, which cannot be set to a temperature at all. The first
+`cursor-grok-4.6-high`, which cannot be set to a temperature at all and whose
+rounds were probed on two routes rather than against every checkout, the
+masking of which came afterwards. The first
 is what the published figures use, because that transport has no file tools, and the ordering between arms held under both. So the
 level of a judged metric belongs to the judge. The ordering has held in every round the records
 carry, five under the metered judge and three under the CLI one, which makes it

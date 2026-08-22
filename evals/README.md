@@ -129,6 +129,23 @@ the round that sits beside heading's 17 and fixed's 19, judged by the same code
 under the same probed namespace, is 9. Comparing a family against a family
 means comparing rounds that were run the same way.
 
+**Which boundary those Cursor rounds ran under, exactly.** Their own records
+say: the direct path and `/proc/*/root` were tried by a shell inside the
+namespace and both refused, and the scope recorded is "two routes tested, not
+every route". The masking of *every* checkout git knows about came later, so no
+Cursor round has been verified against that. They have not been re-run under it,
+deliberately: the cross-family finding does not turn on a perfect jail, it turns
+on whether the judge read the corpus, and three things say it did not. The
+probe passed on the routes it did test. The scores moved by a claim or two when
+the jail was first added, where a judge reading whole documents would have moved
+much further, and in the direction of confirming absences rather than rejecting
+them. And the isolated round lands within a claim of the unisolated ones on
+every arm.
+
+That is evidence and not verification, and the difference is the point. If the
+cross-family figures ever carry more weight than "the level belongs to the
+judge", re-run them under the current jail first.
+
 Around forty points of level, and the ordering survived: heading below fixed
 below single-query in every round of both families. The metered judge is set at
 temperature 0; the CLI cannot set a temperature at all, so the two differ in
