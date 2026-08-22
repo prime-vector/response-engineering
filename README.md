@@ -359,16 +359,22 @@ model. The baseline this project is built against is a change correlation that
 was available for fifteen days and got run two hours and twenty-one minutes
 into the bridge call.
 
-**The contract is meant to be what makes a slow recall survivable, rather than
-a timeout, and that part is designed and not yet built.** The intent is that
-precedent is supporting evidence and can never be deciding evidence, so a
+**The contract is what makes a slow recall survivable, rather than a timeout.**
+Precedent is supporting evidence and can never be deciding evidence, so a
 recall that is slow, fails or refuses costs the board its precedent column and
 nothing else, while convergence goes on blocking against outstanding deciding
-evidence, which is a different field. Today the commander spec has no
-`precedent` input and `demos/investigate.sh` does not compose recall: that
-wiring is Phase 6 of `docs/precedent-analyst.md`, and until it exists this
-paragraph describes a design rather than a measured property. What is
-measured is the latency above.
+evidence, which is a different field. That is wiring rather than intent now:
+`assess` takes a `precedent` input, `demos/investigate.sh` composes a live
+recall into it, and the property sits in the output contract rather than in the
+prompt. A passage id is expressible in one field on the board,
+`hypotheses[].precedent_cited`; `blocking_evidence` is closed against one;
+`convergence_allowed` must be false while any blocking item is outstanding; and
+a hypothesis resting on precedent cannot be confirmed. On the board recorded in
+`docs/precedent-analyst.md`, five cited passages across three of four
+hypotheses, five items still outstanding and convergence blocked; the
+governance demos run the same task with no precedent at all and produce the
+same blocked board. What is measured is the latency above. The degradation is a
+property of the contract, and one composed run is one run.
 
 If latency ever does bind, the levers are measured rather than guessed. One
 query instead of several halves it, p95 27.1s against 52.8s, and reaches 22 of
