@@ -354,7 +354,8 @@ than a wobble under one judge and inside it under the other: 39 of 52 against
 Grok, two claims. Heading is below fixed in every judging the records carry,
 five under the metered judge and three under the CLI one. Each round judged
 both arms with the same code, prompts and model, so the ordering rests on
-eight matched comparisons; the rounds are not equivalent to each other, so
+every matched comparison the records hold, three metered and three CLI, with
+four earlier rounds whose transport was not yet recorded; the rounds are not equivalent to each other, so
 neither the two to four claims an arm moves within a family nor the forty
 points it moves across families is published as a variance figure. One sweep each, with a judge scoring a
 model, is not enough to choose on, which is a different statement from the two

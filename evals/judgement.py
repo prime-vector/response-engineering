@@ -1827,8 +1827,13 @@ def markdown(result):
                 diverged = entry["divergence_quality"]
                 failed = not (grounded["denominator"]
                               or diverged["denominator"])
-                transport = entry.get("transport", "anthropic")
-                if transport == "anthropic":
+                transport = entry.get("transport")
+                if transport is None:
+                    # Predates the field. Inferring anthropic here would let a
+                    # round with unknown provenance report "no file tools",
+                    # which is the opposite of the promise this record makes.
+                    transport, proof = "not recorded", "**not recorded**"
+                elif transport == "anthropic":
                     proof = "no file tools"
                 elif (entry.get("isolation") or {}).get("scope"):
                     proof = "namespace, probed"
