@@ -499,7 +499,35 @@ deciding anything:
 What none of that prevents is a passage paraphrased into `supporting_evidence`
 with no citation anywhere. The typed field makes the resting place checkable; it
 does not make paraphrase impossible, and the spec says so where the field is
-declared.
+declared. Nor does it bind the board to the view it was drawn from: a board that
+raises no blocking evidence at all may converge, because a schema sees the output
+and never the `missing_evidence` it was handed. The rule is that convergence
+blocks on what the board itself says is outstanding.
+
+**Review found the confirmation rule resting on an unpinned string.** `not:
+{const: confirmed}` closes one spelling, and `confidence` was a free string whose
+five-word scale lived in its description, so a cited hypothesis at `Confirmed`
+satisfied the rule and defeated it. `confidence`, `incident_state` and
+`next_actions[].intent` are now real enums, the same treatment `brief.audience`
+had for the same reason. The other four specs still describe their scales in
+prose; that is the same class and it is tracked rather than fixed here, because
+none of them carries a rule that keys on the value.
+
+**Pinning a scale in the schema means pinning it in the prompt too, and that
+cost a run to learn.** The first live board after the enums went in invented
+`guard_evidence_integrity` for `next_actions[].intent`, a field whose four
+values had lived in a description that the prompt never repeated, and the whole
+board was rejected. `confidence` and `incident_state` were already stated in the
+prompt, which is why neither of them failed. All three sets are now stated in
+the shipped prompt and in both stripped ones. A closed set the producer cannot
+see is a rejection waiting for the first board that needs a fifth value.
+
+**The four rules are checked without a model now.** `checks/contract_invariants.py`
+validates thirteen boards against the contract read out of the spec, each one
+asserting that a particular violation is rejected and that the legitimate
+neighbour is accepted, and CI runs it. Before it, the rules were exercised only
+when a live board happened to try one, which is a test that fires when it feels
+like it and costs an API call when it does.
 
 **Verifying the convergence rule against boards that already existed found a
 different defect.** Three live `assess` runs on the attribution fixture, before

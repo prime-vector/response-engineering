@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 404" width="960" height="404" role="img" aria-label="Three acts. Act one at D plus 1 runs the Telemetry Analyst detect task against the near-empty day one view. Act two at the D plus 15 bridge runs the Change Correlator and the Precedent Analyst, whose correlation and typed precedent both feed the Incident Commander assess task. Act three runs the commander's mitigate task, which is blocked pre-dispatch, and the Scribe, which drafts the change record and files the timeline.">
-  <title>Three acts. Act one at D plus 1 runs the Telemetry Analyst detect task against the near-empty day one view. Act two at the D plus 15 bridge runs the Change Correlator and the Precedent Analyst, whose correlation and typed precedent both feed the Incident Commander assess task. Act three runs the commander's mitigate task, which is blocked pre-dispatch, and the Scribe, which drafts the change record and files the timeline.</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 404" width="960" height="404" role="img" aria-label="Three acts. Act one at D plus 1 runs the Telemetry Analyst detect task against the near-empty day one view. Act two at the D plus 15 bridge runs the Change Correlator and the Precedent Analyst, whose correlation and typed precedent both feed the Incident Commander assess task. Act three is the directed change: the commander's mitigate task blocked pre-dispatch and the Scribe drafting the change record, which run from the governance driver and a standalone invocation, and the Scribe filing the timeline from the live board, which is what the pipeline's own third act runs.">
+  <title>Three acts. Act one at D plus 1 runs the Telemetry Analyst detect task against the near-empty day one view. Act two at the D plus 15 bridge runs the Change Correlator and the Precedent Analyst, whose correlation and typed precedent both feed the Incident Commander assess task. Act three is the directed change: the commander's mitigate task blocked pre-dispatch and the Scribe drafting the change record, which run from the governance driver and a standalone invocation, and the Scribe filing the timeline from the live board, which is what the pipeline's own third act runs.</title>
   <style>
     text{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;fill:#131A1C}
     .t{font-size:11px}
@@ -91,7 +91,7 @@
         <text class="t-s" x="696" y="126">SANDBOX_TOOL_VIOLATION</text>
         <text class="t-s" x="696" y="140">implemented: false</text>
 
-        <line class="ln-h" x1="802" y1="150" x2="802" y2="162" marker-end="url(#ar-h)"/>
+        <line class="ln-h dash" x1="802" y1="150" x2="802" y2="162"/>
 
         <rect class="box" x="682" y="166" width="240" height="76" rx="3"/>
         <text class="t-b" x="696" y="188">Scribe</text>
@@ -109,6 +109,7 @@
         <line class="ln-a" x1="574" y1="303" x2="676" y2="303" marker-end="url(#ar-a)"/>
         <text class="t-s t-a" x="584" y="295">live board</text>
 
-        <text class="t-s" x="24" y="390">every arrow is a parsed, contract-valid object. a bare exit code is not proof of a valid output, so the driver parses each stage before using it.</text>
+        <text class="t-s" x="24" y="390">every solid arrow is a parsed, contract-valid object composed by a driver. the dashed one is sequence: those two run from separate drivers.</text>
+        <text class="t-s" x="24" y="376">acts one and two are demos/investigate.sh. the blocked change is demos/governance.sh sandbox, and the draft record a standalone run.</text>
 
       </svg>

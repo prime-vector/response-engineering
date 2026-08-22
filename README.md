@@ -6,7 +6,7 @@ Operations is a software problem. We build the production agent layer: defined a
 
 Built on [Open Agent Spec](https://github.com/prime-vector/open-agent-spec).
 
-![Three evidence surfaces, each read by exactly one agent. The Telemetry Analyst, Change Correlator and Precedent Analyst hand typed findings, correlation and precedent to the Incident Commander, whose live board goes to the Scribe, which writes to the incident record sink through a tool call.](docs/diagrams/architecture.svg)
+![Three evidence surfaces, each read by exactly one agent. The Telemetry Analyst, Change Correlator and Precedent Analyst each read one surface, and typed correlation and precedent reach the Incident Commander, with the Telemetry Analyst's findings marked as the handoff the pipeline does not compose, whose live board goes to the Scribe, which writes to the incident record sink through a tool call.](docs/diagrams/architecture.svg)
 
 Every arrow between agents is a typed output whose claims carry `confidence` and `falsifying_test` as required fields: a claim cannot shed its caveats when it changes hands. No agent reads another's evidence surface, and the record is written only through a tool call the adapter log can prove.
 

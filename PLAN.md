@@ -460,6 +460,32 @@ prompts. Neither defect touches precedent: both are the board hedging a field
 whose type does not allow it, and both were only visible from running the
 thing.
 
+**Review found the fourth rule resting on an unpinned string, which is the
+class the first two defects belong to as well.** `confidence` was a free string
+whose scale lived in its description, so `not: {const: confirmed}` closed one
+spelling and a cited hypothesis at `Confirmed` would have satisfied the rule
+while breaking it. It is an enum now, with `incident_state` and
+`next_actions[].intent`, the treatment `brief.audience` already had. The
+boolean sentence named the two flags on `next_actions` and missed the two on
+the board itself, one of which carries a "false while X" rule, which is exactly
+the shape that produced the `reversible` failure; it now names all four. The
+other four specs still describe their confidence scales in prose and are
+tracked separately: none of them carries a rule that keys on the value, and
+pinning them wants a cheap live run each.
+
+**A schema that pins a vocabulary the prompt does not state is a rejection
+waiting to happen.** The first live board after the enums went in invented
+`guard_evidence_integrity` for `intent`, whose four values had never appeared in
+the prompt, and lost the whole board. `confidence` and `incident_state` were
+already stated there, which is why they did not fail. All three are stated now,
+in the shipped prompt and both stripped ones.
+
+**The rules are checked without a model now.** `checks/contract_invariants.py`
+validates thirteen boards against the contract read out of the spec, asserting
+both that each violation is rejected and that its legitimate neighbour is
+accepted, and CI runs it. They were previously exercised only when a live board
+happened to try one.
+
 ---
 
 ## Definition of done for the demo

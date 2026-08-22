@@ -120,7 +120,7 @@ The bridge view is deliberately evidence-poor. The deciding evidence sits in `mi
 
 ## Before committing
 
-1. `oa validate` passes on every spec touched
+1. `oa validate` passes on every spec touched, and `python3 checks/contract_invariants.py` if the commander's output contract moved
 2. Fixture regenerated if the generator changed
 3. Corpus regenerated and both indexes current if the corpus changed: `corpus/ingest.py --check` and `--chunker fixed --check`
 4. `corpus/eval.py` passes against `corpus/index.json` and `corpus/index.fixed.json`
@@ -129,7 +129,7 @@ The bridge view is deliberately evidence-poor. The deciding evidence sits in `mi
 7. No commercial detail: no rates, revenue targets, client names or pipeline
 8. Language matches the vocabulary above
 
-`.github/workflows/checks.yml` runs 1 to 4 on every pull request, so a green check means the generated artefacts match their generators and the surface still satisfies its contract. It cannot check 5 to 8. Those stay human.
+`.github/workflows/checks.yml` runs 1 to 4 on every pull request, the contract invariants included, so a green check means the generated artefacts match their generators and the surface still satisfies its contract. It cannot check 5 to 8. Those stay human.
 
 ## Style
 

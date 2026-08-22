@@ -15,8 +15,9 @@ entries carry description, how_to_obtain and still_outstanding, and
 convergence_allowed is false while any entry has still_outstanding true.
 attribution_guard carries triggered, party, reason, evidence_required.
 next_actions entries carry action, owner_role and authorisation_required,
-and reversible and authorisation_required are bare booleans rather than
-qualified phrases. standing_conditions_noted is an array of plain strings.
+with intent one of collect_evidence, mitigate, communicate or restore, and
+every boolean is bare rather than qualified, including still_outstanding and
+convergence_allowed. standing_conditions_noted is an array of plain strings.
 An optional field with nothing in it is left out rather than emitted as
 null. summary is two sentences maximum. No markdown fences, no preamble, no
 text after the closing brace: the first character of your reply is the

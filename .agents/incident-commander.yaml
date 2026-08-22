@@ -189,8 +189,14 @@ tasks:
         incident_state:
           type: string
           description: >
-            One of: triage, investigating, hypothesis_blocked, mitigating,
-            monitoring, unresolved_suppressed
+            What the investigation is doing now. unresolved_suppressed is the
+            one that matters: the symptom is gone and the cause was never
+            established.
+          # Pinned for the same reason as confidence. The demos assert on
+          # these values, and a value outside the set is a state nothing
+          # downstream knows how to read.
+          enum: [triage, investigating, hypothesis_blocked, mitigating,
+                 monitoring, unresolved_suppressed]
         summary:
           type: string
           description: Two sentences maximum. What is happening and what is not yet known.
@@ -209,9 +215,14 @@ tasks:
               confidence:
                 type: string
                 description: >
-                  One of: speculative, plausible, likely, supported, confirmed.
                   Nothing reaches confirmed without direct evidence in the
                   evidence array. Inference is never confirmation.
+                # A real enum rather than a scale described in prose. The
+                # precedent rule below rejects `confirmed` by const, and a
+                # const on an unpinned string closes one spelling: a cited
+                # hypothesis at "Confirmed" would satisfy the rule and defeat
+                # it. Same reason `brief.audience` stopped being a free string.
+                enum: [speculative, plausible, likely, supported, confirmed]
               supporting_evidence:
                 type: array
                 items:
@@ -343,7 +354,8 @@ tasks:
                 type: string
               intent:
                 type: string
-                description: One of - collect_evidence, mitigate, communicate, restore
+                description: What this action is for.
+                enum: [collect_evidence, mitigate, communicate, restore]
               authorisation_required:
                 type: boolean
                 description: >
@@ -715,10 +727,14 @@ prompts:
     - next_actions[]: action, owner_role, intent, authorisation_required,
       blast_radius, reversible
     supporting_evidence, contradicting_evidence and precedent_cited are
-    always arrays of strings, even for one item. reversible and
-    authorisation_required are bare booleans, true or false and never a
-    string or a qualified phrase: where reversibility depends on something,
-    the value is false and the condition goes in blast_radius. An optional
+    always arrays of strings, even for one item. Every boolean on this board is
+    bare, true or false and never a string or a qualified phrase, and that
+    includes the four under pressure to be qualified: reversible,
+    authorisation_required, still_outstanding and convergence_allowed. Where
+    reversibility depends on something the value is false and the condition
+    goes in blast_radius; where convergence is blocked the value is false and
+    the reason goes in convergence_block_reason. A condition written into a
+    boolean is a type error that costs the whole board. An optional
     field you have nothing to put in is left out of the object entirely.
     null is not how a field is omitted and is rejected as the wrong type,
     which costs the whole board. standing_conditions_noted is an array of
@@ -726,7 +742,11 @@ prompts:
     or {} for a string or boolean field, omit optional fields instead.
     confidence is exactly one of: speculative, plausible, likely, supported,
     confirmed. incident_state is exactly one of: triage, investigating,
-    hypothesis_blocked, mitigating, monitoring, unresolved_suppressed.
+    hypothesis_blocked, mitigating, monitoring, unresolved_suppressed. intent
+    is exactly one of: collect_evidence, mitigate, communicate, restore. All
+    three are closed sets in the contract: a word outside them is rejected and
+    the board is lost, so an action that seems to want a fifth intent is one of
+    these four with its specifics in the action text.
     summary is two sentences and under 600 characters; the detail belongs on
     the board, not in the summary.
 

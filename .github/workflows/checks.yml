@@ -25,6 +25,15 @@ jobs:
           python3 fixtures/generate.py --demo mitigation | diff -u fixtures/mitigation-directive.json -
           python3 fixtures/generate.py --demo novel | diff -u fixtures/novel-incident.json -
 
+      # The four rules that keep precedent out of the deciding slot are schema
+      # rules, so they can be checked without a model. Until this ran, they
+      # were exercised only when a live board happened to try one, which is a
+      # test that fires when it feels like it and bills when it does.
+      - name: Commander contract invariants
+        run: |
+          pip install pyyaml jsonschema
+          python3 checks/contract_invariants.py
+
       - name: Corpus documents match the generator
         run: |
           python3 fixtures/generate.py --corpus corpus/documents

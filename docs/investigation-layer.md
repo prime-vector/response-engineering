@@ -84,7 +84,7 @@ that goes to the bridge and the update that goes to a customer are different
 artefacts derived from different inputs, and only one of them is allowed near
 a hypothesis.
 
-![Three acts. Act one at D+1 runs the Telemetry Analyst detect task against the near-empty day one view. Act two at the D+15 bridge runs the Change Correlator and the Precedent Analyst, whose correlation and typed precedent both feed the Incident Commander assess task. Act three runs the commander's mitigate task, which is blocked pre-dispatch, and the Scribe, which drafts the change record and files the timeline.](diagrams/three-acts.svg)
+![Three acts. Act one at D+1 runs the Telemetry Analyst detect task against the near-empty day one view. Act two at the D+15 bridge runs the Change Correlator and the Precedent Analyst, whose correlation and typed precedent both feed the Incident Commander assess task. Act three is the directed change: the commander's mitigate task blocked pre-dispatch and the Scribe drafting the change record, which run from the governance driver and a standalone invocation, and the Scribe filing the timeline from the live board, which is what the pipeline's own third act runs.](diagrams/three-acts.svg)
 
 *Do not open at the bridge.* Opening at the bridge sells two hours of saved call
 time. Opening at D+1 sells fifteen days of degraded production and an
@@ -96,12 +96,15 @@ demonstrates.
 > agents. Act two collects twice, from the change registry and from the
 > archive, and both typed outputs reach the commander: on the board recorded in
 > `docs/precedent-analyst.md`, five cited passages across three of its four
-> hypotheses, and five outstanding items it is still blocked on. Two things the
-> diagram does not claim. Act one is a separate invocation and its findings are
-> not composed into the board, which reads the bridge view's own signals; and
-> recall runs at the bridge bound because that is where the board is assembled,
-> though the archive answers at the D+1 bound too, which eval case `a02`
-> covers.
+> hypotheses, and five outstanding items it is still blocked on. Three things
+> the diagram does not claim. Act one is a separate invocation and its findings
+> are not composed into the board, which reads the bridge view's own signals,
+> and the diagrams that draw that arrow now mark it rather than presenting it
+> as a handoff. Act three spans two drivers: the blocked change is
+> `demos/governance.sh sandbox` and the draft record a standalone run, which is
+> why the connector between them is dashed. And recall runs at the bridge bound
+> because that is where the board is assembled, though the archive answers at
+> the D+1 bound too, which eval case `a02` covers.
 
 ---
 
@@ -117,7 +120,7 @@ on an entity; which platform answers is the adapter's problem. Swap the
 platform, change one endpoint, change no agent. See `interfaces/TELEMETRY.md`
 and `interfaces/PRECEDENT.md`.
 
-![Evidence surfaces reached over MCP, each owned by exactly one agent. The Telemetry Analyst, Change Correlator and Precedent Analyst each read one surface and hand typed output to the Incident Commander, whose live board goes to the Scribe, which writes to the incident record sink through a tool call. A crossed arc shows that raw registry rows never reach the commander.](diagrams/mcp-surfaces.svg)
+![Evidence surfaces reached over MCP, each owned by exactly one agent. The Telemetry Analyst, Change Correlator and Precedent Analyst each read one surface, and the correlator's correlation and the analyst's precedent reach the Incident Commander as typed input while the Telemetry Analyst's findings are marked as the handoff the pipeline does not compose, whose live board goes to the Scribe, which writes to the incident record sink through a tool call. A crossed arc shows that raw registry rows never reach the commander.](diagrams/mcp-surfaces.svg)
 
 *One agent, one surface; every arrow between agents is a typed object.* The
 bridge view holds the raw change rows, and the commander never sees them: what
