@@ -32,7 +32,7 @@ Early. Six agents written, mock adapters serving five tool surfaces. The five in
 | `interfaces/PRECEDENT.md` | Draft interface contract, the `precedent_archive` surface |
 | `corpus/ingest.py`, `corpus/documents/` | Written, 17 documents indexed with both chunkers, five of them distractors, re-ingest verified idempotent |
 | `mock/adapter.py` | Written, smoke-tested against both fixture views, host, record-sink and precedent surfaces added |
-| `demos/investigate.sh` | Written, the composed three-act pipeline verified live |
+| `demos/investigate.sh` | Written. Every act verified live; the composed board came from a streamed request after four transport failures, see Known limits |
 | `demos/governance.sh` | Written, all five failure modes verified live |
 
 ## Layout

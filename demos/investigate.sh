@@ -5,13 +5,15 @@
 # commander's live board becomes the Scribe's timeline input. No agent
 # consumes another's evidence surface, only its typed output.
 #
-# Precedent enters the board as supporting evidence and cannot leave it as
-# deciding evidence: the commander's contract closes blocking_evidence
-# against a citation and blocks convergence while any item is outstanding, so
-# act two asserts what the precedent did rather than that it arrived.
+# Precedent enters the board as supporting evidence, recalled in act one at
+# that day's bound and composed into act two's board. The commander's contract
+# closes the typed routes by which it could become deciding evidence: no
+# citation in the deciding list, none on a confirmed hypothesis, no convergence
+# while an item is outstanding. It does not close prose, so act two reports
+# which routes were not taken rather than that precedent settled nothing.
 #
-#   demos/investigate.sh act1   # D+1: recurrence detected in the problem feed
-#   demos/investigate.sh act2   # bridge: correlate and recall, then assess on both
+#   demos/investigate.sh act1   # D+1: recurrence in the feed, and recall at that bound
+#   demos/investigate.sh act2   # bridge: correlate, then assess on that and act one's precedent
 #   demos/investigate.sh act3   # Scribe files the timeline from the act-two board
 #   demos/investigate.sh all    # default: the full pipeline, composed
 #
@@ -426,9 +428,13 @@ for h in board["hypotheses"]:
     for i in h.get("precedent_cited") or []:
         print(f"  {h['confidence']}: cites {i}, which the archive returned "
               f"this run from {returned[i]}")
+# Says what was checked, not what was hoped. No typed route was taken: no
+# citation in the deciding list, none on a confirmed hypothesis, convergence
+# false while an item is outstanding. Whether a description asserts a passage
+# settled something is not checkable here and is not claimed.
 print(f"  precedent supports {sum(1 for h in board['hypotheses'] if h.get('precedent_cited'))} "
-      f"of {len(board['hypotheses'])} hypotheses and settles none of them: "
-      f"{len(outstanding)} item(s) still outstanding, convergence "
+      f"of {len(board['hypotheses'])} hypotheses. No typed route made it deciding "
+      f"evidence: {len(outstanding)} item(s) still outstanding, convergence "
       f"{'blocked' if not board['convergence_allowed'] else 'ALLOWED'}.")
 CITE
   echo

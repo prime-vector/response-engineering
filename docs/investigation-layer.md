@@ -84,7 +84,7 @@ that goes to the bridge and the update that goes to a customer are different
 artefacts derived from different inputs, and only one of them is allowed near
 a hypothesis.
 
-![Three acts. Act one at D+1 runs the Telemetry Analyst detect task against the near-empty day one view. Act two at the D+15 bridge runs the Change Correlator and the Precedent Analyst, whose correlation and typed precedent both feed the Incident Commander assess task. Act three is the directed change: the commander's mitigate task blocked pre-dispatch and the Scribe drafting the change record, which run from the governance driver and a standalone invocation, and the Scribe filing the timeline from the live board, which is what the pipeline's own third act runs.](diagrams/three-acts.svg)
+![Three acts. Act one at D+1 runs the Telemetry Analyst detect task and the Precedent Analyst recall task against the near-empty day one view, both bounded at that day, so the working note written later in the incident is out of reach. Act two at the D+15 bridge runs the Change Correlator, whose correlation feeds the Incident Commander assess task alongside act one's typed precedent. Act three is the directed change: the commander's mitigate task blocked pre-dispatch and the Scribe drafting the change record, which run from the governance driver and a standalone invocation, and the Scribe filing the timeline from the live board, which is what the pipeline's own third act runs.](diagrams/three-acts.svg)
 
 *Do not open at the bridge.* Opening at the bridge sells two hours of saved call
 time. Opening at D+1 sells fifteen days of degraded production and an
