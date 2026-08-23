@@ -42,7 +42,7 @@ specs here, only the commander and the Precedent Analyst clear it; the other
 four sit at 700 to 850 tokens and could not be cached at any threshold.
 
 --- a/oas_cli/providers/anthropic_http.py	2026-08-23 09:40:13.000942179 +1000
-+++ b/oas_cli/providers/anthropic_http.py	2026-08-23 09:43:16.256518389 +1000
++++ b/oas_cli/providers/anthropic_http.py	2026-08-23 10:06:29.681278916 +1000
 @@ -31,6 +31,80 @@
  )
  
@@ -82,7 +82,7 @@ four sit at 700 to 850 tokens and could not be cached at any threshold.
 +    ]
 +
 +
-+def _cache_first_turn(messages: list[dict[str, Any]], config: dict) -> list[dict[str, Any]]:
++def _cache_first_turn(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
 +    """Put a second cache breakpoint at the end of the first user turn.
 +
 +    The system prompt is not where a tool loop spends its input. The first user
@@ -139,7 +139,7 @@ four sit at 700 to 850 tokens and could not be cached at any threshold.
  
 +        anthropic_messages = _to_anthropic_messages(messages)
 +        if config.get("cache_prompt", True):
-+            anthropic_messages = _cache_first_turn(anthropic_messages, config)
++            anthropic_messages = _cache_first_turn(anthropic_messages)
 +
          payload: dict[str, Any] = {
              "model": model,
