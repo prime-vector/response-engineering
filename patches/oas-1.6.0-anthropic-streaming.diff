@@ -57,10 +57,17 @@ present, a plausible response shape, and `stop_reason` still None from
 answer: a partial board, into a runner that exits zero on output it cannot
 parse. `message_stop` is the last event of a finished stream, so its absence
 catches both, and an empty content list is checked after it rather than
-instead of it. A `data:` line that will not parse is treated the same way and
-for the same reason: skipping it would drop text out of the middle of a
-generation and return something that passes every shape check while missing
-part of what the model said.
+instead of it.
+
+Two more faults get the same treatment for the same reason, that a response
+which still has its blocks and still passes every shape check is the worst
+thing this can return. A `data:` line that will not parse is text missing from
+the middle of a generation, not noise to step over. And a delta type this does
+not know how to apply is content going on the floor: `citations_delta` is the
+live example, and a message quietly missing its citations is not the message
+the non-streaming path would have returned, which is the only claim this patch
+makes. An unknown *block* type is a different matter and passes through whole,
+exactly as it would unstreamed.
 
 WHAT IT DELIBERATELY DOES NOT DO. It does not surface tokens as they arrive.
 The runner consumes a whole response, and a progressive display would be a
@@ -83,8 +90,8 @@ argument-free one, and compares the result against the non-streaming shape;
 both call sites reach `_post`. Live: see the note added to README's Known
 limits for what was run.
 
---- a/oas_cli/providers/anthropic_http.py	2026-08-23 17:31:03.817279508 +1000
-+++ b/oas_cli/providers/anthropic_http.py	2026-08-23 17:52:43.952218855 +1000
+--- a/oas_cli/providers/anthropic_http.py	2026-08-24 07:38:57.620150492 +1000
++++ b/oas_cli/providers/anthropic_http.py	2026-08-24 07:39:12.775141761 +1000
 @@ -6,6 +6,7 @@
  import os
  import urllib.error
@@ -93,7 +100,7 @@ limits for what was run.
  from typing import Any
  
  from oas_cli.reasoning import normalise_effort
-@@ -194,6 +195,166 @@
+@@ -194,6 +195,178 @@
      payload.pop("temperature", None)
  
  
@@ -180,6 +187,18 @@ limits for what was run.
 +                    block.get("signature", "") + delta.get("signature", ""))
 +            elif dtype == "input_json_delta":
 +                partial.setdefault(index, []).append(delta.get("partial_json", ""))
++            else:
++                # A delta this does not know how to apply is content going on
++                # the floor. The reassembled message would still have its
++                # blocks and still pass every shape check, while differing
++                # from the response the non-streaming path would have
++                # returned, which is the one claim this patch makes. An
++                # unknown *block* type is a different matter and passes
++                # through whole, exactly as it would unstreamed.
++                raise ProviderError(
++                    f"Anthropic stream: unrecognised delta type {dtype!r} on "
++                    f"block {index}: this reassembly would silently drop it"
++                )
 +        elif etype == "message_delta":
 +            # stop_reason and the real output_tokens arrive here; the count in
 +            # message_start is only what had been emitted by that point.
@@ -260,7 +279,7 @@ limits for what was run.
  def _extract_text_blocks(data: dict[str, Any]) -> str:
      """Join the text block(s) from an Anthropic message response.
  
-@@ -331,21 +492,9 @@
+@@ -331,21 +504,9 @@
              "content-type": "application/json",
          }
  
@@ -284,7 +303,7 @@ limits for what was run.
  
          try:
              text = _extract_text_blocks(data)
-@@ -423,21 +572,9 @@
+@@ -423,21 +584,9 @@
              "content-type": "application/json",
          }
  

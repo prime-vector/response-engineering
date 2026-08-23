@@ -131,6 +131,41 @@ EVENTS = [
 ]
 
 
+# The other shape, and the one that motivated the patch: a text-only reply
+# ending in `end_turn`, which is what every single-shot task returns and what
+# the commander's board arrives as. The tool-bearing fixture above exercises
+# more machinery; this exercises the path that was actually failing.
+BOARD_EXPECTED = {
+    "id": "msg_board",
+    "type": "message",
+    "role": "assistant",
+    "model": "claude-fixture",
+    "content": [{"type": "text", "text": '{"incident_state": "hypothesis_blocked"}'}],
+    "stop_reason": "end_turn",
+    "stop_sequence": None,
+    "usage": {"input_tokens": 24_500, "output_tokens": 3_812},
+}
+
+BOARD_EVENTS = [
+    {"type": "message_start", "message": {
+        "id": "msg_board", "type": "message", "role": "assistant",
+        "model": "claude-fixture", "content": [], "stop_reason": None,
+        "stop_sequence": None,
+        "usage": {"input_tokens": 24_500, "output_tokens": 1}}},
+    {"type": "content_block_start", "index": 0,
+     "content_block": {"type": "text", "text": ""}},
+    {"type": "content_block_delta", "index": 0,
+     "delta": {"type": "text_delta", "text": '{"incident_state": '}},
+    {"type": "content_block_delta", "index": 0,
+     "delta": {"type": "text_delta", "text": '"hypothesis_blocked"}'}},
+    {"type": "content_block_stop", "index": 0},
+    {"type": "message_delta", "delta": {"stop_reason": "end_turn",
+                                        "stop_sequence": None},
+     "usage": {"output_tokens": 3_812}},
+    {"type": "message_stop"},
+]
+
+
 def sse(events):
     """The events as the wire carries them: one `data:` line each, plus noise.
 
@@ -147,16 +182,23 @@ def sse(events):
 
 
 def check_reassembly(collect):
-    got = collect(sse(EVENTS))
-    if got == EXPECTED:
-        print("  ok   a streamed message reassembles to the non-streaming shape")
-        return 0
-    print("  FAIL the reassembled message differs from the non-streaming shape")
-    for key in sorted(set(EXPECTED) | set(got)):
-        if got.get(key) != EXPECTED.get(key):
-            print(f"       {key}:\n         expected {EXPECTED.get(key)!r}"
-                  f"\n         got      {got.get(key)!r}")
-    return 1
+    failures = 0
+    for name, events, expected in (
+        ("a tool-calling message", EVENTS, EXPECTED),
+        ("a text-only end_turn reply, the assess shape", BOARD_EVENTS,
+         BOARD_EXPECTED),
+    ):
+        got = collect(sse(events))
+        if got == expected:
+            print(f"  ok   {name} reassembles to the non-streaming shape")
+            continue
+        print(f"  FAIL {name} differs from the non-streaming shape")
+        failures += 1
+        for key in sorted(set(expected) | set(got)):
+            if got.get(key) != expected.get(key):
+                print(f"       {key}:\n         expected {expected.get(key)!r}"
+                      f"\n         got      {got.get(key)!r}")
+    return failures
 
 
 def check_usage_maps(collect):
@@ -189,27 +231,62 @@ def check_usage_maps(collect):
 def check_failures(collect, provider_error):
     """The cases where failing loudly is the whole point.
 
-    A stream that closes early is the failure this patch exists to make
-    visible. If it returned a short message instead of raising, the run would
-    carry on into schema validation and fail there, or worse not fail at all,
-    which is the fail-open behaviour the drivers already work around.
+    Each fault is injected into an otherwise complete stream, and the message
+    is matched. Both matter. A two-event prefix would raise on the missing
+    `message_stop` whatever the helper did with the fault, so the case would
+    pass with the handling it names deleted; and a raise alone does not say
+    which check fired. What is being demonstrated is refusing a response that
+    still has its blocks, which cannot be shown on a stream that never
+    finished.
     """
+    def fault_in_the_middle(event):
+        """The fault lands mid-stream, so everything else still arrives."""
+        return EVENTS[:6] + [event] + EVENTS[6:]
+
+    # Malformed tool arguments: the stream completed and nothing is missing,
+    # but the fragments do not join into JSON. Silently passing {} would hand
+    # the tool loop a call the agent did not make.
+    truncated_args = [e for e in EVENTS if e.get("index") != 2 or
+                      e.get("type") != "content_block_delta"]
+    truncated_args.insert(12, {"type": "content_block_delta", "index": 2,
+                               "delta": {"type": "input_json_delta",
+                                         "partial_json": '{"signature": "host.mem'}})
+
     cases = [
-        ("a stream that closes before any content", EVENTS[:1]),
+        ("a stream that closes before any content", EVENTS[:1], "message_stop"),
         # The quiet one. Every block arrived and the shape is plausible, but
         # message_delta never landed, so stop_reason is still None and
         # invoke_with_tools would read a cut generation as a final answer.
-        ("a stream cut after its content but before message_stop", EVENTS[:-2]),
-        ("an error event mid-stream",
-         EVENTS[:2] + [{"type": "error", "error": {"type": "overloaded_error",
-                                                   "message": "Overloaded"}}]),
+        ("a stream cut after its content but before message_stop",
+         EVENTS[:-2], "message_stop"),
+        ("an error event in an otherwise complete stream",
+         fault_in_the_middle({"type": "error",
+                              "error": {"type": "overloaded_error",
+                                        "message": "Overloaded"}}),
+         "stream error"),
+        # An unknown delta type is content this reassembly would drop on the
+        # floor, returning a message that differs from the non-streaming one
+        # and passes every shape check while doing it. `citations_delta` is
+        # the live example: nothing in this repository reads citations, and a
+        # response quietly missing them is still the wrong response.
+        ("an unrecognised delta type",
+         fault_in_the_middle({"type": "content_block_delta", "index": 1,
+                              "delta": {"type": "citations_delta",
+                                        "citation": {"type": "char_location"}}}),
+         "unrecognised delta"),
+        ("truncated tool arguments", truncated_args, "malformed tool input"),
     ]
+
     failures = 0
-    for name, events in cases:
+    for name, events, expected in cases:
         try:
             collect(sse(events))
         except provider_error as exc:
-            print(f"  ok   {name} raises: {exc}")
+            if expected in str(exc):
+                print(f"  ok   {name} raises: {exc}")
+            else:
+                print(f"  FAIL {name} raised the wrong check: {exc}")
+                failures += 1
             continue
         except Exception as exc:  # noqa: BLE001 - any other type is a failure too
             print(f"  FAIL {name} raised {type(exc).__name__}, not ProviderError")
@@ -218,30 +295,20 @@ def check_failures(collect, provider_error):
         print(f"  FAIL {name} returned instead of raising")
         failures += 1
 
-    # Malformed tool arguments are a third case and a different one: the stream
-    # completed, so nothing is missing, but the fragments do not join into
-    # JSON. Silently passing {} would hand the tool loop a call the agent did
-    # not make.
-    broken = [e for e in EVENTS if e.get("index") != 2 or
-              e.get("type") != "content_block_delta"]
-    broken.insert(12, {"type": "content_block_delta", "index": 2,
-                       "delta": {"type": "input_json_delta",
-                                 "partial_json": '{"signature": "host.mem'}})
+    # Same discipline for the wire itself: a `data:` line that will not parse
+    # is text missing from the middle of a generation, and the stream around
+    # it is complete, so the refusal has to come from the parse and not from
+    # the completeness check.
+    corrupted = (sse(EVENTS[:6]) + [b'data: {"type": "content_bl\n', b"\n"]
+                 + sse(EVENTS[6:]))
     try:
-        collect(sse(broken))
+        collect(corrupted)
     except provider_error as exc:
-        print(f"  ok   truncated tool arguments raise: {exc}")
-    else:
-        print("  FAIL truncated tool arguments did not raise")
-        failures += 1
-    # A `data:` line that will not parse is text missing from the middle of a
-    # generation. Skipping it returns a response that still has blocks and
-    # still passes every shape check above, which is precisely the failure
-    # mode worth refusing.
-    try:
-        collect(sse(EVENTS[:2]) + [b"data: {\"type\": \"content_bl\n", b"\n"])
-    except provider_error as exc:
-        print(f"  ok   an unparseable event raises: {exc}")
+        if "unparseable event" in str(exc):
+            print(f"  ok   an unparseable event raises: {exc}")
+        else:
+            print(f"  FAIL an unparseable event raised the wrong check: {exc}")
+            failures += 1
     else:
         print("  FAIL an unparseable event was skipped")
         failures += 1

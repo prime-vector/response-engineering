@@ -619,17 +619,19 @@ convergence blocked. Every id resolves through act one's adapter log to the
 document the archive returned it from, which is the demo's own check run against
 that board and that log.
 
-**It did not come through `oa run`, and that is worth stating rather than
-glossing.** Four consecutive `assess` runs died with `PROVIDER_ERROR: Remote end
-closed connection without response`, minutes into a request the same call had
-completed twice earlier the same day. Removing the prompt-caching patch changed
-nothing. The same request with `stream: true`, built from this spec's own
-prompts and config, returned a complete contract-valid board in 79 seconds. So
-the model produces the board and the contract accepts it; what fails is the
-CLI's non-streaming delivery of a long generation. That is a property of the
-runner rather than of this change, it is recorded under Known limits in the
-README, and until it is addressed the composed pipeline cannot be relied on to
-produce this board on demand.
+**It did not come through `oa run` on the day, and that is worth stating
+rather than glossing.** Four consecutive `assess` runs died with
+`PROVIDER_ERROR: Remote end closed connection without response`, minutes into a
+request the same call had completed twice earlier the same day. Removing the
+prompt-caching patch changed nothing. The same request with `stream: true`,
+built from this spec's own prompts and config, returned a complete
+contract-valid board in 79 seconds. So the model produced the board and the
+contract accepted it; what failed was the CLI's non-streaming delivery of a
+long generation, a property of the runner rather than of this change. The third
+patch in `patches/` streams and the composed pipeline now produces this board
+through `oa run`: act two ran end to end, correlator and board, in one minute
+forty-eight. The failure and the fix are both recorded under Known limits in
+the README, because anything composing on an unpatched CLI still inherits it.
 
 **Phase 7, Documentation.** README section, architecture diagram updated to five
 agents and three evidence surfaces, results table, design decisions.
