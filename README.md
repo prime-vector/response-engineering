@@ -6,7 +6,7 @@ Operations is a software problem. We build the production agent layer: defined a
 
 Built on [Open Agent Spec](https://github.com/prime-vector/open-agent-spec).
 
-![Three evidence surfaces, each read by exactly one agent. The Telemetry Analyst, Change Correlator and Precedent Analyst hand typed findings, correlation and precedent to the Incident Commander, whose live board goes to the Scribe, which writes to the incident record sink through a tool call.](docs/diagrams/architecture.svg)
+![Three evidence surfaces, each read by exactly one agent. The Telemetry Analyst, Change Correlator and Precedent Analyst each read one surface, and typed correlation and precedent reach the Incident Commander, with the Telemetry Analyst's findings marked as the handoff the pipeline does not compose, whose live board goes to the Scribe, which writes to the incident record sink through a tool call.](docs/diagrams/architecture.svg)
 
 Every arrow between agents is a typed output whose claims carry `confidence` and `falsifying_test` as required fields: a claim cannot shed its caveats when it changes hands. No agent reads another's evidence surface, and the record is written only through a tool call the adapter log can prove.
 
@@ -16,7 +16,7 @@ Every arrow between agents is a typed output whose claims carry `confidence` and
 
 ## Status
 
-Early. Six agents written, mock adapters serving five tool surfaces. The five investigation agents verified live against the mocks, and the handoffs between them are dataflow, not narration: `demos/investigate.sh` composes the three acts in one run, the correlator's typed output becoming the commander's `correlation` input and the commander's live board becoming the Scribe's timeline input, each stage producing contract-valid output. The Precedent Analyst runs standalone against the archive; composing it into the investigation is next. The five governance failure modes are scripted and verified live: `demos/governance.sh` exits zero only when the sandbox blocks, the contract rejects, the attribution guard fires, an ungrounded precedent is refused and a novel incident returns no applicable precedent with its coverage.
+Early. Six agents written, mock adapters serving five tool surfaces. The five investigation agents verified live against the mocks, and the handoffs between them are dataflow, not narration: `demos/investigate.sh` composes the three acts in one run, the correlator's typed output becoming the commander's `correlation` input and the commander's live board becoming the Scribe's timeline input, each stage producing contract-valid output. The Precedent Analyst is composed in too: act one asks the archive at the day-one bound, next to detection, and that typed recall reaches the commander two acts later as `precedent`, supporting evidence the board can cite by `passage_id`, on a contract that closes the typed routes by which it could become deciding evidence and says plainly which prose route it cannot close. The five governance failure modes are scripted and verified live: `demos/governance.sh` exits zero only when the sandbox blocks, the contract rejects, the attribution guard fires, an ungrounded precedent is refused and a novel incident returns no applicable precedent with its coverage.
 
 | Artefact | State |
 | --- | --- |
@@ -32,7 +32,7 @@ Early. Six agents written, mock adapters serving five tool surfaces. The five in
 | `interfaces/PRECEDENT.md` | Draft interface contract, the `precedent_archive` surface |
 | `corpus/ingest.py`, `corpus/documents/` | Written, 17 documents indexed with both chunkers, five of them distractors, re-ingest verified idempotent |
 | `mock/adapter.py` | Written, smoke-tested against both fixture views, host, record-sink and precedent surfaces added |
-| `demos/investigate.sh` | Written, the composed three-act pipeline verified live |
+| `demos/investigate.sh` | Written. Act one and act two's correlation verified live on the shipped path; the board act two draws could not be delivered through the CLI on 23 Aug, so it and act three are unexercised since recall moved. See Known limits |
 | `demos/governance.sh` | Written, all five failure modes verified live |
 
 ## Layout
@@ -62,7 +62,7 @@ fixtures/composite-incident.attribution.json  generated, bridge view plus conver
 fixtures/mitigation-directive.json  generated, the directed change the sandbox must block
 fixtures/novel-incident.json       generated, a separate incident the archive has nothing on
 mock/adapter.py                    mock MCP adapter, all five surfaces
-demos/investigate.sh               the three acts composed: correlator into commander into Scribe
+demos/investigate.sh               the three acts composed: correlator and analyst into commander into Scribe
 demos/governance.sh                the five governance demos, on demand
 demos/caveats-stripped-system-prompt.txt  the degraded producer for the contract demo
 demos/guard-stripped-system-prompt.txt  the guard-off producer for the attribution reject path
@@ -107,15 +107,18 @@ patch "$(python3 -c 'import oas_cli.providers.anthropic_http as m; print(m.__fil
 # request and an uncached one look identical through it. Two small calls.
 python3 checks/cache_probe.py
 
-# the three acts, composed: recurrence at D+1, the correlator's typed output
-# into the commander's correlation input, the live board into the Scribe's
-# timeline. Manages its own adapters; stop yours first.
+# the three acts, composed: recurrence and recall at D+1, both bounded at that
+# day, then the correlator's typed output and act one's typed precedent into
+# the commander's board, then the live board into the Scribe's timeline.
+# Manages its own adapters; stop yours first.
 ./demos/investigate.sh
 
-# or act two standalone. The correlator needs 8423; assess needs no adapter at
-# all. The bridge view embeds a scripted correlator output shaped to the
-# correlate contract, so a standalone assess receives the same typed handoff
-# the driver composes live. The commander never sees raw registry rows.
+# or act two standalone. The correlator needs 8423 and assess needs no adapter
+# at all: the archive belongs to act one. The bridge view embeds a scripted
+# correlator output shaped to the correlate contract, so a standalone assess
+# receives the same typed handoff the driver composes live; its precedent field
+# is empty, which is what a board gets when no recall reached it. The commander
+# never sees raw registry rows and never reaches the archive.
 oa run --spec .agents/change-correlator.yaml --task correlate \
   --input "$(cat fixtures/composite-incident.json)" --quiet
 oa run --spec .agents/incident-commander.yaml --task assess \
@@ -138,6 +141,16 @@ oa run --spec .agents/scribe.yaml --task draft_change_record \
 python3 mock/adapter.py --surface precedent_archive         # 8426
 oa run --spec .agents/precedent-analyst.yaml --task recall \
   --input "$(cat fixtures/composite-incident.json)" --quiet
+
+# recall standalone on the day-two view, which is what act one runs. The part
+# of this that is not a demo of faster bridge calls: the archive held these
+# prior incidents on the day the recurrence first showed, and nobody asked it.
+# Nothing had been reported by that view, so symptom is passed empty rather than
+# omitted, and the query is the signature type off the signals, which is the
+# query the measurements favour.
+oa run --spec .agents/precedent-analyst.yaml --task recall \
+  --input "$(python3 -c 'import json; v = json.load(open("fixtures/composite-incident.d1.json")); v["symptom"] = ""; print(json.dumps(v))')" \
+  --quiet
 
 # the timeline standalone, filed on the incident record. board and
 # mitigation_attempts carry earlier agent outputs; the driver passes the live
@@ -177,6 +190,7 @@ The controls above are real, and so are their edges. Know these before composing
 - **The runner fails open on truncated JSON.** Through OAS 1.6.0, a json-task output that does not parse skips schema and contract validation and exits zero (filed upstream). A bare `oa run` exiting zero is not proof of a valid output. Both demo drivers fail closed instead, parsing every stage's output before using it, and every spec sizes `max_tokens` with real headroom so truncation does not arise. Compose on the CLI the same way.
 - **Contract validation can degrade silently.** Without the `behavioural-contracts` extra the runner skips contract validation with only a warning, and a pipx upgrade drops the extra. Both demo drivers check for it and refuse to run without it.
 - **Tool-use claims are self-attested.** The runner cannot bind tool results into outputs, so `record_updated: true`, a returned `draft_ref` or a cited `passage_id` proves nothing on its own: they are strings the model wrote either way. The drivers verify those claims against the adapter log, which names every `tools/call` and, on the archive, every passage that left the surface by id and uri. Anything consuming these outputs must do the same.
+- **A long non-streaming generation can be lost in transit.** The provider does not stream, and through OAS 1.6.0 there is no option to. On 23 Aug 2026 four consecutive `assess` runs died with `PROVIDER_ERROR: Remote end closed connection without response`, minutes into a request the same call had completed twice earlier that day; the same request with `stream: true` returned a complete, contract-valid board in 79 seconds. Nothing distinguishes that failure from a real one at the CLI's exit status, and it costs the whole act. Size a demo's expectations accordingly: the drivers fail closed on it, which is right, and a pipeline that has to run without retakes wants either a streaming provider or a retry that fires on transport errors and never on a contract rejection.
 - **The mock adapters are not a security boundary.** They bind 127.0.0.1 with no authentication, and the block in the sandbox demo lives in the runner, not the adapter. A vendor adapter fronts real systems, so it authenticates its callers and carries the host and sink refusals at its own layer; `interfaces/TELEMETRY.md` specifies that defence in depth, this repo demonstrates the runner's fence.
 - **CLI access is privileged.** `--system-prompt` replaces an agent's prompt wholesale, which the governance demos use deliberately. Schema pins survive an overridden prompt; prompt-dependent judgement does not, and whoever can run the CLI can also edit the spec. Treat CLI access to these agents like deploy access. It also sets what the three reject paths can prove: a stripped run is a different producer, not an ablation of one rule, because the operating rules, the output pins and the retrieval guidance all go with the prompt. Each stripped prompt therefore has to name the claim it wants malformed, or the substitute producer behaves well for its own reasons and demonstrates nothing.
 
@@ -357,16 +371,28 @@ model. The baseline this project is built against is a change correlation that
 was available for fifteen days and got run two hours and twenty-one minutes
 into the bridge call.
 
-**The contract is meant to be what makes a slow recall survivable, rather than
-a timeout, and that part is designed and not yet built.** The intent is that
-precedent is supporting evidence and can never be deciding evidence, so a
-recall that is slow, fails or refuses costs the board its precedent column and
-nothing else, while convergence goes on blocking against outstanding deciding
-evidence, which is a different field. Today the commander spec has no
-`precedent` input and `demos/investigate.sh` does not compose recall: that
-wiring is Phase 6 of `docs/precedent-analyst.md`, and until it exists this
-paragraph describes a design rather than a measured property. What is
-measured is the latency above.
+**The contract is what makes a slow recall survivable, rather than a timeout.**
+Precedent is supporting evidence, and no typed route on the board makes it
+deciding evidence, so a recall that is slow, fails or refuses costs the board
+its precedent column and nothing else, while convergence goes on blocking against outstanding deciding
+evidence, which is a different field. That is wiring rather than intent now:
+`assess` takes a `precedent` input, `demos/investigate.sh` composes act one's
+live recall into it, and the property sits in the output contract rather than
+in the prompt. It is run rather than asserted: a recall that fails, or whose
+conduct the adapter log does not support, is discarded, the board is drawn
+without it, and the run reports the failure after every act has had its turn. A passage id is expressible in one field on the board,
+`hypotheses[].precedent_cited`; `blocking_evidence` is closed against one;
+`convergence_allowed` must be false while any blocking item is outstanding; and
+a hypothesis resting on precedent cannot be confirmed. Those close the typed
+routes and not the prose ones: a board that writes into an item's description
+that a passage settled it, and marks it not outstanding, converges. The limit
+is carried as a case in `checks/contract_invariants.py` rather than as a
+sentence, so closing it later would show up as a case that started failing. On the board recorded in
+`docs/precedent-analyst.md`, five cited passages across three of four
+hypotheses, five items still outstanding and convergence blocked; the
+governance demos run the same task with no precedent at all and produce the
+same blocked board. What is measured is the latency above. The degradation is a
+property of the contract, and one composed run is one run.
 
 If latency ever does bind, the levers are measured rather than guessed. One
 query instead of several halves it, p95 27.1s against 52.8s, and reaches 22 of

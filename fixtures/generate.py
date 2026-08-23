@@ -214,6 +214,19 @@ def build(view):
         # no correlation had been run.
         "correlation": {},
 
+        # The Precedent Analyst's typed recall output, the commander's only
+        # view of the archive. Empty in every generated view, and unlike
+        # correlation it has no scripted stand-in: a citation is a passage id
+        # the archive computes from the passage text, so a scripted precedent
+        # would be a claim about the archive that nothing in CI checks and
+        # that goes stale the next time a document is edited.
+        # demos/investigate.sh composes a live recall into this field. An
+        # empty object is what a board sees when no recall has been run, which
+        # is also what it sees when one is too slow to wait for: precedent is
+        # supporting evidence, so its absence costs the board its precedent
+        # column and nothing else.
+        "precedent": {},
+
         "prior_hypotheses": [],
     }
 

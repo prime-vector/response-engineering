@@ -147,6 +147,27 @@ tasks:
             next_actions. Never raw registry rows; the typed output is the
             handoff, so the correlator's epistemics arrive intact. Empty
             object when no correlation has been run.
+        precedent:
+          type: object
+          description: >
+            The Precedent Analyst's recall output, verbatim:
+            no_applicable_precedent, search_coverage and precedents, each
+            with its citation, signature_overlap, divergence, applicability,
+            confidence, falsifying_test and grounded_in. Supporting evidence
+            only, and bounded at the moment it was recalled rather than at
+            this view's: the driver recalls in act one, so what arrives here
+            is the archive as it stood then. Precedent is a record of what
+            happened elsewhere, so it can raise a hypothesis and must not
+            settle one. The output contract
+            below closes the typed routes by which it could: no citation in
+            the deciding list, no confirmation resting on one. It cannot close
+            prose. An item whose description says a passage settled it, marked
+            not outstanding, is a board this schema accepts and a responder
+            has to catch. Empty object when no recall has been run, which is also what
+            a board sees when recall was too slow to wait for or failed;
+            no_applicable_precedent true when the archive was searched and
+            holds nothing. None of the three makes any hypothesis more or
+            less likely.
         missing_evidence:
           type: array
           description: >
@@ -166,15 +187,22 @@ tasks:
       # missing ones through as literal text, silently. Empty values are
       # passed explicitly, never omitted.
       required: [incident_id, elapsed_minutes, symptom, entity, signals,
-                 evidence, correlation, missing_evidence, prior_hypotheses]
+                 evidence, correlation, precedent, missing_evidence,
+                 prior_hypotheses]
     output:
       type: object
       properties:
         incident_state:
           type: string
           description: >
-            One of: triage, investigating, hypothesis_blocked, mitigating,
-            monitoring, unresolved_suppressed
+            What the investigation is doing now. unresolved_suppressed is the
+            one that matters: the symptom is gone and the cause was never
+            established.
+          # Pinned for the same reason as confidence. The demos assert on
+          # these values, and a value outside the set is a state nothing
+          # downstream knows how to read.
+          enum: [triage, investigating, hypothesis_blocked, mitigating,
+                 monitoring, unresolved_suppressed]
         summary:
           type: string
           description: Two sentences maximum. What is happening and what is not yet known.
@@ -193,9 +221,14 @@ tasks:
               confidence:
                 type: string
                 description: >
-                  One of: speculative, plausible, likely, supported, confirmed.
                   Nothing reaches confirmed without direct evidence in the
                   evidence array. Inference is never confirmation.
+                # A real enum rather than a scale described in prose. The
+                # precedent rule below rejects `confirmed` by const, and a
+                # const on an unpinned string closes one spelling: a cited
+                # hypothesis at "Confirmed" would satisfy the rule and defeat
+                # it. Same reason `brief.audience` stopped being a free string.
+                enum: [speculative, plausible, likely, supported, confirmed]
               supporting_evidence:
                 type: array
                 items:
@@ -222,7 +255,53 @@ tasks:
                   True if this hypothesis attributes cause to a vendor,
                   product or team outside the owning team. Triggers the
                   attribution guard.
+              precedent_cited:
+                type: array
+                description: >
+                  passage_ids from the precedent input that this hypothesis
+                  rests on, copied verbatim from a precedent's grounded_in or
+                  incident_ref. The only place on this board where a
+                  precedent citation is expressible: blocking_evidence is
+                  closed against one, so precedent can support a hypothesis
+                  and can never enter the list that gates convergence.
+                  Passage ids are opaque strings and this spec does not pin
+                  their shape, because interfaces/PRECEDENT.md leaves it to
+                  the archive. What makes a citation checkable is the adapter
+                  log, which names every passage that left the surface, so a
+                  cited id is verified against what was returned rather than
+                  against the output's own word.
+                items:
+                  type: string
             required: [statement, confidence, falsifying_test]
+            # Closed, for the reason blocking_evidence is. The rule below reads
+            # one field by name, so a hypothesis carrying its citation under
+            # any other name would be confirmed with the rule none the wiser.
+            # These nine and no others.
+            additionalProperties: false
+            # Precedent is supporting evidence, structurally rather than as a
+            # matter of prompt discipline: a hypothesis resting on the archive
+            # cannot be confirmed. Rule 1 confirms only on a direct
+            # observation in the evidence array, and a prior incident is a
+            # direct observation of a different incident. A hypothesis
+            # confirmed by evidence collected here may still say what it
+            # echoes in supporting_evidence, and then it is the evidence
+            # deciding rather than the precedent.
+            #
+            # What this cannot prevent is a passage paraphrased into
+            # supporting_evidence with no citation anywhere. The typed field
+            # makes the resting place checkable; it does not make paraphrase
+            # impossible.
+            allOf:
+              - if:
+                  properties:
+                    precedent_cited:
+                      minItems: 1
+                  required: [precedent_cited]
+                then:
+                  properties:
+                    confidence:
+                      not:
+                        const: confirmed
         blocking_evidence:
           type: array
           description: >
@@ -242,7 +321,18 @@ tasks:
                 type: integer
               still_outstanding:
                 type: boolean
-            required: [description, how_to_obtain]
+            # still_outstanding is required, so the convergence rule at the
+            # bottom of this contract cannot be dodged by leaving the flag
+            # off an item nobody has collected.
+            required: [description, how_to_obtain, still_outstanding]
+            # Closed, and closed for one reason. This is the list convergence
+            # blocks on, which makes it the slot where a precedent citation
+            # would stop being supporting evidence and start being deciding
+            # evidence. No field beyond these five exists here, so a citation
+            # cannot be attached to an item as data. It can still be asserted
+            # in the two strings, which is the limit of what closing the
+            # object buys and is stated wherever this claim is made.
+            additionalProperties: false
         attribution_guard:
           type: object
           description: >
@@ -258,6 +348,7 @@ tasks:
               type: string
             evidence_required:
               type: string
+          additionalProperties: false
         convergence_allowed:
           type: boolean
           description: >
@@ -277,7 +368,8 @@ tasks:
                 type: string
               intent:
                 type: string
-                description: One of - collect_evidence, mitigate, communicate, restore
+                description: What this action is for.
+                enum: [collect_evidence, mitigate, communicate, restore]
               authorisation_required:
                 type: boolean
                 description: >
@@ -288,7 +380,21 @@ tasks:
                 type: string
               reversible:
                 type: boolean
+                description: >
+                  Whether this action can be undone within the incident
+                  window. A bare boolean, and false where reversibility
+                  depends on anything: three live runs on the attribution
+                  fixture wrote the condition into this field instead
+                  ("false within incident window if security control is
+                  altered", "depends_on_specific_action", "true" as a
+                  string) and every one was rejected as not a boolean, which
+                  is the contract working and the demo failing at the same
+                  time. The condition belongs in blast_radius.
             required: [action, owner_role, authorisation_required]
+            # Closed for the same reason: every object on this board is, or
+            # "the only field a passage id may appear in" is a statement about
+            # the fields somebody remembered to declare.
+            additionalProperties: false
         standing_conditions_noted:
           type: array
           description: >
@@ -303,6 +409,11 @@ tasks:
         - blocking_evidence
         - convergence_allowed
         - next_actions
+      # Closed at the root as well as on every object below it. Closing the
+      # items and leaving the board open would have left a top-level field
+      # free to carry a citation past every rule that reads one by name, which
+      # is the same defect one level up.
+      additionalProperties: false
       # Rule 3 of the system prompt, structurally: a hypothesis that names a
       # third party on less than confirmed confidence forces the guard onto
       # the record. Without this, the guard is the model's judgement and
@@ -331,6 +442,32 @@ tasks:
                     const: true
                 required: [triggered]
             required: [attribution_guard]
+        # Rule 4, structurally, and the second half of the boundary the
+        # precedent_cited field draws. Convergence is not permitted while
+        # any deciding evidence is outstanding, whatever else the board has
+        # acquired in the meantime: precedent that resembles this incident,
+        # correlation that lands on the newest change, a bridge that wants a
+        # cause. blocking_evidence is closed against a precedent citation and
+        # convergence against an outstanding item, which closes the typed
+        # routes and not the prose one: a board that writes "INC-2288 settles
+        # this" into an item's description and marks it not outstanding
+        # converges, and no schema can stop it, because the board is the
+        # author of the list it is being held to.
+        - if:
+            properties:
+              blocking_evidence:
+                contains:
+                  type: object
+                  properties:
+                    still_outstanding:
+                      const: true
+                  required: [still_outstanding]
+            required: [blocking_evidence]
+          then:
+            properties:
+              convergence_allowed:
+                const: false
+            required: [convergence_allowed]
 
   brief:
     description: >
@@ -563,6 +700,25 @@ prompts:
     its confidence, do not re-derive proximity from raw records, and carry
     registry caveats onto the board where a hypothesis rests on them.
 
+    Precedent reaches you typed, from the precedent analyst: prior incidents
+    and runbook procedures, each cited to its passages, each carrying how
+    this incident differs from it. It is supporting evidence and never
+    deciding evidence. A prior incident is a direct observation of a
+    different incident, so it can raise a hypothesis you would not otherwise
+    have written down, and it can never confirm one, never satisfy
+    outstanding evidence, and never permit convergence. Where a hypothesis
+    rests on a precedent, list the passage ids in precedent_cited, copied
+    exactly as they appear in that precedent's grounded_in, and carry its
+    divergence onto the board with it: a precedent whose difference has been
+    dropped is the anchoring failure the citation exists to expose. Where a
+    precedent is marked superseded, name what superseded it wherever you use
+    it. Precedent may be cited on a hypothesis at any confidence below
+    confirmed; a hypothesis that has reached confirmed did so on evidence
+    collected here, so cite that instead. An empty precedent object means no
+    recall was run, and no_applicable_precedent means the archive was
+    searched and holds nothing: neither is evidence of anything, and neither
+    changes what is outstanding.
+
     Evidence listed as already requested and outstanding stays on the board as
     blocking evidence, carrying its requester and request time with
     still_outstanding true. Do not re-request it as if new, and do not treat
@@ -580,22 +736,42 @@ prompts:
     Field names must match the contract exactly:
     - hypotheses[]: statement, confidence, supporting_evidence,
       contradicting_evidence, falsifying_test, rules_in, rules_out,
-      third_party_named
+      third_party_named, precedent_cited
     - blocking_evidence[]: description, how_to_obtain, requested_from,
-      requested_at_elapsed_minutes, still_outstanding
+      requested_at_elapsed_minutes, still_outstanding. Those five and no
+      others: an item carrying any further field is rejected. Every item
+      states still_outstanding, and convergence_allowed must be false while
+      any item has it true.
+    - precedent_cited is an array of passage ids and nothing else, empty or
+      omitted where the hypothesis rests on no precedent. It is the only
+      field on this board that may carry one.
     - attribution_guard: triggered, party, reason, evidence_required. If any
       hypothesis carries third_party_named true at a confidence below
       confirmed, attribution_guard.triggered must be true: the output is
       rejected otherwise.
     - next_actions[]: action, owner_role, intent, authorisation_required,
       blast_radius, reversible
-    supporting_evidence and contradicting_evidence are always arrays of
-    strings, even for one item. standing_conditions_noted is an array of
+    supporting_evidence, contradicting_evidence and precedent_cited are
+    always arrays of strings, even for one item. Every boolean on this board is
+    bare, true or false and never a string or a qualified phrase, and that
+    includes the four under pressure to be qualified: reversible,
+    authorisation_required, still_outstanding and convergence_allowed. Where
+    reversibility depends on something the value is false and the condition
+    goes in blast_radius; where convergence is blocked the value is false and
+    the reason goes in convergence_block_reason. A condition written into a
+    boolean is a type error that costs the whole board. An optional
+    field you have nothing to put in is left out of the object entirely.
+    null is not how a field is omitted and is rejected as the wrong type,
+    which costs the whole board. standing_conditions_noted is an array of
     plain strings. Every other field listed above is a scalar: never emit []
     or {} for a string or boolean field, omit optional fields instead.
     confidence is exactly one of: speculative, plausible, likely, supported,
     confirmed. incident_state is exactly one of: triage, investigating,
-    hypothesis_blocked, mitigating, monitoring, unresolved_suppressed.
+    hypothesis_blocked, mitigating, monitoring, unresolved_suppressed. intent
+    is exactly one of: collect_evidence, mitigate, communicate, restore. All
+    three are closed sets in the contract: a word outside them is rejected and
+    the board is lost, so an action that seems to want a fifth intent is one of
+    these four with its specifics in the action text.
     summary is two sentences and under 600 characters; the detail belongs on
     the board, not in the summary.
 
@@ -617,6 +793,10 @@ prompts:
 
     Change correlation, as produced by the Change Correlator:
     {{ correlation }}
+
+    Precedent, as produced by the Precedent Analyst. Supporting evidence
+    only, empty when no recall has been run:
+    {{ precedent }}
 
     Evidence already requested and still outstanding:
     {{ missing_evidence }}

@@ -50,9 +50,15 @@ Tool calls on the surface:
 
 | Call | Input | Returns |
 |---|---|---|
-| `precedent.search` | signature terms, symptom text, optional time bound | ranked passages, each with a stable citation and a relevance score |
+| `precedent.search` | signature terms, symptom text, **required** time bound | ranked passages, each with a stable citation and a relevance score |
 | `passage.get` | passage id | full passage plus its citation |
-| `coverage.describe` | none | what the archive contains: source families, date range, document count |
+| `coverage.describe` | **required** time bound | what the archive held at that bound: source families, date range, document count |
+
+The bound is required on both, and this table said optional on one and absent on
+the other until the gate read it. An optional hindsight control is how hindsight
+gets in: a replay of day two that forgets the bound still looks correct, and
+nothing in the result says otherwise. An unbounded coverage call also leaks what
+a bounded search refuses, and a refusal cites coverage as proof it looked.
 
 `coverage.describe` is not decoration. An agent that reports "no applicable precedent"
 must be able to say what it searched, or the refusal is unfalsifiable.
@@ -69,8 +75,11 @@ the retrieval equivalent of the record being written only through a provable too
 
 **Task:** `recall`
 
-**Input:** the incident view (same fixture shape the other agents receive), plus the
-Telemetry Analyst's typed findings when the driver composes it live.
+**Input:** the incident view, the same fixture shape the other agents receive. Not
+the Telemetry Analyst's findings: this said the driver would compose them live and
+no driver does, act one being a separate invocation whose findings reach no other
+agent. The signature type recall queries on is derived from the view's own
+signals.
 
 **Output contract:**
 
@@ -444,12 +453,183 @@ Read the deltas across both modes, because neither mode can produce all four num
 mode. `agent_reach` is the bridge between them: retrieval on the queries the agent
 chose rather than on the dataset's canonical probe.
 
-**Phase 6, Composition.** `demos/investigate.sh` stays three acts: recall runs
-alongside detect, and its typed output enters the commander's input as `precedent`
-next to `findings` and `correlation`. The commander's board must be able to cite a
-precedent as supporting evidence without it counting as deciding evidence.
+**Phase 6, Composition.** `demos/investigate.sh` stays three acts, and the
+analyst's typed recall enters the commander's input as `precedent` next to
+`correlation`. The commander's board must be able to cite a precedent as
+supporting evidence without it counting as deciding evidence.
 *Done when:* one run produces a board whose hypotheses reference precedent by
 `passage_id`, and convergence still blocks on outstanding deciding evidence.
+
+Done, with recall in act one next to detection, which is where `SCENARIO.md`
+puts it. **It was built at the bridge bound first, and that was the wrong call
+twice over.** The argument for the bridge was that the board is assembled there
+and that `DRAFT-2601` coming back and not being cited is the archive's strongest
+live moment. The first half is true and does not follow: nothing in the corpus
+falls between the two bounds except the working note itself, so a board citing
+act one's recall cites documents that are all still current at the bridge. The
+second half repeats a demonstration that already exists. `demos/governance.sh
+grounding` recalls at the bridge bound precisely to show the note returned and
+declined, and it asserts that from the adapter log. Doing it again in the
+pipeline bought a second showing of the same thing and gave up the property the
+scenario is built on: at D+1 the note does not exist, so the bound puts it out
+of reach rather than leaving an agent to decline it.
+
+**And the placement was never mine to reason about from first principles.**
+`SCENARIO.md` is the source of truth every spec, fixture and piece of copy
+derives from, it says recall belongs next to detection and says why, and the
+pre-merge gate was right that `PLAN.md` does not get to overrule it. The
+argument above is why the scenario is right, not why the code may differ from
+it.
+
+**What the day-one bound costs and buys.** The reported symptom is not on that
+view, so `symptom` is passed empty rather than omitted, and the query reduces to
+the signature type off the signals, which the measurements favour anyway. Eval
+case `a02` covers the same bound and expects the trap unreachable rather than
+rejected. The precedent the board cites is then a fortnight old at the moment it
+is cited, which is what "precedent from act one" means and is stated on the
+commander's input rather than left for a reader to notice.
+
+One disagreement the docs carried is settled by this: the definition of done for
+the demo in `PLAN.md` describes act one as recurrence and the standing condition
+with no precedent in it, while this phase and `SCENARIO.md` both put recall
+there. It resolves to the scenario, and `PLAN.md`'s demo section is the one that
+needs its act one widened.
+
+**The boundary is in the contract rather than in the prompt.** A prompt saying
+precedent is supporting evidence is a prompt, and the failure this agent exists
+against is precedent arriving already believed. Four changes to
+`.agents/incident-commander.yaml` make the board unable to express precedent
+deciding anything:
+
+- `hypotheses[].precedent_cited`, an array of passage ids, is the only field on
+  the board where a citation is expressible.
+- `blocking_evidence[]` is closed. It is the list convergence blocks on, so it is
+  the slot where a citation would stop being supporting evidence, and no field
+  beyond the five declared ones exists on it.
+- `convergence_allowed` must be false while any blocking item has
+  `still_outstanding` true, and `still_outstanding` is now required so the rule
+  cannot be dodged by omitting the flag. Rule 4 was prompt-only until now.
+- A hypothesis carrying `precedent_cited` cannot be `confirmed`. Confirmation
+  takes a direct observation in `evidence`, and a prior incident is a direct
+  observation of a different incident.
+
+**Those four close the typed routes and not the prose ones, and the gate was
+right to attack the stronger wording.** The claim was that a board on which
+precedent decided something is one the contract cannot express. It is not: an
+item whose `description` says a passage settled it, with `still_outstanding` set
+false, converges, and so does a board that raises no blocking evidence at all.
+The board authors the list it is being held to, and a schema sees the output and
+never the `missing_evidence` behind it. What the rules buy is that a citation
+cannot enter the deciding slot as data and confirmation cannot rest on one; the
+rest is a responder reading the board. `checks/contract_invariants.py` carries
+that hole as an accepted case rather than leaving it in prose, so a future change
+that closes it will show up as a case that started failing.
+
+The same limit covers the passage paraphrased into `supporting_evidence` with no
+citation anywhere. The typed field makes a resting place checkable; it does not
+make paraphrase impossible, and the spec says so where the field is declared.
+
+**Review found the confirmation rule resting on an unpinned string.** `not:
+{const: confirmed}` closes one spelling, and `confidence` was a free string whose
+five-word scale lived in its description, so a cited hypothesis at `Confirmed`
+satisfied the rule and defeated it. `confidence`, `incident_state` and
+`next_actions[].intent` are now real enums, the same treatment `brief.audience`
+had for the same reason. The other four specs still describe their scales in
+prose; that is the same class and it is tracked rather than fixed here, because
+none of them carries a rule that keys on the value.
+
+**Pinning a scale in the schema means pinning it in the prompt too, and that
+cost a run to learn.** The first live board after the enums went in invented
+`guard_evidence_integrity` for `next_actions[].intent`, a field whose four
+values had lived in a description that the prompt never repeated, and the whole
+board was rejected. `confidence` and `incident_state` were already stated in the
+prompt, which is why neither of them failed. All three sets are now stated in
+the shipped prompt and in both stripped ones. A closed set the producer cannot
+see is a rejection waiting for the first board that needs a fifth value.
+
+**The four rules are checked without a model now.** `checks/contract_invariants.py`
+validates twenty-one boards against the contract read out of the spec, each one
+asserting that a particular violation is rejected and that the legitimate
+neighbour is accepted, and CI runs it. Before it, the rules were exercised only
+when a live board happened to try one, which is a test that fires when it feels
+like it and costs an API call when it does.
+
+**Verifying the convergence rule against boards that already existed found a
+different defect.** Three live `assess` runs on the attribution fixture, before
+any of this was added, were all rejected: `'false within incident window if
+security control is altered'`, `'depends_on_specific_action'` and `'true'`, each
+in `next_actions[].reversible`, which is a boolean. Under convergence pressure the
+board qualifies reversibility, and the contract was rejecting the qualification
+while the demo counted the rejection as a failure. `demos/governance.sh
+attribution` was failing on its main path for that reason and nothing else. The
+fix is a sentence in the prompt and a description on the field: the value is false
+where reversibility depends on anything, and the condition goes in `blast_radius`.
+The two stripped-prompt reject paths carry the same sentence, because a stripped
+prompt has to differ from the shipped one only in the control it removes, or the
+demo asserts the wrong rejection.
+
+**The acceptance run then failed on the same class again**, this time an
+optional string emitted as `null` and rejected as not a string. The prompt told
+the board to omit an optional field it had nothing for and never said that
+`null` is not how a field is omitted. Same fix, same three prompts. Neither
+defect has anything to do with precedent: both are the board hedging a field
+whose type does not allow hedging, both cost a whole run, and both were only
+visible because something ran the demo rather than validating a captured board.
+
+**Every generated view carries `precedent: {}`, and unlike `correlation` it has no
+scripted stand-in.** A citation is a passage id the archive computes from passage
+text, so a scripted precedent in a fixture would be a claim about the archive that
+nothing in CI checks and that goes stale the next time a document is edited. The
+empty object is also what a board sees when recall was too slow to wait for or
+failed, which is the degradation the composition is supposed to survive: the
+governance demos run the commander with no precedent at all and produce the same
+blocked board.
+
+**A cited id proves the archive returned it, and nothing about what the
+hypothesis is about.** A claim naming one record while citing a passage of
+another passes a membership check, which is a mismatch the judgement scorer has
+already been caught by. So `demos/investigate.sh` resolves every cited id to
+its document through the adapter log, never through a uri the model wrote, and
+fails when a hypothesis names a record its citations do not resolve to. The
+field itself stays ids only: a uri in it would be a second copy of something
+the log already establishes.
+
+**What the live runs produced, and what is still owed.** At the bridge bound,
+before the move, recall returned `INC-2411` and `INC-2419` as `partial` and
+`INC-2288` as `superseded`, and a board drawn from it cited five distinct
+passages six times across three of four hypotheses, no hypothesis above
+`plausible`, five items outstanding, convergence blocked, with `SEC-STD-14`
+named wherever the superseded record was used.
+
+At the day-one bound, which is where recall now runs, act one returned
+`INC-2419` as `partial` and `INC-2411` as `partial`, over an archive it reported
+as covering 2025-08-19 to 2026-02-11: the working note dated 2026-03-10 is
+outside that window, which is the property the scenario is built on and it is
+now demonstrated rather than described. The driver's own verification passed off
+the adapter log: coverage established first, six searches returning passages,
+every bounded call at the D+1 `as_of`, no entity id in any query, seven
+citations all in the returned set. That run made no `passage_get` calls at all,
+which is the second time the recorded behaviour has contradicted the
+fetch-per-citation claim and the reason the check does not require it.
+
+**The board drawn from that recall cites `INC-2411` three times, `INC-2419`
+three times and the memory-pressure runbook once**, across two of its four
+hypotheses, both of them `speculative`, with four items outstanding and
+convergence blocked. Every id resolves through act one's adapter log to the
+document the archive returned it from, which is the demo's own check run against
+that board and that log.
+
+**It did not come through `oa run`, and that is worth stating rather than
+glossing.** Four consecutive `assess` runs died with `PROVIDER_ERROR: Remote end
+closed connection without response`, minutes into a request the same call had
+completed twice earlier the same day. Removing the prompt-caching patch changed
+nothing. The same request with `stream: true`, built from this spec's own
+prompts and config, returned a complete contract-valid board in 79 seconds. So
+the model produces the board and the contract accepts it; what fails is the
+CLI's non-streaming delivery of a long generation. That is a property of the
+runner rather than of this change, it is recorded under Known limits in the
+README, and until it is addressed the composed pipeline cannot be relied on to
+produce this board on demand.
 
 **Phase 7, Documentation.** README section, architecture diagram updated to five
 agents and three evidence surfaces, results table, design decisions.

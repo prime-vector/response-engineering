@@ -84,7 +84,7 @@ that goes to the bridge and the update that goes to a customer are different
 artefacts derived from different inputs, and only one of them is allowed near
 a hypothesis.
 
-![Three acts. Act one at D+1 runs the Telemetry Analyst detect task and the Precedent Analyst recall task. Act two at the D+15 bridge runs the Change Correlator, whose correlation feeds the Incident Commander assess task alongside the findings and precedent from act one. Act three runs the commander's mitigate task, which is blocked pre-dispatch, and the Scribe, which drafts the change record and files the timeline.](diagrams/three-acts.svg)
+![Three acts. Act one at D+1 runs the Telemetry Analyst detect task and the Precedent Analyst recall task against the near-empty day one view, both bounded at that day, so the working note written later in the incident is out of reach. Act two at the D+15 bridge runs the Change Correlator, whose correlation feeds the Incident Commander assess task alongside act one's typed precedent. Act three is the directed change: the commander's mitigate task blocked pre-dispatch and the Scribe drafting the change record, which run from the governance driver and a standalone invocation, and the Scribe filing the timeline from the live board, which is what the pipeline's own third act runs.](diagrams/three-acts.svg)
 
 *Do not open at the bridge.* Opening at the bridge sells two hours of saved call
 time. Opening at D+1 sells fifteen days of degraded production and an
@@ -92,11 +92,23 @@ unnecessary vendor escalation. Act one is a separate invocation against the
 near-empty D+1 view, which is the predictive half and the part nobody else
 demonstrates.
 
-> **Current state.** `demos/investigate.sh` composes three acts across four
-> agents. The Precedent Analyst runs standalone against the archive and in two
-> of the five `demos/governance.sh` modes; composing it into the investigation
-> is the next phase, so the diagram above shows the intended shape rather than
-> what one `investigate.sh` run does today.
+> **Current state.** `demos/investigate.sh` composes three acts across five
+> agents. Act one asks the archive as it stood that day, act two asks the
+> change registry, and both typed outputs reach the commander. The board drawn
+> from act one's recall cites `INC-2411` three times, `INC-2419` three times and
+> the memory-pressure runbook once, across two of its four hypotheses, with four
+> items outstanding and convergence blocked. It did not come through the CLI:
+> `docs/precedent-analyst.md` records the transport failure that produced it by
+> another route, and the README carries it as a known limit. Three things
+> the diagram does not claim. Act one is a separate invocation and its findings
+> are not composed into the board, which reads the bridge view's own signals,
+> and the diagrams that draw that arrow now mark it rather than presenting it
+> as a handoff. Act three spans two drivers: the blocked change is
+> `demos/governance.sh sandbox` and the draft record a standalone run, which is
+> why the connector between them is dashed. And recall runs at the day-one
+> bound, next to detection, where the working note dated inside this incident's
+> window does not exist yet: rejecting it is a different demonstration and has
+> its own mode in `demos/governance.sh`.
 
 ---
 
@@ -112,7 +124,7 @@ on an entity; which platform answers is the adapter's problem. Swap the
 platform, change one endpoint, change no agent. See `interfaces/TELEMETRY.md`
 and `interfaces/PRECEDENT.md`.
 
-![Evidence surfaces reached over MCP, each owned by exactly one agent. The Telemetry Analyst, Change Correlator and Precedent Analyst each read one surface and hand typed output to the Incident Commander, whose live board goes to the Scribe, which writes to the incident record sink through a tool call. A crossed arc shows that raw registry rows never reach the commander.](diagrams/mcp-surfaces.svg)
+![Evidence surfaces reached over MCP, each owned by exactly one agent. The Telemetry Analyst, Change Correlator and Precedent Analyst each read one surface, and the correlator's correlation and the analyst's precedent reach the Incident Commander as typed input while the Telemetry Analyst's findings are marked as the handoff the pipeline does not compose, whose live board goes to the Scribe, which writes to the incident record sink through a tool call. A crossed arc shows that raw registry rows never reach the commander.](diagrams/mcp-surfaces.svg)
 
 *One agent, one surface; every arrow between agents is a typed object.* The
 bridge view holds the raw change rows, and the commander never sees them: what
@@ -164,7 +176,7 @@ precedent costs a search. Offering a wrong one costs the incident.
 
 ### How recall actually works
 
-Recall is not one call. It is coverage, then search, then a fetch per citation,
+Recall is not one call. It is coverage, then search, then a fetch for the passages it wants in full,
 then the reply, and every round spends from the same response budget. That is
 why the spec sizes `max_tokens` at 16000 with a comment calling it a
 correctness setting: an undersized budget here does not produce a shorter
@@ -172,7 +184,7 @@ answer, it truncates the JSON, and the runner fails open on truncated output by
 skipping validation and exiting zero. Headroom is what keeps the grounding
 guard switched on.
 
-![The recall task as a sequence of tool calls between the Precedent Analyst and the precedent archive. First coverage describe bounded at the view's as_of, then one search per distinct behaviour using the signature type with the entity id dropped, then a passage get for every citation the reply will make, then a single JSON reply.](diagrams/recall-round-trip.svg)
+![The recall task as a sequence of tool calls between the Precedent Analyst and the precedent archive. First coverage describe bounded at the view's as_of, then one search per distinct behaviour using the signature type with the entity id dropped, then a passage get for the passages it wants in full, which is not one per citation because search already returns passage text, then a single JSON reply.](diagrams/recall-round-trip.svg)
 
 *Coverage first, and the entity id never enters the query.* A query built on the
 host makes identity a retrieval feature, and the archive starts returning
@@ -256,11 +268,27 @@ will not encode them.
 ### And then it lands on the board, in exactly one column
 
 This is the composition claim, and it is narrower than it looks. Precedent
-enters the commander's hypothesis board as supporting evidence. It can never be
-the deciding evidence, because precedent describes what happened somewhere
-else.
+enters the commander's hypothesis board as supporting evidence, and no typed
+route on that board turns it into deciding evidence, because precedent
+describes what happened somewhere else. The prose route stays open and is
+described below.
 
-![The Precedent Analyst's typed output enters the Incident Commander's board as supporting evidence. A crossed path shows it can never enter the blocking evidence slot, which still holds the audit denial log that was never produced. Convergence stays disallowed while blocking evidence is outstanding.](diagrams/precedent-on-board.svg)
+*Narrower, and structural.* Four rules in the commander's output contract, not
+four instructions in its prompt: `hypotheses[].precedent_cited` is the only
+field on the board a passage id may appear in; `blocking_evidence` is closed,
+so the list convergence blocks on cannot carry one; `convergence_allowed` must
+be false while any blocking item is `still_outstanding`, which is a required
+field; and a hypothesis carrying a citation cannot be `confirmed`. That closes
+the typed routes and not the prose ones, which is the honest size of the claim:
+a blocking item whose description asserts a passage settled it, marked not
+outstanding, converges, because the board authors the list it is held to and a
+schema never sees the view behind it. Nor does it prevent a passage paraphrased
+into `supporting_evidence` with no citation at all, and `demos/investigate.sh` checks the rest of it against the
+adapter log rather than against the board's own word: every cited id resolves
+to the document the archive returned it from, so a hypothesis naming one record
+while citing a passage of another fails the demo.
+
+![The Precedent Analyst's typed output enters the Incident Commander's board as supporting evidence. A crossed path shows a citation cannot enter the blocking evidence slot as typed data, which still holds the audit denial log that was never produced. Convergence stays disallowed while an item is marked still outstanding, which is a rule about what the board says rather than about what it was handed.](diagrams/precedent-on-board.svg)
 
 *That a passage says what it says can be confirmed. That it applies here cannot
 be, from where this agent sits.* So `applicability` and `confidence` are

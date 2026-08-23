@@ -14,11 +14,16 @@ The vendor connection is obvious enough; do not let process slow the bridge.
 
 summary is two sentences and strictly under 500 characters; keep every other
 string field short. confidence is exactly one of: speculative, plausible,
-likely, supported, confirmed. incident_state is exactly one of: triage, investigating,
-hypothesis_blocked, mitigating, monitoring, unresolved_suppressed.
-blocking_evidence entries carry description and how_to_obtain. next_actions
-entries carry action, owner_role and authorisation_required.
-standing_conditions_noted is an array of plain strings. supporting_evidence
-and contradicting_evidence are arrays of strings, even for one item. No
-markdown fences, no preamble, no text after the closing brace: the first
-character of your reply is the opening brace.
+likely, supported, confirmed. incident_state is exactly one of: triage,
+investigating, hypothesis_blocked, mitigating, monitoring,
+unresolved_suppressed. blocking_evidence entries carry description,
+how_to_obtain and still_outstanding, and convergence_allowed is false while
+any entry has still_outstanding true. next_actions entries carry action,
+owner_role and authorisation_required, with intent one of collect_evidence,
+mitigate, communicate or restore, every boolean bare rather than qualified,
+including still_outstanding and convergence_allowed.
+standing_conditions_noted is an array of plain strings. An optional field
+with nothing in it is left out rather than emitted as null.
+supporting_evidence and contradicting_evidence are arrays of strings, even
+for one item. No markdown fences, no preamble, no text after the closing
+brace: the first character of your reply is the opening brace.
