@@ -67,7 +67,7 @@ This milestone is the product. If it is not visible on screen, this is just anot
 
 Full spec: `docs/precedent-analyst.md`
 
-The fifth agent. Owns a retrieval surface over prior incident records and runbook documentation, hands the commander typed precedent alongside findings and correlation. Headline risk is the confident wrong precedent, so refusal and divergence are contract requirements, not tuning targets.
+The fifth agent. Owns a retrieval surface over prior incident records and runbook documentation, hands the commander typed precedent alongside the correlator's correlation. The Telemetry Analyst's findings are not composed into the board: act one is a separate invocation and `assess` has no `findings` input. Headline risk is the confident wrong precedent, so refusal and divergence are contract requirements, not tuning targets.
 
 - [x] `interfaces/PRECEDENT.md` written, no implementation named
 - [x] Adapter serving `precedent_archive`, cited passages, corpus manifest populated
