@@ -164,7 +164,9 @@ An investigation layer that cannot recall what happened last time is
 reconstructing from memory, which is the exact failure the whole thing exists
 to fix. So the fifth agent owns an archive of prior incident records, runbook
 procedures and postmortems, and hands the commander typed precedent alongside
-the findings and the correlation.
+the correlation. Not alongside the findings: `assess` has no such input, act
+one's detect is a separate invocation, and the diagrams that draw that arrow
+mark it for the same reason.
 
 There is a closure worth noticing: the archive holds records in the shape the
 Scribe files. The fifth agent reads what the fourth writes.

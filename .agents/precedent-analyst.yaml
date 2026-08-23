@@ -1,7 +1,8 @@
 # Precedent Analyst
 #
 # The fifth agent. Owns the precedent archive and hands the commander typed
-# precedent alongside findings and correlation.
+# precedent alongside the correlator's correlation. Not alongside findings:
+# assess has no such input, and act one's detect is a separate invocation.
 #
 # The failure this agent is built against is not the missed precedent, it is
 # the confident wrong one. A prior incident that resembles this one arrives
