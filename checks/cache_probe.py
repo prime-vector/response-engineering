@@ -36,6 +36,53 @@ FIRST_TURN = "Incident view placeholder. " * 1500
 # live half below cannot see it: that request is oversized and carries no tools,
 # so it would pass whether or not the rule were right. The gate found exactly
 # that gap. These cases cost nothing and run without a key.
+# The floors the patch header promises. Asserted rather than derived, because a
+# probe that reads the floor out of the code it is testing agrees with any
+# mapping, margin or constant that code happens to hold.
+PROMISED_FLOORS = {
+    "claude-sonnet-4-6": 4710,
+    "claude-opus-4-8": 4710,
+    "claude-haiku-4-5-20251001": 9420,
+}
+
+
+def check_promised_floors(cache_min_chars):
+    failures = 0
+    for model, promised in sorted(PROMISED_FLOORS.items()):
+        got = cache_min_chars(model)
+        ok = got == promised
+        failures += not ok
+        print(f"  {'ok  ' if ok else 'FAIL'} {model}: floor {got}"
+              + ("" if ok else f", the header promises {promised}"))
+    return failures
+
+
+def check_call_sites(module):
+    """Both call sites must actually reach the helpers.
+
+    The live half below builds its own payload, so it reports a cache hit from
+    a correct request whether or not the provider would have built one. That
+    makes the call-site hunks the part most worth checking and the part it
+    cannot see.
+    """
+    import inspect
+
+    failures = 0
+    for method, helper in (("invoke_verbose", "_system_field"),
+                           ("invoke_with_tools", "_system_field"),
+                           ("invoke_with_tools", "_cache_first_turn")):
+        try:
+            source = inspect.getsource(getattr(module.AnthropicProvider, method))
+        except (AttributeError, OSError) as exc:
+            print(f"  FAIL cannot read {method}: {exc}")
+            failures += 1
+            continue
+        ok = f"{helper}(" in source
+        failures += not ok
+        print(f"  {'ok  ' if ok else 'FAIL'} {method} calls {helper}")
+    return failures
+
+
 def eligibility_cases(floor):
     """Cases sized against the floor for the model under test, not a constant.
 
@@ -91,6 +138,18 @@ def main():
         _cache_min_chars = None
 
     if _cache_min_chars:
+        print("floors, against the numbers the patch header promises:")
+        if check_promised_floors(_cache_min_chars):
+            sys.exit("\nThe floors do not match the documented ones.")
+        print()
+
+        import oas_cli.providers.anthropic_http as provider
+        print("call sites, which the live half below cannot check:")
+        if check_call_sites(provider):
+            sys.exit("\nA call site is not reaching the helpers: the patch is "
+                     "partly applied, or a hunk landed in the wrong method.")
+        print()
+
         floor = _cache_min_chars(MODEL)
         print(f"eligibility against the {floor} character floor for {MODEL}, "
               "decided before any request is built:")

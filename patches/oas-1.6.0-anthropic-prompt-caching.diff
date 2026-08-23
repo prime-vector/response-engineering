@@ -3,8 +3,12 @@ provider sends `system` as a plain string and the messages untouched, so every
 round of a tool loop pays again for the system prompt, the tool definitions and
 the whole incident view. This adds two cache breakpoints: one at the end of the
 system block, which covers the tools with it because Anthropic orders the
-prefix tools, system, messages; and one at the end of the first user turn,
-which is where the view sits.
+prefix tools, system, messages; and one at the end of the prompt's last
+user turn, which is where the view sits. Not the first turn: the runner
+prepends any supplied history, and on that path the first turn is an old
+message while the view goes uncached on every round. The last user turn that
+carries no tool_result is the same message on every round, which is what a
+breakpoint needs.
 
 Apply the tool-messages patch beside this one first. Both are cut against the
 1.6.0 wheel and both apply with no fuzz in that order:
@@ -77,8 +81,8 @@ after it are not the same configuration twice. Comparisons across that boundary
 are not like for like, and `--check-records` is where that shows up.
 
 --- a/oas_cli/providers/anthropic_http.py	2026-08-23 15:47:05.135592194 +1000
-+++ b/oas_cli/providers/anthropic_http.py	2026-08-23 16:12:07.024417213 +1000
-@@ -31,6 +31,113 @@
++++ b/oas_cli/providers/anthropic_http.py	2026-08-23 16:37:07.486636250 +1000
+@@ -31,6 +31,142 @@
  )
  
  
@@ -141,9 +145,37 @@ are not like for like, and `--check-records` is where that shows up.
 +    ]
 +
 +
++def _prompt_turn_index(messages: list[dict[str, Any]]) -> int:
++    """Where the prompt ends: the last user turn that is not a tool result.
++
++    Not index zero, which is what this used to mark. The runner prepends any
++    supplied history before the current turn, so on that path index zero is an
++    old message and the view this exists to cache sits further down, uncached
++    on every round of the loop.
++
++    The last plain user turn is the same message on every round, which is what
++    a breakpoint needs: rounds two onward append user messages carrying
++    tool_result blocks, and those are skipped here, so the index does not move
++    and the cached prefix does not change under it.
++    """
++    for index in range(len(messages) - 1, -1, -1):
++        message = messages[index]
++        if message.get("role") != "user":
++            continue
++        content = message.get("content")
++        if isinstance(content, str):
++            return index
++        if isinstance(content, list) and not any(
++            isinstance(block, dict) and block.get("type") == "tool_result"
++            for block in content
++        ):
++            return index
++    return -1
++
++
 +def _cache_first_turn(messages: list[dict[str, Any]], model: str,
 +                      prefix_chars: int = 0) -> list[dict[str, Any]]:
-+    """Put a second cache breakpoint at the end of the first user turn.
++    """Put a second cache breakpoint at the end of the prompt's last user turn.
 +
 +    The system prompt is not where a tool loop spends its input. The first user
 +    turn carries the incident view, and every round of the loop re-sends it
@@ -162,10 +194,11 @@ are not like for like, and `--check-records` is where that shows up.
 +    running back to back reuses the system prefix across runs. Neither is a
 +    correctness concern: a miss costs what the request cost before this.
 +    """
-+    if not messages:
++    index = _prompt_turn_index(messages)
++    if index < 0:
 +        return messages
 +    out = [dict(m) for m in messages]
-+    first = out[0]
++    first = out[index]
 +    content = first.get("content")
 +    if isinstance(content, str):
 +        if len(content) + prefix_chars < _cache_min_chars(model):
@@ -192,7 +225,7 @@ are not like for like, and `--check-records` is where that shows up.
  def _supports_temperature(model: str) -> bool:
      """False for models that reject `temperature` (Opus 4.7/4.8, Fable 5)."""
      return not any(model.startswith(prefix) for prefix in _NO_SAMPLING_PARAM_MODELS)
-@@ -186,7 +293,7 @@
+@@ -186,7 +322,7 @@
          if _supports_temperature(model):
              payload["temperature"] = temperature
          if system:
@@ -201,7 +234,7 @@ are not like for like, and `--check-records` is where that shows up.
          _apply_reasoning(payload, config.get("reasoning_effort"))
  
          headers = {
-@@ -259,15 +366,24 @@
+@@ -259,15 +395,24 @@
              for t in tools
          ]
  
