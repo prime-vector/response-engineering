@@ -94,11 +94,12 @@ demonstrates.
 
 > **Current state.** `demos/investigate.sh` composes three acts across five
 > agents. Act one asks the archive as it stood that day, act two asks the
-> change registry, and both typed outputs reach the commander. On the board
-> recorded in `docs/precedent-analyst.md`, drawn from a recall at the bridge
-> bound before recall moved to act one, five cited passages across three of its
-> four hypotheses and five outstanding items it is still blocked on; the
-> equivalent board from act one's recall is owed, and that document says why. Three things
+> change registry, and both typed outputs reach the commander. The board drawn
+> from act one's recall cites `INC-2411` three times, `INC-2419` three times and
+> the memory-pressure runbook once, across two of its four hypotheses, with four
+> items outstanding and convergence blocked. It did not come through the CLI:
+> `docs/precedent-analyst.md` records the transport failure that produced it by
+> another route, and the README carries it as a known limit. Three things
 > the diagram does not claim. Act one is a separate invocation and its findings
 > are not composed into the board, which reads the bridge view's own signals,
 > and the diagrams that draw that arrow now mark it rather than presenting it
@@ -267,9 +268,10 @@ will not encode them.
 ### And then it lands on the board, in exactly one column
 
 This is the composition claim, and it is narrower than it looks. Precedent
-enters the commander's hypothesis board as supporting evidence. It can never be
-the deciding evidence, because precedent describes what happened somewhere
-else.
+enters the commander's hypothesis board as supporting evidence, and no typed
+route on that board turns it into deciding evidence, because precedent
+describes what happened somewhere else. The prose route stays open and is
+described below.
 
 *Narrower, and structural.* Four rules in the commander's output contract, not
 four instructions in its prompt: `hypotheses[].precedent_cited` is the only

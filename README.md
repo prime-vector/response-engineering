@@ -32,7 +32,7 @@ Early. Six agents written, mock adapters serving five tool surfaces. The five in
 | `interfaces/PRECEDENT.md` | Draft interface contract, the `precedent_archive` surface |
 | `corpus/ingest.py`, `corpus/documents/` | Written, 17 documents indexed with both chunkers, five of them distractors, re-ingest verified idempotent |
 | `mock/adapter.py` | Written, smoke-tested against both fixture views, host, record-sink and precedent surfaces added |
-| `demos/investigate.sh` | Written. Every act verified live; the composed board came from a streamed request after four transport failures, see Known limits |
+| `demos/investigate.sh` | Written. Act one and act two's correlation verified live on the shipped path; the board act two draws could not be delivered through the CLI on 23 Aug, so it and act three are unexercised since recall moved. See Known limits |
 | `demos/governance.sh` | Written, all five failure modes verified live |
 
 ## Layout
@@ -361,9 +361,9 @@ was available for fifteen days and got run two hours and twenty-one minutes
 into the bridge call.
 
 **The contract is what makes a slow recall survivable, rather than a timeout.**
-Precedent is supporting evidence and can never be deciding evidence, so a
-recall that is slow, fails or refuses costs the board its precedent column and
-nothing else, while convergence goes on blocking against outstanding deciding
+Precedent is supporting evidence, and no typed route on the board makes it
+deciding evidence, so a recall that is slow, fails or refuses costs the board
+its precedent column and nothing else, while convergence goes on blocking against outstanding deciding
 evidence, which is a different field. That is wiring rather than intent now:
 `assess` takes a `precedent` input, `demos/investigate.sh` composes act one's
 live recall into it, and the property sits in the output contract rather than
