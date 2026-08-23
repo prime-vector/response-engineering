@@ -26,8 +26,8 @@ import urllib.request
 MODEL = os.environ.get("CACHE_PROBE_MODEL", "claude-haiku-4-5-20251001")
 ENDPOINT = "https://api.anthropic.com/v1/messages"
 
-# Comfortably over every model's minimum, so a miss here means the breakpoint
-# is not being set rather than that the prompt was too short to cache.
+# Comfortably over the highest per-model floor the patch sets, so a miss here
+# is the breakpoint failing rather than the fixture being too short.
 SYSTEM = "You are a fixture used to verify prompt caching. " * 500
 FIRST_TURN = "Incident view placeholder. " * 1500
 
@@ -49,14 +49,17 @@ def main():
         print("note: _cache_first_turn is absent, so only the system "
               "breakpoint is under test. Is the caching patch applied?")
 
-    system = _system_field(SYSTEM, {})
+    # The helpers take the model because the minimum cacheable length does:
+    # a prompt long enough for Sonnet is short of what Haiku will cache.
+    system = _system_field(SYSTEM, {}, MODEL)
     if not isinstance(system, list):
         sys.exit("The provider returned `system` as a plain string: the "
-                 "caching patch is not applied, or cache_prompt is off.")
+                 "caching patch is not applied, cache_prompt is off, or this "
+                 "fixture is shorter than the floor for " + MODEL + ".")
 
     messages = [{"role": "user", "content": FIRST_TURN}]
     if _cache_first_turn:
-        messages = _cache_first_turn(messages)
+        messages = _cache_first_turn(messages, MODEL)
 
     payload = {"model": MODEL, "max_tokens": 16, "system": system,
                "messages": messages}
