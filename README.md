@@ -369,7 +369,11 @@ recall into it, and the property sits in the output contract rather than in the
 prompt. A passage id is expressible in one field on the board,
 `hypotheses[].precedent_cited`; `blocking_evidence` is closed against one;
 `convergence_allowed` must be false while any blocking item is outstanding; and
-a hypothesis resting on precedent cannot be confirmed. On the board recorded in
+a hypothesis resting on precedent cannot be confirmed. Those close the typed
+routes and not the prose ones: a board that writes into an item's description
+that a passage settled it, and marks it not outstanding, converges. The limit
+is carried as a case in `checks/contract_invariants.py` rather than as a
+sentence, so closing it later would show up as a case that started failing. On the board recorded in
 `docs/precedent-analyst.md`, five cited passages across three of four
 hypotheses, five items still outstanding and convergence blocked; the
 governance demos run the same task with no precedent at all and produce the

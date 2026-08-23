@@ -120,14 +120,32 @@ CASES = [
     # one invariant cannot quietly cost the other.
     case("a third party named below confirmed, guard silent",
          lambda b: b["hypotheses"][0].update(third_party_named=True), False),
+    # Accepted, and the point of the case is that it is accepted. Closing the
+    # blocking-evidence object stops a citation entering the deciding list as
+    # data; it cannot stop the board asserting in prose that a passage settled
+    # an item and setting the flag to match. The pre-merge gate found this
+    # while the surrounding documents claimed the contract could not express
+    # it. If someone later closes it, this case starts failing, which is the
+    # point of writing the hole down as a test rather than a caveat.
+    case("precedent asserted in prose as satisfying a blocking item",
+         lambda b: (_cite(b),
+                    b["blocking_evidence"][0].update(
+                        description="Audit denial log. INC-2288 records the same "
+                                    "daemon as the source, so this is settled.",
+                        still_outstanding=False),
+                    b.update(convergence_allowed=True)), True),
+    # Same hole, simpler: a board that raises nothing has nothing to block on.
+    case("a board with no blocking evidence at all",
+         lambda b: (b.update(blocking_evidence=[]), b.update(convergence_allowed=True)), True),
 ]
 
 # What none of this catches, stated here rather than left for a reader to
 # assume otherwise: a passage paraphrased into supporting_evidence with no
-# citation at all, and a board that simply omits the blocking evidence it
-# should have raised. The first is why the demo checks citations against the
-# adapter log; the second is a judgement the contract cannot make, because a
-# schema sees the board and never the view it was drawn from.
+# citation at all, and the last two cases above, where the board writes its way
+# out of its own list. The first is why the demo checks citations against the
+# adapter log. The rest is a judgement the contract cannot make, because a
+# schema sees the board and never the view it was drawn from, and it is a
+# responder's job rather than a validator's.
 
 
 def main():

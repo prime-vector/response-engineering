@@ -155,9 +155,12 @@ tasks:
             with its citation, signature_overlap, divergence, applicability,
             confidence, falsifying_test and grounded_in. Supporting evidence
             only. Precedent is a record of what happened elsewhere, so it can
-            raise a hypothesis and can never settle one, and the output
-            contract below is written so this board cannot express it doing
-            so. Empty object when no recall has been run, which is also what
+            raise a hypothesis and must not settle one. The output contract
+            below closes the typed routes by which it could: no citation in
+            the deciding list, no confirmation resting on one. It cannot close
+            prose. An item whose description says a passage settled it, marked
+            not outstanding, is a board this schema accepts and a responder
+            has to catch. Empty object when no recall has been run, which is also what
             a board sees when recall was too slow to wait for or failed;
             no_applicable_precedent true when the archive was searched and
             holds nothing. None of the three makes any hypothesis more or
@@ -317,8 +320,10 @@ tasks:
             # Closed, and closed for one reason. This is the list convergence
             # blocks on, which makes it the slot where a precedent citation
             # would stop being supporting evidence and start being deciding
-            # evidence. No field beyond these five exists here, so a
-            # precedent cannot be attached to an item on it.
+            # evidence. No field beyond these five exists here, so a citation
+            # cannot be attached to an item as data. It can still be asserted
+            # in the two strings, which is the limit of what closing the
+            # object buys and is stated wherever this claim is made.
             additionalProperties: false
         attribution_guard:
           type: object
@@ -424,10 +429,12 @@ tasks:
         # any deciding evidence is outstanding, whatever else the board has
         # acquired in the meantime: precedent that resembles this incident,
         # correlation that lands on the newest change, a bridge that wants a
-        # cause. blocking_evidence is closed against a precedent citation
-        # and convergence is closed against an outstanding item, so a board
-        # on which precedent decided anything is a board this contract
-        # cannot express.
+        # cause. blocking_evidence is closed against a precedent citation and
+        # convergence against an outstanding item, which closes the typed
+        # routes and not the prose one: a board that writes "INC-2288 settles
+        # this" into an item's description and marks it not outstanding
+        # converges, and no schema can stop it, because the board is the
+        # author of the list it is being held to.
         - if:
             properties:
               blocking_evidence:

@@ -160,24 +160,44 @@ PY
   # whose being returned and not cited is the archive's strongest live moment
   # and exists at this bound only.
   start_adapter precedent_archive 8426
-  local pre
+  # The degradation this pipeline claims, run rather than asserted: precedent
+  # is supporting evidence, so a recall that fails or times out costs the board
+  # its precedent column and nothing else. Under `set -e` a failed stage would
+  # take the whole act with it, so this one is allowed to fail and hands the
+  # board an empty object, which is exactly what the fixture carries when no
+  # recall has been run.
+  local pre status=0
   pre=$(oa run --spec .agents/precedent-analyst.yaml --task recall \
-    --input "$(cat fixtures/composite-incident.json)" --quiet)
-  require_json "recall" "$pre" no_applicable_precedent search_coverage precedents
+    --input "$(cat fixtures/composite-incident.json)" --quiet) || status=$?
+  if [ "$status" -ne 0 ] || ! printf '%s' "$pre" | python3 -c 'import json,sys; json.load(sys.stdin)' 2>/dev/null; then
+    echo "  recall failed or returned unparseable output (status $status)." >&2
+    echo "  The board runs without a precedent column; convergence still blocks" >&2
+    echo "  on the same outstanding evidence. See $OUT/adapter-precedent_archive.log" >&2
+    pre='{}'
+  fi
   printf '%s' "$pre" > "$OUT/act2-recall.json"
-  # Tool-use claims are verified from the adapter log, never from the output:
-  # the runner cannot bind tool results into outputs, so a passage id in a
-  # citation is a string the model wrote either way.
-  for tool in coverage_describe precedent_search; do
-    if ! grep -q "tools/call $tool" "$OUT/adapter-precedent_archive.log"; then
-      echo "FAIL: recall reported without calling $tool. Output" >&2
-      echo "self-attestation; see $OUT/adapter-precedent_archive.log" >&2
-      return 1
-    fi
-  done
+  if [ "$pre" != "{}" ]; then
+    require_json "recall" "$pre" no_applicable_precedent search_coverage precedents
+    # Tool-use claims are verified from the adapter log, never from the output:
+    # the runner cannot bind tool results into outputs, so a passage id in a
+    # citation is a string the model wrote either way. passage_get is in the
+    # list because the spec says a citation is fetched before it is made, and
+    # a claim nothing checks is a claim that stops being true quietly.
+    for tool in coverage_describe precedent_search passage_get; do
+      if ! grep -q "tools/call $tool" "$OUT/adapter-precedent_archive.log"; then
+        echo "FAIL: recall reported without calling $tool. Output" >&2
+        echo "self-attestation; see $OUT/adapter-precedent_archive.log" >&2
+        return 1
+      fi
+    done
+  fi
   OUTJSON="$pre" python3 - <<'RECALL'
 import json, os
 p = json.loads(os.environ["OUTJSON"])
+if not p:
+    print("  no recall on this run. The board gets an empty precedent object, "
+          "which is what the fixture carries when none was run.")
+    raise SystemExit
 cov = p.get("search_coverage") or {}
 print(f"  queries: {len(cov.get('queries_issued') or [])}, archive at this "
       f"bound: {cov.get('date_range')}")
@@ -243,7 +263,7 @@ log = os.environ["LOG"]
 # commander. The board may cite from the second; the second is only real if
 # it is a subset of the first.
 returned = dict(re.findall(r"^\[mock-precedent_archive\] hit (\S+) (\S+)$", log, re.M))
-handed = {i for x in recall["precedents"]
+handed = {i for x in (recall.get("precedents") or [])
           for i in list(x.get("grounded_in") or [])
                  + [(x.get("incident_ref") or {}).get("passage_id")] if i}
 
@@ -276,7 +296,7 @@ for h in board["hypotheses"]:
                  f"passages of {', '.join(sorted(docs))}:\n"
                  + json.dumps(h, indent=2))
 
-if recall["precedents"] and not cited:
+if (recall.get("precedents") or []) and not cited:
     sys.exit("FAIL: precedent was handed over and no hypothesis rests on it. "
              "Either every precedent was judged not to bear on any hypothesis, "
              "which the board should say in a hypothesis it argues against, or "

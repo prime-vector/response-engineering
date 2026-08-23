@@ -496,13 +496,21 @@ deciding anything:
   takes a direct observation in `evidence`, and a prior incident is a direct
   observation of a different incident.
 
-What none of that prevents is a passage paraphrased into `supporting_evidence`
-with no citation anywhere. The typed field makes the resting place checkable; it
-does not make paraphrase impossible, and the spec says so where the field is
-declared. Nor does it bind the board to the view it was drawn from: a board that
-raises no blocking evidence at all may converge, because a schema sees the output
-and never the `missing_evidence` it was handed. The rule is that convergence
-blocks on what the board itself says is outstanding.
+**Those four close the typed routes and not the prose ones, and the gate was
+right to attack the stronger wording.** The claim was that a board on which
+precedent decided something is one the contract cannot express. It is not: an
+item whose `description` says a passage settled it, with `still_outstanding` set
+false, converges, and so does a board that raises no blocking evidence at all.
+The board authors the list it is being held to, and a schema sees the output and
+never the `missing_evidence` behind it. What the rules buy is that a citation
+cannot enter the deciding slot as data and confirmation cannot rest on one; the
+rest is a responder reading the board. `checks/contract_invariants.py` carries
+that hole as an accepted case rather than leaving it in prose, so a future change
+that closes it will show up as a case that started failing.
+
+The same limit covers the passage paraphrased into `supporting_evidence` with no
+citation anywhere. The typed field makes a resting place checkable; it does not
+make paraphrase impossible, and the spec says so where the field is declared.
 
 **Review found the confirmation rule resting on an unpinned string.** `not:
 {const: confirmed}` closes one spelling, and `confidence` was a free string whose
@@ -523,7 +531,7 @@ the shipped prompt and in both stripped ones. A closed set the producer cannot
 see is a rejection waiting for the first board that needs a fifth value.
 
 **The four rules are checked without a model now.** `checks/contract_invariants.py`
-validates thirteen boards against the contract read out of the spec, each one
+validates seventeen boards against the contract read out of the spec, each one
 asserting that a particular violation is rejected and that the legitimate
 neighbour is accepted, and CI runs it. Before it, the rules were exercised only
 when a live board happened to try one, which is a test that fires when it feels

@@ -433,13 +433,17 @@ it, so this resolves a disagreement between two documents rather than changing
 one.
 
 **The supporting-not-deciding property is in the contract now, not in the
-prompt.** `precedent_cited` on a hypothesis is the only field on the board a
-passage id can appear in; `blocking_evidence` is closed, so the list
-convergence blocks on cannot carry one; `convergence_allowed` must be false
-while any item is `still_outstanding`, which is now a required field; and a
-hypothesis carrying a citation cannot be `confirmed`. What none of it prevents
-is a passage paraphrased into `supporting_evidence` uncited, and the spec says
-so where the field is declared.
+prompt, and it is narrower than the first wording of this paragraph claimed.**
+`precedent_cited` on a hypothesis is the only field on the board a passage id
+can appear in; `blocking_evidence` is closed, so the list convergence blocks on
+cannot carry one as data; `convergence_allowed` must be false while any item is
+`still_outstanding`, which is now a required field; and a hypothesis carrying a
+citation cannot be `confirmed`. That closes the typed routes. It does not close
+prose: an item whose description asserts a passage settled it, marked not
+outstanding, converges, and the gate caught that sentence claiming otherwise.
+The board authors the list it is held to and the schema never sees the view
+behind it, so what is left is a responder reading the board. The hole is a case
+in the invariant suite rather than a caveat in a document.
 
 **Checking that convergence rule against boards that already existed found a
 different defect, which is the argument for checking.** Three `assess` runs on
@@ -481,7 +485,7 @@ already stated there, which is why they did not fail. All three are stated now,
 in the shipped prompt and both stripped ones.
 
 **The rules are checked without a model now.** `checks/contract_invariants.py`
-validates thirteen boards against the contract read out of the spec, asserting
+validates seventeen boards against the contract read out of the spec, asserting
 both that each violation is rejected and that its legitimate neighbour is
 accepted, and CI runs it. They were previously exercised only when a live board
 happened to try one.

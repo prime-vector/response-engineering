@@ -273,10 +273,12 @@ four instructions in its prompt: `hypotheses[].precedent_cited` is the only
 field on the board a passage id may appear in; `blocking_evidence` is closed,
 so the list convergence blocks on cannot carry one; `convergence_allowed` must
 be false while any blocking item is `still_outstanding`, which is a required
-field; and a hypothesis carrying a citation cannot be `confirmed`. A board on
-which precedent decided something is a board the contract cannot express. What
-it cannot prevent is a passage paraphrased into `supporting_evidence` with no
-citation at all, and `demos/investigate.sh` checks the rest of it against the
+field; and a hypothesis carrying a citation cannot be `confirmed`. That closes
+the typed routes and not the prose ones, which is the honest size of the claim:
+a blocking item whose description asserts a passage settled it, marked not
+outstanding, converges, because the board authors the list it is held to and a
+schema never sees the view behind it. Nor does it prevent a passage paraphrased
+into `supporting_evidence` with no citation at all, and `demos/investigate.sh` checks the rest of it against the
 adapter log rather than against the board's own word: every cited id resolves
 to the document the archive returned it from, so a hypothesis naming one record
 while citing a passage of another fails the demo.
