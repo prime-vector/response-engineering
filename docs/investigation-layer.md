@@ -93,18 +93,21 @@ near-empty D+1 view, which is the predictive half and the part nobody else
 demonstrates.
 
 > **Current state.** `demos/investigate.sh` composes three acts across five
-> agents. Act two collects twice, from the change registry and from the
-> archive, and both typed outputs reach the commander: on the board recorded in
-> `docs/precedent-analyst.md`, five cited passages across three of its four
-> hypotheses, and five outstanding items it is still blocked on. Three things
+> agents. Act one asks the archive as it stood that day, act two asks the
+> change registry, and both typed outputs reach the commander. On the board
+> recorded in `docs/precedent-analyst.md`, drawn from a recall at the bridge
+> bound before recall moved to act one, five cited passages across three of its
+> four hypotheses and five outstanding items it is still blocked on; the
+> equivalent board from act one's recall is owed, and that document says why. Three things
 > the diagram does not claim. Act one is a separate invocation and its findings
 > are not composed into the board, which reads the bridge view's own signals,
 > and the diagrams that draw that arrow now mark it rather than presenting it
 > as a handoff. Act three spans two drivers: the blocked change is
 > `demos/governance.sh sandbox` and the draft record a standalone run, which is
-> why the connector between them is dashed. And recall runs at the bridge bound
-> because that is where the board is assembled, though the archive answers at
-> the D+1 bound too, which eval case `a02` covers.
+> why the connector between them is dashed. And recall runs at the day-one
+> bound, next to detection, where the working note dated inside this incident's
+> window does not exist yet: rejecting it is a different demonstration and has
+> its own mode in `demos/governance.sh`.
 
 ---
 

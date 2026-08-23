@@ -83,7 +83,7 @@ The fifth agent. Owns a retrieval surface over prior incident records and runboo
 - [x] Measured improvement documented with before and after. Three arms
       recorded, both comparisons run, and the README states what was kept,
       what was rejected and the latency accepted for it
-- [x] `investigate.sh` composes three acts with recall in act two, typed precedent entering the board as supporting and never deciding evidence
+- [x] `investigate.sh` composes three acts with recall in act one, typed precedent entering the board as supporting and never deciding evidence
 
 **Done when:** a board cites precedent by `passage_id`, convergence still blocks on outstanding deciding evidence, and the README carries a results table generated from the records rather than typed. The retrieval half regenerates from the corpus and the dataset; the judgement half is a grid derived from three committed run records, because a live sweep does not reproduce and a promise that it does is one the artefacts cannot keep.
 
@@ -409,28 +409,43 @@ the spec with that one paragraph replaced, and CI fails when the spec moves
 under it: an override replaces the whole system prompt, so a hand-maintained
 one drifts into being a second prompt and the delta then belongs to nothing.
 
-Phase 6 is done. `demos/investigate.sh act2` runs correlate and recall against
-the bridge view, composes both typed outputs into the commander's input, and
-asserts what the precedent did rather than that it arrived: on the recorded
-board, five distinct passages cited six times across three of its four
-hypotheses, every id resolving through the adapter log to the document the
-archive returned it from, no hypothesis above `plausible`, five blocking items
-outstanding and convergence blocked. `SEC-STD-14` is named where the superseded
-record is used, so the qualifier travelled with the citation.
+Phase 6 is built. `demos/investigate.sh` recalls in act one at the day-one
+bound and composes that typed precedent into the board act two draws, and it
+asserts what the precedent did rather than that it arrived. On the board
+recorded at the bridge bound before the move: five distinct passages cited six
+times across three of four hypotheses, every id resolving through the adapter
+log to the document the archive returned it from, no hypothesis above
+`plausible`, five blocking items outstanding, convergence blocked, and
+`SEC-STD-14` named where the superseded record was used.
 
-**Recall moved to act two, and the phase spec said act one.** The acceptance
-test is a property of the board and the board is assembled at the bridge: a
-recall bounded at D+1 would have it cite the archive as it stood a fortnight
-earlier, and would drop `DRAFT-2601`, whose being returned and not cited is the
-archive's strongest live moment and exists at this bound only. Act one stays
-detect alone. Recall at the D+1 bound is a real path and a tested one, eval
-case `a02`, where the query reduces to the signature type alone and the trap is
-unreachable rather than rejected; the day-one claim is narration backed by that
-case and by the standalone command in the README, not a second live recall in a
-demo that has to record without retakes. The definition of done below already
-described act one as recurrence and the standing condition with no precedent in
-it, so this resolves a disagreement between two documents rather than changing
-one.
+The equivalent board from act one's recall is owed. Three `assess` runs in a row
+died with `Remote end closed connection without response`, minutes into a
+request the same call had completed earlier that day, and removing the
+prompt-caching patch changed nothing, so it is a transport failure rather than
+anything this change touches. Everything either side of it is verified live:
+act one's recall and its log verification, act two's correlation, and the
+composition between them.
+
+**Recall runs in act one, and it took two goes to land there.** It was built at
+the bridge bound on the argument that the board is assembled there and that
+`DRAFT-2601` being returned and not cited is the archive's strongest live
+moment. The pre-merge gate pointed out what that argument had not weighed:
+`SCENARIO.md` fixes recall in act one and is the source of truth every other
+document derives from, and the rejection of the working note already has its
+own demo in `demos/governance.sh grounding`, which recalls at the bridge bound
+for exactly that purpose. Repeating it in the pipeline bought a second showing
+of something already shown, at the cost of the property the scenario actually
+wants: at D+1 the note does not exist, so the bound puts it out of reach rather
+than leaving an agent to decline it. Act one recalls, act two draws the board
+from what act one found, and the day-one half of the story is demonstrated
+rather than narrated.
+
+Nothing in the corpus falls between the two bounds except the working note, so
+a board citing act one's recall cites documents that are all still current at
+the bridge. `symptom` is passed empty on that view rather than omitted, because
+the runner renders a missing key as literal template text, and the query is
+then the signature type off the signals, which is the query the measurements
+favour.
 
 **The supporting-not-deciding property is in the contract now, not in the
 prompt, and it is narrower than the first wording of this paragraph claimed.**
@@ -496,7 +511,7 @@ happened to try one.
 
 Three acts, four minutes, in this order:
 
-1. **Day two.** Recurrence detected in the problem feed, standing condition attached. The predictive half.
+1. **Day two.** Recurrence detected in the problem feed, standing condition attached, and the archive asked at the same bound: precedent arrives already bounded, and the working note written later in this incident is out of reach rather than declined. The predictive half.
 2. **Day fifteen.** Bridge opens with change correlation already on the board. Hypotheses carry confidence and falsifying tests. Attribution guard fires.
 3. **Mitigation.** Sandbox blocks the security control change, states blast radius, escalates for authorisation. Scribe drafts the change record.
 

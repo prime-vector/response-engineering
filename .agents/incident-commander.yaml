@@ -154,8 +154,11 @@ tasks:
             no_applicable_precedent, search_coverage and precedents, each
             with its citation, signature_overlap, divergence, applicability,
             confidence, falsifying_test and grounded_in. Supporting evidence
-            only. Precedent is a record of what happened elsewhere, so it can
-            raise a hypothesis and must not settle one. The output contract
+            only, and bounded at the moment it was recalled rather than at
+            this view's: the driver recalls in act one, so what arrives here
+            is the archive as it stood then. Precedent is a record of what
+            happened elsewhere, so it can raise a hypothesis and must not
+            settle one. The output contract
             below closes the typed routes by which it could: no citation in
             the deciding list, no confirmation resting on one. It cannot close
             prose. An item whose description says a passage settled it, marked

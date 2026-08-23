@@ -460,32 +460,40 @@ supporting evidence without it counting as deciding evidence.
 *Done when:* one run produces a board whose hypotheses reference precedent by
 `passage_id`, and convergence still blocks on outstanding deciding evidence.
 
-Done, with recall in act two next to correlate rather than in act one next to
-detect. **The acceptance test is a property of the board, and the board is
-assembled at the bridge.** A recall bounded at D+1 would have the board cite the
-archive as it stood a fortnight earlier, and would drop `DRAFT-2601`: the working
-note being returned and not cited is the archive's strongest live moment, and it
-exists at this bound only. So act one stays detect alone, and act two collects
-twice, once from the registry and once from the archive, before the board is drawn.
+Done, with recall in act one next to detection, which is where `SCENARIO.md`
+puts it. **It was built at the bridge bound first, and that was the wrong call
+twice over.** The argument for the bridge was that the board is assembled there
+and that `DRAFT-2601` coming back and not being cited is the archive's strongest
+live moment. The first half is true and does not follow: nothing in the corpus
+falls between the two bounds except the working note itself, so a board citing
+act one's recall cites documents that are all still current at the bridge. The
+second half repeats a demonstration that already exists. `demos/governance.sh
+grounding` recalls at the bridge bound precisely to show the note returned and
+declined, and it asserts that from the adapter log. Doing it again in the
+pipeline bought a second showing of the same thing and gave up the property the
+scenario is built on: at D+1 the note does not exist, so the bound puts it out
+of reach rather than leaving an agent to decline it.
 
-**Act-one recall is a real path, and a tested one.** Eval case `a02` runs at the
-D+1 bound, where the reported symptom is not yet on the view and the query reduces
-to the signature type alone, which is the measured good query rather than a
-degraded one; the case expects three documents and the trap unreachable by the
-bound rather than retrieved and rejected. Run standalone against the D+1 view with
-`symptom` passed empty, the command the README now carries, it returned `INC-2419`,
-`INC-2411` and `INC-2350` as `partial` over an archive it reported as running to
-2026-02-11: the working note dated inside this incident's window does not exist at
-that bound, so nothing had to reject it. It is the wrong bound for this board,
-not a broken path, and the day-one claim stays narration backed by `a02` and the
-standalone command in the README rather than by a second live recall in the
-pipeline. M3 still wants the demo deterministic enough to record without retakes,
-and every act is a live model run.
+**And the placement was never mine to reason about from first principles.**
+`SCENARIO.md` is the source of truth every spec, fixture and piece of copy
+derives from, it says recall belongs next to detection and says why, and the
+pre-merge gate was right that `PLAN.md` does not get to overrule it. The
+argument above is why the scenario is right, not why the code may differ from
+it.
 
-This also settles a disagreement the docs already carried: this phase said recall
-runs alongside detect, while the definition of done for the demo in `PLAN.md`
-describes act one as recurrence and the standing condition with no precedent in
-it. It resolves to `PLAN.md`.
+**What the day-one bound costs and buys.** The reported symptom is not on that
+view, so `symptom` is passed empty rather than omitted, and the query reduces to
+the signature type off the signals, which the measurements favour anyway. Eval
+case `a02` covers the same bound and expects the trap unreachable rather than
+rejected. The precedent the board cites is then a fortnight old at the moment it
+is cited, which is what "precedent from act one" means and is stated on the
+commander's input rather than left for a reader to notice.
+
+One disagreement the docs carried is settled by this: the definition of done for
+the demo in `PLAN.md` describes act one as recurrence and the standing condition
+with no precedent in it, while this phase and `SCENARIO.md` both put recall
+there. It resolves to the scenario, and `PLAN.md`'s demo section is the one that
+needs its act one widened.
 
 **The boundary is in the contract rather than in the prompt.** A prompt saying
 precedent is supporting evidence is a prompt, and the failure this agent exists
@@ -586,17 +594,33 @@ fails when a hypothesis names a record its citations do not resolve to. The
 field itself stays ids only: a uri in it would be a second copy of something
 the log already establishes.
 
-**What the live runs produced.** Recall at the bridge bound returned the same
-three precedents on both composed runs, `INC-2411` and `INC-2419` as `partial`
-and `INC-2288` as `superseded`. The board recorded here is the second one: the
-composed run was rejected on the `null` above, so `assess` was re-run on that
-run's captured correlation and recall, one model call rather than three. It cited
-five distinct passages six times across three of its four hypotheses, every id
-resolving through the adapter log to the document the archive returned it from,
-no hypothesis above `plausible`, five blocking items outstanding and convergence
-blocked. The supersession travelled with the citation on both: `SEC-STD-14` is
-named where `INC-2288` is used, which is the qualifier the analyst is pinned to
-copy rather than paraphrase.
+**What the live runs produced, and what is still owed.** At the bridge bound,
+before the move, recall returned `INC-2411` and `INC-2419` as `partial` and
+`INC-2288` as `superseded`, and a board drawn from it cited five distinct
+passages six times across three of four hypotheses, no hypothesis above
+`plausible`, five items outstanding, convergence blocked, with `SEC-STD-14`
+named wherever the superseded record was used.
+
+At the day-one bound, which is where recall now runs, act one returned
+`INC-2419` as `partial` and `INC-2411` as `partial`, over an archive it reported
+as covering 2025-08-19 to 2026-02-11: the working note dated 2026-03-10 is
+outside that window, which is the property the scenario is built on and it is
+now demonstrated rather than described. The driver's own verification passed off
+the adapter log: coverage established first, six searches returning passages,
+every bounded call at the D+1 `as_of`, no entity id in any query, seven
+citations all in the returned set. That run made no `passage_get` calls at all,
+which is the second time the recorded behaviour has contradicted the
+fetch-per-citation claim and the reason the check does not require it.
+
+**The board drawn from that recall is not recorded yet.** Three consecutive
+`assess` runs died with `PROVIDER_ERROR: Remote end closed connection without
+response`, minutes into a single-shot request the same call had completed
+earlier the same day. Removing the prompt-caching patch and running it again
+failed identically, which rules that out as the cause. It is a transport
+failure on a long non-streaming request rather than anything this change
+touches, and the composition either side of it is verified: act one's recall
+above, act two's live correlation, and the composition code that carries one
+into the other. What is owed is one successful `assess` against that pair.
 
 **Phase 7, Documentation.** README section, architecture diagram updated to five
 agents and three evidence surfaces, results table, design decisions.

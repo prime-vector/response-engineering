@@ -16,7 +16,7 @@ Every arrow between agents is a typed output whose claims carry `confidence` and
 
 ## Status
 
-Early. Six agents written, mock adapters serving five tool surfaces. The five investigation agents verified live against the mocks, and the handoffs between them are dataflow, not narration: `demos/investigate.sh` composes the three acts in one run, the correlator's typed output becoming the commander's `correlation` input and the commander's live board becoming the Scribe's timeline input, each stage producing contract-valid output. The Precedent Analyst is composed in too: act two collects twice, from the change registry and from the archive, and the analyst's typed recall reaches the commander as `precedent`, supporting evidence the board can cite by `passage_id`, on a contract that closes the typed routes by which it could become deciding evidence and says plainly which prose route it cannot close. The five governance failure modes are scripted and verified live: `demos/governance.sh` exits zero only when the sandbox blocks, the contract rejects, the attribution guard fires, an ungrounded precedent is refused and a novel incident returns no applicable precedent with its coverage.
+Early. Six agents written, mock adapters serving five tool surfaces. The five investigation agents verified live against the mocks, and the handoffs between them are dataflow, not narration: `demos/investigate.sh` composes the three acts in one run, the correlator's typed output becoming the commander's `correlation` input and the commander's live board becoming the Scribe's timeline input, each stage producing contract-valid output. The Precedent Analyst is composed in too: act one asks the archive at the day-one bound, next to detection, and that typed recall reaches the commander two acts later as `precedent`, supporting evidence the board can cite by `passage_id`, on a contract that closes the typed routes by which it could become deciding evidence and says plainly which prose route it cannot close. The five governance failure modes are scripted and verified live: `demos/governance.sh` exits zero only when the sandbox blocks, the contract rejects, the attribution guard fires, an ungrounded precedent is refused and a novel incident returns no applicable precedent with its coverage.
 
 | Artefact | State |
 | --- | --- |
@@ -96,18 +96,18 @@ export ANTHROPIC_API_KEY=...
 patch "$(python3 -c 'import oas_cli.providers.anthropic_http as m; print(m.__file__)')" \
   < patches/oas-1.5.1-anthropic-tool-messages.diff
 
-# the three acts, composed: recurrence at D+1, then the correlator's typed
-# output into the commander's correlation input and the analyst's typed recall
-# into its precedent input, then the live board into the Scribe's timeline.
+# the three acts, composed: recurrence and recall at D+1, both bounded at that
+# day, then the correlator's typed output and act one's typed precedent into
+# the commander's board, then the live board into the Scribe's timeline.
 # Manages its own adapters; stop yours first.
 ./demos/investigate.sh
 
-# or act two standalone. The correlator needs 8423, recall needs 8426, and
-# assess needs no adapter at all. The bridge view embeds a scripted correlator
-# output shaped to the correlate contract, so a standalone assess receives the
-# same typed handoff the driver composes live; its precedent field is empty,
-# which is what a board gets when no recall was run. The commander never sees
-# raw registry rows and never reaches the archive.
+# or act two standalone. The correlator needs 8423 and assess needs no adapter
+# at all: the archive belongs to act one. The bridge view embeds a scripted
+# correlator output shaped to the correlate contract, so a standalone assess
+# receives the same typed handoff the driver composes live; its precedent field
+# is empty, which is what a board gets when no recall reached it. The commander
+# never sees raw registry rows and never reaches the archive.
 oa run --spec .agents/change-correlator.yaml --task correlate \
   --input "$(cat fixtures/composite-incident.json)" --quiet
 oa run --spec .agents/incident-commander.yaml --task assess \
@@ -131,12 +131,12 @@ python3 mock/adapter.py --surface precedent_archive         # 8426
 oa run --spec .agents/precedent-analyst.yaml --task recall \
   --input "$(cat fixtures/composite-incident.json)" --quiet
 
-# the same recall on day two, which is the part of this that is not a demo of
-# faster bridge calls: the archive held these prior incidents on the day the
-# recurrence first showed, and nobody asked it. The pipeline recalls at the
-# bridge bound, where the board is assembled. Nothing had been reported by this
-# view, so symptom is passed empty rather than omitted, and the query is the
-# signature type off the signals, which is the query the measurements favour.
+# recall standalone on the day-two view, which is what act one runs. The part
+# of this that is not a demo of faster bridge calls: the archive held these
+# prior incidents on the day the recurrence first showed, and nobody asked it.
+# Nothing had been reported by that view, so symptom is passed empty rather than
+# omitted, and the query is the signature type off the signals, which is the
+# query the measurements favour.
 oa run --spec .agents/precedent-analyst.yaml --task recall \
   --input "$(python3 -c 'import json; v = json.load(open("fixtures/composite-incident.d1.json")); v["symptom"] = ""; print(json.dumps(v))')" \
   --quiet
@@ -364,9 +364,11 @@ Precedent is supporting evidence and can never be deciding evidence, so a
 recall that is slow, fails or refuses costs the board its precedent column and
 nothing else, while convergence goes on blocking against outstanding deciding
 evidence, which is a different field. That is wiring rather than intent now:
-`assess` takes a `precedent` input, `demos/investigate.sh` composes a live
-recall into it, and the property sits in the output contract rather than in the
-prompt. A passage id is expressible in one field on the board,
+`assess` takes a `precedent` input, `demos/investigate.sh` composes act one's
+live recall into it, and the property sits in the output contract rather than
+in the prompt. It is run rather than asserted: a recall that fails, or whose
+conduct the adapter log does not support, is discarded, the board is drawn
+without it, and the run reports the failure after every act has had its turn. A passage id is expressible in one field on the board,
 `hypotheses[].precedent_cited`; `blocking_evidence` is closed against one;
 `convergence_allowed` must be false while any blocking item is outstanding; and
 a hypothesis resting on precedent cannot be confirmed. Those close the typed

@@ -52,6 +52,11 @@ fi
 
 OUT="$(mktemp -d "${TMPDIR:-/tmp}/investigate.XXXXXX")"
 BOARD=""
+# Act one recalls and act two draws the board from it, so both outlive their
+# act. An untrusted recall is discarded rather than fatal: the board still
+# forms, and the run reports the failure after every act has had its turn.
+PRECEDENT=""
+RECALL_TRUSTED=1
 
 declare -A ADAPTER_PID=()
 cleanup() { for p in ${ADAPTER_PID[@]+"${ADAPTER_PID[@]}"}; do kill "$p" 2>/dev/null || true; done; }
@@ -127,38 +132,18 @@ for f in r.get("findings", []):
     print(f"  [{f['confidence']}] {f['statement']}")
 PY
   stop_adapter telemetry 8422
-  echo
-}
-
-act2() {
-  echo "== Act two: the bridge. Correlation and recall first, then the board =="
-  # The two collecting agents' surfaces, one at a time. The commander binds no
-  # tools: it works from the view it is handed and the typed outputs composed
-  # into it, so an adapter on 8422 here would only be a surface it is not
-  # permitted to reach, and 8426 is the archive the analyst owns rather than
-  # something the board may go and query for itself.
-  start_adapter change_registry 8423
-  local cor
-  cor=$(oa run --spec .agents/change-correlator.yaml --task correlate \
-    --input "$(cat fixtures/composite-incident.json)" --quiet)
-  require_json "correlate" "$cor" onset_at correlation_found correlations registry_caveats
-  printf '%s' "$cor" > "$OUT/act2-correlate.json"
-  OUTJSON="$cor" python3 - <<'PY'
-import json, os
-c = json.loads(os.environ["OUTJSON"])
-print(f"  onset: {c['onset_at']}, correlations: {len(c['correlations'])}")
-for x in c["correlations"]:
-    print(f"  [{x['confidence']}] {x.get('offset_from_onset', '?')}: "
-          f"{x['statement']}")
-print(f"  registry caveats: {len(c['registry_caveats'])}")
-PY
-  stop_adapter change_registry 8423
-  # Recall, at the same bound as the view the board will reason over, because
-  # what act two has to demonstrate is a property of the board. Recall at the
-  # D+1 bound works and is covered by eval case a02; it would have the board
-  # cite the archive as it stood a fortnight earlier, and it drops DRAFT-2601,
-  # whose being returned and not cited is the archive's strongest live moment
-  # and exists at this bound only.
+  # Recall runs here, next to detection, at the same bound. SCENARIO.md puts
+  # it here and gives the reason: at D+1 the working note dated inside this
+  # incident's own window does not exist yet, so the time bound puts it out of
+  # reach entirely rather than leaving the agent to reject it. The rejection is
+  # worth showing too and has its own demo, `demos/governance.sh grounding`,
+  # which recalls at the bridge bound where the note is reachable.
+  #
+  # Nothing had been reported by this view, so `symptom` is passed empty rather
+  # than omitted: the runner substitutes only from keys present in the input,
+  # and a missing key would reach the model as literal template text. The query
+  # is then the signature type off the signals, which is the query the
+  # measurements favour.
   start_adapter precedent_archive 8426
   # The degradation this pipeline claims, run rather than asserted: precedent
   # is supporting evidence, so a recall that fails or times out costs the board
@@ -168,19 +153,23 @@ PY
   # recall has been run.
   local pre status=0
   pre=$(oa run --spec .agents/precedent-analyst.yaml --task recall \
-    --input "$(cat fixtures/composite-incident.json)" --quiet) || status=$?
+    --input "$(D1=fixtures/composite-incident.d1.json python3 -c '
+import json, os
+view = json.load(open(os.environ["D1"]))
+view["symptom"] = ""
+print(json.dumps(view))')" --quiet) || status=$?
   if [ "$status" -ne 0 ] || ! printf '%s' "$pre" | python3 -c 'import json,sys; json.load(sys.stdin)' 2>/dev/null; then
     echo "  recall failed or returned unparseable output (status $status)." >&2
-    echo "  The board runs without a precedent column; convergence still blocks" >&2
+    echo "  Act two runs without a precedent column; convergence still blocks" >&2
     echo "  on the same outstanding evidence. See $OUT/adapter-precedent_archive.log" >&2
     pre='{}'
+    RECALL_TRUSTED=0
   fi
-  printf '%s' "$pre" > "$OUT/act2-recall.json"
+  printf '%s' "$pre" > "$OUT/act1-recall.json"
   # A recall whose conduct cannot be verified is not a recall this board may
   # use, and it is also not a reason to lose the act: an untrusted one degrades
   # to the same empty object a failed one does, the board forms without it, and
   # act two reports the failure at the end rather than taking the board with it.
-  local trusted=1
   if [ "$pre" != "{}" ]; then
     require_json "recall" "$pre" no_applicable_precedent search_coverage precedents
     # Verified from the adapter log, never from the output: the runner cannot
@@ -189,7 +178,7 @@ PY
     # surface logs a call before dispatching it, so a call that faulted is on
     # the record exactly like one that worked. What is checked is what the
     # caller asked for and what came back.
-    if ! OUTJSON="$pre" AS_OF="$(python3 -c 'import json; print(json.load(open("fixtures/composite-incident.json"))["as_of"])')" \
+    if ! OUTJSON="$pre" AS_OF="$(python3 -c 'import json; print(json.load(open("fixtures/composite-incident.d1.json"))["as_of"])')" \
          LOG="$(cat "$OUT/adapter-precedent_archive.log")" python3 - <<'VERIFY'
 import json, os, re, sys
 
@@ -279,17 +268,17 @@ print(f"  verified from the log: coverage first, {len(searched)} searches "
       f"({len(cited & fetched)} fetched, all of them from bounded results)")
 VERIFY
     then
-      echo "  The board runs without a precedent column; act two will report" >&2
-      echo "  this as a failure once the board is on the record." >&2
+      echo "  Act two runs without a precedent column, and this run reports" >&2
+      echo "  the failure at the end rather than instead of the board." >&2
       pre='{}'
-      trusted=0
+      RECALL_TRUSTED=0
     fi
   fi
   OUTJSON="$pre" python3 - <<'RECALL'
 import json, os
 p = json.loads(os.environ["OUTJSON"])
 if not p:
-    print("  no recall on this run. The board gets an empty precedent object, "
+    print("  no recall on this run. Act two composes an empty precedent object, "
           "which is what the fixture carries when none was run.")
     raise SystemExit
 cov = p.get("search_coverage") or {}
@@ -306,12 +295,41 @@ for x in p["precedents"]:
     print(f"    divergence: {(x.get('divergence') or '')[:130]}")
 RECALL
   stop_adapter precedent_archive 8426
+  # Two acts later the board is drawn from this, so it outlives the act.
+  PRECEDENT="$pre"
+  echo
+}
+
+act2() {
+  echo "== Act two: the bridge. Correlation, then the board =="
+  # The correlator's surface, and only that. The commander binds no tools: it
+  # works from the view it is handed and the typed outputs composed into it, so
+  # an adapter here would only be a surface it is not permitted to reach. The
+  # archive is not among them either: act one asked it, at act one's bound, and
+  # what arrives here is the answer rather than the ability to ask again.
+  start_adapter change_registry 8423
+  local cor
+  cor=$(oa run --spec .agents/change-correlator.yaml --task correlate \
+    --input "$(cat fixtures/composite-incident.json)" --quiet)
+  require_json "correlate" "$cor" onset_at correlation_found correlations registry_caveats
+  printf '%s' "$cor" > "$OUT/act2-correlate.json"
+  OUTJSON="$cor" python3 - <<'PY'
+import json, os
+c = json.loads(os.environ["OUTJSON"])
+print(f"  onset: {c['onset_at']}, correlations: {len(c['correlations'])}")
+for x in c["correlations"]:
+    print(f"  [{x['confidence']}] {x.get('offset_from_onset', '?')}: "
+          f"{x['statement']}")
+print(f"  registry caveats: {len(c['registry_caveats'])}")
+PY
   # The handoff itself: the correlator's typed output replaces the fixture's
-  # scripted stand-in, and the analyst's replaces the empty precedent object,
-  # before the commander runs. The rows in `changes` never reach it and the
-  # archive is not on its input at all. What reaches it is one typed recall,
-  # citations and divergences intact.
-  local composed
+  # scripted stand-in, and act one's recall replaces the empty precedent
+  # object, before the commander runs. The rows in `changes` never reach it and
+  # the archive is not on its input at all. What reaches it is one typed
+  # recall, bounded at the moment it was made, citations and divergences
+  # intact. Empty when act two is run alone, which is the same object the
+  # fixture carries and the same board it produces without a precedent column.
+  local composed pre="${PRECEDENT:-{\}}"
   composed=$(COR="$cor" PRE="$pre" python3 -c '
 import json, os
 view = json.load(open("fixtures/composite-incident.json"))
@@ -346,7 +364,7 @@ PY
   # blocking_evidence is closed against it in the contract, so this checks
   # what precedent did, not where it went.
   BOARD_JSON="$BOARD" RECALL_JSON="$pre" \
-    LOG="$(cat "$OUT/adapter-precedent_archive.log")" python3 - <<'CITE'
+    LOG="$(cat "$OUT/adapter-precedent_archive.log" 2>/dev/null || true)" python3 - <<'CITE'
 import json, os, re, sys
 
 board = json.loads(os.environ["BOARD_JSON"])
@@ -413,13 +431,6 @@ print(f"  precedent supports {sum(1 for h in board['hypotheses'] if h.get('prece
       f"{len(outstanding)} item(s) still outstanding, convergence "
       f"{'blocked' if not board['convergence_allowed'] else 'ALLOWED'}.")
 CITE
-  if [ "$trusted" -eq 0 ]; then
-    echo "FAIL: the recall could not be trusted from the adapter log, so the" >&2
-    echo "board above was drawn without it. That degradation is the designed" >&2
-    echo "behaviour; a recall whose conduct cannot be verified is not." >&2
-    echo "See $OUT/adapter-precedent_archive.log" >&2
-    return 1
-  fi
   echo
 }
 
@@ -465,3 +476,14 @@ case "$MODE" in
 esac
 
 echo "Pipeline outputs and adapter logs: $OUT"
+
+# Reported here rather than where it happened: a recall whose conduct the log
+# does not support costs the board its precedent column, which is the designed
+# degradation, and costs this run its exit status, which the degradation is not
+# a licence for. Every act ran first.
+if [ "$RECALL_TRUSTED" -eq 0 ]; then
+  echo >&2
+  echo "FAIL: act one's recall could not be trusted from the adapter log, so" >&2
+  echo "the board was drawn without it. See $OUT/adapter-precedent_archive.log" >&2
+  exit 1
+fi
