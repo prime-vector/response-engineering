@@ -195,9 +195,23 @@ import json, os, re, sys
 
 log, as_of = os.environ["LOG"], os.environ["AS_OF"]
 recall = json.loads(os.environ["OUTJSON"])
-calls = re.findall(r"^\[mock-precedent_archive\] tools/call (\S+)$", log, re.M)
-args = re.findall(r"^\[mock-precedent_archive\] args (\S+) (.*)$", log, re.M)
-returned = re.findall(r"^\[mock-precedent_archive\] returned .*$", log, re.M)
+# Read sequentially rather than by pattern, because which call a `hit` belongs
+# to is positional: a passage_get logs a hit of its own, so the set of ids
+# "the archive returned" and the set "a search returned" are different sets and
+# only the second one is bounded.
+calls, args, returned, hits_by_tool, current = [], [], [], {}, None
+for line in log.splitlines():
+    body = line.split("] ", 1)[-1] if "] " in line else line
+    if body.startswith("tools/call "):
+        current = body.split(" ", 1)[1].strip()
+        calls.append(current)
+    elif body.startswith("args "):
+        tool, _, raw = body[5:].partition(" ")
+        args.append((tool, raw))
+    elif body.startswith("returned "):
+        returned.append(body)
+    elif body.startswith("hit "):
+        hits_by_tool.setdefault(current, set()).add(body.split()[1])
 
 def fail(why):
     print(f"  untrusted recall: {why}", file=sys.stderr)
@@ -207,20 +221,32 @@ if "coverage_describe" not in calls:
     fail("coverage was never established")
 if "precedent_search" in calls and calls.index("coverage_describe") > calls.index("precedent_search"):
     fail("searched before establishing what it was searching")
-if not returned:
-    fail("every call faulted; the log records the asking, not the answering")
+# A search that faulted is logged exactly like one that worked, and coverage's
+# own returned line is not evidence that anything was searched. A refusal whose
+# searches all faulted is the unfalsifiable refusal wearing a coverage block.
+searched = [line for line in returned if "passages of" in line]
+if not searched:
+    fail("no search returned anything; coverage alone is not a search")
 
 # The time bound is the hindsight control, and it is a property of each call
-# rather than of the reply that describes them.
+# rather than of the reply that describes them. It applies to the two calls
+# that take one: `passage_get` takes an id and no bound, so what is checked for
+# it below is that the id came from inside the bound.
+#
+# The entity id is the other half. Identity is not a similarity feature, and
+# `queries_issued` is the agent's account of its own conduct, which is exactly
+# what the log exists to check rather than to echo.
+entity = "intg-prod-a1"
 for tool, raw in args:
-    if tool not in ("coverage_describe", "precedent_search"):
-        continue
     try:
         sent = json.loads(raw)
     except json.JSONDecodeError:
         fail(f"unparseable {tool} arguments in the log")
-    if sent.get("before") != as_of:
-        fail(f"{tool} was bounded at {sent.get('before')}, not the view's {as_of}")
+    if tool in ("coverage_describe", "precedent_search"):
+        if sent.get("before") != as_of:
+            fail(f"{tool} was bounded at {sent.get('before')}, not the view's {as_of}")
+    if entity in raw:
+        fail(f"{tool} carried the entity id: {raw[:120]}")
 
 # Every citation has to be a passage this surface handed over, which is what
 # the `hit` lines record and what an output cannot attest to about itself.
@@ -231,17 +257,26 @@ for tool, raw in args:
 # round trip cheaper. The recorded run does both, five fetches against six
 # citations, and enforcing the stricter version would have failed a recall that
 # did nothing wrong.
-returned = {i for i in re.findall(r"^\[mock-precedent_archive\] hit (\S+) ", log, re.M)}
+returned_ids = set().union(*hits_by_tool.values()) if hits_by_tool else set()
+search_ids = hits_by_tool.get("precedent_search", set())
 cited = {i for p in (recall.get("precedents") or [])
          for i in list(p.get("grounded_in") or []) + [(p.get("incident_ref") or {}).get("passage_id")]
          if i}
-ungrounded = sorted(cited - returned)
+ungrounded = sorted(cited - returned_ids)
 if ungrounded:
     fail(f"cites passages the archive never returned: {', '.join(ungrounded)}")
+# Search results are bounded, so a passage reached through one is inside the
+# bound. A fetch of an id that no search returned is a passage from somewhere
+# else, which is the route around the time bound that `passage_get` leaves
+# open by taking no `before` of its own.
 fetched = {json.loads(raw).get("passage_id") for tool, raw in args if tool == "passage_get"}
-print(f"  verified from the log: coverage first, {len(args)} calls all bounded at "
-      f"{as_of}, {len(cited)} citations all in the returned set "
-      f"({len(cited & fetched)} of them fetched individually)")
+unsourced = sorted(fetched - search_ids)
+if unsourced:
+    fail(f"fetched passages no bounded search returned: {', '.join(unsourced)}")
+print(f"  verified from the log: coverage first, {len(searched)} searches "
+      f"returning passages, every bounded call at {as_of}, no entity id in any "
+      f"query, {len(cited)} citations all in the returned set "
+      f"({len(cited & fetched)} fetched, all of them from bounded results)")
 VERIFY
     then
       echo "  The board runs without a precedent column; act two will report" >&2

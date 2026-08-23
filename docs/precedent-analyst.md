@@ -540,7 +540,7 @@ the shipped prompt and in both stripped ones. A closed set the producer cannot
 see is a rejection waiting for the first board that needs a fifth value.
 
 **The four rules are checked without a model now.** `checks/contract_invariants.py`
-validates twenty boards against the contract read out of the spec, each one
+validates twenty-one boards against the contract read out of the spec, each one
 asserting that a particular violation is rejected and that the legitimate
 neighbour is accepted, and CI runs it. Before it, the rules were exercised only
 when a live board happened to try one, which is a test that fires when it feels

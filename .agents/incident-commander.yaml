@@ -406,6 +406,11 @@ tasks:
         - blocking_evidence
         - convergence_allowed
         - next_actions
+      # Closed at the root as well as on every object below it. Closing the
+      # items and leaving the board open would have left a top-level field
+      # free to carry a citation past every rule that reads one by name, which
+      # is the same defect one level up.
+      additionalProperties: false
       # Rule 3 of the system prompt, structurally: a hypothesis that names a
       # third party on less than confirmed confidence forces the guard onto
       # the record. Without this, the guard is the model's judgement and

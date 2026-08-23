@@ -58,7 +58,7 @@
         <text class="t-s t-h" x="150" y="250">the entity id dropped: the host is identity, not symptom.</text>
 
         <line class="ln-a" x1="140" y1="284" x2="729" y2="284" marker-end="url(#ar-a)"/>
-        <text class="t-s t-a" x="150" y="278">passage_get( passage_id )   one per citation the reply will make</text>
+        <text class="t-s t-a" x="150" y="278">passage_get( passage_id )   for the passages it wants in full</text>
         <line class="ln" x1="735" y1="308" x2="146" y2="308" marker-end="url(#ar)"/>
         <text class="t-s" x="725" y="302" text-anchor="end">the passage verbatim, plus its complete citation</text>
         <text class="t-s t-h" x="150" y="330">this is what makes a citation checkable without access to the search behind it</text>

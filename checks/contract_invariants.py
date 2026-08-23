@@ -152,6 +152,10 @@ CASES = [
          lambda b: b["next_actions"][0].update(precedent="p-14cc2f280479"), False),
     case("an undeclared field on the attribution guard",
          lambda b: b.update(attribution_guard={"triggered": False, "cited": "p-14cc2f280479"}), False),
+    # Closing the items and leaving the board open is the same defect one level
+    # up, and the gate found it there after finding it in the items.
+    case("a citation smuggled onto the board itself",
+         lambda b: b.update(precedent_cited=["p-14cc2f280479"]), False),
 ]
 
 # What none of this catches, stated here rather than left for a reader to

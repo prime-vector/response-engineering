@@ -97,8 +97,8 @@ tasks:
       resembling this one, and report each precedent cited to its passages
       and limited by its divergence. Precedent is fetched through the tools,
       never recalled from background knowledge about the products involved.
-    # Generous for the same reason as max_tokens: coverage, search and a
-    # passage_get per citation are separate round trips.
+    # Generous for the same reason as max_tokens: coverage, search and the
+    # passage_get calls are separate round trips.
     timeout: 300
     # Tool binding is per task. Without this list the runner attaches nothing.
     tools: [precedent_archive]

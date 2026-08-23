@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 286" width="960" height="286" role="img" aria-label="The Precedent Analyst's typed output enters the Incident Commander's board as supporting evidence. A crossed path shows it can never enter the blocking evidence slot, which still holds the audit denial log that was never produced. Convergence stays disallowed while blocking evidence is outstanding.">
-  <title>The Precedent Analyst's typed output enters the Incident Commander's board as supporting evidence. A crossed path shows it can never enter the blocking evidence slot, which still holds the audit denial log that was never produced. Convergence stays disallowed while blocking evidence is outstanding.</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 286" width="960" height="286" role="img" aria-label="The Precedent Analyst's typed output enters the Incident Commander's board as supporting evidence. A crossed path shows a citation cannot enter the blocking evidence slot as typed data, which still holds the audit denial log that was never produced. Convergence stays disallowed while an item is marked still outstanding, which is a rule about what the board says rather than about what it was handed.">
+  <title>The Precedent Analyst's typed output enters the Incident Commander's board as supporting evidence. A crossed path shows a citation cannot enter the blocking evidence slot as typed data, which still holds the audit denial log that was never produced. Convergence stays disallowed while an item is marked still outstanding, which is a rule about what the board says rather than about what it was handed.</title>
   <style>
     text{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;fill:#131A1C}
     .t{font-size:11px}
@@ -67,7 +67,7 @@
         <rect class="box-h" x="768" y="156" width="168" height="66" rx="3"/>
         <text class="t-b t-h" x="782" y="178">convergence_allowed</text>
         <text class="t-b t-h" x="782" y="198">false</text>
-        <text class="t-s" x="782" y="214">while this list is non-empty</text>
+        <text class="t-s" x="782" y="214">while an item is still_outstanding</text>
 
         <text class="t-s" x="24" y="268">a precedent can support a hypothesis. it can never settle one, and it can never empty the blocking list.</text>
 

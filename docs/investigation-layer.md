@@ -172,7 +172,7 @@ precedent costs a search. Offering a wrong one costs the incident.
 
 ### How recall actually works
 
-Recall is not one call. It is coverage, then search, then a fetch per citation,
+Recall is not one call. It is coverage, then search, then a fetch for the passages it wants in full,
 then the reply, and every round spends from the same response budget. That is
 why the spec sizes `max_tokens` at 16000 with a comment calling it a
 correctness setting: an undersized budget here does not produce a shorter
@@ -283,7 +283,7 @@ adapter log rather than against the board's own word: every cited id resolves
 to the document the archive returned it from, so a hypothesis naming one record
 while citing a passage of another fails the demo.
 
-![The Precedent Analyst's typed output enters the Incident Commander's board as supporting evidence. A crossed path shows it can never enter the blocking evidence slot, which still holds the audit denial log that was never produced. Convergence stays disallowed while blocking evidence is outstanding.](diagrams/precedent-on-board.svg)
+![The Precedent Analyst's typed output enters the Incident Commander's board as supporting evidence. A crossed path shows a citation cannot enter the blocking evidence slot as typed data, which still holds the audit denial log that was never produced. Convergence stays disallowed while an item is marked still outstanding, which is a rule about what the board says rather than about what it was handed.](diagrams/precedent-on-board.svg)
 
 *That a passage says what it says can be confirmed. That it applies here cannot
 be, from where this agent sits.* So `applicability` and `confidence` are
