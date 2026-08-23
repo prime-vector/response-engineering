@@ -1,0 +1,307 @@
+#!/usr/bin/env python3
+"""Check that the streaming patch reassembles a response the callers still fit.
+
+The streaming patch in `patches/` changes how a generation arrives and nothing
+about what it says, which is exactly the change a live run cannot confirm: a
+request that streams correctly looks the same, through `oa run`, as one that
+never streamed. What can go wrong is the reassembly, and it goes wrong in
+places a happy-path call never reaches, so this drives `_collect_stream`
+against canned event streams and compares the result against the response the
+non-streaming path would have returned for the same message.
+
+    python3 checks/stream_probe.py
+
+Costs nothing and needs no key. Not a CI check even so: it tests the installed
+provider, and CI installs the unpatched wheel.
+"""
+
+import json
+import os
+import sys
+
+# `oa` is usually a pipx install, so oas_cli lives in its own virtualenv and
+# the system interpreter cannot see it. Re-exec under the interpreter `oa`
+# itself runs on, which is the install under test in any case: a probe that
+# imported some other copy of the provider would be reporting on the wrong one.
+def _reexec_under_oa():
+    import shutil
+    import subprocess
+
+    oa = shutil.which("oa")
+    if not oa:
+        return
+    try:
+        with open(oa) as handle:
+            shebang = handle.readline()
+    except (OSError, UnicodeDecodeError):
+        return
+    if not shebang.startswith("#!"):
+        return
+    interpreter = shebang[2:].strip().split()[0]
+    if not os.path.isfile(interpreter) or interpreter == sys.executable:
+        return
+    os.environ["OA_PROBE_REEXEC"] = "1"
+    raise SystemExit(subprocess.call([interpreter, *sys.argv]))
+
+
+try:
+    import oas_cli  # noqa: F401
+except ImportError:
+    if not os.environ.get("OA_PROBE_REEXEC"):
+        _reexec_under_oa()
+
+
+# One message, both ways. The left side is what the API returns when the
+# request does not stream; the right side is the event sequence for the same
+# message. Everything the reassembly has to get right is in here: text and
+# thinking accumulate across deltas, a tool call's arguments are only valid
+# JSON once the fragments are joined, an argument-free tool call sends no
+# fragment at all, stop_reason arrives late, and usage is merged from two
+# events with the cache fields intact.
+EXPECTED = {
+    "id": "msg_fixture",
+    "type": "message",
+    "role": "assistant",
+    "model": "claude-fixture",
+    "content": [
+        {"type": "thinking", "thinking": "Weigh the two.", "signature": "sig=="},
+        {"type": "text", "text": "Recalling prior incidents."},
+        {
+            "type": "tool_use",
+            "id": "toolu_a",
+            "name": "precedent_search",
+            "input": {"signature": "host.memory.exhaustion", "before": "2026-08-05"},
+        },
+        {"type": "tool_use", "id": "toolu_b", "name": "coverage_describe", "input": {}},
+    ],
+    "stop_reason": "tool_use",
+    "stop_sequence": None,
+    "usage": {
+        "input_tokens": 22_014,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 13_006,
+        "output_tokens": 461,
+    },
+}
+
+EVENTS = [
+    {"type": "message_start", "message": {
+        "id": "msg_fixture", "type": "message", "role": "assistant",
+        "model": "claude-fixture", "content": [], "stop_reason": None,
+        "stop_sequence": None,
+        "usage": {"input_tokens": 22_014, "cache_creation_input_tokens": 0,
+                  "cache_read_input_tokens": 13_006, "output_tokens": 2}}},
+    {"type": "content_block_start", "index": 0,
+     "content_block": {"type": "thinking", "thinking": "", "signature": ""}},
+    {"type": "content_block_delta", "index": 0,
+     "delta": {"type": "thinking_delta", "thinking": "Weigh "}},
+    {"type": "content_block_delta", "index": 0,
+     "delta": {"type": "thinking_delta", "thinking": "the two."}},
+    {"type": "content_block_delta", "index": 0,
+     "delta": {"type": "signature_delta", "signature": "sig=="}},
+    {"type": "content_block_stop", "index": 0},
+    {"type": "ping"},
+    {"type": "content_block_start", "index": 1,
+     "content_block": {"type": "text", "text": ""}},
+    {"type": "content_block_delta", "index": 1,
+     "delta": {"type": "text_delta", "text": "Recalling "}},
+    {"type": "content_block_delta", "index": 1,
+     "delta": {"type": "text_delta", "text": "prior incidents."}},
+    {"type": "content_block_stop", "index": 1},
+    {"type": "content_block_start", "index": 2,
+     "content_block": {"type": "tool_use", "id": "toolu_a",
+                       "name": "precedent_search", "input": {}}},
+    # Split mid-token on purpose: a fragment boundary that falls inside a JSON
+    # string is the case a naive per-fragment parse gets wrong.
+    {"type": "content_block_delta", "index": 2,
+     "delta": {"type": "input_json_delta", "partial_json": '{"signature": "host.mem'}},
+    {"type": "content_block_delta", "index": 2,
+     "delta": {"type": "input_json_delta",
+               "partial_json": 'ory.exhaustion", "before": "2026-08-05"}'}},
+    {"type": "content_block_stop", "index": 2},
+    # No input_json_delta at all: the empty accumulator must mean {}.
+    {"type": "content_block_start", "index": 3,
+     "content_block": {"type": "tool_use", "id": "toolu_b",
+                       "name": "coverage_describe", "input": {}}},
+    {"type": "content_block_stop", "index": 3},
+    {"type": "message_delta",
+     "delta": {"stop_reason": "tool_use", "stop_sequence": None},
+     "usage": {"output_tokens": 461}},
+    {"type": "message_stop"},
+]
+
+
+def sse(events):
+    """The events as the wire carries them: one `data:` line each, plus noise.
+
+    The blank lines and `event:` lines are what an SSE stream actually
+    contains, and a reader that chokes on them fails on every real response
+    while passing any fixture that omits them.
+    """
+    lines = []
+    for event in events:
+        lines.append(f"event: {event['type']}\n".encode())
+        lines.append(f"data: {json.dumps(event)}\n".encode())
+        lines.append(b"\n")
+    return lines
+
+
+def check_reassembly(collect):
+    got = collect(sse(EVENTS))
+    if got == EXPECTED:
+        print("  ok   a streamed message reassembles to the non-streaming shape")
+        return 0
+    print("  FAIL the reassembled message differs from the non-streaming shape")
+    for key in sorted(set(EXPECTED) | set(got)):
+        if got.get(key) != EXPECTED.get(key):
+            print(f"       {key}:\n         expected {EXPECTED.get(key)!r}"
+                  f"\n         got      {got.get(key)!r}")
+    return 1
+
+
+def check_usage_maps(collect):
+    """The cache fields have to survive, or this patch undoes the caching one."""
+    from oas_cli.usage import from_anthropic
+
+    usage = collect(sse(EVENTS))["usage"]
+    failures = 0
+    for field, want in (("cache_read_input_tokens", 13_006),
+                        ("cache_creation_input_tokens", 0),
+                        ("output_tokens", 461)):
+        ok = usage.get(field) == want
+        failures += not ok
+        print(f"  {'ok  ' if ok else 'FAIL'} usage carries {field} "
+              f"({usage.get(field)!r}, expected {want!r})")
+    # The mapper canonicalises to prompt/completion/total and drops the cache
+    # fields on the way through, which is why `oa run` cannot report a hit and
+    # `checks/cache_probe.py` exists. What matters here is only that the merged
+    # counts reach it: output_tokens from message_delta, not the placeholder
+    # message_start opened with.
+    canonical = from_anthropic(usage)
+    ok = bool(canonical) and canonical.get("completion_tokens") == 461 \
+        and canonical.get("prompt_tokens") == 22_014
+    failures += not ok
+    print(f"  {'ok  ' if ok else 'FAIL'} the CLI's usage mapper reads the "
+          f"merged counts ({canonical!r})")
+    return failures
+
+
+def check_failures(collect, provider_error):
+    """The cases where failing loudly is the whole point.
+
+    A stream that closes early is the failure this patch exists to make
+    visible. If it returned a short message instead of raising, the run would
+    carry on into schema validation and fail there, or worse not fail at all,
+    which is the fail-open behaviour the drivers already work around.
+    """
+    cases = [
+        ("a stream that closes before any content", EVENTS[:1]),
+        # The quiet one. Every block arrived and the shape is plausible, but
+        # message_delta never landed, so stop_reason is still None and
+        # invoke_with_tools would read a cut generation as a final answer.
+        ("a stream cut after its content but before message_stop", EVENTS[:-2]),
+        ("an error event mid-stream",
+         EVENTS[:2] + [{"type": "error", "error": {"type": "overloaded_error",
+                                                   "message": "Overloaded"}}]),
+    ]
+    failures = 0
+    for name, events in cases:
+        try:
+            collect(sse(events))
+        except provider_error as exc:
+            print(f"  ok   {name} raises: {exc}")
+            continue
+        except Exception as exc:  # noqa: BLE001 - any other type is a failure too
+            print(f"  FAIL {name} raised {type(exc).__name__}, not ProviderError")
+            failures += 1
+            continue
+        print(f"  FAIL {name} returned instead of raising")
+        failures += 1
+
+    # Malformed tool arguments are a third case and a different one: the stream
+    # completed, so nothing is missing, but the fragments do not join into
+    # JSON. Silently passing {} would hand the tool loop a call the agent did
+    # not make.
+    broken = [e for e in EVENTS if e.get("index") != 2 or
+              e.get("type") != "content_block_delta"]
+    broken.insert(12, {"type": "content_block_delta", "index": 2,
+                       "delta": {"type": "input_json_delta",
+                                 "partial_json": '{"signature": "host.mem'}})
+    try:
+        collect(sse(broken))
+    except provider_error as exc:
+        print(f"  ok   truncated tool arguments raise: {exc}")
+    else:
+        print("  FAIL truncated tool arguments did not raise")
+        failures += 1
+    # A `data:` line that will not parse is text missing from the middle of a
+    # generation. Skipping it returns a response that still has blocks and
+    # still passes every shape check above, which is precisely the failure
+    # mode worth refusing.
+    try:
+        collect(sse(EVENTS[:2]) + [b"data: {\"type\": \"content_bl\n", b"\n"])
+    except provider_error as exc:
+        print(f"  ok   an unparseable event raises: {exc}")
+    else:
+        print("  FAIL an unparseable event was skipped")
+        failures += 1
+
+    return failures
+
+
+def check_call_sites(module):
+    """Both call sites must stream, and both must honour the off switch.
+
+    `invoke_verbose` serves the single-shot tasks and `invoke_with_tools` every
+    round of a tool loop including its final reply, which is the longest
+    generation of the two. A patch that reaches one of them fixes half the
+    exposure and reads, from a passing live run, exactly like a patch that
+    reached both.
+    """
+    import inspect
+
+    failures = 0
+    for method in ("invoke_verbose", "invoke_with_tools"):
+        try:
+            source = inspect.getsource(getattr(module.AnthropicProvider, method))
+        except (AttributeError, OSError) as exc:
+            print(f"  FAIL cannot read {method}: {exc}")
+            failures += 1
+            continue
+        for fragment, what in (("_post(", "posts through the shared helper"),
+                               ('config.get("stream"', "reads the stream switch")):
+            ok = fragment in source
+            failures += not ok
+            print(f"  {'ok  ' if ok else 'FAIL'} {method} {what}")
+    return failures
+
+
+def main():
+    try:
+        import oas_cli.providers.anthropic_http as provider
+        from oas_cli.providers.anthropic_http import _collect_stream
+        from oas_cli.providers.base import ProviderError
+    except ImportError as exc:
+        sys.exit(f"Cannot import the streamed provider: {exc}. Is the "
+                 "streaming patch applied?")
+
+    failures = 0
+
+    print("call sites:")
+    failures += check_call_sites(provider)
+    print("\nreassembly:")
+    failures += check_reassembly(_collect_stream)
+    print("\nusage:")
+    failures += check_usage_maps(_collect_stream)
+    print("\nfailing loudly:")
+    failures += check_failures(_collect_stream, ProviderError)
+
+    print()
+    if failures:
+        sys.exit(f"{failures} check(s) failed: the streaming patch is partly "
+                 "applied, or reassembly has drifted from the response shape.")
+    print("The streamed path returns what the non-streaming path returned.")
+
+
+if __name__ == "__main__":
+    main()

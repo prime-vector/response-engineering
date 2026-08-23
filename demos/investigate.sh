@@ -98,6 +98,13 @@ stop_adapter() { # surface port
   exit 1
 }
 
+# Transport-failure retry and the per-attempt log window. See demos/retry.sh:
+# a stage that lost a generation in transit runs once more, a stage that hit a
+# control does not, and a stage that retried is verified against its own calls.
+OA_MARKS="$OUT/.attempt-marks"
+OA_LOG_GLOB="$OUT/adapter-*.log"
+. demos/retry.sh
+
 require_json() { # stage_name json_text [required_top_level_key...]
   STAGE="$1" TEXT="$2" python3 - "${@:3}" <<'PY'
 import json, os, sys
@@ -119,7 +126,7 @@ act1() {
   echo "== Act one: D+1. Recurrence in a feed nobody reads =="
   start_adapter telemetry 8422 --fixture fixtures/composite-incident.d1.json
   local out
-  out=$(oa run --spec .agents/telemetry-analyst.yaml --task detect \
+  out=$(oa_run --spec .agents/telemetry-analyst.yaml --task detect \
     --input "$(cat fixtures/composite-incident.d1.json)" --quiet)
   require_json "detect" "$out" recurrence_detected recurrences findings
   printf '%s' "$out" > "$OUT/act1-detect.json"
@@ -154,7 +161,7 @@ PY
   # board an empty object, which is exactly what the fixture carries when no
   # recall has been run.
   local pre status=0
-  pre=$(oa run --spec .agents/precedent-analyst.yaml --task recall \
+  pre=$(oa_run --spec .agents/precedent-analyst.yaml --task recall \
     --input "$(D1=fixtures/composite-incident.d1.json python3 -c '
 import json, os
 view = json.load(open(os.environ["D1"]))
@@ -181,7 +188,7 @@ print(json.dumps(view))')" --quiet) || status=$?
     # the record exactly like one that worked. What is checked is what the
     # caller asked for and what came back.
     if ! OUTJSON="$pre" AS_OF="$(python3 -c 'import json; print(json.load(open("fixtures/composite-incident.d1.json"))["as_of"])')" \
-         LOG="$(cat "$OUT/adapter-precedent_archive.log")" python3 - <<'VERIFY'
+         LOG="$(attempt_log "$OUT/adapter-precedent_archive.log")" python3 - <<'VERIFY'
 import json, os, re, sys
 
 log, as_of = os.environ["LOG"], os.environ["AS_OF"]
@@ -311,7 +318,7 @@ act2() {
   # what arrives here is the answer rather than the ability to ask again.
   start_adapter change_registry 8423
   local cor
-  cor=$(oa run --spec .agents/change-correlator.yaml --task correlate \
+  cor=$(oa_run --spec .agents/change-correlator.yaml --task correlate \
     --input "$(cat fixtures/composite-incident.json)" --quiet)
   require_json "correlate" "$cor" onset_at correlation_found correlations registry_caveats
   printf '%s' "$cor" > "$OUT/act2-correlate.json"
@@ -338,7 +345,7 @@ view = json.load(open("fixtures/composite-incident.json"))
 view["correlation"] = json.loads(os.environ["COR"])
 view["precedent"] = json.loads(os.environ["PRE"])
 print(json.dumps(view))')
-  BOARD=$(oa run --spec .agents/incident-commander.yaml --task assess \
+  BOARD=$(oa_run --spec .agents/incident-commander.yaml --task assess \
     --input "$composed" --quiet)
   require_json "assess" "$BOARD" incident_state hypotheses blocking_evidence convergence_allowed
   printf '%s' "$BOARD" > "$OUT/act2-board.json"
@@ -453,12 +460,12 @@ import json, os
 view = json.load(open("fixtures/composite-incident.json"))
 view.update(board=json.loads(os.environ["BOARD_JSON"]), mitigation_attempts=[])
 print(json.dumps(view))')
-  out=$(oa run --spec .agents/scribe.yaml --task timeline --input "$input" --quiet)
+  out=$(oa_run --spec .agents/scribe.yaml --task timeline --input "$input" --quiet)
   require_json "timeline" "$out" entries gaps record_updated
   printf '%s' "$out" > "$OUT/act3-timeline.json"
   # Self-attestation check: the output's record_updated claim counts for
   # nothing unless the adapter actually logged the sink call.
-  if ! grep -q "tools/call record_" "$OUT/adapter-incident_record.log"; then
+  if ! attempt_log "$OUT/adapter-incident_record.log" | grep -q "tools/call record_"; then
     echo "FAIL: the timeline claims filing but the record sink logged no" >&2
     echo "tools/call. Output self-attestation; see $OUT/adapter-incident_record.log" >&2
     return 1

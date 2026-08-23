@@ -23,6 +23,39 @@ import sys
 import urllib.error
 import urllib.request
 
+
+# `oa` is usually a pipx install, so oas_cli lives in its own virtualenv and
+# the system interpreter cannot see it. Re-exec under the interpreter `oa`
+# itself runs on, which is the install under test in any case: a probe that
+# imported some other copy of the provider would be reporting on the wrong one.
+def _reexec_under_oa():
+    import shutil
+    import subprocess
+
+    oa = shutil.which("oa")
+    if not oa:
+        return
+    try:
+        with open(oa) as handle:
+            shebang = handle.readline()
+    except (OSError, UnicodeDecodeError):
+        return
+    if not shebang.startswith("#!"):
+        return
+    interpreter = shebang[2:].strip().split()[0]
+    if not os.path.isfile(interpreter) or interpreter == sys.executable:
+        return
+    os.environ["OA_PROBE_REEXEC"] = "1"
+    raise SystemExit(subprocess.call([interpreter, *sys.argv]))
+
+
+try:
+    import oas_cli  # noqa: F401
+except ImportError:
+    if not os.environ.get("OA_PROBE_REEXEC"):
+        _reexec_under_oa()
+
+
 MODEL = os.environ.get("CACHE_PROBE_MODEL", "claude-haiku-4-5-20251001")
 ENDPOINT = "https://api.anthropic.com/v1/messages"
 

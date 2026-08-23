@@ -32,7 +32,7 @@ Early. Six agents written, mock adapters serving five tool surfaces. The five in
 | `interfaces/PRECEDENT.md` | Draft interface contract, the `precedent_archive` surface |
 | `corpus/ingest.py`, `corpus/documents/` | Written, 17 documents indexed with both chunkers, five of them distractors, re-ingest verified idempotent |
 | `mock/adapter.py` | Written, smoke-tested against both fixture views, host, record-sink and precedent surfaces added |
-| `demos/investigate.sh` | Written. Act one and act two's correlation verified live on the shipped path; the board act two draws could not be delivered through the CLI on 23 Aug, so it and act three are unexercised since recall moved. See Known limits |
+| `demos/investigate.sh` | Written. Act one and act two verified live on the shipped path, the board included, once the streaming patch made a long generation deliverable. Act three is unexercised since recall moved |
 | `demos/governance.sh` | Written, all five failure modes verified live |
 
 ## Layout
@@ -64,6 +64,7 @@ fixtures/novel-incident.json       generated, a separate incident the archive ha
 mock/adapter.py                    mock MCP adapter, all five surfaces
 demos/investigate.sh               the three acts composed: correlator and analyst into commander into Scribe
 demos/governance.sh                the five governance demos, on demand
+demos/retry.sh                     one retry, on transport failures and nothing else
 demos/caveats-stripped-system-prompt.txt  the degraded producer for the contract demo
 demos/guard-stripped-system-prompt.txt  the guard-off producer for the attribution reject path
 demos/grounding-stripped-system-prompt.txt  the uncited producer for the grounding reject path
@@ -91,21 +92,30 @@ python3 mock/adapter.py --surface change_registry          # 8423
 
 export ANTHROPIC_API_KEY=...
 
-# two patches to the Anthropic provider, in this order. The first is required:
-# through OAS 1.6.0 the provider does not translate tool messages to
+# three patches to the Anthropic provider, in this order. The first is
+# required: through OAS 1.6.0 the provider does not translate tool messages to
 # Anthropic's format, so the first tool call 400s. The second is optional and
 # pays for itself on anything multi-round: without it every round re-sends the
-# system prompt, the tool definitions and the whole incident view uncached.
-# Both are cut against the 1.6.0 wheel and apply with no fuzz in this order.
-patch "$(python3 -c 'import oas_cli.providers.anthropic_http as m; print(m.__file__)')" \
-  < patches/oas-1.6.0-anthropic-tool-messages.diff
-patch "$(python3 -c 'import oas_cli.providers.anthropic_http as m; print(m.__file__)')" \
-  < patches/oas-1.6.0-anthropic-prompt-caching.diff
+# system prompt, the tool definitions and the whole incident view uncached. The
+# third streams, so a long generation is delivered as it is made rather than
+# waited on whole and lost whole; the commander's board is the generation that
+# exposes this. All three are cut against the 1.6.0 wheel and apply with no
+# fuzz in this order.
+OA_PROVIDER="$(python3 -c 'import oas_cli.providers.anthropic_http as m; print(m.__file__)')"
+patch "$OA_PROVIDER" < patches/oas-1.6.0-anthropic-tool-messages.diff
+patch "$OA_PROVIDER" < patches/oas-1.6.0-anthropic-prompt-caching.diff
+patch "$OA_PROVIDER" < patches/oas-1.6.0-anthropic-streaming.diff
 
 # whether the second one is doing anything, which oa run cannot tell you: the
 # CLI keeps input and output tokens and drops the cache fields, so a cached
 # request and an uncached one look identical through it. Two small calls.
 python3 checks/cache_probe.py
+
+# and whether the third reassembles what the callers still expect, which a
+# live run cannot tell you either: a streamed response that arrives correctly
+# looks exactly like one that never streamed. Costs nothing, needs no key.
+python3 checks/stream_probe.py
+checks/retry_probe.sh   # and that the drivers' retry fires on transport only
 
 # the three acts, composed: recurrence and recall at D+1, both bounded at that
 # day, then the correlator's typed output and act one's typed precedent into
@@ -190,7 +200,7 @@ The controls above are real, and so are their edges. Know these before composing
 - **The runner fails open on truncated JSON.** Through OAS 1.6.0, a json-task output that does not parse skips schema and contract validation and exits zero (filed upstream). A bare `oa run` exiting zero is not proof of a valid output. Both demo drivers fail closed instead, parsing every stage's output before using it, and every spec sizes `max_tokens` with real headroom so truncation does not arise. Compose on the CLI the same way.
 - **Contract validation can degrade silently.** Without the `behavioural-contracts` extra the runner skips contract validation with only a warning, and a pipx upgrade drops the extra. Both demo drivers check for it and refuse to run without it.
 - **Tool-use claims are self-attested.** The runner cannot bind tool results into outputs, so `record_updated: true`, a returned `draft_ref` or a cited `passage_id` proves nothing on its own: they are strings the model wrote either way. The drivers verify those claims against the adapter log, which names every `tools/call` and, on the archive, every passage that left the surface by id and uri. Anything consuming these outputs must do the same.
-- **A long non-streaming generation can be lost in transit.** The provider does not stream, and through OAS 1.6.0 there is no option to. On 23 Aug 2026 four consecutive `assess` runs died with `PROVIDER_ERROR: Remote end closed connection without response`, minutes into a request the same call had completed twice earlier that day; the same request with `stream: true` returned a complete, contract-valid board in 79 seconds. Nothing distinguishes that failure from a real one at the CLI's exit status, and it costs the whole act. Size a demo's expectations accordingly: the drivers fail closed on it, which is right, and a pipeline that has to run without retakes wants either a streaming provider or a retry that fires on transport errors and never on a contract rejection.
+- **A long generation can be lost in transit, and the stock provider cannot stream.** Through OAS 1.6.0 the provider posts and waits for the whole response as one body. On 23 Aug 2026 four consecutive `assess` runs died with `PROVIDER_ERROR: Remote end closed connection without response`, minutes into a request the same call had completed twice earlier that day, and nothing distinguishes that from a real failure at the CLI's exit status. The third patch in `patches/` streams instead and reassembles the events into the response shape the callers already expect; act two then ran end to end, correlator and board, in one minute forty-eight. Both demo drivers also retry once on a transport failure and never on anything else, because a retry that fires on a contract rejection or a sandbox block would be re-running the demonstration. Anything else composing on this CLI inherits the unpatched behaviour and should assume a long generation is the exposed one.
 - **The mock adapters are not a security boundary.** They bind 127.0.0.1 with no authentication, and the block in the sandbox demo lives in the runner, not the adapter. A vendor adapter fronts real systems, so it authenticates its callers and carries the host and sink refusals at its own layer; `interfaces/TELEMETRY.md` specifies that defence in depth, this repo demonstrates the runner's fence.
 - **CLI access is privileged.** `--system-prompt` replaces an agent's prompt wholesale, which the governance demos use deliberately. Schema pins survive an overridden prompt; prompt-dependent judgement does not, and whoever can run the CLI can also edit the spec. Treat CLI access to these agents like deploy access. It also sets what the three reject paths can prove: a stripped run is a different producer, not an ablation of one rule, because the operating rules, the output pins and the retrieval guidance all go with the prompt. Each stripped prompt therefore has to name the claim it wants malformed, or the substitute producer behaves well for its own reasons and demonstrates nothing.
 

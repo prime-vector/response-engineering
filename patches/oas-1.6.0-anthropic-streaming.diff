@@ -1,0 +1,310 @@
+Streaming for the Anthropic provider, Open Agent Spec CLI 1.6.0. The provider
+posts a message request and waits for the whole generation to come back as one
+body, and through 1.6.0 there is no option to do otherwise. A long generation
+delivered that way can be lost in transit. This streams instead, and
+reassembles the events into the response dict the non-streaming path already
+returns, so nothing downstream changes shape.
+
+WHAT WENT WRONG. On 23 Aug 2026 four consecutive `oa run --task assess` calls
+on the incident commander died with `PROVIDER_ERROR: Remote end closed
+connection without response`, each after minutes of waiting, on a request the
+same call had completed twice earlier the same day. Removing the
+prompt-caching patch changed nothing. The identical request with
+`stream: true`, built from the spec's own prompts and config, returned a
+complete, contract-valid board in 79 seconds. So the model produces the board
+and the contract accepts it; what fails is the delivery, and it fails in the
+way that costs most: minutes of wall clock, then nothing, and an exit status
+indistinguishable from a real failure. The commander's assess is the longest
+generation in this repository and the most exposed.
+
+Apply after the other two patches. All three are cut against the 1.6.0 wheel
+in this order and apply with no fuzz:
+
+    P="$(python3 -c 'import oas_cli.providers.anthropic_http as m; print(m.__file__)')"
+    patch "$P" < patches/oas-1.6.0-anthropic-tool-messages.diff
+    patch "$P" < patches/oas-1.6.0-anthropic-prompt-caching.diff
+    patch "$P" < patches/oas-1.6.0-anthropic-streaming.diff
+
+Set `intelligence.config.stream: false` in a spec to switch it off.
+
+BOTH CALL SITES, NOT ONE. `invoke_verbose` serves the single-shot tasks and
+`invoke_with_tools` serves every round of a tool loop, including the final
+reply that carries the whole output. Patching only the first leaves the
+Precedent Analyst's recall and the commander's tool-bound tasks on the old
+failure mode, so the two share one `_post` helper and the streaming decision is
+read from config in both. `checks/stream_probe.py` checks that by inspection,
+the same way `checks/cache_probe.py` checks the caching call sites, because it
+is the part a live call cannot see: a request that streams correctly reports
+nothing about the request that did not.
+
+WHAT REASSEMBLY HAS TO GET RIGHT. Text deltas concatenate in block order, and
+thinking and signature deltas do the same so an extended-thinking response
+still arrives with its blocks intact for `_extract_text_blocks` to skip. Tool
+arguments arrive as `input_json_delta` fragments that are only valid JSON once
+joined, and a tool call with no arguments sends no fragment at all, so an empty
+accumulator has to mean `{}` rather than a parse failure. `stop_reason` comes
+from `message_delta`, not `message_start`, which is what the tool loop branches
+on. Usage is merged from both: `message_start` carries the input counts and the
+cache fields, `message_delta` carries the real output count, and the cache
+fields have to survive or this patch would quietly undo the reporting the
+prompt-caching patch exists for.
+
+WHERE IT FAILS CLOSED, WHICH IS THE PART WORTH READING. A cut stream has a
+loud form and a quiet one. Loud is no content at all. Quiet is every block
+present, a plausible response shape, and `stop_reason` still None from
+`message_start` because `message_delta` never landed, which
+`invoke_with_tools` reads as "not a tool call" and hands back as a final
+answer: a partial board, into a runner that exits zero on output it cannot
+parse. `message_stop` is the last event of a finished stream, so its absence
+catches both, and an empty content list is checked after it rather than
+instead of it. A `data:` line that will not parse is treated the same way and
+for the same reason: skipping it would drop text out of the middle of a
+generation and return something that passes every shape check while missing
+part of what the model said.
+
+WHAT IT DELIBERATELY DOES NOT DO. It does not surface tokens as they arrive.
+The runner consumes a whole response, and a progressive display would be a
+change to the CLI rather than to the provider. It does not retry: a stream
+that closes early fails, loudly, at the checks above. Retry belongs in the
+caller, where a transport failure can be told apart from a contract
+rejection, and this repository puts it in the demo drivers.
+
+The timeout changes meaning, which is worth knowing rather than a caveat. It
+was a bound on one silent wait for the entire generation; it is now a bound on
+each socket read. A request that produces tokens steadily can therefore run
+longer than `timeout` in total, which is the intent: the failure being fixed is
+a long quiet wait, and the setting that used to cut it short was cutting short
+good runs as well.
+
+Verified 23 Aug 2026 against an install rebuilt from the 1.6.0 wheel through
+all three patches. `checks/stream_probe.py` reassembles a canned event stream,
+covering text, extended thinking, an argument-bearing tool call and an
+argument-free one, and compares the result against the non-streaming shape;
+both call sites reach `_post`. Live: see the note added to README's Known
+limits for what was run.
+
+--- a/oas_cli/providers/anthropic_http.py	2026-08-23 17:31:03.817279508 +1000
++++ b/oas_cli/providers/anthropic_http.py	2026-08-23 17:52:43.952218855 +1000
+@@ -6,6 +6,7 @@
+ import os
+ import urllib.error
+ import urllib.request
++from collections.abc import Iterator
+ from typing import Any
+ 
+ from oas_cli.reasoning import normalise_effort
+@@ -194,6 +195,166 @@
+     payload.pop("temperature", None)
+ 
+ 
++# Streaming. Without it the provider posts and then waits for the whole
++# generation to arrive as one body, and a long one can be lost in transit: on
++# 23 Aug 2026 four consecutive commander `assess` runs died with "Remote end
++# closed connection without response", minutes into a request the same call
++# had completed twice earlier that day, while the identical request with
++# `stream: true` returned a complete board in 79 seconds. Nothing tells that
++# apart from a real failure at the exit status, and it costs the whole run.
++#
++# The events are reassembled into the response dict the non-streaming path
++# returns, so nothing downstream changes: same content blocks, same
++# stop_reason, same usage, cache fields included. This changes how the bytes
++# arrive and never what they say.
++#
++# Off with intelligence.config.stream: false.
++
++
++def _sse_events(resp: Any) -> Iterator[dict[str, Any]]:
++    """Yield the decoded payload of each SSE `data:` line.
++
++    Anthropic sends one complete JSON object per data line, `ping` events
++    included, and everything else on the wire is a comment or an `event:`
++    label this does not need. So a `data:` line that will not parse is not
++    noise to step over: it is content that did not arrive. Skipping it would
++    drop text out of the middle of a generation and leave a response that
++    still has blocks, still passes every shape check, and is quietly missing
++    part of what the model said. That is the same fail-open the runner already
++    has on truncated JSON, which this repository works around rather than
++    reproduces.
++    """
++    for raw in resp:
++        line = raw.decode("utf-8", errors="replace").strip()
++        if not line.startswith("data:"):
++            continue
++        chunk = line[5:].strip()
++        if not chunk:
++            continue
++        try:
++            yield json.loads(chunk)
++        except json.JSONDecodeError as exc:
++            raise ProviderError(
++                f"Anthropic stream: unparseable event ({exc}): {chunk[:200]!r}"
++            ) from exc
++
++
++def _collect_stream(resp: Any) -> dict[str, Any]:
++    """Reassemble a streamed message into the non-streaming response shape."""
++    message: dict[str, Any] = {"content": [], "usage": {}}
++    blocks: dict[int, dict[str, Any]] = {}
++    partial: dict[int, list[str]] = {}
++    complete = False
++
++    for event in _sse_events(resp):
++        etype = event.get("type")
++        if etype == "message_stop":
++            complete = True
++        if etype == "error":
++            err = event.get("error") or {}
++            detail = f"{err.get('type', 'unknown')}: {err.get('message', '')}"
++            raise ProviderError(f"Anthropic stream error: {detail.strip()}")
++        if etype == "message_start":
++            start = event.get("message") or {}
++            message.update({k: v for k, v in start.items() if k != "content"})
++            message["content"] = []
++            message["usage"] = dict(start.get("usage") or {})
++        elif etype == "content_block_start":
++            index = event.get("index", len(blocks))
++            blocks[index] = dict(event.get("content_block") or {})
++            partial[index] = []
++        elif etype == "content_block_delta":
++            index = event.get("index", 0)
++            block = blocks.setdefault(index, {"type": "text", "text": ""})
++            delta = event.get("delta") or {}
++            dtype = delta.get("type")
++            if dtype == "text_delta":
++                block["text"] = block.get("text", "") + delta.get("text", "")
++            elif dtype == "thinking_delta":
++                block["thinking"] = (
++                    block.get("thinking", "") + delta.get("thinking", ""))
++            elif dtype == "signature_delta":
++                block["signature"] = (
++                    block.get("signature", "") + delta.get("signature", ""))
++            elif dtype == "input_json_delta":
++                partial.setdefault(index, []).append(delta.get("partial_json", ""))
++        elif etype == "message_delta":
++            # stop_reason and the real output_tokens arrive here; the count in
++            # message_start is only what had been emitted by that point.
++            message.update(event.get("delta") or {})
++            message["usage"].update(event.get("usage") or {})
++
++    for index, block in sorted(blocks.items()):
++        if block.get("type") == "tool_use":
++            raw_input = "".join(partial.get(index, []))
++            # A tool call with no arguments streams no input_json_delta at all,
++            # so an empty accumulator is {} rather than a parse failure.
++            try:
++                block["input"] = json.loads(raw_input) if raw_input.strip() else {}
++            except json.JSONDecodeError as exc:
++                name = block.get("name", "?")
++                raise ProviderError(
++                    f"Anthropic stream: malformed tool input for {name}: "
++                    f"{raw_input!r}"
++                ) from exc
++        message["content"].append(block)
++
++    # A stream that closes early is the failure this whole helper exists to
++    # make visible rather than silent, and an empty content list is only its
++    # loudest form. The quiet form is worse: blocks that arrived, a plausible
++    # response shape, and `stop_reason` still None from `message_start`, which
++    # `invoke_with_tools` reads as "not a tool call" and returns as a final
++    # answer. A truncated board would then reach the runner, which exits zero
++    # on output that does not parse. `message_stop` is the last event of a
++    # finished stream, so its absence is the check that catches both.
++    if not complete:
++        raise ProviderError(
++            f"Anthropic stream ended without message_stop after "
++            f"{len(blocks)} content block(s): the generation was cut in "
++            f"transit and what arrived is partial"
++        )
++    if not message["content"]:
++        raise ProviderError("Anthropic stream ended with no content blocks")
++    return message
++
++
++def _post(
++    endpoint: str,
++    payload: dict[str, Any],
++    headers: dict[str, str],
++    timeout: int,
++    stream: bool,
++) -> dict[str, Any]:
++    """POST one message request and return the response dict, streamed or not.
++
++    Streaming matters for the timeout as much as for the transport: it applies
++    per socket read, so a long generation is no longer one silent wait that
++    either lands whole or is lost whole.
++    """
++    if stream:
++        payload = {**payload, "stream": True}
++    body = json.dumps(payload).encode()
++    req = urllib.request.Request(
++        endpoint, data=body, headers=headers, method="POST"
++    )
++    try:
++        with urllib.request.urlopen(req, timeout=timeout) as resp:
++            if stream:
++                return _collect_stream(resp)
++            return json.loads(resp.read().decode())
++    except urllib.error.HTTPError as exc:
++        detail = exc.read().decode(errors="replace")
++        raise ProviderError(f"Anthropic HTTP {exc.code}: {detail}") from exc
++    except ProviderError:
++        # Already precise about what the stream did; re-wrapping would bury it.
++        raise
++    except Exception as exc:
++        msg = scrub_secrets(str(exc), headers)
++        # `from None`, not `from exc`: see the note in openai_http.py — a chained
++        # __cause__ leaks the raw credential header in full tracebacks.
++        raise ProviderError(f"Anthropic request failed: {msg}") from None
++
++
+ def _extract_text_blocks(data: dict[str, Any]) -> str:
+     """Join the text block(s) from an Anthropic message response.
+ 
+@@ -331,21 +492,9 @@
+             "content-type": "application/json",
+         }
+ 
+-        body = json.dumps(payload).encode()
+-        req = urllib.request.Request(
+-            endpoint, data=body, headers=headers, method="POST"
++        data = _post(
++            endpoint, payload, headers, timeout, bool(config.get("stream", True))
+         )
+-        try:
+-            with urllib.request.urlopen(req, timeout=timeout) as resp:
+-                data = json.loads(resp.read().decode())
+-        except urllib.error.HTTPError as exc:
+-            detail = exc.read().decode(errors="replace")
+-            raise ProviderError(f"Anthropic HTTP {exc.code}: {detail}") from exc
+-        except Exception as exc:
+-            msg = scrub_secrets(str(exc), headers)
+-            # `from None`, not `from exc`: see the note in openai_http.py — a chained
+-            # __cause__ leaks the raw credential header in full tracebacks.
+-            raise ProviderError(f"Anthropic request failed: {msg}") from None
+ 
+         try:
+             text = _extract_text_blocks(data)
+@@ -423,21 +572,9 @@
+             "content-type": "application/json",
+         }
+ 
+-        body = json.dumps(payload).encode()
+-        req = urllib.request.Request(
+-            endpoint, data=body, headers=headers, method="POST"
++        data = _post(
++            endpoint, payload, headers, timeout, bool(config.get("stream", True))
+         )
+-        try:
+-            with urllib.request.urlopen(req, timeout=timeout) as resp:
+-                data = json.loads(resp.read().decode())
+-        except urllib.error.HTTPError as exc:
+-            detail = exc.read().decode(errors="replace")
+-            raise ProviderError(f"Anthropic HTTP {exc.code}: {detail}") from exc
+-        except Exception as exc:
+-            msg = scrub_secrets(str(exc), headers)
+-            # `from None`, not `from exc`: see the note in openai_http.py — a chained
+-            # __cause__ leaks the raw credential header in full tracebacks.
+-            raise ProviderError(f"Anthropic request failed: {msg}") from None
+ 
+         usage = from_anthropic(data.get("usage"))
+         stop_reason = data.get("stop_reason")
