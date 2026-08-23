@@ -612,15 +612,24 @@ citations all in the returned set. That run made no `passage_get` calls at all,
 which is the second time the recorded behaviour has contradicted the
 fetch-per-citation claim and the reason the check does not require it.
 
-**The board drawn from that recall is not recorded yet.** Three consecutive
-`assess` runs died with `PROVIDER_ERROR: Remote end closed connection without
-response`, minutes into a single-shot request the same call had completed
-earlier the same day. Removing the prompt-caching patch and running it again
-failed identically, which rules that out as the cause. It is a transport
-failure on a long non-streaming request rather than anything this change
-touches, and the composition either side of it is verified: act one's recall
-above, act two's live correlation, and the composition code that carries one
-into the other. What is owed is one successful `assess` against that pair.
+**The board drawn from that recall cites `INC-2411` three times, `INC-2419`
+three times and the memory-pressure runbook once**, across two of its four
+hypotheses, both of them `speculative`, with four items outstanding and
+convergence blocked. Every id resolves through act one's adapter log to the
+document the archive returned it from, which is the demo's own check run against
+that board and that log.
+
+**It did not come through `oa run`, and that is worth stating rather than
+glossing.** Four consecutive `assess` runs died with `PROVIDER_ERROR: Remote end
+closed connection without response`, minutes into a request the same call had
+completed twice earlier the same day. Removing the prompt-caching patch changed
+nothing. The same request with `stream: true`, built from this spec's own
+prompts and config, returned a complete contract-valid board in 79 seconds. So
+the model produces the board and the contract accepts it; what fails is the
+CLI's non-streaming delivery of a long generation. That is a property of the
+runner rather than of this change, it is recorded under Known limits in the
+README, and until it is addressed the composed pipeline cannot be relied on to
+produce this board on demand.
 
 **Phase 7, Documentation.** README section, architecture diagram updated to five
 agents and three evidence surfaces, results table, design decisions.

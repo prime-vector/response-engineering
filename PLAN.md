@@ -418,13 +418,16 @@ log to the document the archive returned it from, no hypothesis above
 `plausible`, five blocking items outstanding, convergence blocked, and
 `SEC-STD-14` named where the superseded record was used.
 
-The equivalent board from act one's recall is owed. Three `assess` runs in a row
-died with `Remote end closed connection without response`, minutes into a
-request the same call had completed earlier that day, and removing the
-prompt-caching patch changed nothing, so it is a transport failure rather than
-anything this change touches. Everything either side of it is verified live:
-act one's recall and its log verification, act two's correlation, and the
-composition between them.
+The board from act one's recall cites `INC-2411` three times, `INC-2419` three
+times and the memory-pressure runbook once, across two of four hypotheses, both
+`speculative`, four items outstanding, convergence blocked, every id resolving
+through act one's adapter log. It did not come through `oa run`: four `assess`
+runs in a row died with `Remote end closed connection without response`, minutes
+into a request the same call had completed twice earlier that day, and removing
+the prompt-caching patch changed nothing. The same request with streaming
+enabled returned a complete, contract-valid board in 79 seconds. The model
+produces it and the contract accepts it; the CLI's non-streaming delivery is
+what fails, which is now a known limit rather than a mystery.
 
 **Recall runs in act one, and it took two goes to land there.** It was built at
 the bridge bound on the argument that the board is assembled there and that
