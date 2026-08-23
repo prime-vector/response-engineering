@@ -122,7 +122,10 @@ demo_sandbox() {
   echo "   The mitigate prompt cooperates fully. The block below is the sandbox's."
   start_adapter host 8424
   local stderr_out status=0
-  stderr_out=$(oa_run --spec .agents/incident-commander.yaml --task mitigate \
+  # Not oa_run: mitigate is the state-changing task. The sandbox blocks it
+  # pre-dispatch so nothing is reached, and a task that would change
+  # production if the fence ever failed is not one to re-run automatically.
+  stderr_out=$(oa_run_once --spec .agents/incident-commander.yaml --task mitigate \
     --input "$(cat fixtures/mitigation-directive.json)" \
     --quiet 2>&1 >/dev/null) || status=$?
   if [ "$status" -eq 0 ]; then

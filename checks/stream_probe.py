@@ -254,6 +254,16 @@ def check_failures(collect, provider_error):
 
     cases = [
         ("a stream that closes before any content", EVENTS[:1], "message_stop"),
+        # Distinct from the case above, and the reason it needs its own: that
+        # one is caught by the completeness guard and would still pass with
+        # the no-content check deleted. This stream finished properly and
+        # carried nothing, which only the second check can refuse.
+        ("a complete stream carrying no content at all",
+         [EVENTS[0], {"type": "message_delta",
+                      "delta": {"stop_reason": "end_turn", "stop_sequence": None},
+                      "usage": {"output_tokens": 0}},
+          {"type": "message_stop"}],
+         "no content blocks"),
         # The quiet one. Every block arrived and the shape is plausible, but
         # message_delta never landed, so stop_reason is still None and
         # invoke_with_tools would read a cut generation as a final answer.

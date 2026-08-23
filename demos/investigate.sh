@@ -460,7 +460,9 @@ import json, os
 view = json.load(open("fixtures/composite-incident.json"))
 view.update(board=json.loads(os.environ["BOARD_JSON"]), mitigation_attempts=[])
 print(json.dumps(view))')
-  out=$(oa_run --spec .agents/scribe.yaml --task timeline --input "$input" --quiet)
+  # Not oa_run: this task files to the incident sink with a tool call, so a
+  # transport failure after the write cannot be retried blind. See demos/retry.sh.
+  out=$(oa_run_once --spec .agents/scribe.yaml --task timeline --input "$input" --quiet)
   require_json "timeline" "$out" entries gaps record_updated
   printf '%s' "$out" > "$OUT/act3-timeline.json"
   # Self-attestation check: the output's record_updated claim counts for

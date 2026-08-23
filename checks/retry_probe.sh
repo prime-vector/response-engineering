@@ -37,6 +37,18 @@ case "$(sed -n "${attempt}p" "$WORK/script")" in
   contract)
     echo '{"code": "OUTPUT_SCHEMA_ERROR", "error": "falsifying_test is a required property"}' >&2
     exit 1 ;;
+  cutstream)
+    echo '{"code": "PROVIDER_ERROR", "error": "Anthropic stream ended without message_stop after 3 content block(s): the generation was cut in transit and what arrived is partial"}' >&2
+    exit 1 ;;
+  streamerror)
+    echo '{"code": "PROVIDER_ERROR", "error": "Anthropic stream error: overloaded_error: Overloaded"}' >&2
+    exit 1 ;;
+  badevent)
+    echo '{"code": "PROVIDER_ERROR", "error": "Anthropic stream: unparseable event (Unterminated string): {\"type\": \"content_bl"}' >&2
+    exit 1 ;;
+  http5xx)
+    echo '{"code": "PROVIDER_ERROR", "error": "Anthropic HTTP 529: {\"type\":\"overloaded_error\"}"}' >&2
+    exit 1 ;;
   nokey)
     echo '{"code": "PROVIDER_ERROR", "error": "Anthropic API key not set - export ANTHROPIC_API_KEY"}' >&2
     exit 1 ;;
@@ -85,6 +97,19 @@ check "the log window holds only the surviving attempt's hits" \
   "hit passage-attempt-2 archive://doc#2" "$window"
 
 echo
+echo "every signature the streamed provider can fail with is retried:"
+# One case per alternative in OA_RETRY_RE. Without these the regex could lose
+# every stream-specific branch and the probe would still pass on the plain
+# request failure above, leaving the shipped streaming failure path unverified.
+for shape in cutstream streamerror badevent http5xx; do
+  scenario "$shape
+ok"
+  out=$(oa_run --task assess 2>"$WORK/err"); status=$?
+  check "$shape is retried and succeeds" 0 "$status"
+  check "$shape made two attempts" 2 "$(cat "$WORK/attempts")"
+done
+
+echo
 echo "a control firing is not retried:"
 scenario "contract
 ok"
@@ -120,6 +145,21 @@ check "the run fails" 1 "$status"
 check "exactly two attempts were made" 2 "$(cat "$WORK/attempts")"
 check "the second failure reaches the caller intact" 1 \
   "$(grep -c '^{"code": "PROVIDER_ERROR"' "$WORK/err")"
+
+echo
+echo "a stage that writes is not retried at all:"
+# The retry is safe only where the stage's one effect is its output. The
+# Scribe files to the incident sink with a tool call, so a generation lost
+# after the write would be filed twice by a second attempt, and the log
+# re-marking would hide the first call from the check that verifies what was
+# filed. Same transport failure as the first case above, opposite behaviour.
+scenario "transport
+ok"
+out=$(oa_run_once --task timeline 2>"$WORK/err"); status=$?
+check "the run fails rather than filing twice" 1 "$status"
+check "only one attempt was made" 1 "$(cat "$WORK/attempts")"
+check "it says why it did not retry" 1 \
+  "$(grep -c 'may' "$WORK/err")"
 
 echo
 echo "a clean run is unchanged:"

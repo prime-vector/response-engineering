@@ -57,6 +57,36 @@ attempt_log() { # logfile: the lines the surviving attempt wrote
   tail -n "+$(( $(attempt_from "$1") + 1 ))" "$1" 2>/dev/null || true
 }
 
+# A retry is safe only for a stage whose one effect is the output it returns.
+# A stage that files something has already filed it by the time the generation
+# is lost: `record_create` on the incident sink makes a second record, and the
+# re-marking above then hides the first call from the very check that verifies
+# what was filed, so the duplicate is concealed by the same mechanism that
+# makes the retry honest for read-only stages. There is no idempotency key on
+# that surface to lean on, and inventing one would be a change to the sink
+# rather than to the driver. So a write-bearing task does not retry, and says
+# what it lost instead.
+oa_run_once() { # same arguments, no retry: the task changes state elsewhere
+  local err status=0
+  mark_logs
+  err=$(mktemp)
+  if oa run "$@" 2>"$err"; then
+    cat "$err" >&2
+    rm -f "$err"
+    return 0
+  else
+    status=$?
+  fi
+  if grep -Eq "$OA_RETRY_RE" "$err"; then
+    echo "  transport failure on a stage that writes. Not retried: it may" >&2
+    echo "  have filed before the generation was lost, and a second attempt" >&2
+    echo "  would file again. Check the surface before re-running." >&2
+  fi
+  cat "$err" >&2
+  rm -f "$err"
+  return "$status"
+}
+
 oa_run() { # arguments are passed to `oa run`; stdout is the run's output
   local attempt err status=0
   for attempt in 1 2; do
