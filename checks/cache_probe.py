@@ -32,11 +32,47 @@ SYSTEM = "You are a fixture used to verify prompt caching. " * 500
 FIRST_TURN = "Incident view placeholder. " * 1500
 
 
-def main():
-    key = os.environ.get("ANTHROPIC_API_KEY")
-    if not key:
-        sys.exit("ANTHROPIC_API_KEY is not set.")
+# Eligibility is a decision the helpers make before any request exists, and the
+# live half below cannot see it: that request is oversized and carries no tools,
+# so it would pass whether or not the rule were right. The gate found exactly
+# that gap. These cases cost nothing and run without a key.
+def eligibility_cases(floor):
+    """Cases sized against the floor for the model under test, not a constant.
 
+    The floor differs per model, so a table of fixed sizes tests Sonnet's rule
+    and silently passes or fails Haiku's.
+    """
+    return [
+        ("a system prompt over the floor", floor + 500, 0, True),
+        ("a system prompt under it", floor - 500, 0, False),
+        # The minimum applies to the prefix, which is the tools and then the
+        # system block. Measured per block, this pair is declined twice over
+        # while the pair itself clears the floor comfortably.
+        ("a short system prompt behind substantial tools",
+         int(floor * 0.6), int(floor * 0.6), True),
+        ("both halves short", int(floor * 0.3), int(floor * 0.2), False),
+    ]
+
+
+def check_eligibility(system_field, cache_first_turn, model, floor):
+    failures = 0
+    for name, system_chars, prefix_chars, expected in eligibility_cases(floor):
+        got = isinstance(system_field("s" * system_chars, {}, model, prefix_chars), list)
+        ok = got == expected
+        failures += not ok
+        print(f"  {'ok  ' if ok else 'FAIL'} {name}: "
+              f"{'breakpoint' if got else 'no breakpoint'}")
+        if cache_first_turn:
+            turn = [{"role": "user", "content": "v" * system_chars}]
+            marked = isinstance(
+                cache_first_turn(turn, model, prefix_chars)[0]["content"], list)
+            if marked != expected:
+                failures += 1
+                print(f"  FAIL {name}, first turn: disagrees with the system rule")
+    return failures
+
+
+def main():
     try:
         from oas_cli.providers.anthropic_http import _system_field
     except ImportError as exc:
@@ -48,6 +84,25 @@ def main():
         _cache_first_turn = None
         print("note: _cache_first_turn is absent, so only the system "
               "breakpoint is under test. Is the caching patch applied?")
+
+    try:
+        from oas_cli.providers.anthropic_http import _cache_min_chars
+    except ImportError:
+        _cache_min_chars = None
+
+    if _cache_min_chars:
+        floor = _cache_min_chars(MODEL)
+        print(f"eligibility against the {floor} character floor for {MODEL}, "
+              "decided before any request is built:")
+        if check_eligibility(_system_field, _cache_first_turn, MODEL, floor):
+            sys.exit("\nThe floor is not being measured against the prefix.")
+        print()
+
+    key = os.environ.get("ANTHROPIC_API_KEY")
+    if not key:
+        print("ANTHROPIC_API_KEY is not set, so the live half is skipped. The "
+              "eligibility rules above hold.")
+        return
 
     # The helpers take the model because the minimum cacheable length does:
     # a prompt long enough for Sonnet is short of what Haiku will cache.

@@ -29,7 +29,10 @@ nothing and a run that caches everything look identical through it. Read the
 cache fields off the API instead. `checks/cache_probe.py` sends two identical
 requests through the installed provider's own helpers and prints both usage
 blocks; it costs two small calls and needs a key, so it is a command you run
-rather than something CI can.
+rather than something CI can. It also checks the eligibility rule itself, which
+the live half cannot see: that request is oversized and carries no tools, so it
+would pass whether or not the floor were measured correctly. Those cases need no
+key and run without one.
 
 Verified 23 Aug 2026 that way, against an install rebuilt from the 1.6.0 wheel
 through both patches: `checks/cache_probe.py` reported cache_creation 13,006 on
@@ -55,7 +58,14 @@ the kind of setting that reads like one in a diff.
 
 The floor is now the model's own minimum converted at four characters to the
 token with a fifteen per cent margin, so 4,710 characters for Sonnet and Opus
-and 9,420 for Haiku. Of the six specs here only the Precedent Analyst's system
+and 9,420 for Haiku, and it is measured against the whole prefix ahead of the
+breakpoint rather than the block being marked. Anthropic's minimum applies to
+tools then system then messages, so a spec with a short system prompt and
+substantial tool definitions clears it on the pair and on neither half; the
+first version measured each block alone and would have declined a breakpoint
+that had every right to cache. On this repository's own specs nothing moves,
+because the only tool-bound agent already cleared the floor on its system
+prompt alone. The rule was wrong in general, which is enough. Of the six specs here only the Precedent Analyst's system
 prompt clears it, which is the agent whose tool loop re-sends it five to ten
 times a run and the reason this patch exists. The commander's does not, and its
 single-shot `assess` therefore sets no breakpoint at all rather than one that
@@ -67,8 +77,8 @@ after it are not the same configuration twice. Comparisons across that boundary
 are not like for like, and `--check-records` is where that shows up.
 
 --- a/oas_cli/providers/anthropic_http.py	2026-08-23 15:47:05.135592194 +1000
-+++ b/oas_cli/providers/anthropic_http.py	2026-08-23 15:47:05.157258864 +1000
-@@ -31,6 +31,107 @@
++++ b/oas_cli/providers/anthropic_http.py	2026-08-23 16:12:07.024417213 +1000
+@@ -31,6 +31,113 @@
  )
  
  
@@ -102,7 +112,7 @@ are not like for like, and `--check-records` is where that shows up.
 +    return int(minimum * _CHARS_PER_TOKEN * _CACHE_MARGIN)
 +
 +
-+def _system_field(system: str, config: dict, model: str) -> object:
++def _system_field(system: str, config: dict, model: str, prefix_chars: int = 0) -> object:
 +    """The `system` field, as a cached text block where that is worth doing.
 +
 +    Returns the plain string when caching is disabled or the prompt is too
@@ -115,7 +125,12 @@ are not like for like, and `--check-records` is where that shows up.
 +    """
 +    if not config.get("cache_prompt", True):
 +        return system
-+    if len(system) < _cache_min_chars(model):
++    # The minimum applies to the whole cacheable prefix, which is the tools and
++    # then the system block, not to the block being marked. Measuring the block
++    # alone declines breakpoints that would have cached: a spec with a short
++    # system prompt and substantial tool definitions clears the minimum on the
++    # pair and never on either half.
++    if len(system) + prefix_chars < _cache_min_chars(model):
 +        return system
 +    return [
 +        {
@@ -126,7 +141,8 @@ are not like for like, and `--check-records` is where that shows up.
 +    ]
 +
 +
-+def _cache_first_turn(messages: list[dict[str, Any]], model: str) -> list[dict[str, Any]]:
++def _cache_first_turn(messages: list[dict[str, Any]], model: str,
++                      prefix_chars: int = 0) -> list[dict[str, Any]]:
 +    """Put a second cache breakpoint at the end of the first user turn.
 +
 +    The system prompt is not where a tool loop spends its input. The first user
@@ -152,7 +168,7 @@ are not like for like, and `--check-records` is where that shows up.
 +    first = out[0]
 +    content = first.get("content")
 +    if isinstance(content, str):
-+        if len(content) < _cache_min_chars(model):
++        if len(content) + prefix_chars < _cache_min_chars(model):
 +            return messages
 +        first["content"] = [
 +            {"type": "text", "text": content,
@@ -163,7 +179,7 @@ are not like for like, and `--check-records` is where that shows up.
 +        if not isinstance(blocks[-1], dict):
 +            return messages
 +        if sum(len(str(b.get("text") or b.get("content") or "")) for b in blocks
-+               if isinstance(b, dict)) < _cache_min_chars(model):
++               if isinstance(b, dict)) + prefix_chars < _cache_min_chars(model):
 +            return messages
 +        blocks[-1] = dict(blocks[-1])
 +        blocks[-1]["cache_control"] = {"type": "ephemeral"}
@@ -176,7 +192,7 @@ are not like for like, and `--check-records` is where that shows up.
  def _supports_temperature(model: str) -> bool:
      """False for models that reject `temperature` (Opus 4.7/4.8, Fable 5)."""
      return not any(model.startswith(prefix) for prefix in _NO_SAMPLING_PARAM_MODELS)
-@@ -186,7 +287,7 @@
+@@ -186,7 +293,7 @@
          if _supports_temperature(model):
              payload["temperature"] = temperature
          if system:
@@ -185,13 +201,18 @@ are not like for like, and `--check-records` is where that shows up.
          _apply_reasoning(payload, config.get("reasoning_effort"))
  
          headers = {
-@@ -259,15 +360,19 @@
+@@ -259,15 +366,24 @@
              for t in tools
          ]
  
++        # Everything ahead of a breakpoint counts towards the minimum, so the
++        # tools count for the system block and both count for the first turn.
++        tools_chars = len(json.dumps(anthropic_tools)) if anthropic_tools else 0
++
 +        anthropic_messages = _to_anthropic_messages(messages)
 +        if config.get("cache_prompt", True):
-+            anthropic_messages = _cache_first_turn(anthropic_messages, model)
++            anthropic_messages = _cache_first_turn(
++                anthropic_messages, model, tools_chars + len(system or ""))
 +
          payload: dict[str, Any] = {
              "model": model,
@@ -203,7 +224,7 @@ are not like for like, and `--check-records` is where that shows up.
              payload["temperature"] = temperature
          if system:
 -            payload["system"] = system
-+            payload["system"] = _system_field(system, config, model)
++            payload["system"] = _system_field(system, config, model, tools_chars)
          if anthropic_tools:
              payload["tools"] = anthropic_tools
          _apply_reasoning(payload, config.get("reasoning_effort"))
