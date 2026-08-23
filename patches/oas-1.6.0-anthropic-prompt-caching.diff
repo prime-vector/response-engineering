@@ -1,15 +1,16 @@
-Prompt caching for the Anthropic provider, Open Agent Spec CLI through 1.6.0.
-The provider sends `system` as a plain string and the messages untouched, so
-every round of a tool loop re-sends, and is re-charged for, the system prompt,
-the tool definitions and the whole incident view. This adds two cache
-breakpoints: one at the end of the system block, which covers the tools with it
-because Anthropic orders the prefix tools, system, messages; and one at the end
-of the first user turn, which is where the view sits.
+Prompt caching for the Anthropic provider, Open Agent Spec CLI 1.6.0. The
+provider sends `system` as a plain string and the messages untouched, so every
+round of a tool loop pays again for the system prompt, the tool definitions and
+the whole incident view. This adds two cache breakpoints: one at the end of the
+system block, which covers the tools with it because Anthropic orders the
+prefix tools, system, messages; and one at the end of the first user turn,
+which is where the view sits.
 
-Apply the tool-messages patch beside this one first. The tool-loop hunk's
-context is a line that patch introduces, so this one does not apply to a stock
-1.6.0 provider on its own.
+Apply the tool-messages patch beside this one first. Both are cut against the
+1.6.0 wheel and both apply with no fuzz in that order:
 
+    patch "$(python3 -c 'import oas_cli.providers.anthropic_http as m; print(m.__file__)')" \
+        < patches/oas-1.6.0-anthropic-tool-messages.diff
     patch "$(python3 -c 'import oas_cli.providers.anthropic_http as m; print(m.__file__)')" \
         < patches/oas-1.6.0-anthropic-prompt-caching.diff
 
@@ -21,18 +22,28 @@ system prompt is about 1,700 tokens and the bridge view it is handed is about
 22,000, so a system-only breakpoint covers roughly seven per cent of a recall
 request and four per cent of an assess. The first user turn is the rest.
 
-VERIFIED 23 Aug 2026 against the live API. Two identical requests carrying a
-22,400 character system prompt and a 40,000 character first turn: the second
-reported cache_read_input_tokens 20,623 and cache_creation_input_tokens 0. To
-re-check after a change, read `usage` off any two consecutive calls. A run that
-caches nothing reports both as zero and costs exactly what it did before.
+HOW TO CHECK A HIT, AND WHY NOT WITH `oa run`. The CLI keeps `input_tokens` and
+`output_tokens` and drops the rest, so `oa run` never shows
+`cache_read_input_tokens` at all, in either direction: a run that caches
+nothing and a run that caches everything look identical through it. Read the
+cache fields off the API instead. `checks/cache_probe.py` sends two identical
+requests through the installed provider's own helpers and prints both usage
+blocks; it costs two small calls and needs a key, so it is a command you run
+rather than something CI can.
+
+Verified 23 Aug 2026 that way, against an install rebuilt from the 1.6.0 wheel
+through both patches: `checks/cache_probe.py` reported cache_creation 13,006 on
+the first call and cache_read 13,006 on the second, with two breakpoints in the
+request. Separately, one live recall through the patched provider made twelve
+tool calls over six queries and returned the same three precedents as the
+unpatched runs.
 
 WHAT THIS DELIBERATELY DOES NOT DO. It does not move a breakpoint with the
 conversation, so the tool results a long recall accumulates are still re-sent
-uncached each round. That is worth more again, and it is worth measuring on its
-own rather than being inherited from this. It also leaves single-shot calls'
-message content alone: with no second round there is nothing to reuse, and a
-sweep sends a different view per case.
+uncached. That is worth more again, and worth measuring on its own rather than
+being inherited from this. It also leaves single-shot calls' message content
+alone: with no second round there is nothing to reuse, and a sweep sends a
+different view per case.
 
 THE THRESHOLD IS IN CHARACTERS, and the model-specific minimum is in tokens,
 roughly 1,024 for Sonnet and Opus and 2,048 for Haiku. 4,096 characters
@@ -41,9 +52,14 @@ error: the request simply is not cached and costs what it always did. Of the six
 specs here, only the commander and the Precedent Analyst clear it; the other
 four sit at 700 to 850 tokens and could not be cached at any threshold.
 
---- a/oas_cli/providers/anthropic_http.py	2026-08-23 09:40:13.000942179 +1000
-+++ b/oas_cli/providers/anthropic_http.py	2026-08-23 10:06:29.681278916 +1000
-@@ -31,6 +31,80 @@
+ONE INTERACTION WITH `evals/`. A judgement record carries a provider
+fingerprint, and this changes the provider, so arms recorded before it and
+after it are not the same configuration twice. Comparisons across that boundary
+are not like for like, and `--check-records` is where that shows up.
+
+--- a/oas_cli/providers/anthropic_http.py	2026-08-23 10:27:28.879616957 +1000
++++ b/oas_cli/providers/anthropic_http.py	2026-08-23 10:27:28.890450582 +1000
+@@ -31,6 +31,88 @@
  )
  
  
@@ -96,6 +112,11 @@ four sit at 700 to 850 tokens and could not be cached at any threshold.
 +    with the conversation would cache the accumulated tool results too, which
 +    is worth more again and is worth measuring on its own rather than
 +    inheriting from this.
++
++    An ephemeral breakpoint lives about five minutes from its last read. A loop
++    whose rounds are further apart than that pays full price again, and a sweep
++    running back to back reuses the system prefix across runs. Neither is a
++    correctness concern: a miss costs what the request cost before this.
 +    """
 +    if not messages:
 +        return messages
@@ -113,6 +134,9 @@ four sit at 700 to 850 tokens and could not be cached at any threshold.
 +        blocks = [dict(b) if isinstance(b, dict) else b for b in content]
 +        if not isinstance(blocks[-1], dict):
 +            return messages
++        if sum(len(str(b.get("text") or b.get("content") or "")) for b in blocks
++               if isinstance(b, dict)) < _CACHE_MIN_CHARS:
++            return messages
 +        blocks[-1] = dict(blocks[-1])
 +        blocks[-1]["cache_control"] = {"type": "ephemeral"}
 +        first["content"] = blocks
@@ -124,7 +148,7 @@ four sit at 700 to 850 tokens and could not be cached at any threshold.
  def _supports_temperature(model: str) -> bool:
      """False for models that reject `temperature` (Opus 4.7/4.8, Fable 5)."""
      return not any(model.startswith(prefix) for prefix in _NO_SAMPLING_PARAM_MODELS)
-@@ -186,7 +260,7 @@
+@@ -186,7 +268,7 @@
          if _supports_temperature(model):
              payload["temperature"] = temperature
          if system:
@@ -133,7 +157,7 @@ four sit at 700 to 850 tokens and could not be cached at any threshold.
          _apply_reasoning(payload, config.get("reasoning_effort"))
  
          headers = {
-@@ -259,15 +333,19 @@
+@@ -259,15 +341,19 @@
              for t in tools
          ]
  

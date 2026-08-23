@@ -1,16 +1,25 @@
-Upstream fix for Open Agent Spec CLI 1.5.1: the Anthropic provider
-forwards the runner's OpenAI-shaped tool messages (assistant
-tool_calls, role "tool" results) verbatim, which the Anthropic API
-rejects with HTTP 400. This converts them to tool_use / tool_result
-content blocks. Apply to the installed package until it lands upstream:
+Upstream fix for the Open Agent Spec CLI: the Anthropic provider forwards the
+runner's OpenAI-shaped tool messages (assistant tool_calls, role "tool" results)
+verbatim, which the Anthropic API rejects with HTTP 400. This converts them to
+tool_use / tool_result content blocks. Apply to the installed package until it
+lands upstream:
 
     patch "$(python3 -c 'import oas_cli.providers.anthropic_http as m; print(m.__file__)')" \
-        < patches/oas-1.5.1-anthropic-tool-messages.diff
+        < patches/oas-1.6.0-anthropic-tool-messages.diff
 
---- a/oas_cli/providers/anthropic_http.py
-+++ b/oas_cli/providers/anthropic_http.py
-@@ -20,6 +20,54 @@
- _ANTHROPIC_VERSION = "2023-06-01"
+Cut against 1.6.0, which is what this repository targets. The version in the
+name is load-bearing: the 1.5.1 diff this replaces applied to 1.6.0 only
+because GNU patch tolerates two lines of fuzz, since 1.6.0 moved `temperature`
+out of the payload literal its hunk was anchored on. It landed in the right
+method by luck rather than by matching, `git apply` refused it, and `patch -F0`
+refused it too. Regenerated 23 Aug 2026 against the 1.6.0 wheel from PyPI, and
+the file it produces is byte-identical to what the fuzzy application produced,
+so this changes how reliably the patch lands and nothing about what it does.
+
+--- a/oas_cli/providers/anthropic_http.py	2026-08-23 10:26:33.816216430 +1000
++++ b/oas_cli/providers/anthropic_http.py	2026-08-23 10:26:33.816216430 +1000
+@@ -81,6 +81,54 @@
+     return "\n".join(texts)
  
  
 +def _to_anthropic_messages(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -64,12 +73,12 @@ content blocks. Apply to the installed package until it lands upstream:
  class AnthropicProvider(IntelligenceProvider):
      """Calls Anthropic Claude via raw HTTP — no anthropic SDK required.
  
-@@ -131,7 +179,7 @@
+@@ -213,7 +261,7 @@
  
          payload: dict[str, Any] = {
              "model": model,
 -            "messages": messages,
 +            "messages": _to_anthropic_messages(messages),
              "max_tokens": max_tokens,
-             "temperature": temperature,
          }
+         if _supports_temperature(model):

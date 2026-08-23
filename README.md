@@ -96,11 +96,16 @@ export ANTHROPIC_API_KEY=...
 # Anthropic's format, so the first tool call 400s. The second is optional and
 # pays for itself on anything multi-round: without it every round re-sends the
 # system prompt, the tool definitions and the whole incident view uncached.
-# Both file headers say what they change and how to check it.
+# Both are cut against the 1.6.0 wheel and apply with no fuzz in this order.
 patch "$(python3 -c 'import oas_cli.providers.anthropic_http as m; print(m.__file__)')" \
-  < patches/oas-1.5.1-anthropic-tool-messages.diff
+  < patches/oas-1.6.0-anthropic-tool-messages.diff
 patch "$(python3 -c 'import oas_cli.providers.anthropic_http as m; print(m.__file__)')" \
   < patches/oas-1.6.0-anthropic-prompt-caching.diff
+
+# whether the second one is doing anything, which oa run cannot tell you: the
+# CLI keeps input and output tokens and drops the cache fields, so a cached
+# request and an uncached one look identical through it. Two small calls.
+python3 checks/cache_probe.py
 
 # the three acts, composed: recurrence at D+1, the correlator's typed output
 # into the commander's correlation input, the live board into the Scribe's
