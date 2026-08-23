@@ -270,6 +270,11 @@ tasks:
                 items:
                   type: string
             required: [statement, confidence, falsifying_test]
+            # Closed, for the reason blocking_evidence is. The rule below reads
+            # one field by name, so a hypothesis carrying its citation under
+            # any other name would be confirmed with the rule none the wiser.
+            # These nine and no others.
+            additionalProperties: false
             # Precedent is supporting evidence, structurally rather than as a
             # matter of prompt discipline: a hypothesis resting on the archive
             # cannot be confirmed. Rule 1 confirms only on a direct
@@ -340,6 +345,7 @@ tasks:
               type: string
             evidence_required:
               type: string
+          additionalProperties: false
         convergence_allowed:
           type: boolean
           description: >
@@ -382,6 +388,10 @@ tasks:
                   is the contract working and the demo failing at the same
                   time. The condition belongs in blast_radius.
             required: [action, owner_role, authorisation_required]
+            # Closed for the same reason: every object on this board is, or
+            # "the only field a passage id may appear in" is a statement about
+            # the fields somebody remembered to declare.
+            additionalProperties: false
         standing_conditions_noted:
           type: array
           description: >

@@ -38,7 +38,10 @@ intelligence:
   config:
     temperature: 0.2
     # Recall is a multi-round task: coverage, then search, then a passage_get
-    # per citation it intends to make, then the reply. Every round spends
+    # for the passages it wants in full, then the reply. Not one fetch per
+    # citation: search returns passage text verbatim, so a citation taken
+    # straight from a hit is as grounded as a fetched one and a round trip
+    # cheaper. The recorded run made five fetches against six citations. Every round spends
     # from the same response budget, and the runner fails open on a truncated
     # JSON output by skipping schema and contract validation and exiting 0.
     # An undersized budget here does not produce a short answer, it silently

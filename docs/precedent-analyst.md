@@ -50,9 +50,15 @@ Tool calls on the surface:
 
 | Call | Input | Returns |
 |---|---|---|
-| `precedent.search` | signature terms, symptom text, optional time bound | ranked passages, each with a stable citation and a relevance score |
+| `precedent.search` | signature terms, symptom text, **required** time bound | ranked passages, each with a stable citation and a relevance score |
 | `passage.get` | passage id | full passage plus its citation |
-| `coverage.describe` | none | what the archive contains: source families, date range, document count |
+| `coverage.describe` | **required** time bound | what the archive held at that bound: source families, date range, document count |
+
+The bound is required on both, and this table said optional on one and absent on
+the other until the gate read it. An optional hindsight control is how hindsight
+gets in: a replay of day two that forgets the bound still looks correct, and
+nothing in the result says otherwise. An unbounded coverage call also leaks what
+a bounded search refuses, and a refusal cites coverage as proof it looked.
 
 `coverage.describe` is not decoration. An agent that reports "no applicable precedent"
 must be able to say what it searched, or the refusal is unfalsifiable.
@@ -69,8 +75,11 @@ the retrieval equivalent of the record being written only through a provable too
 
 **Task:** `recall`
 
-**Input:** the incident view (same fixture shape the other agents receive), plus the
-Telemetry Analyst's typed findings when the driver composes it live.
+**Input:** the incident view, the same fixture shape the other agents receive. Not
+the Telemetry Analyst's findings: this said the driver would compose them live and
+no driver does, act one being a separate invocation whose findings reach no other
+agent. The signature type recall queries on is derived from the view's own
+signals.
 
 **Output contract:**
 
@@ -531,7 +540,7 @@ the shipped prompt and in both stripped ones. A closed set the producer cannot
 see is a rejection waiting for the first board that needs a fifth value.
 
 **The four rules are checked without a model now.** `checks/contract_invariants.py`
-validates seventeen boards against the contract read out of the spec, each one
+validates twenty boards against the contract read out of the spec, each one
 asserting that a particular violation is rejected and that the legitimate
 neighbour is accepted, and CI runs it. Before it, the rules were exercised only
 when a live board happened to try one, which is a test that fires when it feels

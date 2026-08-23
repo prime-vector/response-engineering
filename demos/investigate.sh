@@ -176,20 +176,79 @@ PY
     pre='{}'
   fi
   printf '%s' "$pre" > "$OUT/act2-recall.json"
+  # A recall whose conduct cannot be verified is not a recall this board may
+  # use, and it is also not a reason to lose the act: an untrusted one degrades
+  # to the same empty object a failed one does, the board forms without it, and
+  # act two reports the failure at the end rather than taking the board with it.
+  local trusted=1
   if [ "$pre" != "{}" ]; then
     require_json "recall" "$pre" no_applicable_precedent search_coverage precedents
-    # Tool-use claims are verified from the adapter log, never from the output:
-    # the runner cannot bind tool results into outputs, so a passage id in a
-    # citation is a string the model wrote either way. passage_get is in the
-    # list because the spec says a citation is fetched before it is made, and
-    # a claim nothing checks is a claim that stops being true quietly.
-    for tool in coverage_describe precedent_search passage_get; do
-      if ! grep -q "tools/call $tool" "$OUT/adapter-precedent_archive.log"; then
-        echo "FAIL: recall reported without calling $tool. Output" >&2
-        echo "self-attestation; see $OUT/adapter-precedent_archive.log" >&2
-        return 1
-      fi
-    done
+    # Verified from the adapter log, never from the output: the runner cannot
+    # bind tool results into outputs, so every claim about conduct is a string
+    # the model wrote. Call names alone are not enough either, because the
+    # surface logs a call before dispatching it, so a call that faulted is on
+    # the record exactly like one that worked. What is checked is what the
+    # caller asked for and what came back.
+    if ! OUTJSON="$pre" AS_OF="$(python3 -c 'import json; print(json.load(open("fixtures/composite-incident.json"))["as_of"])')" \
+         LOG="$(cat "$OUT/adapter-precedent_archive.log")" python3 - <<'VERIFY'
+import json, os, re, sys
+
+log, as_of = os.environ["LOG"], os.environ["AS_OF"]
+recall = json.loads(os.environ["OUTJSON"])
+calls = re.findall(r"^\[mock-precedent_archive\] tools/call (\S+)$", log, re.M)
+args = re.findall(r"^\[mock-precedent_archive\] args (\S+) (.*)$", log, re.M)
+returned = re.findall(r"^\[mock-precedent_archive\] returned .*$", log, re.M)
+
+def fail(why):
+    print(f"  untrusted recall: {why}", file=sys.stderr)
+    sys.exit(1)
+
+if "coverage_describe" not in calls:
+    fail("coverage was never established")
+if "precedent_search" in calls and calls.index("coverage_describe") > calls.index("precedent_search"):
+    fail("searched before establishing what it was searching")
+if not returned:
+    fail("every call faulted; the log records the asking, not the answering")
+
+# The time bound is the hindsight control, and it is a property of each call
+# rather than of the reply that describes them.
+for tool, raw in args:
+    if tool not in ("coverage_describe", "precedent_search"):
+        continue
+    try:
+        sent = json.loads(raw)
+    except json.JSONDecodeError:
+        fail(f"unparseable {tool} arguments in the log")
+    if sent.get("before") != as_of:
+        fail(f"{tool} was bounded at {sent.get('before')}, not the view's {as_of}")
+
+# Every citation has to be a passage this surface handed over, which is what
+# the `hit` lines record and what an output cannot attest to about itself.
+#
+# Not "fetched with passage_get per citation", which is what the spec's own
+# comment and a diagram used to claim: search returns passage text verbatim, so
+# an agent that cites straight from a search hit is exactly as grounded and one
+# round trip cheaper. The recorded run does both, five fetches against six
+# citations, and enforcing the stricter version would have failed a recall that
+# did nothing wrong.
+returned = {i for i in re.findall(r"^\[mock-precedent_archive\] hit (\S+) ", log, re.M)}
+cited = {i for p in (recall.get("precedents") or [])
+         for i in list(p.get("grounded_in") or []) + [(p.get("incident_ref") or {}).get("passage_id")]
+         if i}
+ungrounded = sorted(cited - returned)
+if ungrounded:
+    fail(f"cites passages the archive never returned: {', '.join(ungrounded)}")
+fetched = {json.loads(raw).get("passage_id") for tool, raw in args if tool == "passage_get"}
+print(f"  verified from the log: coverage first, {len(args)} calls all bounded at "
+      f"{as_of}, {len(cited)} citations all in the returned set "
+      f"({len(cited & fetched)} of them fetched individually)")
+VERIFY
+    then
+      echo "  The board runs without a precedent column; act two will report" >&2
+      echo "  this as a failure once the board is on the record." >&2
+      pre='{}'
+      trusted=0
+    fi
   fi
   OUTJSON="$pre" python3 - <<'RECALL'
 import json, os
@@ -319,6 +378,13 @@ print(f"  precedent supports {sum(1 for h in board['hypotheses'] if h.get('prece
       f"{len(outstanding)} item(s) still outstanding, convergence "
       f"{'blocked' if not board['convergence_allowed'] else 'ALLOWED'}.")
 CITE
+  if [ "$trusted" -eq 0 ]; then
+    echo "FAIL: the recall could not be trusted from the adapter log, so the" >&2
+    echo "board above was drawn without it. That degradation is the designed" >&2
+    echo "behaviour; a recall whose conduct cannot be verified is not." >&2
+    echo "See $OUT/adapter-precedent_archive.log" >&2
+    return 1
+  fi
   echo
 }
 

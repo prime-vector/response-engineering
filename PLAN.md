@@ -485,7 +485,7 @@ already stated there, which is why they did not fail. All three are stated now,
 in the shipped prompt and both stripped ones.
 
 **The rules are checked without a model now.** `checks/contract_invariants.py`
-validates seventeen boards against the contract read out of the spec, asserting
+validates twenty boards against the contract read out of the spec, asserting
 both that each violation is rejected and that its legitimate neighbour is
 accepted, and CI runs it. They were previously exercised only when a live board
 happened to try one.

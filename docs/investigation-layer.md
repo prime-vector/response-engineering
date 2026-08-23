@@ -180,7 +180,7 @@ answer, it truncates the JSON, and the runner fails open on truncated output by
 skipping validation and exiting zero. Headroom is what keeps the grounding
 guard switched on.
 
-![The recall task as a sequence of tool calls between the Precedent Analyst and the precedent archive. First coverage describe bounded at the view's as_of, then one search per distinct behaviour using the signature type with the entity id dropped, then a passage get for every citation the reply will make, then a single JSON reply.](diagrams/recall-round-trip.svg)
+![The recall task as a sequence of tool calls between the Precedent Analyst and the precedent archive. First coverage describe bounded at the view's as_of, then one search per distinct behaviour using the signature type with the entity id dropped, then a passage get for the passages it wants in full, which is not one per citation because search already returns passage text, then a single JSON reply.](diagrams/recall-round-trip.svg)
 
 *Coverage first, and the entity id never enters the query.* A query built on the
 host makes identity a retrieval feature, and the archive starts returning

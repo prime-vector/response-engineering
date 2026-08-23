@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
-"""Assert the commander's board cannot express precedent deciding anything.
+"""Assert what the commander's board can and cannot express about precedent.
 
-Four rules in `.agents/incident-commander.yaml` carry the claim that precedent
-is supporting evidence and never deciding evidence. Until this file existed
-they were exercised only when a live model happened to produce a board that
-tried to break one, which is a test that runs when it feels like it and costs
-an API call when it does.
+Four rules in `.agents/incident-commander.yaml` close the typed routes by which
+precedent could become deciding evidence. They do not close prose, and the last
+two cases below are the boards that prove it: a schema sees the list the board
+wrote and never the view it was drawn from. The suite carries both halves,
+because a check that only demonstrates its own successes is how a claim grows
+past what it can keep.
+
+Until this file existed the rules were exercised only when a live model
+happened to produce a board that tried one, which is a test that runs when it
+feels like it and costs an API call when it does.
 
 Each case below is a board, and each says whether the contract should accept
 it. No model, no network, no API key: the schema is read out of the spec and
@@ -137,6 +142,16 @@ CASES = [
     # Same hole, simpler: a board that raises nothing has nothing to block on.
     case("a board with no blocking evidence at all",
          lambda b: (b.update(blocking_evidence=[]), b.update(convergence_allowed=True)), True),
+    # The rule reads one field by name, so the objects carrying it are closed.
+    # The gate found this: a citation under any other name is a citation the
+    # rule cannot see, on a hypothesis it then confirms.
+    case("a citation smuggled under another field name",
+         lambda b: b["hypotheses"][0].update(precedent_passage_id="p-14cc2f280479",
+                                             confidence="confirmed"), False),
+    case("an undeclared field on a next action",
+         lambda b: b["next_actions"][0].update(precedent="p-14cc2f280479"), False),
+    case("an undeclared field on the attribution guard",
+         lambda b: b.update(attribution_guard={"triggered": False, "cited": "p-14cc2f280479"}), False),
 ]
 
 # What none of this catches, stated here rather than left for a reader to
