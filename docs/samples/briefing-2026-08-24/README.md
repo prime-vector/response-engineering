@@ -1,11 +1,12 @@
-# One briefing, and the board it was rendered from
+# Three briefings, and the board they were rendered from
 
 `board.json` is an `assess` output from a live run on 24 Aug 2026.
 `briefing-bridge.json` is what `brief` produced from it, for `audience:
-bridge`, on the same day. `briefing-bridge-before-rule-3a.json` is an earlier
-render of the same board, kept for the reason below.
+bridge`, on the same day. Two earlier renders of the same board are kept beside
+it, each showing a different way the briefing failed and the rule that now
+prevents it.
 
-## Why these two are committed when `runs/` is not
+## Why these are committed when `runs/` is not
 
 `runs/` holds pipeline captures and is gitignored, because a live board is a
 claim about what a model did on one day, nothing checks it, and it goes stale
@@ -16,6 +17,27 @@ argument about flattening refer to them. A claim whose evidence a reader cannot
 open is not a claim, it is an assertion with a footnote, and the gate said so
 twice. If it is cited, it is committed. If it is not worth committing, the
 citation goes instead.
+
+## The three renders, and what each one shows
+
+`briefing-bridge-before-rule-3a.json` strengthened a verb.
+`briefing-bridge-before-rule-6a.json` invented a citation.
+`briefing-bridge.json` is the current render, which does neither.
+
+Both failures were found by a reviewer reading output against board, and both
+were produced by the agent built to prevent exactly that. Neither was caught by
+any check here at the time: the confidence words were present, the falsifying
+tests were present, the schema was satisfied.
+
+The second is the worse one and the reason `checks/briefing_grounded.py` exists.
+That render attached `INC-2411`, and a divergence invented to go with it, to the
+endpoint-agent hypothesis, whose `precedent_cited` on the board is empty.
+`INC-2411` is genuinely in the board, on a different hypothesis, so no
+comparison of which references appear anywhere would have found it. What makes
+it checkable is that entries are rendered one per hypothesis in board order,
+which turns "did it cite the right thing" into an index lookup. Run the check
+against that file and it fails on both the citation and a standing condition it
+had copied back into `known`.
 
 ## The before and after, and why both are here
 

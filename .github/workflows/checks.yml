@@ -125,3 +125,9 @@ jobs:
         run: |
           python3 checks/prompt_inputs.py --self-test
           python3 checks/prompt_inputs.py
+
+      # The committed briefing carries only what its board gave it. Needs no
+      # key and no model: it compares two committed files, which is the only
+      # part of the briefing's central claim that is mechanically checkable.
+      - name: Committed briefings are grounded in their boards
+        run: python3 checks/briefing_grounded.py

@@ -219,12 +219,24 @@ def confidence_scale_holds(spec):
         # Four negation forms, not one. `un` is the one that shipped; a
         # pattern bounded against it and not the others would pass a test
         # written against it and fail in the field.
+        # Each pattern tested alone. Every negation case here once also said
+        # "unfalsifiable", so rejection could come from the falsifying-test
+        # pattern and the confidence half was never exercised: `not likely`
+        # with a real falsifying test was accepted the whole time while this
+        # reported that no negation was. The right verdict for the wrong
+        # reason, which is the defect these checks exist to catch.
         for prefix in ("un", "non-", "not ", "in"):
-            if accepts(f"{prefix}{word} thing, and unfalsifiable."):
+            if accepts(f"{prefix}{word} thing. Falsifying test: observe x."):
                 failures += 1
                 print(f"  FAIL the briefing accepts '{prefix}{word}' as "
-                      f"{word} and 'unfalsifiable' as a falsifying test: an "
-                      f"entry can assert the negation of both while validating")
+                      f"{word}: an entry can assert the negation of the "
+                      f"confidence while carrying a real falsifying test")
+    # And the falsifying-test half alone, with a real confidence word.
+    if accepts(f"{enum[0].upper()} thing, and unfalsifiable."):
+        failures += 1
+        print("  FAIL the briefing accepts 'unfalsifiable' as a falsifying "
+              "test: an entry can assert that no test exists while carrying "
+              "a confidence word")
     if not failures:
         print(f"  ok   the briefing takes all {len(enum)} confidence values "
               f"assess can emit, and no negation of one")

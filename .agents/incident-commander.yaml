@@ -585,13 +585,19 @@ tasks:
           items:
             type: string
             allOf:
-              # Word-bounded, and that is the whole of it. Unbounded, `likely`
+              # Word-bounded against the prefixed negations and lookbehind
+              # against the separated ones. Unbounded, `likely`
               # matched inside `unlikely`, `supported` inside `unsupported`,
               # `confirmed` inside `unconfirmed`, and `falsif` inside
               # `unfalsifiable`. An entry reading "UNLIKELY, and unfalsifiable"
               # asserts the opposite of both things being required and
-              # validated against them.
-              - pattern: '\b([Ss][Pp][Ee][Cc][Uu][Ll][Aa][Tt][Ii][Vv][Ee]|[Pp][Ll][Aa][Uu][Ss][Ii][Bb][Ll][Ee]|[Ll][Ii][Kk][Ee][Ll][Yy]|[Ss][Uu][Pp][Pp][Oo][Rr][Tt][Ee][Dd]|[Cc][Oo][Nn][Ff][Ii][Rr][Mm][Ee][Dd])\b'
+              # validated against them. The word boundary alone does not reach
+              # `not likely` or `non-likely`, where the confidence word is a
+              # whole word and the negation is a separate one, so those are
+              # excluded by lookbehind. What no pattern reaches is negation by
+              # argument, "this is anything but likely", which is the same
+              # limit already declared for flattening generally.
+              - pattern: '(?<![Nn]ot )(?<![Nn]on-)(?<![Nn]o )\b([Ss][Pp][Ee][Cc][Uu][Ll][Aa][Tt][Ii][Vv][Ee]|[Pp][Ll][Aa][Uu][Ss][Ii][Bb][Ll][Ee]|[Ll][Ii][Kk][Ee][Ll][Yy]|[Ss][Uu][Pp][Pp][Oo][Rr][Tt][Ee][Dd]|[Cc][Oo][Nn][Ff][Ii][Rr][Mm][Ee][Dd])\b'
               - pattern: '\b[Ff][Aa][Ll][Ss][Ii][Ff]'
 
         outstanding:
@@ -687,12 +693,30 @@ tasks:
            lost its difference is the anchoring failure the citation exists
            to expose.
 
+        6a. One suspected entry per hypothesis, in the board's order. This
+           is not presentation: it is what makes a citation checkable. With
+           the entries aligned to the board, a prior incident named against
+           entry three can be compared to the precedent the board attached to
+           hypothesis three, and `checks/briefing_grounded.py` does exactly
+           that. Reordered or merged, the briefing still reads well and
+           nothing can be verified against it.
+
+        6b. Only where it cites one. A hypothesis whose precedent_cited is
+           empty has no precedent, and mentioning a prior incident against it,
+           or inventing a divergence for it, manufactures the evidence the
+           citation exists to make checkable. Precedent belongs to the
+           hypothesis the board attached it to and to no other, and a prior
+           incident named against the wrong hypothesis is worse than one
+           omitted: it reads as grounding and there is nothing under it.
+
         7. outstanding is the board's blocking evidence that is still
            outstanding. asks is what you want from the people on the call,
            which follows from outstanding rather than replacing it.
 
         8. Carry the standing conditions the board separated out, in
-           standing_conditions and nowhere else. They are directly observed,
+           standing_conditions and nowhere else, which means not also in
+           known: a condition listed twice is a condition promoted back into
+           the evidence, and the separation is the whole point of the field. They are directly observed,
            so known is where they would otherwise land, and that merge
            produces the cause the board refused to record: a host at 70
            percent memory for months did not cause this and is why a new
@@ -715,10 +739,11 @@ tasks:
 
         Render the briefing. Reply with the JSON object only: the first
         character of your reply is the opening brace, with exactly these
-        top-level keys: headline, known, suspected, outstanding, asks. known,
-        suspected, outstanding and asks are arrays of strings, even for one
-        item. No markdown fences, no preamble, no text after the closing
-        brace. Do your analysis silently.
+        top-level keys and no others: headline, known, suspected, outstanding,
+        standing_conditions, asks. Every one of them except headline is an
+        array of strings, empty when there is nothing to put in it, and
+        headline is a string. No markdown fences, no preamble, no text after
+        the closing brace. Do your analysis silently.
     # Per task, never at root: a root contract merges into every task with
     # arrays unioned, so assess's required fields would silently become this
     # one's. Modest on purpose, because the anti-flattening rule lives in the
@@ -727,7 +752,7 @@ tasks:
     behavioural_contract:
       version: "1.0"
       description: >
-        Requires the four fields a briefing cannot be read without. It does
+        Requires the five fields a briefing cannot be read without. It does
         not enforce that the epistemics survived: field presence is all a
         contract of this shape checks, and whether a suspicion still reads as
         a suspicion is a property of a sentence. The output schema carries

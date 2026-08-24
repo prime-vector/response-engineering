@@ -102,6 +102,26 @@ def unsubstituted(text, required):
     return sorted({m for m in BRACED.findall(text or "") if m not in live})
 
 
+# The prompts here end with an explicit key list, "exactly these top-level keys
+# and no others: a, b, c". Where one is present it is the instruction the model
+# follows, and it is the thing that has to agree with the schema: naming a field
+# anywhere in the prompt is far too weak, because `standing_conditions` appeared
+# in a paragraph of rules explaining what it was for while the key list the
+# model obeys omitted it. A compliant response then failed validation, and this
+# check passed the spec.
+KEY_LIST = re.compile(
+    r"exactly these top-level keys(?: and no others)?:\s*([A-Za-z0-9_,\s]+?)\.")
+
+
+def enumerated_keys(text):
+    """The keys a prompt explicitly instructs, or None if it enumerates none."""
+    match = KEY_LIST.search(text or "")
+    if not match:
+        return None
+    return {k.strip() for k in match.group(1).replace("\n", " ").split(",")
+            if k.strip()}
+
+
 def names(text, field):
     """Whether this text names this output field, on a word boundary.
 
@@ -172,12 +192,33 @@ def check_spec(path):
         # either, since it is read by the model either way even though only
         # one of them is substituted.
         out_required = set(((task.get("output") or {}).get("required")) or [])
-        unnamed = sorted(f for f in out_required if not names(system + " " + user, f))
+        prompts_text = system + " " + user
+        unnamed = sorted(f for f in out_required if not names(prompts_text, f))
         if unnamed:
             failures += 1
             print(f"  FAIL {label} output requires {', '.join(unnamed)}, which "
                   f"its prompts never name. A prompt written for another task "
                   f"asks for that task's answer against this task's schema.")
+
+        # Where the prompt enumerates keys, that list is what the model obeys.
+        shape_wrong = False
+        enumerated = enumerated_keys(prompts_text)
+        if enumerated is not None:
+            allowed = set((task.get("output") or {}).get("properties") or {})
+            missing = sorted(out_required - enumerated)
+            if missing:
+                failures += 1
+                shape_wrong = True
+                print(f"  FAIL {label} instructs a key list omitting "
+                      f"{', '.join(missing)}, which its output requires. A "
+                      f"response obeying the prompt fails validation.")
+            extra = sorted(enumerated - allowed) if allowed else []
+            if extra:
+                failures += 1
+                shape_wrong = True
+                print(f"  FAIL {label} instructs {', '.join(extra)}, which its "
+                      f"output schema does not allow. A response obeying the "
+                      f"prompt fails validation.")
 
         unseen = sorted(k for k in required if not reads(user, k))
         if unseen:
@@ -186,7 +227,8 @@ def check_spec(path):
                   f"user template ({user_layer}) never reads. The caller "
                   f"computes and passes them and the model never sees them.")
 
-        if not in_system and not left_over and not unseen and not unnamed:
+        if not in_system and not left_over and not unseen and not unnamed \
+                and not shape_wrong:
             print(f"  ok   {label} system={system_layer}, user={user_layer}, "
                   f"{len(required)} input(s) all substituted, "
                   f"{len(out_required)} output field(s) all named")
