@@ -134,6 +134,18 @@ The bridge view is deliberately evidence-poor. The deciding evidence sits in `mi
 
 `.github/workflows/checks.yml` runs 1 to 4 on every pull request, the contract invariants included, so a green check means the generated artefacts match their generators and the surface still satisfies its contract. It cannot check 5 to 8. Those stay human.
 
+## Before asking for a review
+
+Green checks say the artefacts agree with their generators. They say nothing about whether a check can fail, and that is the gap the reviews here keep landing in. Of the findings across the two PRs that established this list, about half were things the author could have found first. Do these before a reviewer sees it, in the order that found things.
+
+1. **Mutation-test every guard.** Remove each guard, branch or regex alternative in turn from a copy, and require that exactly one case fails per removal. A check that passes first time has not been tested. This found three probe cases that could not fail, and five regex branches carrying no weight.
+2. **Test every enum and pattern across its full declared range**, not against the sample in hand. Read the vocabulary out of the schema that declares it and try all of it, in the casings and phrasings a model would write. A confidence pattern here once omitted `likely`, so the faithful rendering of a hypothesis at that confidence would have been rejected and the model's way out was to change the word: a constraint against flattening, causing it.
+3. **Give every code path no artefact in the tree exercises a committed self-test.** `checks/prompt_inputs.py --self-test` is the example. Style B prompts, the runner's default template and per-key layering precedence were all live code nothing in the repository reached, which is how a resolver that looked right survived a whole review round.
+4. **Sweep a fixed finding by its claim, never by its phrasing.** Every stale-document finding in that week was a second instance of one already fixed, in a file that worded it differently. Grep for what the claim asserts, not for the sentence quoted at you.
+5. **Audit every sentence saying a check enforces something.** Read the check and ask what it would take to pass while the claim is false. This is the most frequent defect in this repository's history, and it has appeared in a contract description on the very change whose central promise it was.
+
+None of this replaces the review. A cold reader still finds what none of it can: a retry that files a record twice, a decode that corrupts content in a way that still parses, a citation whose evidence nobody can open. The point is to stop spending a gate on the other half.
+
 ## Style
 
 Concise. No preamble. Comments explain why a constraint exists, not what the line does.
