@@ -268,9 +268,17 @@ def board_scale(spec):
     """The commander's hypotheses confidence, by path rather than by search.
 
     It is the scale every other declaration is held to, so it is read from the
-    one place it lives. Found by scanning, a rename of `hypotheses` would
-    silently promote some other confidence field to the reference and the whole
-    suite would agree with itself about the wrong vocabulary.
+    one place it lives rather than found. A scan takes whichever confidence
+    comes first under `assess`, and `assess` already declares more than one:
+    the attribution and precedent rules write a `confidence` of their own. Add
+    a container ahead of `hypotheses`, or remove `hypotheses` while another
+    remains, and the reference silently becomes a different field, after which
+    the suite agrees with itself about the wrong vocabulary and every spec
+    passes against a scale nobody chose.
+
+    Renaming `hypotheses` is the opposite case and the reason this is a path.
+    A scan would follow the rename and carry on; this stops finding anything
+    and says so. Losing the reference is not a thing to survive quietly.
 
     Returns (enum-or-None, whether the field is declared at all): a board that
     declares no confidence and a board that declares it as a bare string are
@@ -459,6 +467,19 @@ def scale_self_test():
          ["additionalProperties"]) = False
         return base
 
+    def decoy_first(base):
+        """A second confidence in `assess`, ordered ahead of `hypotheses` and
+        carrying a different scale. A scan would take this one as the
+        reference and report the real board as the drift; reading by path
+        takes the board and reports this one. The FAIL line names which."""
+        output = base["tasks"]["assess"]["output"]
+        board = output["properties"].pop("hypotheses")
+        output["properties"] = {
+            "early": {"type": "array", "items": {"type": "object", "properties": {
+                "confidence": {"type": "string", "enum": ["low", "high"]}}}},
+            "hypotheses": board}
+        return base
+
     def boolean_board(base):
         """`confidence: true` on the reference path itself. `board_scale`
         walks a fixed path and read `.get` off whatever it landed on, so this
@@ -548,6 +569,12 @@ def scale_self_test():
          {SPEC.name: spec(scale),
           "other.yaml": forbids_unnamed(spec(scale, "detect", "findings"))},
          0, "in the same order", 2),
+        ("a second confidence in assess, declared first",
+         # Names the decoy, not the board: if the reference had been scanned
+         # rather than read by path, these two swap and the message would
+         # report the real board as the field that drifted.
+         {SPEC.name: decoy_first(spec(scale))},
+         1, "assess/properties/early", 2),
         ("the board's confidence is a boolean schema",
          {SPEC.name: boolean_board(spec(scale)),
           "other.yaml": spec(scale, "detect", "findings")},
