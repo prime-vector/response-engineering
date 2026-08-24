@@ -1,0 +1,91 @@
+{
+  "recurrence_detected": true,
+  "recurrences": [
+    {
+      "signature": "host.memory.exhaustion:intg-prod-a1",
+      "entity_id": "intg-prod-a1",
+      "occurrence_count": 2,
+      "first_seen": "2026-03-02T03:17:00+00:00",
+      "last_seen": "2026-03-03T03:24:00+00:00",
+      "auto_closed_count": 2,
+      "acknowledged_count": 0
+    }
+  ],
+  "findings": [
+    {
+      "statement": "The signature 'host.memory.exhaustion:intg-prod-a1' has fired twice in the observation window, both times auto-closing without any human acknowledgement, assignment or action. Zero of two occurrences were consumed.",
+      "confidence": "confirmed",
+      "supporting_evidence": [
+        "P-4100 opened 2026-03-02T03:17:00Z, auto-closed 2026-03-02T05:57:00Z, acknowledged_by: null",
+        "P-4101 opened 2026-03-03T03:24:00Z, auto-closed 2026-03-03T06:04:00Z, acknowledged_by: null",
+        "Problem feed note: 'No problem in this window was acknowledged, assigned or actioned.'"
+      ],
+      "falsifying_test": "Show an acknowledgement, assignment or action record in the observability platform for either P-4100 or P-4101 that was not present in this feed."
+    },
+    {
+      "statement": "Memory consumption on intg-prod-a1 was flat at approximately 24.2 GiB from 2026-02-27T00:00Z through 2026-03-01T23:00Z, then began rising at a near-constant rate of approximately 87 MiB per hour from 2026-03-02T00:00Z onward, reaching approximately 27.8 GiB at the as_of timestamp. The rise has continued without interruption across both problem windows.",
+      "confidence": "supported",
+      "supporting_evidence": [
+        "Flat baseline: 25984552140 bytes (~24.2 GiB) held across all 72 hourly points from 2026-02-27T00:00Z to 2026-03-01T23:00Z",
+        "Step at 2026-03-02T00:00Z: value rises to 26628797234 bytes (~24.8 GiB), a jump of ~644 MiB from the prior hour",
+        "Subsequent hourly increments are approximately 91268055 bytes (~87 MiB/h) from 2026-03-02T01:00Z onward, consistent across all 36 remaining points",
+        "Value at as_of (2026-03-03T12:00Z): 29914447215 bytes (~27.8 GiB)",
+        "Both problem windows (P-4100: 03:17\u201305:57 on 03-02; P-4101: 03:24\u201306:04 on 03-03) fall within the rising-consumption period"
+      ],
+      "falsifying_test": "Retrieve memory.used at sub-hourly resolution across the two problem windows; if consumption shows drops or resets coinciding with auto-close events, the 'uninterrupted rise' characterisation would need revision."
+    },
+    {
+      "statement": "At the current observed rate of approximately 87 MiB/h, memory consumption will reach the 32 GiB total capacity in approximately 24 hours from the as_of timestamp, absent any change. This is a projection from a short observed trend and carries uncertainty.",
+      "confidence": "supported",
+      "supporting_evidence": [
+        "Capacity: 34359738368 bytes (32 GiB)",
+        "Value at as_of: 29914447215 bytes (~27.8 GiB)",
+        "Remaining headroom: 34359738368 - 29914447215 = 4445291153 bytes (~4.1 GiB)",
+        "Observed hourly increment: ~91268055 bytes/h (~87 MiB/h)",
+        "Hours to exhaustion at current rate: 4445291153 / 91268055 \u2248 48.7 hours from 2026-03-02T01:00Z reference, or approximately 24 hours from as_of 2026-03-03T12:00Z",
+        "Swap available: 8589934592 bytes (8 GiB), which may extend operation beyond RAM exhaustion but is not a substitute for available RAM"
+      ],
+      "falsifying_test": "Retrieve memory.used at a finer resolution or at a timestamp after 2026-03-03T12:00Z; if the rate has flattened, declined or reset, the projected exhaustion window would be invalid."
+    }
+  ],
+  "standing_conditions_implicated": [
+    {
+      "description": "Integration service JVM holds 23.1 GiB resident of 32 GiB total. Steady state for at least 6 months. Alerting is disabled and there is no recorded owner.",
+      "headroom_assessment": "Baseline steady-state consumption prior to 2026-03-02 was ~24.2 GiB against 32 GiB capacity, leaving ~7.8 GiB headroom (24.2% of total). The JVM's 23.1 GiB resident footprint alone consumes 72.2% of total RAM (23.1 / 32 = 0.722), leaving only ~8.9 GiB for all other processes at steady state. With consumption now at ~27.8 GiB and rising at ~87 MiB/h, the effective headroom above current consumption is 34359738368 - 29914447215 = 4445291153 bytes (~4.1 GiB, ~12.9% of total). No alerting is configured for this condition and no owner is recorded.",
+      "alerting": false,
+      "owner": null
+    }
+  ],
+  "next_actions": [
+    {
+      "action": "Route both P-4100 and P-4101 to an incident owner for acknowledgement and triage. The problem feed shows zero human consumption of two error-severity signals on a production host.",
+      "owner_role": "on-call engineer / incident commander",
+      "intent": "Ensure the recurrence is visible to a human who can decide whether to act, and establish ownership before a third occurrence.",
+      "authorisation_required": false
+    },
+    {
+      "action": "Collect a process snapshot (top by memory_bytes) on intg-prod-a1 to identify which process or processes account for the consumption above the known 23.1 GiB JVM baseline.",
+      "owner_role": "on-call engineer",
+      "intent": "Provide the incident commander with attribution data. The current view shows total host memory rising but does not identify the contributing process(es) above baseline.",
+      "authorisation_required": false
+    },
+    {
+      "action": "Retrieve memory.used at sub-hourly resolution across both problem windows (2026-03-02T02:00Z\u201306:30Z and 2026-03-03T02:00Z\u201306:30Z) to determine whether auto-close events correspond to consumption drops or to threshold hysteresis.",
+      "owner_role": "observability engineer",
+      "intent": "Clarify whether the auto-close pattern reflects genuine transient relief or a detection artefact, which affects urgency assessment.",
+      "authorisation_required": false
+    },
+    {
+      "action": "Assign an owner to the standing condition (JVM 23.1 GiB resident, no alerting, no owner) and evaluate whether alerting should be enabled given the current reduced headroom.",
+      "owner_role": "service owner / platform team",
+      "intent": "Close the gap where a high-baseline, no-alert, no-owner condition exists on a production host that is now experiencing repeated memory exhaustion signals.",
+      "authorisation_required": false
+    },
+    {
+      "action": "Do not attempt remediation (process restart, memory reclamation, capacity change) without explicit human authorisation from the incident commander. Current evidence warrants attention and evidence collection only.",
+      "owner_role": "incident commander",
+      "intent": "Preserve the constraint that production state changes require human authorisation.",
+      "authorisation_required": true
+    }
+  ]
+}

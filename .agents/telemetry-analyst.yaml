@@ -167,6 +167,7 @@ tasks:
                   One of: speculative, plausible, likely, supported, confirmed.
                   Counting problems in the feed can reach confirmed. Anything
                   about what the pattern means cannot.
+                enum: [speculative, plausible, likely, supported, confirmed]
               supporting_evidence:
                 type: array
                 items:
@@ -292,6 +293,8 @@ prompts:
     Every standing_conditions_implicated entry carries both description and
     headroom_assessment: the headroom arithmetic goes in headroom_assessment,
     never folded into description, and an entry without it is rejected.
+    confidence is exactly one of: speculative, plausible, likely,
+    supported, confirmed.
 
   user: |
     View as of: {{ as_of }}

@@ -1,0 +1,90 @@
+{
+  "onset_at": "2026-03-02T00:00:00+00:00",
+  "correlation_found": true,
+  "correlations": [
+    {
+      "statement": "endpoint-compliance-agent version 7.4.2-27 (CHG-88104) was installed on intg-prod-a1 at 2026-02-22T00:00:00+00:00, 8 days before onset.",
+      "change_ref": "CHG-88104",
+      "implemented_at": "2026-02-22T00:00:00+00:00",
+      "offset_from_onset": "8 days before onset",
+      "confidence": "plausible",
+      "supporting_evidence": [
+        "CHG-88104 is the only change record in the pre-onset window; it was implemented 8 days before the first memory exhaustion alert (P-4100, 2026-03-02T03:17:00+00:00).",
+        "The packages_installed registry confirms endpoint-compliance-agent 7.4.2-27 installed at 2026-02-22T00:00:00+00:00 as the newest package on the host.",
+        "The registry note states: 'The newest package on the host predates onset by 8 days.'",
+        "self_updating_agents_not_reflected=true: the agent may have self-updated between installation and onset without a corresponding package record.",
+        "The process snapshot at 2026-03-17T19:00:00+00:00 shows setroubleshootd (audit-analysis-server) consuming 99.7% CPU, started at 2026-03-02T06:00:00+00:00 \u2014 coinciding with the close of the first memory exhaustion event (P-4100 closed 2026-03-02T05:57:00+00:00).",
+        "Memory usage stepped up from a flat ~24.2 GiB baseline to a rising sawtooth pattern beginning at 2026-03-02T00:00:00+00:00, consistent with a new persistent process activating."
+      ],
+      "falsifying_test": "Confirm whether the endpoint-compliance-agent was active and consuming memory on the host between 2026-02-22 and 2026-03-01; if memory was flat during that period and the agent was idle, the 8-day gap weakens the temporal proximity of this correlation.",
+      "third_party_named": false
+    },
+    {
+      "statement": "setroubleshootd (audit-analysis-server 3.3.22-2.el8, pid 3501048) was observed running at 99.7% CPU from 2026-03-02T06:00:00+00:00, 0 days after onset, consuming 622,770,257 bytes of resident memory.",
+      "change_ref": "CHG-88104",
+      "implemented_at": "2026-03-02T06:00:00+00:00",
+      "offset_from_onset": "0 days after onset (process start coincides with close of first exhaustion event)",
+      "confidence": "plausible",
+      "supporting_evidence": [
+        "Process snapshot shows setroubleshootd started at 2026-03-02T06:00:00+00:00 with 79h 58m cumulative CPU time as of 2026-03-17T19:00:00+00:00.",
+        "audit-analysis-server package installed 2023-03-13 \u2014 not a new installation; activation event is not captured in the package registry.",
+        "SELinux is in enforcing mode on this host; setroubleshootd is the SELinux AVC denial analysis daemon and would activate in response to new AVC denials.",
+        "CHG-88104 (endpoint-compliance-agent) was deployed 8 days before onset; a new agent could generate novel SELinux AVC denials that trigger setroubleshootd activation.",
+        "The registry note states: 'The audit analysis daemon has been installed for 3 years. Its activation is not an installation event.' \u2014 confirming the activation is not reflected as a package change."
+      ],
+      "falsifying_test": "Inspect /var/log/audit/audit.log for AVC denial volume starting 2026-03-02; if no spike in AVC denials is present, the setroubleshootd activation is unrelated to SELinux policy enforcement against the new agent.",
+      "third_party_named": false
+    },
+    {
+      "statement": "kernel version 4.18.0 was installed at 2025-08-22T00:00:00+00:00, 192 days before onset.",
+      "change_ref": "kernel-4.18.0",
+      "implemented_at": "2025-08-22T00:00:00+00:00",
+      "offset_from_onset": "192 days before onset",
+      "confidence": "speculative",
+      "supporting_evidence": [
+        "Kernel 4.18.0 is the installed kernel per packages_installed registry.",
+        "No change record exists for this kernel installation in the changes_list window queried."
+      ],
+      "falsifying_test": "If memory behaviour was stable for the entire 192-day period between kernel installation and onset, this correlation has no temporal relevance.",
+      "third_party_named": false
+    }
+  ],
+  "registry_caveats": [
+    "self_updating_agents_not_reflected: true \u2014 the packages_installed response carries this caveat verbatim. Agents that self-update do not produce new package records; the current version of endpoint-compliance-agent running on the host may differ from 7.4.2-27 without any registry evidence.",
+    "The registry note states: 'The audit analysis daemon has been installed for 3 years. Its activation is not an installation event.' Activation of setroubleshootd on 2026-03-02 is not captured in any registry source.",
+    "deployments_list returned no pipeline-sourced deployments; the OS package manager and change registry are the declared sources of truth for this host.",
+    "No pipeline deployments means any application-layer change (e.g. integration-service.jar update) delivered outside the pipeline would be invisible to this registry."
+  ],
+  "next_actions": [
+    {
+      "action": "Collect /var/log/audit/audit.log from intg-prod-a1 covering 2026-02-22 through 2026-03-02 and extract AVC denial counts per hour to determine whether endpoint-compliance-agent installation triggered a surge in SELinux denials that activated setroubleshootd.",
+      "owner_role": "security_engineering",
+      "intent": "evidence_collection",
+      "authorisation_required": false
+    },
+    {
+      "action": "Capture the currently running version of endpoint-compliance-agent on intg-prod-a1 (e.g. via agent CLI or /var/lib/endpoint-compliance-agent/version) to determine whether it has self-updated beyond 7.4.2-27 since 2026-02-22.",
+      "owner_role": "security_engineering",
+      "intent": "evidence_collection",
+      "authorisation_required": false
+    },
+    {
+      "action": "Collect a heap and thread dump from the integration-service JVM (pid 3489339) to establish whether its memory growth pattern (rising sawtooth, ~24.2 GiB baseline to ~28.1 GiB peak) is attributable to a change in workload or internal state since 2026-03-02.",
+      "owner_role": "platform_engineering",
+      "intent": "evidence_collection",
+      "authorisation_required": false
+    },
+    {
+      "action": "Retrieve the full setroubleshootd log (/var/log/setroubleshoot/setroubleshoot.log) from 2026-03-02T06:00:00+00:00 onward to identify which SELinux denials are being analysed and whether the volume is consistent with the observed 99.7% CPU consumption.",
+      "owner_role": "security_engineering",
+      "intent": "evidence_collection",
+      "authorisation_required": false
+    },
+    {
+      "action": "Compare installed packages and agent versions between intg-prod-a1 and its non-prod equivalent intg-nonprod-a1, noting that build_parity=false and patch levels differ, to identify any additional packages present on prod that are absent from non-prod.",
+      "owner_role": "platform_engineering",
+      "intent": "evidence_collection",
+      "authorisation_required": false
+    }
+  ]
+}

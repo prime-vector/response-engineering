@@ -494,9 +494,92 @@ while breaking it. It is an enum now, with `incident_state` and
 boolean sentence named the two flags on `next_actions` and missed the two on
 the board itself, one of which carries a "false while X" rule, which is exactly
 the shape that produced the `reversible` failure; it now names all four. The
-other four specs still describe their confidence scales in prose and are
-tracked separately: none of them carries a rule that keys on the value, and
-pinning them wants a cheap live run each.
+other specs are pinned now, and the live run each was going to cost was already
+on disk. `precedent-analyst` had been done alongside its own work, leaving
+`change-correlator`, `scribe` and `telemetry-analyst` as free strings. Only
+`telemetry-analyst` did not already state the scale in its prompt, which is the
+`intent` rejection below waiting to happen a second time, so it states it now.
+The recorded outputs of the 24 Aug three-act run answer what the live run was
+for, and are committed as `docs/samples/confidence-scale-2026-08-24/` so the
+count can be recounted: 49 confidence values across those three tasks, every one
+in the scale and in the right case, so the enum rejects nothing those agents
+actually produced. One run each is not proof they cannot write `Confirmed` under
+other conditions. The prompt naming the values is what makes that unlikely; the
+enum is what makes it loud instead of silent.
+
+That citation first said 55, which is the count across all five tasks in the
+capture rather than the three this touches, and it named a path under `runs/`
+that nobody could open. The rule in `.gitignore` is that a cited capture is
+committed or the citation goes, and it earned its place: committing the files
+made the number countable and the number was wrong.
+
+**The scale is one vocabulary and is checked as one.**
+`checks/contract_invariants.py` reads every `confidence` a task output declares
+across all six specs and holds each to the commander board's enum, both values
+and order, and fails on any form it cannot read through rather than walking past
+it. It took two reviews to get that right, and both found the same shape of
+defect: a claim about what the check refuses, and a route around it. First a
+`$ref` on the confidence field was reported while one on the field's parent was
+not, which is the shape a shared finding object in a `$defs` block actually
+takes. Then `required: [confidence]` beside an `additionalProperties` schema,
+which declares and constrains a confidence with no `properties.confidence` for a
+walker to find at all. Each time the scale could drift under a green check and
+under a summary line saying they all agree.
+
+What closed it was enumerating the routes instead of the sightings, and it took
+two goes to enumerate them, because the first pass reasoned over subschemas and
+a schema does not need one. A schema pins the value of a property in exactly two
+ways. It applies a subschema to it, in which case the property is either named
+under `properties`, which the walker reads, or reached by indirection, by
+matching its name, or as one of the ones nobody named: six keywords. Or it
+asserts the whole object against an instance literal with `const` or `enum`, no
+subschema anywhere, which is how `const: {confidence: high}` pins a scale with
+nothing for a walker to find.
+
+Eight keywords, and the closure argument is over JSON Schema's vocabulary rather
+than over anything anyone has written. Two are reported only when their literal
+holds a mapping at any depth, because a string `enum` is how a scale is declared
+and a scalar `const` is how the commander's rules narrow one: report those and
+six declarations and nine narrowing rules go red at once. The depth is
+unbounded, which took a round of its own: a list of lists of objects is as valid
+a literal as a list of objects.
+
+`propertyNames` was in the set for a round and is not one of the eight. It
+applies its subschema to property names and never to their values, so it cannot
+pin a confidence at all. Rejecting it was conservative and sounded harmless, and
+was not: a member nobody can derive turns the case split back into a list, which
+is the defect the split exists to prevent. A self-test now asserts it is not
+reported, so putting it back costs a red case and an argument.
+`additionalProperties: false` is exempt for the same shape of reason, since
+forbidding what was not named is the opposite of hiding something in it. A form
+a check cannot read is not a form to skip. It is the claim failing.
+
+Four review rounds went into that one sentence, and the round count is the
+finding rather than the sentence. Five of the eight findings on this change were
+the same defect: a claim that a set was closed, where the set had been assembled
+by thinking hard rather than derived from anything a reader could check, so each
+round widened the list and the next found a member that was not on it. The two
+checklist items that came out of it are 7 and 8 under "Before asking for a
+review". Item 8 is the test that would have ended this at round one, in about
+ten seconds and without a reviewer: a completeness claim needs a case split, and
+if you cannot state the question the set answers, you do not have a closed set.
+Item 7 is the cheaper fix nobody tried for four rounds. In every one of those
+five findings the code was defensible and the sentence was the blocker, and the
+gap can be closed from either end.
+
+The first version of the check held the briefing to the board and nothing else,
+which left the four analysts free to drift from the vocabulary their claims are
+carried in. What is still not checked, in the current one, is whether an output
+carrying a claim declares a confidence at all: that stays the rule in CLAUDE.md with the Comms agent as its one written
+exception, and the check says so rather than leaving a reader to assume
+otherwise. Its `--self-test` drives the branches no spec reaches while the
+scales agree. Every guard is mutation-tested, and every member of those three
+tuples separately, which is not the same thing: mutating a tuple wholesale
+showed the loop mattered while `$recursiveRef` sat inside it with no case
+touching it, so the sentence claiming coverage was true of the loop and false of
+the set. That includes the guard that keeps
+a `not: {const: confirmed}` rule from being counted as a declaration and
+reported as a drift against the very scale it narrows.
 
 **A schema that pins a vocabulary the prompt does not state is a rejection
 waiting to happen.** The first live board after the enums went in invented

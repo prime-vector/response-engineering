@@ -1,0 +1,365 @@
+{
+  "entries": [
+    {
+      "at": "2023-03-13T00:00:00+00:00",
+      "event": "Package audit-analysis-server version 3.3.22-2.el8 installed on intg-prod-a1. The audit analysis daemon has been installed for approximately 3 years as of the incident date. Its activation during this incident is not an installation event.",
+      "source": "Change history: PKG-list (queried 2026-03-17T19:21:00+00:00)",
+      "confidence": "confirmed",
+      "falsifying_test": "PKG-list showing a different installation date for audit-analysis-server."
+    },
+    {
+      "at": "2025-08-22T00:00:00+00:00",
+      "event": "Kernel package version 4.18.0 installed on intg-prod-a1. This is the newest package on the host per the package registry and predates the incident onset by approximately 8 days relative to CHG-88104 and by approximately 6 months relative to the first memory exhaustion alert.",
+      "source": "Change history: PKG-list (queried 2026-03-17T19:21:00+00:00)",
+      "confidence": "confirmed",
+      "falsifying_test": "PKG-list showing a different installation date for the kernel package."
+    },
+    {
+      "at": "2025-09-03T00:00:00+00:00",
+      "event": "Integration service JVM (pid 3489339, user intgsvc, command 'java -jar integration-service.jar') started on intg-prod-a1. Process has been running continuously since this time.",
+      "source": "Signals: host process_snapshot at 2026-03-17T19:00:00+00:00 (started_at field for pid 3489339)",
+      "confidence": "confirmed",
+      "falsifying_test": "Process snapshot showing a different started_at for pid 3489339."
+    },
+    {
+      "at": "2026-02-22T00:00:00+00:00",
+      "event": "CHG-88104 implemented: endpoint-compliance-agent 7.4.2-27 rolled out to server fleet including intg-prod-a1. Change type: agent_deployment. Risk: low. Outcome: successful. Implementer role: security_engineering. Package registry note: self_updating_agents_not_reflected=true \u2014 the agent may have self-updated beyond version 7.4.2-27 since this date with no registry record.",
+      "source": "Change history: CHG-88104; Change history: PKG-list",
+      "confidence": "confirmed",
+      "falsifying_test": "CHG-88104 record showing a different implementation date or affected host list."
+    },
+    {
+      "at": "2026-02-27T00:00:00+00:00",
+      "event": "Memory metric series begins (earliest point in observability window). memory.used on intg-prod-a1 is flat at 25984552140 bytes (~24.2 GiB) for the entire period 2026-02-27T00:00:00+00:00 through 2026-03-01T23:00:00+00:00 \u2014 72 consecutive hourly readings at the same value. This is consistent with the standing condition of the integration service JVM holding 23.1 GiB resident as steady state.",
+      "source": "Signals: observability_platform metric_series memory.used",
+      "confidence": "confirmed",
+      "falsifying_test": "Metric series showing different values or variation during this window."
+    },
+    {
+      "at": "2026-03-02T00:00:00+00:00",
+      "event": "Memory metric series shows first departure from flat baseline: memory.used rises to 26628797234 bytes (~24.8 GiB) at 2026-03-02T00:00:00+00:00, up from the flat 25984552140 bytes (~24.2 GiB) of the preceding 72 hours. This marks the onset of the rising sawtooth memory pattern.",
+      "source": "Signals: observability_platform metric_series memory.used",
+      "confidence": "confirmed",
+      "falsifying_test": "Metric series showing the value at 2026-03-02T00:00:00+00:00 is not elevated above the prior flat baseline."
+    },
+    {
+      "at": "2026-03-02T03:17:00+00:00",
+      "event": "Observability platform opens problem P-4100: 'Memory exhaustion and elevated page fault rate' (signature host.memory.exhaustion:intg-prod-a1, severity error) on intg-prod-a1. acknowledged_by: null. root_cause_claimed: null.",
+      "source": "Signals: observability_platform problem_feed, problem id P-4100",
+      "consumed_by_human": false,
+      "confidence": "confirmed",
+      "falsifying_test": "Problem feed record for P-4100 showing a different opened_at, acknowledged_by, or affected entity."
+    },
+    {
+      "at": "2026-03-02T05:57:00+00:00",
+      "event": "Problem P-4100 auto-closes. Duration open: approximately 2 hours 40 minutes. No human acknowledged, assigned, or actioned this problem.",
+      "source": "Signals: observability_platform problem_feed, problem id P-4100; observability_platform note: 'No problem in this window was acknowledged, assigned or actioned.'",
+      "confidence": "confirmed",
+      "falsifying_test": "Problem feed record for P-4100 showing auto_closed: false or a non-null acknowledged_by."
+    },
+    {
+      "at": "2026-03-02T06:00:00+00:00",
+      "event": "setroubleshootd process (pid 3501048, user audit-analysis, command '/usr/libexec/platform-python -Es /usr/sbin/setroubleshootd -f') started on intg-prod-a1. This is an activation event, not an installation event; the audit-analysis-server package has been installed for approximately 3 years.",
+      "source": "Signals: host process_snapshot at 2026-03-17T19:00:00+00:00 (started_at field for pid 3501048); Change history: PKG-list registry caveat",
+      "confidence": "confirmed",
+      "falsifying_test": "Process snapshot showing a different started_at for pid 3501048."
+    },
+    {
+      "at": "2026-03-03T03:24:00+00:00",
+      "event": "Observability platform opens problem P-4101: 'Memory exhaustion and elevated page fault rate' (signature host.memory.exhaustion:intg-prod-a1, severity error). acknowledged_by: null. root_cause_claimed: null.",
+      "source": "Signals: observability_platform problem_feed, problem id P-4101",
+      "consumed_by_human": false,
+      "confidence": "confirmed",
+      "falsifying_test": "Problem feed record for P-4101 showing a different opened_at or acknowledged_by."
+    },
+    {
+      "at": "2026-03-03T06:04:00+00:00",
+      "event": "Problem P-4101 auto-closes. Duration open: approximately 2 hours 40 minutes. No human acknowledged, assigned, or actioned this problem.",
+      "source": "Signals: observability_platform problem_feed, problem id P-4101; observability_platform note",
+      "confidence": "confirmed",
+      "falsifying_test": "Problem feed record for P-4101 showing auto_closed: false or a non-null acknowledged_by."
+    },
+    {
+      "at": "2026-03-04T03:31:00+00:00",
+      "event": "Observability platform opens problem P-4102: 'Memory exhaustion and elevated page fault rate' (signature host.memory.exhaustion:intg-prod-a1, severity error). acknowledged_by: null. root_cause_claimed: null.",
+      "source": "Signals: observability_platform problem_feed, problem id P-4102",
+      "consumed_by_human": false,
+      "confidence": "confirmed",
+      "falsifying_test": "Problem feed record for P-4102 showing a different opened_at or acknowledged_by."
+    },
+    {
+      "at": "2026-03-04T06:11:00+00:00",
+      "event": "Problem P-4102 auto-closes. Duration open: approximately 2 hours 40 minutes. No human acknowledged, assigned, or actioned this problem.",
+      "source": "Signals: observability_platform problem_feed, problem id P-4102; observability_platform note",
+      "confidence": "confirmed",
+      "falsifying_test": "Problem feed record for P-4102 showing auto_closed: false or a non-null acknowledged_by."
+    },
+    {
+      "at": "2026-03-05T03:38:00+00:00",
+      "event": "Observability platform opens problem P-4103: 'Memory exhaustion and elevated page fault rate' (signature host.memory.exhaustion:intg-prod-a1, severity error). acknowledged_by: null. root_cause_claimed: null.",
+      "source": "Signals: observability_platform problem_feed, problem id P-4103",
+      "consumed_by_human": false,
+      "confidence": "confirmed",
+      "falsifying_test": "Problem feed record for P-4103 showing a different opened_at or acknowledged_by."
+    },
+    {
+      "at": "2026-03-05T06:18:00+00:00",
+      "event": "Problem P-4103 auto-closes. Duration open: approximately 2 hours 40 minutes. No human acknowledged, assigned, or actioned this problem.",
+      "source": "Signals: observability_platform problem_feed, problem id P-4103; observability_platform note",
+      "confidence": "confirmed",
+      "falsifying_test": "Problem feed record for P-4103 showing auto_closed: false or a non-null acknowledged_by."
+    },
+    {
+      "at": "2026-03-07T03:45:00+00:00",
+      "event": "Observability platform opens problem P-4104: 'Memory exhaustion and elevated page fault rate' (signature host.memory.exhaustion:intg-prod-a1, severity error). acknowledged_by: null. root_cause_claimed: null. Note: no problem fired on 2026-03-06 per the problem feed.",
+      "source": "Signals: observability_platform problem_feed, problem id P-4104",
+      "consumed_by_human": false,
+      "confidence": "confirmed",
+      "falsifying_test": "Problem feed record for P-4104 showing a different opened_at or acknowledged_by."
+    },
+    {
+      "at": "2026-03-07T06:25:00+00:00",
+      "event": "Problem P-4104 auto-closes. Duration open: approximately 2 hours 40 minutes. No human acknowledged, assigned, or actioned this problem.",
+      "source": "Signals: observability_platform problem_feed, problem id P-4104; observability_platform note",
+      "confidence": "confirmed",
+      "falsifying_test": "Problem feed record for P-4104 showing auto_closed: false or a non-null acknowledged_by."
+    },
+    {
+      "at": "2026-03-08T03:52:00+00:00",
+      "event": "Observability platform opens problem P-4105: 'Memory exhaustion and elevated page fault rate' (signature host.memory.exhaustion:intg-prod-a1, severity error). acknowledged_by: null. root_cause_claimed: null.",
+      "source": "Signals: observability_platform problem_feed, problem id P-4105",
+      "consumed_by_human": false,
+      "confidence": "confirmed",
+      "falsifying_test": "Problem feed record for P-4105 showing a different opened_at or acknowledged_by."
+    },
+    {
+      "at": "2026-03-08T06:32:00+00:00",
+      "event": "Problem P-4105 auto-closes. Duration open: approximately 2 hours 40 minutes. No human acknowledged, assigned, or actioned this problem.",
+      "source": "Signals: observability_platform problem_feed, problem id P-4105; observability_platform note",
+      "confidence": "confirmed",
+      "falsifying_test": "Problem feed record for P-4105 showing auto_closed: false or a non-null acknowledged_by."
+    },
+    {
+      "at": "2026-03-09T03:19:00+00:00",
+      "event": "Observability platform opens problem P-4106: 'Memory exhaustion and elevated page fault rate' (signature host.memory.exhaustion:intg-prod-a1, severity error). acknowledged_by: null. root_cause_claimed: null.",
+      "source": "Signals: observability_platform problem_feed, problem id P-4106",
+      "consumed_by_human": false,
+      "confidence": "confirmed",
+      "falsifying_test": "Problem feed record for P-4106 showing a different opened_at or acknowledged_by."
+    },
+    {
+      "at": "2026-03-09T05:59:00+00:00",
+      "event": "Problem P-4106 auto-closes. Duration open: approximately 2 hours 40 minutes. No human acknowledged, assigned, or actioned this problem.",
+      "source": "Signals: observability_platform problem_feed, problem id P-4106; observability_platform note",
+      "confidence": "confirmed",
+      "falsifying_test": "Problem feed record for P-4106 showing auto_closed: false or a non-null acknowledged_by."
+    },
+    {
+      "at": "2026-03-10T03:26:00+00:00",
+      "event": "Observability platform opens problem P-4107: 'Memory exhaustion and elevated page fault rate' (signature host.memory.exhaustion:intg-prod-a1, severity error). acknowledged_by: null. root_cause_claimed: null.",
+      "source": "Signals: observability_platform problem_feed, problem id P-4107",
+      "consumed_by_human": false,
+      "confidence": "confirmed",
+      "falsifying_test": "Problem feed record for P-4107 showing a different opened_at or acknowledged_by."
+    },
+    {
+      "at": "2026-03-10T06:06:00+00:00",
+      "event": "Problem P-4107 auto-closes. Duration open: approximately 2 hours 40 minutes. No human acknowledged, assigned, or actioned this problem.",
+      "source": "Signals: observability_platform problem_feed, problem id P-4107; observability_platform note",
+      "confidence": "confirmed",
+      "falsifying_test": "Problem feed record for P-4107 showing auto_closed: false or a non-null acknowledged_by."
+    },
+    {
+      "at": "2026-03-11T03:33:00+00:00",
+      "event": "Observability platform opens problem P-4108: 'Memory exhaustion and elevated page fault rate' (signature host.memory.exhaustion:intg-prod-a1, severity error). acknowledged_by: null. root_cause_claimed: null.",
+      "source": "Signals: observability_platform problem_feed, problem id P-4108",
+      "consumed_by_human": false,
+      "confidence": "confirmed",
+      "falsifying_test": "Problem feed record for P-4108 showing a different opened_at or acknowledged_by."
+    },
+    {
+      "at": "2026-03-11T06:13:00+00:00",
+      "event": "Problem P-4108 auto-closes. Duration open: approximately 2 hours 40 minutes. No human acknowledged, assigned, or actioned this problem.",
+      "source": "Signals: observability_platform problem_feed, problem id P-4108; observability_platform note",
+      "confidence": "confirmed",
+      "falsifying_test": "Problem feed record for P-4108 showing auto_closed: false or a non-null acknowledged_by."
+    },
+    {
+      "at": "2026-03-13T03:40:00+00:00",
+      "event": "Observability platform opens problem P-4109: 'Memory exhaustion and elevated page fault rate' (signature host.memory.exhaustion:intg-prod-a1, severity error). acknowledged_by: null. root_cause_claimed: null. Note: no problem fired on 2026-03-12 per the problem feed.",
+      "source": "Signals: observability_platform problem_feed, problem id P-4109",
+      "consumed_by_human": false,
+      "confidence": "confirmed",
+      "falsifying_test": "Problem feed record for P-4109 showing a different opened_at or acknowledged_by."
+    },
+    {
+      "at": "2026-03-13T06:20:00+00:00",
+      "event": "Problem P-4109 auto-closes. Duration open: approximately 2 hours 40 minutes. No human acknowledged, assigned, or actioned this problem.",
+      "source": "Signals: observability_platform problem_feed, problem id P-4109; observability_platform note",
+      "confidence": "confirmed",
+      "falsifying_test": "Problem feed record for P-4109 showing auto_closed: false or a non-null acknowledged_by."
+    },
+    {
+      "at": "2026-03-14T03:47:00+00:00",
+      "event": "Observability platform opens problem P-4110: 'Memory exhaustion and elevated page fault rate' (signature host.memory.exhaustion:intg-prod-a1, severity error). acknowledged_by: null. root_cause_claimed: null.",
+      "source": "Signals: observability_platform problem_feed, problem id P-4110",
+      "consumed_by_human": false,
+      "confidence": "confirmed",
+      "falsifying_test": "Problem feed record for P-4110 showing a different opened_at or acknowledged_by."
+    },
+    {
+      "at": "2026-03-14T06:27:00+00:00",
+      "event": "Problem P-4110 auto-closes. Duration open: approximately 2 hours 40 minutes. No human acknowledged, assigned, or actioned this problem.",
+      "source": "Signals: observability_platform problem_feed, problem id P-4110; observability_platform note",
+      "confidence": "confirmed",
+      "falsifying_test": "Problem feed record for P-4110 showing auto_closed: false or a non-null acknowledged_by."
+    },
+    {
+      "at": "2026-03-15T03:54:00+00:00",
+      "event": "Observability platform opens problem P-4111: 'Memory exhaustion and elevated page fault rate' (signature host.memory.exhaustion:intg-prod-a1, severity error). acknowledged_by: null. root_cause_claimed: null.",
+      "source": "Signals: observability_platform problem_feed, problem id P-4111",
+      "consumed_by_human": false,
+      "confidence": "confirmed",
+      "falsifying_test": "Problem feed record for P-4111 showing a different opened_at or acknowledged_by."
+    },
+    {
+      "at": "2026-03-15T06:34:00+00:00",
+      "event": "Problem P-4111 auto-closes. Duration open: approximately 2 hours 40 minutes. No human acknowledged, assigned, or actioned this problem.",
+      "source": "Signals: observability_platform problem_feed, problem id P-4111; observability_platform note",
+      "confidence": "confirmed",
+      "falsifying_test": "Problem feed record for P-4111 showing auto_closed: false or a non-null acknowledged_by."
+    },
+    {
+      "at": "2026-03-16T03:21:00+00:00",
+      "event": "Observability platform opens problem P-4112: 'Memory exhaustion and elevated page fault rate' (signature host.memory.exhaustion:intg-prod-a1, severity error). acknowledged_by: null. root_cause_claimed: null.",
+      "source": "Signals: observability_platform problem_feed, problem id P-4112",
+      "consumed_by_human": false,
+      "confidence": "confirmed",
+      "falsifying_test": "Problem feed record for P-4112 showing a different opened_at or acknowledged_by."
+    },
+    {
+      "at": "2026-03-16T06:01:00+00:00",
+      "event": "Problem P-4112 auto-closes. Duration open: approximately 2 hours 40 minutes. No human acknowledged, assigned, or actioned this problem. This is the 13th consecutive auto-closed memory exhaustion problem on intg-prod-a1, spanning 15 days (2026-03-02 through 2026-03-16), all unacknowledged.",
+      "source": "Signals: observability_platform problem_feed, problem id P-4112; observability_platform note: 'No problem in this window was acknowledged, assigned or actioned.'",
+      "confidence": "confirmed",
+      "falsifying_test": "Problem feed record for P-4112 showing auto_closed: false or a non-null acknowledged_by."
+    },
+    {
+      "at": "2026-03-17T19:00:00+00:00",
+      "event": "Host process snapshot taken on intg-prod-a1. Two notable processes observed: (1) pid 3501048, user audit-analysis, command '/usr/libexec/platform-python -Es /usr/sbin/setroubleshootd -f', cpu_percent 99.7, memory_bytes 622770257, started_at 2026-03-02T06:00:00+00:00, cumulative_cpu_time '79:58'. (2) pid 3489339, user intgsvc, command 'java -jar integration-service.jar', cpu_percent 5.6, memory_bytes 24803436134, started_at 2025-09-03T00:00:00+00:00, cumulative_cpu_time '12878:17'. memory.used at this hour: 28362890280 bytes (~26.4 GiB).",
+      "source": "Signals: host process_snapshot at 2026-03-17T19:00:00+00:00; Signals: observability_platform metric_series memory.used",
+      "confidence": "confirmed",
+      "falsifying_test": "Process snapshot showing different cpu_percent, memory_bytes, or started_at values for either pid."
+    },
+    {
+      "at": "2026-03-17T19:00:00+00:00",
+      "event": "Evidence E-1 collected: 'Process listing confirms the audit analysis daemon is active and consuming CPU. Does not identify what is generating the denials it is processing.' Establishes: daemon is active. Does not establish: source of the denials.",
+      "source": "Evidence collected: E-1",
+      "confidence": "confirmed",
+      "falsifying_test": "E-1 record showing a different collected_at or establishes/does_not_establish fields."
+    },
+    {
+      "at": "2026-03-17T19:20:00+00:00",
+      "event": "Evidence E-2 collected: 'Security module confirmed in enforcing mode. Denials are real and are being logged.'",
+      "source": "Evidence collected: E-2",
+      "confidence": "confirmed",
+      "falsifying_test": "E-2 record showing a different collected_at or finding."
+    },
+    {
+      "at": "2026-03-17T19:21:00+00:00",
+      "event": "Audit denial log requested from platform_team: 'Audit denial log for the affected window, showing the source domain and denied action for each denial.' How to obtain: 'Query the audit log for denial records over the last 14 days on the affected host.' Still outstanding as of record as_of timestamp. Board note: 'This is the deciding evidence. Everything else is inference until it lands.'",
+      "source": "Evidence never collected: audit denial log entry; Board state: blocking_evidence",
+      "consumed_by_human": false,
+      "confidence": "confirmed",
+      "falsifying_test": "Evidence record showing the audit log was received prior to 2026-03-17T19:30:00+00:00."
+    },
+    {
+      "at": "2026-03-17T19:21:00+00:00",
+      "event": "Package history queried (PKG-list). Registry caveat noted: self_updating_agents_not_reflected=true. Packages of note: endpoint-compliance-agent 7.4.2-27 (installed 2026-02-22), audit-analysis-server 3.3.22-2.el8 (installed 2023-03-13), kernel 4.18.0 (installed 2025-08-22). Registry note: 'The audit analysis daemon has been installed for 3 years. Its activation is not an installation event. The newest package on the host predates onset by 8 days.'",
+      "source": "Change history: PKG-list",
+      "confidence": "confirmed",
+      "falsifying_test": "PKG-list record showing a different queried_at or package list."
+    },
+    {
+      "at": "2026-03-17T19:30:00+00:00",
+      "event": "Board state at record as_of timestamp: incident_state 'hypothesis_blocked'. Board summary: 'intg-prod-a1 is experiencing recurring nightly memory exhaustion and near-total CPU saturation from setroubleshootd (99.7% CPU since 2026-03-02), which correlates with batch transfer latency and console slowness. The cause of the SELinux AVC denial storm driving setroubleshootd has not been established; audit log evidence is outstanding and convergence is blocked.' convergence_allowed: false. Five blocking evidence items outstanding. No mitigation attempts recorded.",
+      "source": "Board state",
+      "confidence": "confirmed",
+      "falsifying_test": "Board state record showing a different incident_state or convergence_allowed value at this timestamp."
+    },
+    {
+      "at": "2026-03-17T19:30:00+00:00",
+      "event": "Hypothesis 1 (confidence: supported): 'setroubleshootd is consuming ~100% CPU in response to a high-volume stream of SELinux AVC denials that began on 2026-03-02, and this CPU saturation is the proximate cause of batch transfer latency and console slowness on intg-prod-a1.' Falsifying test per board: 'Inspect /var/log/audit/audit.log for AVC denial counts per hour from 2026-03-02 onward; if denial volume is low or absent, setroubleshootd CPU consumption has a different cause not yet identified.'",
+      "source": "Board state: hypotheses[0]",
+      "confidence": "supported",
+      "falsifying_test": "Board state showing a different confidence level or falsifying test for this hypothesis."
+    },
+    {
+      "at": "2026-03-17T19:30:00+00:00",
+      "event": "Hypothesis 2 (confidence: plausible): 'The installation of endpoint-compliance-agent 7.4.2-27 (CHG-88104) on 2026-02-22 triggered novel SELinux AVC denials that activated setroubleshootd on 2026-03-02, initiating the CPU and memory exhaustion pattern.' Falsifying test per board: 'Inspect /var/log/audit/audit.log for AVC denials from 2026-02-22 through 2026-03-02; if no denials are attributable to the endpoint-compliance-agent source domain, this hypothesis is falsified. Additionally, confirm whether the agent was active and consuming memory between 2026-02-22 and 2026-03-01; flat memory during that period weakens the correlation.'",
+      "source": "Board state: hypotheses[1]",
+      "confidence": "plausible",
+      "falsifying_test": "Board state showing a different confidence level or falsifying test for this hypothesis."
+    },
+    {
+      "at": "2026-03-17T19:30:00+00:00",
+      "event": "Hypothesis 3 (confidence: plausible): 'The integration service JVM has a memory leak contributing to the rising sawtooth memory pattern, with the JVM's resident set growing during each batch cycle and partially recovering, compounding the memory exhaustion alongside setroubleshootd.' Falsifying test per board: 'Collect a JVM heap dump from pid 3489339; if heap occupancy is stable and within historical norms, the JVM is not contributing to the memory growth pattern. Swap metrics would also clarify whether the JVM is being paged out during exhaustion events.'",
+      "source": "Board state: hypotheses[2]",
+      "confidence": "plausible",
+      "falsifying_test": "Board state showing a different confidence level or falsifying test for this hypothesis."
+    },
+    {
+      "at": "2026-03-17T19:30:00+00:00",
+      "event": "Hypothesis 4 (confidence: supported): 'The recurring nightly memory exhaustion events (P-4100 through P-4112) have been auto-closing without acknowledgement for 15 days, masking a progressive degradation that has now manifested as user-visible latency.' Falsifying test per board: 'Compare batch transfer completion times and console response times on days when problems were open versus closed; if performance is identical in both states, the auto-closing events are not causing user-visible impact.'",
+      "source": "Board state: hypotheses[3]",
+      "confidence": "supported",
+      "falsifying_test": "Board state showing a different confidence level or falsifying test for this hypothesis."
+    }
+  ],
+  "gaps": [
+    {
+      "description": "Audit denial log for intg-prod-a1 covering the affected window (2026-02-22 through present), showing source domain and denied action for each AVC denial. Requested from platform_team at 2026-03-17T19:21:00+00:00. Board designates this 'the deciding evidence. Everything else is inference until it lands.' Still outstanding as of 2026-03-17T19:30:00+00:00.",
+      "how_to_obtain": "Query the audit log for denial records over the last 14 days on the affected host (/var/log/audit/audit.log on intg-prod-a1).",
+      "obtainable_since": "2026-03-02T06:00:00+00:00",
+      "still_outstanding": true
+    },
+    {
+      "description": "Currently running version of endpoint-compliance-agent on intg-prod-a1. Package registry shows 7.4.2-27 installed 2026-02-22 but self_updating_agents_not_reflected=true; the agent may have self-updated with no registry record. Requested from security_engineering; still outstanding.",
+      "how_to_obtain": "Run agent CLI version command or read /var/lib/endpoint-compliance-agent/version on intg-prod-a1.",
+      "obtainable_since": "2026-02-22T00:00:00+00:00",
+      "still_outstanding": true
+    },
+    {
+      "description": "setroubleshootd log (/var/log/setroubleshoot/setroubleshoot.log) from 2026-03-02T06:00:00+00:00 onward, to identify which SELinux denials are being analysed and whether volume is consistent with 99.7% CPU. Requested from security_engineering; still outstanding.",
+      "how_to_obtain": "Retrieve /var/log/setroubleshoot/setroubleshoot.log from intg-prod-a1.",
+      "obtainable_since": "2026-03-02T06:00:00+00:00",
+      "still_outstanding": true
+    },
+    {
+      "description": "JVM heap dump and thread dump from pid 3489339 (integration-service) to characterise whether memory growth is attributable to a workload change or internal leak since 2026-03-02. Requested from platform_engineering; still outstanding.",
+      "how_to_obtain": "Run jcmd 3489339 GC.heap_info and jstack 3489339 on intg-prod-a1.",
+      "obtainable_since": "2026-03-02T00:00:00+00:00",
+      "still_outstanding": true
+    },
+    {
+      "description": "Swap utilisation metric series (swap.used) for intg-prod-a1 at 1h resolution covering 2026-03-02 to present, to determine whether the JVM or other processes are being paged out during exhaustion events. Requested from platform_engineering; still outstanding.",
+      "how_to_obtain": "Pull swap.used metric from observability platform for intg-prod-a1 at 1h resolution for the same window as the memory series.",
+      "obtainable_since": "2026-03-02T00:00:00+00:00",
+      "still_outstanding": true
+    },
+    {
+      "description": "Batch transfer completion time records for the affected period (2026-03-02 through 2026-03-17), to establish the duration and pattern of latency relative to the nightly memory exhaustion windows. The reported symptom states transfers are completing late but not failing; no timing data is present in the input.",
+      "how_to_obtain": "Retrieve batch job completion timestamps from the integration console or scheduler logs on intg-prod-a1 or the orchestration layer.",
+      "obtainable_since": "2026-03-02T00:00:00+00:00",
+      "still_outstanding": true
+    },
+    {
+      "description": "Application-layer change history for intg-prod-a1 (e.g. integration-service.jar deployments) delivered outside the change pipeline. The pipeline deployments list returned empty; any change delivered outside the pipeline is invisible to the change registry per board standing condition.",
+      "how_to_obtain": "Query the integration service deployment log or artefact repository for any jar or configuration updates to intg-prod-a1 since 2026-02-22.",
+      "obtainable_since": "2026-02-22T00:00:00+00:00",
+      "still_outstanding": true
+    }
+  ],
+  "record_ref": "SYN-0001",
+  "record_updated": true
+}
