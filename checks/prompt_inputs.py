@@ -206,7 +206,7 @@ def override_targets(driver=pathlib.Path("demos/governance.sh")):
     return targets
 
 
-def check_overrides():
+def check_overrides(overrides=None, driver=pathlib.Path("demos/governance.sh")):
     """An override is a whole prompt, so it carries a prompt's obligations.
 
     Two of them. It is never substituted, so a placeholder in one is dead
@@ -216,9 +216,9 @@ def check_overrides():
     checking only for placeholders left that half open for every override in
     the tree.
     """
-    targets = override_targets()
+    targets = override_targets(driver)
     failures = 0
-    for path in OVERRIDES:
+    for path in (OVERRIDES if overrides is None else overrides):
         key = str(path)
         found = unsubstituted(path.read_text(), set())
         if found:
@@ -239,7 +239,7 @@ def check_overrides():
         task = (spec.get("tasks") or {}).get(task_name) or {}
         out_required = ((task.get("output") or {}).get("required")) or []
         text = path.read_text()
-        unnamed = [f for f in out_required if f not in text]
+        unnamed = [f for f in out_required if not names(text, f)]
         if unnamed:
             failures += 1
             print(f"  FAIL {path} overrides {task_name} but never names "
@@ -255,41 +255,59 @@ def check_overrides():
 # layering precedence are all live code here and all unexercised by any spec in
 # the tree, which is how a resolver that looked right stayed wrong through a
 # whole review round. Run with --self-test; CI does.
+# Each case carries the reason it must fail, not merely that it must. Asserting
+# the outcome alone is what let `unseen` and `in_system` go unproven through a
+# review round: every case that failed, failed on leftover placeholders or an
+# unnamed output field first, so deleting either branch left the suite green.
+# A case that starts failing for a different reason is now a failure too.
 SELF_TESTS = (
-    ("Style B prompts, correct", False,
-     {"tasks": {"t": {"input": {"required": ["a"]}, "output": {"required": ["r"]}}},
-      "prompts": {"t": {"system": "sys names r", "user": "{{ a }}"}}}),
-    ("Style B prompts referencing a non-input", True,
-     {"tasks": {"t": {"input": {"required": ["a"]}, "output": {"required": ["r"]}}},
-      "prompts": {"t": {"system": "sys names r", "user": "{{ a }} {{ b }}"}}}),
+    ("Style B prompts, correct", None,
+     {"tasks": {"t": {"input": {"required": ["a"]}, "output": {"required": ["r_field"]}}},
+      "prompts": {"t": {"system": "sys names r_field", "user": "{{ a }}"}}}),
+    ("Style B prompts referencing a non-input", "unsubstituted",
+     {"tasks": {"t": {"input": {"required": ["a"]}, "output": {"required": ["r_field"]}}},
+      "prompts": {"t": {"system": "sys names r_field", "user": "{{ a }} {{ b }}"}}}),
     # The runner defaults the user template to `{{ input }}`, which its own
     # substitution loop never replaces, so a task with no prompts anywhere
     # hands the model that literal string.
-    ("no prompts at all, runner default template", True,
-     {"tasks": {"t": {"input": {"required": ["a"]}, "output": {"required": ["r"]}}}}),
-    ("no inputs and no placeholders", False,
-     {"tasks": {"t": {"input": {}, "output": {"required": ["r"]}}},
-      "prompts": {"system": "produce r", "user": "produce r"}}),
+    ("no prompts at all, runner default template", "unsubstituted",
+     {"tasks": {"t": {"input": {"required": ["a"]}, "output": {"required": ["r_field"]}}}}),
+    ("no inputs and no placeholders", None,
+     {"tasks": {"t": {"input": {}, "output": {"required": ["r_field"]}}},
+      "prompts": {"system": "produce r_field", "user": "produce r_field"}}),
     # Precedence per key: inline system, Style B user, and a root user template
     # that must not be reached. Resolving the pair as a block takes the root's
     # broken placeholder and fails this case.
-    ("inline system over Style B user over root", False,
-     {"tasks": {"t": {"prompts": {"system": "names r"},
-                      "input": {"required": ["a"]}, "output": {"required": ["r"]}}},
+    ("inline system over Style B user over root", None,
+     {"tasks": {"t": {"prompts": {"system": "names r_field"},
+                      "input": {"required": ["a"]}, "output": {"required": ["r_field"]}}},
       "prompts": {"t": {"user": "{{ a }}"}, "user": "{{ zzz }}"}}),
-    ("a misspaced placeholder the runner will not substitute", True,
-     {"tasks": {"t": {"input": {"required": ["a"]}, "output": {"required": ["r"]}}},
-      "prompts": {"system": "names r", "user": "{{  a  }}"}}),
-    ("a prompt asking for another task's output shape", True,
+    ("a misspaced placeholder the runner will not substitute", "unsubstituted",
+     {"tasks": {"t": {"input": {"required": ["a"]}, "output": {"required": ["r_field"]}}},
+      "prompts": {"system": "names r_field", "user": "{{  a  }}"}}),
+    ("a prompt asking for another task's output shape", "never name",
      {"tasks": {"t": {"input": {"required": ["a"]},
                       "output": {"required": ["headline", "known"]}}},
       "prompts": {"system": "produce incident_state and hypotheses",
                   "user": "{{ a }}"}}),
     # The case that found substring matching: `r` is inside "produce", so a
     # prompt naming nothing was credited with naming this task's whole output.
-    ("a one-letter output field not actually named", True,
+    ("a one-letter output field not actually named", "never name",
      {"tasks": {"t": {"input": {"required": ["a"]}, "output": {"required": ["r"]}}},
       "prompts": {"system": "produce the answer", "user": "{{ a }}"}}),
+    # The reverse direction, and the shape that shipped: a template with no
+    # leftover placeholders that simply never reads one of its required inputs.
+    # `board` is computed by the caller, passed, and never substituted. This is
+    # the only case that reaches `unseen`, which went a whole round unproven.
+    ("a required input the well-formed template never reads", "never reads",
+     {"tasks": {"t": {"input": {"required": ["audience", "board"]},
+                      "output": {"required": ["headline"]}}},
+      "prompts": {"system": "produce a headline", "user": "for {{ audience }}"}}),
+    # And the only case that reaches `in_system`: a system prompt whose sole
+    # defect is a placeholder, which is never substituted in one.
+    ("a placeholder in an otherwise correct system prompt", "reach the model literally",
+     {"tasks": {"t": {"input": {"required": ["a"]}, "output": {"required": ["r_field"]}}},
+      "prompts": {"system": "produce r_field for {{ a }}", "user": "{{ a }}"}}),
 )
 
 
@@ -299,23 +317,82 @@ def self_test():
     import tempfile
 
     failures = 0
-    for label, should_fail, spec in SELF_TESTS:
+    for label, expected, spec in SELF_TESTS:
         with tempfile.TemporaryDirectory() as tmp:
             path = pathlib.Path(tmp) / "probe.yaml"
             path.write_text(yaml.safe_dump(spec))
             buf = io.StringIO()
             with contextlib.redirect_stdout(buf):
-                failed = check_spec(path) > 0
-        ok = failed == should_fail
+                count = check_spec(path)
+        output = buf.getvalue()
+        if expected is None:
+            ok, detail = count == 0, "accepted"
+            if not ok:
+                detail = "rejected: " + output.strip().splitlines()[0][:70]
+        elif count == 0:
+            ok, detail = False, "accepted, but should have been rejected"
+        else:
+            ok = expected in output
+            detail = (f"rejected on {expected!r}" if ok else
+                      f"rejected for the wrong reason, wanted {expected!r}")
         failures += not ok
-        print(f"  {'ok  ' if ok else 'FAIL'} {label}: "
-              f"{'rejected' if failed else 'accepted'}, expected "
-              f"{'rejected' if should_fail else 'accepted'}")
+        print(f"  {'ok  ' if ok else 'FAIL'} {label}: {detail}")
+    failures += override_self_test()
     print()
     if failures:
         sys.exit(f"{failures} self-test(s) failed: the check does not behave "
                  f"the way it is documented to.")
-    print(f"{len(SELF_TESTS)} self-tests hold.")
+    print(f"{len(SELF_TESTS) + len(OVERRIDE_SELF_TESTS)} self-tests hold, each "
+          f"on the reason it names.")
+
+
+# The override half, driven the same way and for the same reason: its
+# output-shape branch was the one branch a mutation could delete with the whole
+# suite green, because nothing exercised it.
+OVERRIDE_SELF_TESTS = (
+    ("a correct override", None, "produce headline and known", True),
+    ("an override carrying a placeholder", "never substituted",
+     "produce headline and known for {{ audience }}", True),
+    ("an override asking for another task's shape", "never names",
+     "produce incident_state and hypotheses", True),
+    ("an override the driver does not pair", "not paired",
+     "produce headline and known", False),
+)
+
+
+def override_self_test():
+    import contextlib
+    import io
+    import tempfile
+
+    failures = 0
+    for label, expected, body, paired in OVERRIDE_SELF_TESTS:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            spec = root / "probe.yaml"
+            spec.write_text(yaml.safe_dump(
+                {"tasks": {"t": {"output": {"required": ["headline", "known"]}}}}))
+            override = root / "probe-system-prompt.txt"
+            override.write_text(body)
+            driver = root / "driver.sh"
+            driver.write_text(
+                f'oa run --spec {spec} --task t '
+                f'--system-prompt "$(cat {override})"\n' if paired else "no pairing here\n")
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                count = check_overrides([override], driver)
+        output = buf.getvalue()
+        if expected is None:
+            ok, detail = count == 0, "accepted"
+        elif count == 0:
+            ok, detail = False, "accepted, but should have been rejected"
+        else:
+            ok = expected in output
+            detail = (f"rejected on {expected!r}" if ok else
+                      f"rejected for the wrong reason, wanted {expected!r}")
+        failures += not ok
+        print(f"  {'ok  ' if ok else 'FAIL'} {label}: {detail}")
+    return failures
 
 
 def main():
