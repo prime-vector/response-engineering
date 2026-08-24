@@ -500,16 +500,28 @@ on disk. `precedent-analyst` had been done alongside its own work, leaving
 `telemetry-analyst` did not already state the scale in its prompt, which is the
 `intent` rejection below waiting to happen a second time, so it states it now.
 The recorded outputs of the 24 Aug three-act run answer what the live run was
-for: 55 confidence values across those three tasks, every one in the scale and
-in the right case, so the enum rejects nothing those agents actually produced.
-One run each is not proof they cannot write `Confirmed` under other conditions.
-The prompt naming the values is what makes that unlikely; the enum is what makes
-it loud instead of silent.
+for, and are committed as `docs/samples/confidence-scale-2026-08-24/` so the
+count can be recounted: 49 confidence values across those three tasks, every one
+in the scale and in the right case, so the enum rejects nothing those agents
+actually produced. One run each is not proof they cannot write `Confirmed` under
+other conditions. The prompt naming the values is what makes that unlikely; the
+enum is what makes it loud instead of silent.
+
+That citation first said 55, which is the count across all five tasks in the
+capture rather than the three this touches, and it named a path under `runs/`
+that nobody could open. The rule in `.gitignore` is that a cited capture is
+committed or the citation goes, and it earned its place: committing the files
+made the number countable and the number was wrong.
 
 **The scale is one vocabulary and is checked as one.**
 `checks/contract_invariants.py` reads every `confidence` a task output declares
 across all six specs and holds each to the commander board's enum, both values
-and order. It held the briefing to the board and nothing else, which left the
+and order, and fails on any form it cannot read through rather than walking past
+it. The first version did walk past one: it reported a `$ref` written on the
+confidence field and never saw one on the field's parent, which is the shape a
+shared finding object in a `$defs` block actually takes, so a live scale could
+drift under a green check and under a summary line saying they all agree. A
+form a check cannot read is not a form to skip. It is the claim failing. It held the briefing to the board and nothing else, which left the
 four analysts free to drift from the vocabulary their claims are carried in. It
 still does not check whether an output carrying a claim declares a confidence at
 all: that stays the rule in CLAUDE.md with the Comms agent as its one written

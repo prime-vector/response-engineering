@@ -189,24 +189,42 @@ def declared_scales(specs):
     declaring one, and counting them would report a scale drift for every rule
     that narrows the scale on purpose.
 
-    Anything else is reported rather than skipped, with `readable` false. A
-    confidence reached through a `$ref`, or wrapped in a `oneOf`, is a scale
-    this check cannot read, and skipping it quietly is how the summary line
-    would come to say every declaration shares one scale while one of them was
-    never looked at. The whole point of the check is that a spec cannot hold a
-    vocabulary nobody is comparing; a form it does not understand is the same
-    hole wearing a different shape.
+    Anything else is reported rather than skipped, with `readable` false, and
+    this walker reads exactly one form: `properties.confidence` written inline.
+    It does not resolve references and does not match patterns, so a `$ref`
+    anywhere in an output and a `patternProperties` mapping are both reported
+    on sight, whether or not a confidence is hiding behind them. That is
+    deliberate and it is the whole guarantee. The first version reported a
+    `$ref` written *on* the confidence field and silently walked past one on
+    its parent, which is the shape a shared finding object actually takes:
+
+        $defs: {finding: {properties: {confidence: {enum: [...]}}}}
+        tasks: {detect: {output: {properties: {findings: {items:
+               {$ref: "#/$defs/finding"}}}}}}
+
+    Nothing was declared, nothing was unreadable, the summary line said every
+    declaration shares one scale, and a live field drifted under a green check.
+    A form this cannot read is not a form to skip: it is the claim failing.
     """
     def walk(node, path):
         if isinstance(node, dict):
+            if "$ref" in node:
+                yield f"{path}/$ref", None, False
             for key, value in node.items():
+                if key == "patternProperties":
+                    yield f"{path}/patternProperties", None, False
                 if isinstance(value, dict) and key == "properties":
                     for field, decl in value.items():
-                        if field != "confidence" or not isinstance(decl, dict):
+                        if field != "confidence":
                             continue
-                        if "type" in decl or "enum" in decl:
+                        if not isinstance(decl, dict):
+                            yield f"{path}/{field}", None, False
+                        elif "type" in decl or "enum" in decl:
                             yield f"{path}/{field}", decl.get("enum"), True
-                        elif "not" not in decl:
+                        elif set(decl) != {"not"}:
+                            # Only a bare narrowing rule is exempt. `not`
+                            # beside anything else is a node doing something
+                            # this does not model.
                             yield f"{path}/{field}", None, False
                 yield from walk(value, f"{path}/{key}")
         elif isinstance(node, list):
@@ -346,6 +364,47 @@ def scale_self_test():
          ["properties"]["confidence"]) = {"$ref": "#/definitions/scale"}
         return base
 
+    def shared_object(base):
+        """The shape that got past the first version: the confidence is real
+        and fully declared, but it lives in a `$defs` block the walker never
+        visits, reached by a `$ref` on the container. Nothing declared, nothing
+        unreadable, and a green summary line saying they all agree."""
+        task, = base["tasks"]
+        container, = base["tasks"][task]["output"]["properties"]
+        base["$defs"] = {"finding": base["tasks"][task]["output"]["properties"]
+                         [container]["items"]}
+        base["tasks"][task]["output"]["properties"][container]["items"] = {
+            "$ref": "#/$defs/finding"}
+        return base
+
+    def pattern_site(base):
+        """A confidence declared through a pattern rather than a name. The
+        walker matches key names and would never look at it."""
+        task, = base["tasks"]
+        base["tasks"][task]["output"]["patternProperties"] = {
+            "^confidence$": {"type": "string"}}
+        return base
+
+    def boolean_site(base):
+        """`confidence: true` is a valid JSON Schema meaning "anything". It is
+        not a dict, so the first version skipped it while it accepted every
+        word in the language."""
+        task, = base["tasks"]
+        container, = base["tasks"][task]["output"]["properties"]
+        (base["tasks"][task]["output"]["properties"][container]["items"]
+         ["properties"]["confidence"]) = True
+        return base
+
+    def rule_plus(base):
+        """A narrowing rule with something else beside it. Exempting any node
+        carrying a `not` would wave this through whatever the something is."""
+        task, = base["tasks"]
+        container, = base["tasks"][task]["output"]["properties"]
+        (base["tasks"][task]["output"]["properties"][container]["items"]
+         ["properties"]["confidence"]) = {"not": {"const": "confirmed"},
+                                          "$ref": "#/$defs/scale"}
+        return base
+
     real = yaml.safe_load(SPEC.read_text())
     # Derived from the spec rather than typed out, so a change to the scale
     # cannot quietly change what these cases measure, and read by path rather
@@ -387,7 +446,27 @@ def scale_self_test():
          0, "in the same order", 1),
         ("a confidence in a form the check cannot read",
          {SPEC.name: spec(scale), "other.yaml": by_ref(spec(scale, "detect", "findings"))},
+         # Twice: once as a confidence node declaring nothing this reads, once
+         # as the reference itself. Both lines are true and both name a real
+         # path, and collapsing them would mean deciding which of the two
+         # reasons to withhold.
+         2, "form this check cannot read", 1),
+        ("a confidence in a shared object reached by $ref",
+         {SPEC.name: spec(scale),
+          "other.yaml": shared_object(spec(scale, "detect", "findings"))},
          1, "form this check cannot read", 1),
+        ("a confidence declared through patternProperties",
+         {SPEC.name: spec(scale),
+          "other.yaml": pattern_site(spec(scale, "detect", "findings"))},
+         1, "form this check cannot read", 2),
+        ("a confidence declared as a boolean schema",
+         {SPEC.name: spec(scale),
+          "other.yaml": boolean_site(spec(scale, "detect", "findings"))},
+         1, "form this check cannot read", 1),
+        ("a narrowing rule with another keyword beside it",
+         {SPEC.name: spec(scale),
+          "other.yaml": rule_plus(spec(scale, "detect", "findings"))},
+         2, "form this check cannot read", 1),
     ]
 
     failures = 0
