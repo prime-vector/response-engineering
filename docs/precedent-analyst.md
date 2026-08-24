@@ -534,9 +534,10 @@ make paraphrase impossible, and the spec says so where the field is declared.
 five-word scale lived in its description, so a cited hypothesis at `Confirmed`
 satisfied the rule and defeated it. `confidence`, `incident_state` and
 `next_actions[].intent` are now real enums, the same treatment `brief.audience`
-had for the same reason. The other four specs still describe their scales in
-prose; that is the same class and it is tracked rather than fixed here, because
-none of them carries a rule that keys on the value.
+had for the same reason. The other specs described their scales in
+prose, which is the same class, and they are enums now too: one scale, declared
+the same way in every spec that carries a claim, with
+`checks/contract_invariants.py` holding each to the commander board's.
 
 **Pinning a scale in the schema means pinning it in the prompt too, and that
 cost a run to learn.** The first live board after the enums went in invented

@@ -494,9 +494,30 @@ while breaking it. It is an enum now, with `incident_state` and
 boolean sentence named the two flags on `next_actions` and missed the two on
 the board itself, one of which carries a "false while X" rule, which is exactly
 the shape that produced the `reversible` failure; it now names all four. The
-other four specs still describe their confidence scales in prose and are
-tracked separately: none of them carries a rule that keys on the value, and
-pinning them wants a cheap live run each.
+other specs are pinned now, and the live run each was going to cost was already
+on disk. `precedent-analyst` had been done alongside its own work, leaving
+`change-correlator`, `scribe` and `telemetry-analyst` as free strings. Only
+`telemetry-analyst` did not already state the scale in its prompt, which is the
+`intent` rejection below waiting to happen a second time, so it states it now.
+The recorded outputs of the 24 Aug three-act run answer what the live run was
+for: 55 confidence values across those three tasks, every one in the scale and
+in the right case, so the enum rejects nothing those agents actually produced.
+One run each is not proof they cannot write `Confirmed` under other conditions.
+The prompt naming the values is what makes that unlikely; the enum is what makes
+it loud instead of silent.
+
+**The scale is one vocabulary and is checked as one.**
+`checks/contract_invariants.py` reads every `confidence` a task output declares
+across all six specs and holds each to the commander board's enum, both values
+and order. It held the briefing to the board and nothing else, which left the
+four analysts free to drift from the vocabulary their claims are carried in. It
+still does not check whether an output carrying a claim declares a confidence at
+all: that stays the rule in CLAUDE.md with the Comms agent as its one written
+exception, and the check says so rather than leaving a reader to assume
+otherwise. Its `--self-test` drives the branches no spec reaches while the
+scales agree, and every guard was mutation-tested, including the one that keeps
+a `not: {const: confirmed}` rule from being counted as a declaration and
+reported as a drift against the very scale it narrows.
 
 **A schema that pins a vocabulary the prompt does not state is a rejection
 waiting to happen.** The first live board after the enums went in invented

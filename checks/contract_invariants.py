@@ -16,13 +16,23 @@ Each case below is a board, and each says whether the contract should accept
 it. No model, no network, no API key: the schema is read out of the spec and
 handed to the same validator the runner uses.
 
+One rule crosses every spec rather than sitting in one, and is checked here for
+the same reason: the confidence scale is a single vocabulary, and a claim keeps
+its epistemics only while the agent receiving it can express the word the agent
+sending it used. `oa validate` sees each spec alone and cannot notice two of
+them drifting apart.
+
     python3 checks/contract_invariants.py
+    python3 checks/contract_invariants.py --self-test
 
 Fails loudly on the first case whose verdict does not match, printing the
-board and what the validator said.
+board and what the validator said. The self-test drives the scale check's own
+branches, which no spec in the tree reaches while the scales agree.
 """
 
+import contextlib
 import copy
+import io
 import json
 import sys
 from pathlib import Path
@@ -39,6 +49,7 @@ except ImportError:  # pragma: no cover
     sys.exit("jsonschema is required: pip install jsonschema")
 
 SPEC = Path(__file__).resolve().parent.parent / ".agents" / "incident-commander.yaml"
+AGENTS = sorted(SPEC.parent.glob("*.yaml"))
 
 # The smallest board this contract accepts, so a case's own edit is the only
 # thing under test. Everything here is deliberately dull: the interesting part
@@ -167,8 +178,73 @@ CASES = [
 # responder's job rather than a validator's.
 
 
-def confidence_scale_holds(spec):
-    """The briefing's confidence enum is the board's, exactly.
+def declared_scales(specs):
+    """Every `confidence` field declared by any task output, with its enum.
+
+    Yields (spec_name, task, path, enum-or-None, readable). A node counts as a
+    declaration when it sits under a `properties` mapping and carries a `type`
+    or an `enum`. The commander's precedent and attribution rules also write
+    `confidence` under `properties`, as a bare `not: {const: confirmed}` with
+    no type of its own: those constrain a field declared elsewhere rather than
+    declaring one, and counting them would report a scale drift for every rule
+    that narrows the scale on purpose.
+
+    Anything else is reported rather than skipped, with `readable` false. A
+    confidence reached through a `$ref`, or wrapped in a `oneOf`, is a scale
+    this check cannot read, and skipping it quietly is how the summary line
+    would come to say every declaration shares one scale while one of them was
+    never looked at. The whole point of the check is that a spec cannot hold a
+    vocabulary nobody is comparing; a form it does not understand is the same
+    hole wearing a different shape.
+    """
+    def walk(node, path):
+        if isinstance(node, dict):
+            for key, value in node.items():
+                if isinstance(value, dict) and key == "properties":
+                    for field, decl in value.items():
+                        if field != "confidence" or not isinstance(decl, dict):
+                            continue
+                        if "type" in decl or "enum" in decl:
+                            yield f"{path}/{field}", decl.get("enum"), True
+                        elif "not" not in decl:
+                            yield f"{path}/{field}", None, False
+                yield from walk(value, f"{path}/{key}")
+        elif isinstance(node, list):
+            for index, value in enumerate(node):
+                yield from walk(value, f"{path}[{index}]")
+
+    for name in sorted(specs):
+        for task, definition in sorted((specs[name].get("tasks") or {}).items()):
+            if "output" not in definition:
+                continue
+            for path, enum, readable in walk(definition["output"], task):
+                yield name, task, path, enum, readable
+
+
+def board_scale(spec):
+    """The commander's hypotheses confidence, by path rather than by search.
+
+    It is the scale every other declaration is held to, so it is read from the
+    one place it lives. Found by scanning, a rename of `hypotheses` would
+    silently promote some other confidence field to the reference and the whole
+    suite would agree with itself about the wrong vocabulary.
+
+    Returns (enum-or-None, whether the field is declared at all): a board that
+    declares no confidence and a board that declares it as a bare string are
+    different defects, and reporting either as the other sends the fix to the
+    wrong file.
+    """
+    node = spec
+    for key in ("tasks", "assess", "output", "properties", "hypotheses",
+                "items", "properties", "confidence"):
+        if not isinstance(node, dict) or key not in node:
+            return None, False
+        node = node[key]
+    return node.get("enum"), True
+
+
+def confidence_scales_hold(specs):
+    """Every declared confidence enum is the commander's board's, exactly.
 
     This was a regex over a free string, and three review rounds went into it:
     word boundaries so `likely` did not match inside `unlikely`, lookbehinds so
@@ -177,46 +253,172 @@ def confidence_scale_holds(spec):
     hole. The hole was that a caveat carried as prose can be negated by prose,
     and no pattern closes that.
 
-    `suspected` is an array of objects now, with `confidence` an enum, which is
-    what CLAUDE.md required of any output carrying a claim from the start. So
-    what is left to check is the thing a schema cannot notice: that the two
-    enums have not drifted apart. A briefing that cannot express `likely`
-    rejects the faithful rendering of a hypothesis at that confidence, and the
-    model's way out is to pick a different word.
-    """
-    def scale(task, field, container):
-        node = (spec["tasks"][task]["output"]["properties"][container]
-                ["items"]["properties"][field])
-        # Absent rather than different: a confidence declared as a bare string
-        # accepts anything, which is the failure this whole change was about,
-        # and reading `["enum"]` straight would raise KeyError and report zero
-        # failures to anything counting them.
-        return node.get("enum")
+    Every confidence a spec declares is an enum now, which is what CLAUDE.md
+    required of any output carrying a claim from the start. So what is left to
+    check is the thing a schema cannot notice: that the scales have not drifted
+    apart. They are one vocabulary crossing five specs, and a claim keeps its
+    epistemics only while the agent receiving it can express the word the agent
+    sending it used. An analyst that can say `supported` handing a board that
+    cannot leaves the model to pick a different word, and a briefing that cannot
+    express `likely` rejects the faithful rendering of a hypothesis at that
+    confidence.
 
-    board = scale("assess", "confidence", "hypotheses")
-    brief = scale("brief", "confidence", "suspected")
-    if brief is None:
-        print("  FAIL the briefing's confidence is not an enum, so any string "
-              "is a valid confidence and a briefing can invent one")
-        return 1
+    What this does not check: whether an output that carries a claim declares a
+    confidence at all. It holds the ones that are declared. Presence is the rule
+    in CLAUDE.md with the Comms agent as its one written exception, and nothing
+    here enforces it.
+
+    Returns (failures, declarations checked).
+    """
+    found = list(declared_scales(specs))
+    declarations = [d for d in found if d[4]]
+    board, declared = board_scale(specs.get(SPEC.name) or {})
+    if not declared:
+        print(f"  FAIL {SPEC.name} declares no confidence on assess/hypotheses, "
+              f"so there is no scale for anything else to be held to")
+        return 1, len(declarations)
     if board is None:
-        print("  FAIL the board's confidence is not an enum, so there is no "
-              "scale for the briefing to be held to")
-        return 1
-    if board == brief:
-        print(f"  ok   the briefing's confidence enum is the board's, all "
-              f"{len(board)} values in the same order")
-        return 0
-    print(f"  FAIL the briefing's confidence enum is {brief} against the "
-          f"board's {board}: a hypothesis the board can hold is one the "
-          f"briefing cannot render faithfully")
-    return 1
+        print("  FAIL the board's confidence is not an enum, so any string is "
+              "a valid confidence and there is no scale to hold anything to")
+        return 1, len(declarations)
+
+    failures = 0
+    for name, task, path, enum, readable in found:
+        where = f"{name} {path}"
+        if not readable:
+            print(f"  FAIL {where} is declared in a form this check cannot "
+                  f"read, with no type, no enum and no narrowing rule: it may "
+                  f"be a scale, and nothing here is holding it to the board's")
+            failures += 1
+        elif enum is None:
+            # Absent rather than different: a confidence declared as a bare
+            # string accepts anything, which is the failure this whole change
+            # was about, and it is not a drift the comparison below would see.
+            print(f"  FAIL {where} is not an enum, so any string is a valid "
+                  f"confidence and this agent can invent one")
+            failures += 1
+        elif enum != board:
+            print(f"  FAIL {where} declares {enum} against the board's "
+                  f"{board}: a claim one can carry is one the other cannot "
+                  f"express, and the model's way out is a different word")
+            failures += 1
+    if not failures:
+        print(f"  ok   every confidence declared in .agents/ is the board's "
+              f"scale, all {len(board)} values in the same order, "
+              f"{len(declarations)} declarations")
+    return failures, len(declarations)
+
+
+def scale_self_test():
+    """Drive the branches above, which no spec in the tree reaches.
+
+    Every case asserts the reason it failed and not merely that it did: a
+    drifted scale and a bare string are different defects with different fixes,
+    and a suite that cannot tell them apart passes a check reporting either one
+    for the other.
+    """
+    def spec(scale, task="assess", container="hypotheses"):
+        field = {"type": "string"}
+        if scale is not None:
+            field["enum"] = list(scale)
+        return {"tasks": {task: {"output": {"properties": {container: {
+            "type": "array", "items": {"type": "object",
+                                       "properties": {"confidence": field}}}}}}}}
+
+    def with_rule(base):
+        """The shape the commander's precedent rule uses: `confidence` under a
+        `properties` mapping with no type, narrowing a field declared above it.
+        Counted as a declaration it would report a drift for every rule whose
+        whole job is to narrow the scale."""
+        base["tasks"]["assess"]["output"]["properties"]["cited"] = {
+            "type": "array", "contains": {"properties": {
+                "confidence": {"not": {"const": "confirmed"}}}}}
+        return base
+
+    def by_ref(base):
+        """A confidence with no type, no enum and no narrowing rule: the shape
+        a `$ref` or a `oneOf` wrapper would leave. Skipped rather than
+        reported, it would be a spec whose scale nothing compares, under a
+        summary line saying every declaration shares one."""
+        task, = base["tasks"]
+        container, = base["tasks"][task]["output"]["properties"]
+        (base["tasks"][task]["output"]["properties"][container]["items"]
+         ["properties"]["confidence"]) = {"$ref": "#/definitions/scale"}
+        return base
+
+    real = yaml.safe_load(SPEC.read_text())
+    # Derived from the spec rather than typed out, so a change to the scale
+    # cannot quietly change what these cases measure, and read by path rather
+    # than through the scanner these cases are testing.
+    scale, declared = board_scale(real)
+    if not declared or scale is None:
+        # Loudly, because a self-test that cannot find the scale it derives
+        # from otherwise dies on a TypeError inside a case, and a mutation
+        # that crashes the suite prints no verdicts for anyone to read.
+        sys.exit(f"  FAIL {SPEC.name} declares no confidence enum on "
+                 f"assess/hypotheses, so these cases have no scale to derive")
+    cases = [
+        ("every scale is the board's",
+         {SPEC.name: spec(scale), "other.yaml": spec(scale, "detect", "findings")},
+         0, "in the same order", 2),
+        ("another spec declares a bare string",
+         {SPEC.name: spec(scale), "other.yaml": spec(None, "detect", "findings")},
+         1, "is not an enum", 2),
+        ("another spec is missing a value",
+         {SPEC.name: spec(scale), "other.yaml": spec(scale[:-1], "detect", "findings")},
+         1, "against the board's", 2),
+        ("another spec has the values in a different order",
+         {SPEC.name: spec(scale), "other.yaml": spec(list(reversed(scale)), "detect", "findings")},
+         1, "against the board's", 2),
+        ("the board itself is a bare string",
+         {SPEC.name: spec(None), "other.yaml": spec(scale, "detect", "findings")},
+         1, "the board's confidence is not an enum", 2),
+        ("the board declares no confidence at all",
+         {SPEC.name: spec(scale, container="suspected"),
+          "other.yaml": spec(scale, "detect", "findings")},
+         1, "declares no confidence on assess/hypotheses", 2),
+        ("a second task in the same spec drifts",
+         {SPEC.name: {"tasks": {
+             "assess": spec(scale)["tasks"]["assess"],
+             "brief": spec(scale[:2], "brief", "suspected")["tasks"]["brief"]}}},
+         1, "against the board's", 2),
+        ("a rule narrowing the scale is not a declaration",
+         {SPEC.name: with_rule(spec(scale))},
+         0, "in the same order", 1),
+        ("a confidence in a form the check cannot read",
+         {SPEC.name: spec(scale), "other.yaml": by_ref(spec(scale, "detect", "findings"))},
+         1, "form this check cannot read", 1),
+    ]
+
+    failures = 0
+    for name, specs, want, reason, want_declared in cases:
+        buffer = io.StringIO()
+        with contextlib.redirect_stdout(buffer):
+            got, declared = confidence_scales_hold(specs)
+        output = buffer.getvalue()
+        ok = got == want and reason in output and declared == want_declared
+        failures += not ok
+        print(f"  {'ok  ' if ok else 'FAIL'} {name}")
+        if not ok:
+            print(f"       wanted {want} failure(s) over {want_declared} "
+                  f"declarations, reported as {reason!r}; got {got} over "
+                  f"{declared} from:\n{output.rstrip()}")
+    if failures:
+        sys.exit(f"\n{failures} of {len(cases)} scale self-tests failed.")
+    print(f"\n{len(cases)} scale self-tests pass: the check reports a bare "
+          f"string, a drifted scale, a reordered one and a form it cannot "
+          f"read, each for its own reason, and does not report the rule that "
+          f"narrows the scale on purpose.")
+    return 0
 
 
 def main():
-    spec = yaml.safe_load(SPEC.read_text())
-    schema = spec["tasks"]["assess"]["output"]
-    failures = confidence_scale_holds(spec)
+    if "--self-test" in sys.argv:
+        return scale_self_test()
+    specs = {path.name: yaml.safe_load(path.read_text()) for path in AGENTS}
+    schema = specs[SPEC.name]["tasks"]["assess"]["output"]
+    scale_failures, declarations = confidence_scales_hold(specs)
+    failures = 0
     for name, board, accepted in CASES:
         try:
             validate(instance=board, schema=schema)
@@ -230,9 +432,16 @@ def main():
               + ("" if got else f" ({why[:70]})"))
         if not ok:
             print(json.dumps(board, indent=2))
-    if failures:
-        sys.exit(f"\n{failures} of {len(CASES)} contract invariants did not hold.")
-    print(f"\n{len(CASES)} contract invariants hold against {SPEC.name}.")
+    # Counted apart, not summed: they are two different claims with two
+    # different fixes, and a total says neither. A drifted scale is one line in
+    # one spec; a board the contract accepts that it should not is the contract.
+    if failures or scale_failures:
+        sys.exit(f"\n{failures} of {len(CASES)} contract invariants did not "
+                 f"hold, and {scale_failures} of {declarations} confidence "
+                 f"declarations are not the board's scale.")
+    print(f"\n{len(CASES)} contract invariants hold against {SPEC.name}, and "
+          f"the {declarations} confidence declarations in .agents/ share one "
+          f"scale.")
 
 
 if __name__ == "__main__":

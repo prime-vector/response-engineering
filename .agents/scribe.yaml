@@ -211,6 +211,7 @@ tasks:
                   input can be confirmed. An entry carrying a claim from
                   the board keeps that claim's confidence verbatim, never
                   upgraded and never stripped.
+                enum: [speculative, plausible, likely, supported, confirmed]
               falsifying_test:
                 type: string
                 description: >

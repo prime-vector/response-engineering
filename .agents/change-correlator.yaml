@@ -162,6 +162,7 @@ tasks:
                   One of: speculative, plausible, likely, supported,
                   confirmed. The timestamps themselves can be confirmed.
                   What the proximity means never can be, from this agent.
+                enum: [speculative, plausible, likely, supported, confirmed]
               supporting_evidence:
                 type: array
                 items:

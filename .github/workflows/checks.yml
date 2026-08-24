@@ -29,9 +29,10 @@ jobs:
       # rules, so they can be checked without a model. Until this ran, they
       # were exercised only when a live board happened to try one, which is a
       # test that fires when it feels like it and bills when it does.
-      - name: Commander contract invariants
+      - name: Commander contract invariants and one confidence scale
         run: |
           pip install pyyaml jsonschema
+          python3 checks/contract_invariants.py --self-test
           python3 checks/contract_invariants.py
 
       - name: Corpus documents match the generator
