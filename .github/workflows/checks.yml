@@ -114,3 +114,12 @@ jobs:
           for spec in .agents/*.yaml; do
             oa validate --spec "$spec"
           done
+
+      # `oa validate` cannot see this one: a prompt referencing a variable
+      # that is not a required input is not invalid, it is two valid parts of
+      # a spec disagreeing. The runner then hands the model the literal text
+      # `{{ evidence }}` and the run still exits zero. The commander's brief
+      # task shipped that way from the beginning because it had never been
+      # run. Needs no key and no model, so it runs beside validation.
+      - name: Prompt variables and required inputs agree
+        run: python3 checks/prompt_inputs.py

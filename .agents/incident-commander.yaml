@@ -485,7 +485,19 @@ tasks:
         allow_domains: [localhost]
       file:
         allow_paths: ["./fixtures/"]
-    depends_on: [assess]
+    # No depends_on, and that is a correction rather than an omission. It
+    # declared [assess], which the runner does not treat as documentation: it
+    # executes the dependency and merges its output into this task's input
+    # flat, key by key, so what arrived was `hypotheses`, `blocking_evidence`
+    # and the rest as separate top-level keys, never a `board`. A prompt asking
+    # for {{ board }} could not have been substituted from it. It also meant
+    # every briefing re-ran assess, which is the longest generation here, so a
+    # board could never be rendered twice the same way or rendered at all from
+    # one already produced.
+    #
+    # The handoff is composition instead, the way every other handoff in this
+    # repository works: the caller passes the typed output it already has. The
+    # Scribe's timeline takes its board exactly this way.
     input:
       type: object
       properties:
@@ -497,14 +509,13 @@ tasks:
             updates are a different artefact and belong to the Comms agent,
             which is not given the board at all.
 
-            The value does not currently reach the model. This task has no
-            prompts of its own, so it inherits the root pair, which is written
-            for assess: it never substitutes {{ audience }}, it asks for
-            assess's output shape rather than this one, and its nine other
-            placeholders are not inputs here, so they arrive as literal
-            template text. brief has never been run and this is why. Do not
-            describe the audience as changing anything until the task has a
-            prompt that reads it. Tracked separately.
+            It changes register and it changes what is asked for. It does
+            not change what is known, what is suspected, or how either is
+            caveated: a board rendered for a sponsor carries the same
+            confidence words and the same falsifying tests as one rendered
+            for the bridge. An audience that gets a cleaner story is the
+            flattening this task exists to prevent, arriving by the one door
+            the schema cannot watch.
 
             executive_sponsor, not executive: the senior person accountable
             for this incident, on the call. The shorter word reads as the
@@ -515,10 +526,23 @@ tasks:
           # could pass "customer" and the contract would accept it, on the
           # one task whose whole job is rendering unconfirmed hypotheses.
           enum: [bridge, incident_manager, executive_sponsor]
+        board:
+          type: object
+          description: >
+            The board this renders, as assess produced it: hypotheses with
+            their confidence and falsifying tests, blocking evidence,
+            convergence ruling, attribution guard.
+
+            An input rather than something depends_on delivers. The runner
+            substitutes a prompt's placeholders only from keys present in the
+            input, so a board arriving any other way reaches the model as the
+            literal text {{ board }}, which is exactly how this task came to
+            have been never run. The caller passes it, the same way the
+            Scribe's timeline is passed the board it files.
       # No default. The runner does not apply input schema defaults, so one
-      # here is a comment that reads as behaviour, and the field is required
+      # here is a comment that reads as behaviour, and the fields are required
       # in any case.
-      required: [audience]
+      required: [audience, board]
     output:
       type: object
       properties:
@@ -546,6 +570,88 @@ tasks:
           items:
             type: string
       required: [headline, known, suspected, outstanding]
+    # Its own pair. Without it this task inherits the root prompts, which are
+    # written for assess: they ask for assess's output shape, and their ten
+    # placeholders are not inputs here, so every one of them reaches the model
+    # as literal template text. A task that renders a board while being shown
+    # the string {{ evidence }} is not degraded, it is a different task.
+    prompts:
+      system: >
+        You are an incident commander briefing your own response. You are
+        rendering a board that already exists. You are not extending it.
+
+        Your rules, in priority order:
+
+        1. Render, do not add. Every statement you make traces to the board
+           you were given. You may not introduce a hypothesis, an item of
+           evidence, a cause or a next step that is not on it. If the board
+           does not say something, the briefing does not either.
+
+        2. Carry the caveats into the sentence. Each entry in suspected
+           states its confidence word and its falsifying test inline, in the
+           entry itself, not in a preamble and not in a separate field. A
+           suspicion that reads as a fact once it changes format is the exact
+           failure this task exists to prevent, and it is the reason the
+           briefing is generated from the board rather than written from
+           memory.
+
+        3. known is what the board holds as directly observed, and nothing
+           else. Anything resting on correlation, plausibility, precedent or
+           elimination is suspected, however strongly the board leans on it.
+
+        4. Where the board blocks convergence, the headline says the cause is
+           not established. You never state a cause the board has not
+           confirmed, and a board with outstanding deciding evidence has not
+           confirmed one.
+
+        5. Where the board's attribution guard has fired, the briefing names
+           it as unconfirmed and carries the evidence the guard asked for.
+           Never let a third party arrive in a briefing as the answer.
+
+        6. Where a hypothesis cites precedent, say that it is a prior
+           incident and carry the divergence with it. A precedent that has
+           lost its difference is the anchoring failure the citation exists
+           to expose.
+
+        7. outstanding is the board's blocking evidence that is still
+           outstanding. asks is what you want from the people on the call,
+           which follows from outstanding rather than replacing it.
+
+        The audience changes your register and what you ask for. It does not
+        change what is known, what is suspected, or how either is caveated.
+      user: >
+        Audience: {{ audience }}. Inside the response, and briefed in full.
+
+        The board, as the incident commander produced it:
+        {{ board }}
+
+        Render the briefing. Reply with the JSON object only: the first
+        character of your reply is the opening brace, with exactly these
+        top-level keys: headline, known, suspected, outstanding, asks. known,
+        suspected, outstanding and asks are arrays of strings, even for one
+        item. No markdown fences, no preamble, no text after the closing
+        brace. Do your analysis silently.
+    # Per task, never at root: a root contract merges into every task with
+    # arrays unioned, so assess's required fields would silently become this
+    # one's. Modest on purpose, because the anti-flattening rule lives in the
+    # inline confidence and falsifying test, which is a property of the
+    # sentence and not a field a schema can see.
+    behavioural_contract:
+      version: "1.0"
+      description: >
+        Enforces that a board rendered for people carries the same epistemics
+        it had as data. The briefing is the last hop before a human repeats
+        it, and it is where a caveat is cheapest to drop.
+      role: Incident commander
+      behavioural_flags:
+        conservatism: high
+        verbosity: balanced
+        temperature_control:
+          mode: strict
+          range: [0.0, 0.3]
+      response_contract:
+        output_format:
+          required_fields: [headline, known, suspected, outstanding]
 
   mitigate:
     description: >
