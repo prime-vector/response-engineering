@@ -211,7 +211,13 @@ tasks:
           type: array
           description: >
             Every candidate cause under consideration, including ones being
-            argued against. A hypothesis omitted here cannot be raised downstream.
+            argued against. A hypothesis omitted here has no typed route
+            downstream: the briefing renders one entry per hypothesis and
+            `checks/briefing_grounded.py` holds it to that count, and the
+            Scribe files from this board. What that does not close is prose.
+            A briefing sentence, or a timeline entry, can assert something no
+            hypothesis here holds, which is the same limit the briefing's own
+            contract states about itself.
           items:
             type: object
             properties:

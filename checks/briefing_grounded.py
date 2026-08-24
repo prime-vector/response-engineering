@@ -106,7 +106,88 @@ def check(board_path, brief_path):
     return failures
 
 
+# The committed counterexample exercises two of the six branches below. The
+# other four are live and would be deleted unnoticed, which is the failure this
+# repository keeps making, so they get synthetic pairs of their own. Each case
+# names the reason it must fail, because a case that fails for a different
+# reason proves nothing about the branch it is named for.
+def _board(hypotheses=None, outstanding=1, conditions=1):
+    return {
+        "hypotheses": hypotheses if hypotheses is not None else
+        [{"statement": "h0", "precedent_cited": []}],
+        "blocking_evidence": [{"description": f"b{i}", "still_outstanding": True}
+                              for i in range(outstanding)],
+        "standing_conditions_noted": [f"condition {i}" for i in range(conditions)],
+    }
+
+
+def _brief(suspected=None, outstanding=1, conditions=1, known=None):
+    return {
+        "headline": "h",
+        "known": known if known is not None else [],
+        "suspected": suspected if suspected is not None else ["PLAUSIBLE thing"],
+        "outstanding": [f"b{i}" for i in range(outstanding)],
+        "standing_conditions": [f"condition {i}" for i in range(conditions)],
+    }
+
+
+SELF_TESTS = (
+    ("a faithful briefing", None, _board(), _brief()),
+    ("a reference the board does not contain", "invented",
+     _board(), _brief(suspected=["PLAUSIBLE, see INC-9999"])),
+    ("more entries than the board has hypotheses", "suspected entries against",
+     _board(), _brief(suspected=["one", "two"])),
+    ("a precedent on a hypothesis that carries none", "wrong hypothesis",
+     _board(hypotheses=[{"statement": "h0", "precedent_cited": []},
+                        {"statement": "h1", "precedent_cited": ["p-aaaaaaaaaaaa"],
+                         "note": "INC-2411"}]),
+     _brief(suspected=["PLAUSIBLE, see INC-2411", "PLAUSIBLE h1"])),
+    ("fewer outstanding items than the board still has", "outstanding items",
+     _board(outstanding=3), _brief(outstanding=1)),
+    ("a standing condition dropped", "standing conditions",
+     _board(conditions=3), _brief(conditions=1)),
+    ("a standing condition repeated in known", "repeats",
+     _board(), _brief(known=["condition 0"])),
+)
+
+
+def self_test():
+    import contextlib
+    import io
+    import tempfile
+
+    failures = 0
+    for label, expected, board, brief in SELF_TESTS:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = pathlib.Path(tmp)
+            (root / "board.json").write_text(json.dumps(board))
+            (root / "briefing-bridge.json").write_text(json.dumps(brief))
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                count = check(root / "board.json", root / "briefing-bridge.json")
+        output = buf.getvalue()
+        if expected is None:
+            ok, detail = count == 0, "accepted"
+            if not ok:
+                detail = "rejected: " + output.strip().splitlines()[0][:70]
+        elif count == 0:
+            ok, detail = False, "accepted, but should have been rejected"
+        else:
+            ok = expected in output
+            detail = (f"rejected on {expected!r}" if ok else
+                      f"rejected for the wrong reason, wanted {expected!r}")
+        failures += not ok
+        print(f"  {'ok  ' if ok else 'FAIL'} {label}: {detail}")
+    print()
+    if failures:
+        sys.exit(f"{failures} self-test(s) failed: the check does not behave "
+                 f"the way it is documented to.")
+    print(f"{len(SELF_TESTS)} self-tests hold, each on the reason it names.")
+
+
 def main():
+    if "--self-test" in sys.argv:
+        return self_test()
     pairs = [(d / "board.json", d / "briefing-bridge.json")
              for d in sorted(SAMPLES.glob("briefing-*"))
              if (d / "board.json").exists() and (d / "briefing-bridge.json").exists()]

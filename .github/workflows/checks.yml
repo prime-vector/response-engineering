@@ -130,4 +130,6 @@ jobs:
       # key and no model: it compares two committed files, which is the only
       # part of the briefing's central claim that is mechanically checkable.
       - name: Committed briefings are grounded in their boards
-        run: python3 checks/briefing_grounded.py
+        run: |
+          python3 checks/briefing_grounded.py --self-test
+          python3 checks/briefing_grounded.py
