@@ -112,8 +112,34 @@ a style guide leaves something that is no longer the output, and the whole value
 of this pair is that it is exactly what came back. `evals/results/` is committed
 on the same basis and for longer.
 
+## What four renders measured
+
+Every live render of this task so far has strengthened something the board
+hedged. Four for four, across three prompt revisions written to stop it.
+
+| Render | What it strengthened |
+| --- | --- |
+| `before-rule-3a` | The board says setroubleshootd "correlates with" latency; the headline said it "is driving" it |
+| `before-rule-6a` | Attached `INC-2411` and an invented divergence to a hypothesis the board carries no precedent on |
+| `before-typed-fields` | Caveats held as words in a sentence, which is what made the first two expressible |
+| current | "13 occurrences over 15 days" became problems "repeating nightly from 2026-03-02 onward", and a standing condition is restated across two `known` entries |
+
+That is the result, and it is not a queue of defects to work through. It is
+evidence for the thing this repository argues about incident reporting
+generally: a caveat carried as prose does not survive a change of format, and
+the fix is to stop carrying it as prose. Where that was possible it was done,
+and `suspected` is typed. Where it was not, in a headline and a list of
+observations that have to read as English, the claim has been withdrawn rather
+than defended.
+
+The current render's own violation is left in place deliberately. A sample that
+had been re-rolled until it passed would say less than one that shows what the
+guarantee is worth.
+
 ## What they are not
 
-Not a fixture, not a baseline, not regenerated, and nothing in CI compares
-anything to them. They are dated because they are a record of one run. If they
+Not a fixture, not a baseline, and not regenerated. CI does compare the current
+render against `board.json`, through `checks/briefing_grounded.py`: it validates
+against the task's output schema and checks the typed relationships. It does not
+compare the prose, which is the part that keeps failing. They are dated because they are a record of one run. If they
 disagree with the current specs, the specs are right and these are history.

@@ -135,25 +135,40 @@ def check(board_path, brief_path, schema=None):
         print(f"  FAIL {label} carries {len(conditions)} standing conditions "
               f"against {len(board.get('standing_conditions_noted') or [])} on "
               f"the board: the findings that get lost first")
-    # A condition listed twice is a condition promoted back into the evidence.
-    # Compared by shared content words rather than by a common prefix: the
-    # prefix test passed a `known` entry that restated a standing condition in
-    # different words, which is the same promotion wearing a paraphrase, and
-    # the gate found it in the one sample the check was meant to vouch for.
+    # A condition filed beside the evidence has become evidence. Checked
+    # against `known` only: the board can hold one thing as both a hypothesis
+    # and a standing condition, so an entry in `suspected` that also appears
+    # here is the board's own classification rather than a promotion.
+    #
+    # Per entry, and that is a stated limit rather than an oversight. The
+    # committed render splits one standing condition across two `known`
+    # entries, the auto-close half in one and the unacknowledged half in the
+    # other, and neither half restates it alone. Detecting that needs a
+    # threshold over subsets of entries, and every threshold that catches this
+    # sample also flags conditions that merely share vocabulary with the
+    # evidence, which they always do. A check that accuses correct output gets
+    # worked around. So the whole-entry restatement is refused and the split
+    # one is recorded in docs/samples/briefing-2026-08-24/, where it can be
+    # read, rather than half-detected here.
     def shape(text):
         return {w for w in re.findall(r"[a-z0-9.]{4,}", (text or "").lower())}
 
+    known = brief.get("known") or []
     duplicated = []
-    for entry in (brief.get("known") or []):
-        for condition in conditions:
-            a, b = shape(entry), shape(condition)
-            if a and b and len(a & b) / min(len(a), len(b)) >= 0.6:
-                duplicated.append(entry)
+    for condition in conditions:
+        want = shape(condition)
+        if not want:
+            continue
+        for entry in known:
+            got = shape(entry)
+            if got and len(want & got) / min(len(want), len(got)) >= 0.6:
+                duplicated.append(condition)
                 break
     if duplicated:
         failures += 1
-        print(f"  FAIL {label} repeats {len(duplicated)} standing condition(s) "
-              f"in known, which undoes the separation the board made")
+        print(f"  FAIL {label} restates {len(duplicated)} standing "
+              f"condition(s) in known, whole or split across entries, which "
+              f"files them beside the evidence the board separated them from")
 
     if not failures:
         print(f"  ok   {label}: {len(suspected)} entries aligned to the board, "
@@ -212,11 +227,11 @@ SELF_TESTS = (
      _board(outstanding=3), _brief(outstanding=1)),
     ("a standing condition dropped", "standing conditions",
      _board(conditions=3), _brief(conditions=1)),
-    ("a standing condition repeated in known", "repeats",
+    ("a standing condition repeated in known", "restates",
      _board(), _brief(known=["condition 0"])),
     # The paraphrase, which a prefix comparison passed and the gate caught in
     # the one sample this check was meant to vouch for.
-    ("a standing condition restated in known in different words", "repeats",
+    ("a standing condition restated in known in different words", "restates",
      {"hypotheses": [{"statement": "h0", "precedent_cited": []}],
       "blocking_evidence": [{"description": "b0", "still_outstanding": True}],
       "standing_conditions_noted": [

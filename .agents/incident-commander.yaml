@@ -479,10 +479,17 @@ tasks:
     description: >
       Render the hypothesis board as a bridge briefing. It consumes the assess
       output directly rather than a retelling of it, which removes one hop a
-      caveat could be lost at. It does not make losing one impossible: `board`
-      is an object and nothing compares this output against it, so what is
-      guarded is a confidence word and a falsifying test per suspicion and no
-      undeclared fields, and the rest is the prompt and the reader.
+      caveat could be lost at.
+
+      It does not make losing one impossible, and this is measured rather than
+      hedged. Four live renders of one board, across three prompt revisions
+      written to prevent it, each strengthened something the board had hedged:
+      a verb, a citation the board did not carry, and a count restated as a
+      rate. What is guaranteed is the typed part, and
+      `checks/briefing_grounded.py` checks it against the board. The prose is
+      not, on the evidence of every run so far. That check compares what it
+      can compare, which is less than a reader would. See
+      `docs/samples/briefing-2026-08-24/`.
     timeout: 60
     # No tool binding, and an explicit empty allow list rather than none: a
     # task without a sandbox is allow-all, so the boundary is declared on the
@@ -733,9 +740,17 @@ tasks:
            which follows from outstanding rather than replacing it.
 
         8. Carry the standing conditions the board separated out, in
-           standing_conditions and nowhere else, which means not also in
-           known: a condition listed twice is a condition promoted back into
-           the evidence, and the separation is the whole point of the field. They are directly observed,
+           standing_conditions, and not in known. That is the promotion worth
+           refusing: a condition filed beside the evidence has become
+           evidence, which is the merge the board separated them to prevent.
+
+           Not "nowhere else". The board can hold one thing as both a
+           hypothesis and a standing condition, and it does: the
+           unacknowledged auto-closing problems are a candidate cause and a
+           condition that let the incident run. Rule 6a requires an entry per
+           hypothesis, so a blanket exclusion made the two rules impossible to
+           satisfy together. Where the board holds something as both, render
+           it as both. They are directly observed,
            so known is where they would otherwise land, and that merge
            produces the cause the board refused to record: a host at 70
            percent memory for months did not cause this and is why a new
