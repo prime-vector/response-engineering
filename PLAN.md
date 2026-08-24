@@ -545,6 +545,19 @@ declarations and nine narrowing rules go red at once.
 forbidding what was not named is the opposite of hiding something in it. A form
 a check cannot read is not a form to skip. It is the claim failing.
 
+Four review rounds went into that one sentence, and the round count is the
+finding rather than the sentence. Five of the eight findings on this change were
+the same defect: a claim that a set was closed, where the set had been assembled
+by thinking hard rather than derived from anything a reader could check, so each
+round widened the list and the next found a member that was not on it. The two
+checklist items that came out of it are 7 and 8 under "Before asking for a
+review". Item 8 is the test that would have ended this at round one, in about
+ten seconds and without a reviewer: a completeness claim needs a case split, and
+if you cannot state the question the set answers, you do not have a closed set.
+Item 7 is the cheaper fix nobody tried for four rounds. In every one of those
+five findings the code was defensible and the sentence was the blocker, and the
+gap can be closed from either end.
+
 The first version of the check held the briefing to the board and nothing else,
 which left the four analysts free to drift from the vocabulary their claims are
 carried in. What is still not checked, in the current one, is whether an output
