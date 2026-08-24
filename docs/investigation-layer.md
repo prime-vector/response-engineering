@@ -66,7 +66,7 @@ will *not* do is the load-bearing half.
 
 `speculative` &rsaquo; `plausible` &rsaquo; `likely` &rsaquo; `supported` &rsaquo; `confirmed`
 
-Five words, fixed, and the same five wherever a claim is carried: an enum in every spec that carries one, held to the commander board's values and order by `checks/contract_invariants.py`, which fails rather than skips on any schema form it cannot read through, because a claim keeps its epistemics only while the agent receiving it can express the word the agent sending it used. Comms is the exception and the exception is the point: it reports impact to people outside the response, carries no hypothesis, and states `cause_status` instead. Investigator epistemics in a customer update would be the wrong artefact. Nothing reaches
+Five words, fixed, and the same five wherever a claim is carried: an enum in every spec that carries one, held to the commander board's values and order by `checks/contract_invariants.py`, which fails rather than skips on any schema keyword that could carry a confidence without naming it, because a claim keeps its epistemics only while the agent receiving it can express the word the agent sending it used. Comms is the exception and the exception is the point: it reports impact to people outside the response, carries no hypothesis, and states `cause_status` instead. Investigator epistemics in a customer update would be the wrong artefact. Nothing reaches
 **confirmed** without direct evidence in the evidence array. Inference is never
 confirmation, and a hypothesis with no falsifying test is an opinion that must
 be labelled as one.

@@ -178,6 +178,20 @@ CASES = [
 # responder's job rather than a validator's.
 
 
+# The keywords that can constrain a property without naming it under
+# `properties`. This is the closed set from JSON Schema's applicator
+# vocabulary rather than a list of shapes anyone has written: indirection,
+# name matching, and the two that apply to whatever was not named. Every other
+# subschema keyword (`items`, `contains`, `allOf`, `if`/`then`,
+# `dependentSchemas`, ...) nests a literal `properties` that the walker below
+# reaches by recursion, so a confidence under one of those is found rather
+# than hidden. Enumerating the routes rather than the sightings is what stops
+# this being one more keyword every review round.
+HIDES_A_PROPERTY = ("$ref", "$dynamicRef", "$recursiveRef",
+                    "patternProperties", "propertyNames")
+APPLIES_TO_UNNAMED = ("additionalProperties", "unevaluatedProperties")
+
+
 def declared_scales(specs):
     """Every `confidence` field declared by any task output, with its enum.
 
@@ -194,10 +208,14 @@ def declared_scales(specs):
 
     Anything else is reported rather than skipped, with `readable` false, and
     this walker reads exactly one form: `properties.confidence` written inline.
-    It does not resolve references and does not match patterns, so a `$ref`
-    anywhere in an output and a `patternProperties` mapping are both reported
-    on sight, whether or not a confidence is hiding behind them. That is
-    deliberate and it is the whole guarantee. The first version reported a
+    It resolves no references, matches no patterns, and does not follow a
+    constraint that applies to properties nobody named, so every keyword in
+    `HIDES_A_PROPERTY` and `APPLIES_TO_UNNAMED` above is reported on sight,
+    whether or not a confidence is hiding behind it. That is deliberate and it
+    is the whole guarantee. `required: [confidence]` beside an
+    `additionalProperties` schema declares and constrains a confidence with no
+    `properties.confidence` anywhere, and a walker looking for a literal key
+    finds nothing to report. The first version reported a
     `$ref` written *on* the confidence field and silently walked past one on
     its parent, which is the shape a shared finding object actually takes:
 
@@ -211,11 +229,15 @@ def declared_scales(specs):
     """
     def walk(node, path):
         if isinstance(node, dict):
-            if "$ref" in node:
-                yield f"{path}/$ref", None, False
+            for key in HIDES_A_PROPERTY:
+                if key in node:
+                    yield f"{path}/{key}", None, False
+            for key in APPLIES_TO_UNNAMED:
+                # `false` forbids properties that were not named, which is the
+                # opposite of constraining one out of sight.
+                if key in node and node[key] is not False:
+                    yield f"{path}/{key}", None, False
             for key, value in node.items():
-                if key == "patternProperties":
-                    yield f"{path}/patternProperties", None, False
                 if isinstance(value, dict) and key == "properties":
                     for field, decl in value.items():
                         if field != "confidence":
@@ -261,6 +283,12 @@ def board_scale(spec):
         if not isinstance(node, dict) or key not in node:
             return None, False
         node = node[key]
+    if not isinstance(node, dict):
+        # `confidence: true` is a valid schema meaning anything. Reading
+        # `.get` off it raises, and a check that dies prints no verdicts for
+        # anyone to read: the exact failure a mutation harness exists to
+        # catch, left in the one path every other case depends on.
+        return None, True
     return node.get("enum"), True
 
 
@@ -411,6 +439,34 @@ def scale_self_test():
                                           "$ref": "#/$defs/scale"}
         return base
 
+    def hidden_by(base, keyword, value):
+        """A confidence constrained with no `properties.confidence` to find.
+        `required` names it, the keyword constrains it, and a walker matching
+        literal keys sees a findings object with no confidence in it."""
+        task, = base["tasks"]
+        container, = base["tasks"][task]["output"]["properties"]
+        base["tasks"][task]["output"]["properties"][container]["items"] = {
+            "type": "object", "required": ["confidence"], keyword: value}
+        return base
+
+    def forbids_unnamed(base):
+        """`additionalProperties: false` forbids what was not named instead of
+        constraining it, so it hides nothing and must not be reported. Nine of
+        these sit in the specs today and every one would go red."""
+        task, = base["tasks"]
+        container, = base["tasks"][task]["output"]["properties"]
+        (base["tasks"][task]["output"]["properties"][container]["items"]
+         ["additionalProperties"]) = False
+        return base
+
+    def boolean_board(base):
+        """`confidence: true` on the reference path itself. `board_scale`
+        walks a fixed path and read `.get` off whatever it landed on, so this
+        raised instead of reporting, and a crash prints no verdicts at all."""
+        (base["tasks"]["assess"]["output"]["properties"]["hypotheses"]["items"]
+         ["properties"]["confidence"]) = True
+        return base
+
     real = yaml.safe_load(SPEC.read_text())
     # Derived from the spec rather than typed out, so a change to the scale
     # cannot quietly change what these cases measure, and read by path rather
@@ -469,6 +525,33 @@ def scale_self_test():
          {SPEC.name: spec(scale),
           "other.yaml": boolean_site(spec(scale, "detect", "findings"))},
          1, "form this check cannot read", 1),
+        ("a confidence constrained by additionalProperties, never named",
+         {SPEC.name: spec(scale), "other.yaml": hidden_by(
+             spec(scale, "detect", "findings"), "additionalProperties",
+             {"type": "string", "enum": ["high", "low"]})},
+         1, "form this check cannot read", 1),
+        ("a confidence constrained by unevaluatedProperties",
+         {SPEC.name: spec(scale), "other.yaml": hidden_by(
+             spec(scale, "detect", "findings"), "unevaluatedProperties",
+             {"enum": ["high", "low"]})},
+         1, "form this check cannot read", 1),
+        ("a confidence reachable only through propertyNames",
+         {SPEC.name: spec(scale), "other.yaml": hidden_by(
+             spec(scale, "detect", "findings"), "propertyNames",
+             {"pattern": "^confidence$"})},
+         1, "form this check cannot read", 1),
+        ("a confidence behind a $dynamicRef",
+         {SPEC.name: spec(scale), "other.yaml": hidden_by(
+             spec(scale, "detect", "findings"), "$dynamicRef", "#finding")},
+         1, "form this check cannot read", 1),
+        ("additionalProperties false is not a hiding place",
+         {SPEC.name: spec(scale),
+          "other.yaml": forbids_unnamed(spec(scale, "detect", "findings"))},
+         0, "in the same order", 2),
+        ("the board's confidence is a boolean schema",
+         {SPEC.name: boolean_board(spec(scale)),
+          "other.yaml": spec(scale, "detect", "findings")},
+         1, "the board's confidence is not an enum", 1),
         ("a narrowing rule with another keyword beside it",
          {SPEC.name: spec(scale),
           "other.yaml": rule_plus(spec(scale, "detect", "findings"))},
@@ -478,9 +561,17 @@ def scale_self_test():
     failures = 0
     for name, specs, want, reason, want_declared in cases:
         buffer = io.StringIO()
-        with contextlib.redirect_stdout(buffer):
-            got, declared = confidence_scales_hold(specs)
-        output = buffer.getvalue()
+        try:
+            with contextlib.redirect_stdout(buffer):
+                got, declared = confidence_scales_hold(specs)
+            output = buffer.getvalue()
+        except Exception as exc:
+            # A case that raises is a case that failed, and the suite has to
+            # survive it: an uncaught exception here takes every later case
+            # with it and prints no verdicts, which is the same hole the guard
+            # in `board_scale` closes. Report the crash as the reason.
+            got, declared = None, None
+            output = buffer.getvalue() + f"  FAIL raised {exc!r}\n"
         ok = got == want and reason in output and declared == want_declared
         failures += not ok
         print(f"  {'ok  ' if ok else 'FAIL'} {name}")

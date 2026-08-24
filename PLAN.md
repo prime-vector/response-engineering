@@ -517,11 +517,24 @@ made the number countable and the number was wrong.
 `checks/contract_invariants.py` reads every `confidence` a task output declares
 across all six specs and holds each to the commander board's enum, both values
 and order, and fails on any form it cannot read through rather than walking past
-it. The first version did walk past one: it reported a `$ref` written on the
-confidence field and never saw one on the field's parent, which is the shape a
-shared finding object in a `$defs` block actually takes, so a live scale could
-drift under a green check and under a summary line saying they all agree. A
-form a check cannot read is not a form to skip. It is the claim failing.
+it. It took two reviews to get that right, and both found the same shape of
+defect: a claim about what the check refuses, and a route around it. First a
+`$ref` on the confidence field was reported while one on the field's parent was
+not, which is the shape a shared finding object in a `$defs` block actually
+takes. Then `required: [confidence]` beside an `additionalProperties` schema,
+which declares and constrains a confidence with no `properties.confidence` for a
+walker to find at all. Each time the scale could drift under a green check and
+under a summary line saying they all agree.
+
+What closed it was enumerating the routes instead of the sightings. A property
+can be constrained without being named literally in exactly seven ways, and that
+set comes from JSON Schema's applicator vocabulary rather than from what anyone
+has happened to write: three kinds of reference, two kinds of name matching, and
+the two that apply to whatever was not named. All seven fail the check on sight.
+`additionalProperties: false` is not one of them, because forbidding what was
+not named is the opposite of hiding something in it, and nine of those sit in
+the specs today. A form a check cannot read is not a form to skip. It is the
+claim failing.
 
 The first version of the check held the briefing to the board and nothing else,
 which left the four analysts free to drift from the vocabulary their claims are
