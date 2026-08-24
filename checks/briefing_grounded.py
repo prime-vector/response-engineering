@@ -65,7 +65,24 @@ def check(board_path, brief_path):
         return failures
 
     for index, (entry, hypothesis) in enumerate(zip(suspected, hypotheses)):
-        named = set(REFERENCE.findall(entry))
+        # Entries are typed objects now, so the confidence is a field and can
+        # be compared to the board's rather than looked for in a sentence.
+        if isinstance(entry, dict):
+            named = references(entry)
+            board_confidence = hypothesis.get("confidence")
+            if entry.get("confidence") != board_confidence:
+                failures += 1
+                print(f"  FAIL {label} entry {index} is "
+                      f"{entry.get('confidence')!r} where the board holds "
+                      f"{board_confidence!r}: the briefing changed how "
+                      f"strongly a hypothesis is held")
+            if bool(entry.get("precedent")) and not hypothesis.get("precedent_cited"):
+                failures += 1
+                print(f"  FAIL {label} entry {index} carries a precedent but "
+                      f"hypothesis {index} cites none: grounding with nothing "
+                      f"under it")
+        else:
+            named = set(REFERENCE.findall(entry))
         available = references(hypothesis)
         stolen = sorted(named - available)
         if stolen:
@@ -92,8 +109,20 @@ def check(board_path, brief_path):
               f"against {len(board.get('standing_conditions_noted') or [])} on "
               f"the board: the findings that get lost first")
     # A condition listed twice is a condition promoted back into the evidence.
-    duplicated = [k for k in (brief.get("known") or [])
-                  for c in conditions if k[:60] == c[:60]]
+    # Compared by shared content words rather than by a common prefix: the
+    # prefix test passed a `known` entry that restated a standing condition in
+    # different words, which is the same promotion wearing a paraphrase, and
+    # the gate found it in the one sample the check was meant to vouch for.
+    def shape(text):
+        return {w for w in re.findall(r"[a-z0-9.]{4,}", (text or "").lower())}
+
+    duplicated = []
+    for entry in (brief.get("known") or []):
+        for condition in conditions:
+            a, b = shape(entry), shape(condition)
+            if a and b and len(a & b) / min(len(a), len(b)) >= 0.6:
+                duplicated.append(entry)
+                break
     if duplicated:
         failures += 1
         print(f"  FAIL {label} repeats {len(duplicated)} standing condition(s) "
@@ -114,7 +143,7 @@ def check(board_path, brief_path):
 def _board(hypotheses=None, outstanding=1, conditions=1):
     return {
         "hypotheses": hypotheses if hypotheses is not None else
-        [{"statement": "h0", "precedent_cited": []}],
+        [{"statement": "h0", "confidence": "plausible", "precedent_cited": []}],
         "blocking_evidence": [{"description": f"b{i}", "still_outstanding": True}
                               for i in range(outstanding)],
         "standing_conditions_noted": [f"condition {i}" for i in range(conditions)],
@@ -125,7 +154,9 @@ def _brief(suspected=None, outstanding=1, conditions=1, known=None):
     return {
         "headline": "h",
         "known": known if known is not None else [],
-        "suspected": suspected if suspected is not None else ["PLAUSIBLE thing"],
+        "suspected": suspected if suspected is not None else
+        [{"statement": "thing", "confidence": "plausible",
+          "falsifying_test": "observe x"}],
         "outstanding": [f"b{i}" for i in range(outstanding)],
         "standing_conditions": [f"condition {i}" for i in range(conditions)],
     }
@@ -134,20 +165,61 @@ def _brief(suspected=None, outstanding=1, conditions=1, known=None):
 SELF_TESTS = (
     ("a faithful briefing", None, _board(), _brief()),
     ("a reference the board does not contain", "invented",
-     _board(), _brief(suspected=["PLAUSIBLE, see INC-9999"])),
+     _board(), _brief(suspected=[{"statement": "s, see INC-9999",
+                                 "confidence": "plausible",
+                                 "falsifying_test": "t"}])),
     ("more entries than the board has hypotheses", "suspected entries against",
-     _board(), _brief(suspected=["one", "two"])),
+     _board(), _brief(suspected=[
+         {"statement": "one", "confidence": "plausible", "falsifying_test": "t"},
+         {"statement": "two", "confidence": "plausible", "falsifying_test": "t"}])),
     ("a precedent on a hypothesis that carries none", "wrong hypothesis",
-     _board(hypotheses=[{"statement": "h0", "precedent_cited": []},
-                        {"statement": "h1", "precedent_cited": ["p-aaaaaaaaaaaa"],
-                         "note": "INC-2411"}]),
-     _brief(suspected=["PLAUSIBLE, see INC-2411", "PLAUSIBLE h1"])),
+     _board(hypotheses=[{"statement": "h0", "confidence": "plausible",
+                         "precedent_cited": []},
+                        {"statement": "h1", "confidence": "plausible",
+                         "precedent_cited": ["p-aaaaaaaaaaaa"], "note": "INC-2411"}]),
+     _brief(suspected=[{"statement": "s", "confidence": "plausible",
+                        "falsifying_test": "t", "precedent": "INC-2411"},
+                       {"statement": "s", "confidence": "plausible",
+                        "falsifying_test": "t"}])),
     ("fewer outstanding items than the board still has", "outstanding items",
      _board(outstanding=3), _brief(outstanding=1)),
     ("a standing condition dropped", "standing conditions",
      _board(conditions=3), _brief(conditions=1)),
     ("a standing condition repeated in known", "repeats",
      _board(), _brief(known=["condition 0"])),
+    # The paraphrase, which a prefix comparison passed and the gate caught in
+    # the one sample this check was meant to vouch for.
+    ("a standing condition restated in known in different words", "repeats",
+     {"hypotheses": [{"statement": "h0", "precedent_cited": []}],
+      "blocking_evidence": [{"description": "b0", "still_outstanding": True}],
+      "standing_conditions_noted": [
+          "The integration service holds 23.1 GiB resident of 32 GiB total as "
+          "steady state, with no alerting configured and no owner assigned"]},
+     {"headline": "h",
+      "known": ["No alerting configured and no owner assigned for the "
+                "integration service holding 23.1 GiB resident of 32 GiB"],
+      "suspected": [{"statement": "s", "confidence": "plausible",
+                     "falsifying_test": "t"}],
+      "outstanding": ["b0"],
+      "standing_conditions": [
+          "The integration service holds 23.1 GiB resident of 32 GiB total as "
+          "steady state, with no alerting configured and no owner assigned"]}),
+    # A typed entry may not change how strongly the board holds a hypothesis.
+    ("an entry promoting the board's confidence", "changed how strongly",
+     {"hypotheses": [{"statement": "h0", "confidence": "plausible",
+                      "precedent_cited": []}],
+      "blocking_evidence": [], "standing_conditions_noted": []},
+     {"headline": "h", "known": [], "outstanding": [], "standing_conditions": [],
+      "suspected": [{"statement": "s", "confidence": "supported",
+                     "falsifying_test": "t"}]}),
+    # And may not carry a precedent the board did not attach.
+    ("an entry carrying a precedent the board did not", "cites none",
+     {"hypotheses": [{"statement": "h0", "confidence": "plausible",
+                      "precedent_cited": []}],
+      "blocking_evidence": [], "standing_conditions_noted": []},
+     {"headline": "h", "known": [], "outstanding": [], "standing_conditions": [],
+      "suspected": [{"statement": "s", "confidence": "plausible",
+                     "falsifying_test": "t", "precedent": "a prior incident"}]}),
 )
 
 

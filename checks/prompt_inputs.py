@@ -43,6 +43,15 @@ word is matched by prose meaning something else, `outstanding` in the root pair
 being the live example. That costs a field, not the check, because a prompt
 written for another task misses the rest.
 
+WHAT IT CHECKS ABOUT THE KEY LIST, AND WHAT IT DOES NOT. Where a prompt
+enumerates the keys it wants, that list is the instruction the model obeys, and
+a required field absent from it means a compliant response fails validation.
+That is checked, and it is what shipped: `standing_conditions` was required,
+appeared in a paragraph of rules explaining what it was for, and was missing
+from the list at the end. The converse, a key the schema does not allow, is not
+checked: these prompts qualify their lists in prose and no parse separates a
+key from a qualifier reliably enough to accuse a correct spec.
+
 WHAT THIS CANNOT SEE. `--system-prompt` and `--user-prompt` replace a prompt
 wholesale at the command line, and a spec cannot know what they will carry.
 They are not equivalent: substitution runs after override resolution, so a
@@ -110,7 +119,13 @@ def unsubstituted(text, required):
 # model obeys omitted it. A compliant response then failed validation, and this
 # check passed the spec.
 KEY_LIST = re.compile(
-    r"exactly these top-level keys(?: and no others)?:\s*([A-Za-z0-9_,\s]+?)\.")
+    r"exactly these\s+top-level keys(?:\s+and no others)?:\s*(.+?)\.", re.S)
+# A key is a bare identifier. The list is followed by prose in most of these
+# prompts, "and optionally caveats", "plus cause_basis only when cause_status
+# is confirmed", and a matcher that takes everything up to the full stop reads
+# those words as key names and reports fields the schema does not allow. Take
+# the identifiers and drop the qualifiers, which is what the model does too.
+IDENTIFIER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
 def enumerated_keys(text):
@@ -118,8 +133,12 @@ def enumerated_keys(text):
     match = KEY_LIST.search(text or "")
     if not match:
         return None
-    return {k.strip() for k in match.group(1).replace("\n", " ").split(",")
-            if k.strip()}
+    keys = set()
+    for chunk in match.group(1).replace("\n", " ").split(","):
+        for word in chunk.replace(" and ", " ").replace(" plus ", " ").split():
+            if IDENTIFIER.match(word):
+                keys.add(word)
+    return keys or None
 
 
 def names(text, field):
@@ -212,13 +231,16 @@ def check_spec(path):
                 print(f"  FAIL {label} instructs a key list omitting "
                       f"{', '.join(missing)}, which its output requires. A "
                       f"response obeying the prompt fails validation.")
-            extra = sorted(enumerated - allowed) if allowed else []
-            if extra:
-                failures += 1
-                shape_wrong = True
-                print(f"  FAIL {label} instructs {', '.join(extra)}, which its "
-                      f"output schema does not allow. A response obeying the "
-                      f"prompt fails validation.")
+            # Deliberately no converse check. Reporting a key the schema does
+            # not allow needs the extracted set to be exactly the keys, and it
+            # is not: these prompts qualify their lists in prose, "and
+            # optionally caveats", "plus cause_basis only when cause_status is
+            # confirmed", so the identifiers pulled out include `optionally`,
+            # `when` and `confirmed`. Two legitimate specs failed on that. A
+            # check that fails on correct code gets worked around, which costs
+            # more than this branch was worth; the direction kept is the one
+            # that is sound under a sloppy parse, because a missing required
+            # field is missing whatever extra words came along with it.
 
         unseen = sorted(k for k in required if not reads(user, k))
         if unseen:
@@ -367,6 +389,36 @@ SELF_TESTS = (
     ("a spaced single brace, which the runner leaves literal", "unsubstituted",
      {"tasks": {"t": {"input": {"required": ["a"]}, "output": {"required": ["r_field"]}}},
       "prompts": {"system": "produce r_field", "user": "value { a }"}}),
+    # The enumerated key list, which the model obeys and which nothing
+    # exercised: both branches below were deletable with the suite green while
+    # the brief prompt was instructing a shape its schema rejected.
+    ("an enumerated key list matching the schema", None,
+     {"tasks": {"t": {"input": {"required": ["a"]},
+                      "output": {"required": ["r_field"],
+                                 "properties": {"r_field": {}, "extra": {}}}}},
+      "prompts": {"system": "exactly these top-level keys: r_field, extra.",
+                  "user": "{{ a }}"}}),
+    ("an enumerated key list omitting a required field", "instructs a key list",
+     {"tasks": {"t": {"input": {"required": ["a"]},
+                      "output": {"required": ["r_field", "other"],
+                                 "properties": {"r_field": {}, "other": {}}}}},
+      "prompts": {"system": "produce other. exactly these top-level keys: "
+                            "r_field.", "user": "{{ a }}"}}),
+    # A list qualified in prose still yields its keys, which is what the two
+    # specs doing that need, and is why the converse check does not exist.
+    ("an enumerated key list qualified in prose", None,
+     {"tasks": {"t": {"input": {"required": ["a"]},
+                      "output": {"required": ["r_field", "other"],
+                                 "properties": {"r_field": {}, "other": {}}}}},
+      "prompts": {"system": "exactly these top-level keys: r_field, and "
+                            "optionally other.", "user": "{{ a }}"}}),
+    # The wording split across a line break, which the first pattern missed.
+    ("an enumerated key list wrapped across lines", "instructs a key list",
+     {"tasks": {"t": {"input": {"required": ["a"]},
+                      "output": {"required": ["r_field", "other"],
+                                 "properties": {"r_field": {}, "other": {}}}}},
+      "prompts": {"system": "produce other, with exactly these\n  top-level "
+                            "keys and no others: r_field.", "user": "{{ a }}"}}),
     # And the only case that reaches `in_system`: a system prompt whose sole
     # defect is a placeholder, which is never substituted in one.
     ("a placeholder in an otherwise correct system prompt", "reach the model literally",

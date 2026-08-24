@@ -22,7 +22,13 @@ citation goes instead.
 
 `briefing-bridge-before-rule-3a.json` strengthened a verb.
 `briefing-bridge-before-rule-6a.json` invented a citation.
-`briefing-bridge.json` is the current render, which does neither.
+`briefing-bridge-before-typed-fields.json` carried its caveats as words inside a
+sentence, which is how both of those were possible.
+`briefing-bridge.json` is the current render, with `suspected` as typed objects.
+
+The first three do not validate against the current schema, and that is the
+point of keeping them: each one is what the contract looked like before it was
+made to carry what it claimed.
 
 Both failures were found by a reviewer reading output against board, and both
 were produced by the agent built to prevent exactly that. Neither was caught by
@@ -38,6 +44,21 @@ it checkable is that entries are rendered one per hypothesis in board order,
 which turns "did it cite the right thing" into an index lookup. Run the check
 against that file and it fails on both the citation and a standing condition it
 had copied back into `known`.
+
+## Why the caveats became fields
+
+Three review rounds went into a regex holding the caveats in prose: word
+boundaries so `likely` did not match inside `unlikely`, lookbehinds so it did
+not match inside `not likely`, then casing on those lookbehinds so it did not
+match inside `NOT LIKELY`. Each round closed one spelling of one hole.
+
+CLAUDE.md had said from the beginning that an output carrying a claim declares
+`confidence` and `falsifying_test` as required fields, with Comms the single
+written-down exception. Applying that rule here ends the whole class: the
+confidence is an enum, so no spelling of a negation reaches it, and
+`checks/briefing_grounded.py` compares it to the board's rather than trusting
+it. The lesson is not about regexes. It is that the rule already existed and
+this task had quietly been made an undeclared second exception to it.
 
 ## The before and after, and why both are here
 
