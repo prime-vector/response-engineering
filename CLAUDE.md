@@ -130,7 +130,7 @@ The bridge view is deliberately evidence-poor. The deciding evidence sits in `mi
 
 ## Before committing
 
-1. `oa validate` passes on every spec touched, `python3 checks/prompt_inputs.py` if any prompt, input schema or `demos/` override moved, and `python3 checks/contract_invariants.py` if either of the commander's output contracts moved: it also holds the briefing's confidence pattern in agreement with `assess`'s enum, and a pattern missing a value rejects the faithful rendering of a hypothesis at that confidence
+1. `oa validate` passes on every spec touched, `python3 checks/prompt_inputs.py` if any prompt, input schema or `demos/` override moved, and `python3 checks/contract_invariants.py` if either of the commander's output contracts moved: it also holds the briefing's confidence enum equal to `assess`'s, since a briefing that cannot express a confidence the board can hold forces the model to pick a different word
 2. Fixture regenerated if the generator changed
 3. Corpus regenerated and both indexes current if the corpus changed: `corpus/ingest.py --check` and `--chunker fixed --check`
 4. `corpus/eval.py` passes against `corpus/index.json` and `corpus/index.fixed.json`

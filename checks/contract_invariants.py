@@ -184,10 +184,25 @@ def confidence_scale_holds(spec):
     rejects the faithful rendering of a hypothesis at that confidence, and the
     model's way out is to pick a different word.
     """
-    board = (spec["tasks"]["assess"]["output"]["properties"]["hypotheses"]
-             ["items"]["properties"]["confidence"]["enum"])
-    brief = (spec["tasks"]["brief"]["output"]["properties"]["suspected"]
-             ["items"]["properties"]["confidence"]["enum"])
+    def scale(task, field, container):
+        node = (spec["tasks"][task]["output"]["properties"][container]
+                ["items"]["properties"][field])
+        # Absent rather than different: a confidence declared as a bare string
+        # accepts anything, which is the failure this whole change was about,
+        # and reading `["enum"]` straight would raise KeyError and report zero
+        # failures to anything counting them.
+        return node.get("enum")
+
+    board = scale("assess", "confidence", "hypotheses")
+    brief = scale("brief", "confidence", "suspected")
+    if brief is None:
+        print("  FAIL the briefing's confidence is not an enum, so any string "
+              "is a valid confidence and a briefing can invent one")
+        return 1
+    if board is None:
+        print("  FAIL the board's confidence is not an enum, so there is no "
+              "scale for the briefing to be held to")
+        return 1
     if board == brief:
         print(f"  ok   the briefing's confidence enum is the board's, all "
               f"{len(board)} values in the same order")

@@ -674,13 +674,13 @@ tasks:
            evidence, a cause or a next step that is not on it. If the board
            does not say something, the briefing does not either.
 
-        2. Carry the caveats into the sentence. Each entry in suspected
-           states its confidence word and its falsifying test inline, in the
-           entry itself, not in a preamble and not in a separate field. A
-           suspicion that reads as a fact once it changes format is the exact
-           failure this task exists to prevent, and it is the reason the
-           briefing is generated from the board rather than written from
-           memory.
+        2. Carry the caveats as fields. Each entry in suspected has a
+           statement, the confidence copied from the hypothesis it renders,
+           that hypothesis's falsifying test, and precedent only where the
+           board attached one. A suspicion that reads as a fact once it
+           changes format is the exact failure this task exists to prevent,
+           and fields are how it cannot: there is nowhere to put a hypothesis
+           without saying how strongly it is held.
 
         3. known is what the board holds as directly observed, and nothing
            else. Anything resting on correlation, plausibility, precedent or
@@ -768,9 +768,10 @@ tasks:
         the closing brace. Do your analysis silently.
     # Per task, never at root: a root contract merges into every task with
     # arrays unioned, so assess's required fields would silently become this
-    # one's. Modest on purpose, because the anti-flattening rule lives in the
-    # inline confidence and falsifying test, which is a property of the
-    # sentence and not a field a schema can see.
+    # one's. Modest on purpose, because the fields it would otherwise repeat
+    # are already required by the output schema, where confidence is an enum
+    # and falsifying_test cannot be empty. What no contract of this shape sees
+    # is whether the sentence around them is a fair rendering.
     behavioural_contract:
       version: "1.0"
       description: >

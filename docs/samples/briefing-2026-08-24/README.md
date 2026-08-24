@@ -1,9 +1,9 @@
-# Three briefings, and the board they were rendered from
+# Four briefings, and the board they were rendered from
 
 `board.json` is an `assess` output from a live run on 24 Aug 2026.
 `briefing-bridge.json` is what `brief` produced from it, for `audience:
-bridge`, on the same day. Two earlier renders of the same board are kept beside
-it, each showing a different way the briefing failed and the rule that now
+bridge`, on the same day. Three earlier renders of the same board are kept
+beside it, each showing a different way the briefing failed and what now
 prevents it.
 
 ## Why these are committed when `runs/` is not
@@ -18,7 +18,7 @@ open is not a claim, it is an assertion with a footnote, and the gate said so
 twice. If it is cited, it is committed. If it is not worth committing, the
 citation goes instead.
 
-## The three renders, and what each one shows
+## The four renders, and what each one shows
 
 `briefing-bridge-before-rule-3a.json` strengthened a verb.
 `briefing-bridge-before-rule-6a.json` invented a citation.

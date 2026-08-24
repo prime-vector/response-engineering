@@ -35,7 +35,11 @@ import pathlib
 import re
 import sys
 
+import jsonschema
+import yaml
+
 SAMPLES = pathlib.Path("docs/samples")
+SPEC = ".agents/incident-commander.yaml"
 REFERENCE = re.compile(r"\bINC-\d+\b|\bp-[0-9a-f]{12}\b")
 
 
@@ -43,11 +47,24 @@ def references(obj):
     return set(REFERENCE.findall(json.dumps(obj)))
 
 
-def check(board_path, brief_path):
+def check(board_path, brief_path, schema=None):
     board = json.loads(board_path.read_text())
     brief = json.loads(brief_path.read_text())
     label = brief_path.name
     failures = 0
+
+    # Against the task's own schema first. Everything below is a comparison
+    # this check invented; this is the contract the agent is actually held to,
+    # and without it `falsifying_test` could leave `required`, or
+    # `additionalProperties: false` could go, and CI would stay green while the
+    # guarantees this change is about disappeared.
+    if schema is not None:
+        try:
+            jsonschema.validate(instance=brief, schema=schema)
+        except jsonschema.ValidationError as exc:
+            failures += 1
+            print(f"  FAIL {label} does not satisfy the brief task's output "
+                  f"schema: {exc.message[:110]}")
 
     invented = sorted(references(brief) - references(board))
     if invented:
@@ -76,11 +93,21 @@ def check(board_path, brief_path):
                       f"{entry.get('confidence')!r} where the board holds "
                       f"{board_confidence!r}: the briefing changed how "
                       f"strongly a hypothesis is held")
-            if bool(entry.get("precedent")) and not hypothesis.get("precedent_cited"):
+            cited = bool(hypothesis.get("precedent_cited"))
+            carried = bool(entry.get("precedent"))
+            if carried and not cited:
                 failures += 1
                 print(f"  FAIL {label} entry {index} carries a precedent but "
                       f"hypothesis {index} cites none: grounding with nothing "
                       f"under it")
+            # And the other direction, which is the quieter loss. A precedent
+            # dropped takes its divergence with it, and rule 6 exists because a
+            # precedent that has lost its difference is the anchoring failure
+            # the citation was supposed to expose.
+            if cited and not carried:
+                failures += 1
+                print(f"  FAIL {label} entry {index} drops the precedent "
+                      f"hypothesis {index} cites, and its divergence with it")
         else:
             named = set(REFERENCE.findall(entry))
         available = references(hypothesis)
@@ -212,6 +239,36 @@ SELF_TESTS = (
      {"headline": "h", "known": [], "outstanding": [], "standing_conditions": [],
       "suspected": [{"statement": "s", "confidence": "supported",
                      "falsifying_test": "t"}]}),
+    # The historical renders are kept because they fail, so the check that
+    # says so is exercised rather than asserted in a README.
+    ("a render whose entries are strings, as they were before typed fields",
+     "output schema",
+     {"hypotheses": [{"statement": "h0", "confidence": "plausible",
+                      "precedent_cited": []}],
+      "blocking_evidence": [], "standing_conditions_noted": []},
+     {"headline": "h", "known": [], "outstanding": [], "standing_conditions": [],
+      "suspected": ["PLAUSIBLE thing. Falsifying test: x."]}),
+    ("an entry with no falsifying test", "output schema",
+     {"hypotheses": [{"statement": "h0", "confidence": "plausible",
+                      "precedent_cited": []}],
+      "blocking_evidence": [], "standing_conditions_noted": []},
+     {"headline": "h", "known": [], "outstanding": [], "standing_conditions": [],
+      "suspected": [{"statement": "s", "confidence": "plausible"}]}),
+    ("an entry carrying an undeclared field", "output schema",
+     {"hypotheses": [{"statement": "h0", "confidence": "plausible",
+                      "precedent_cited": []}],
+      "blocking_evidence": [], "standing_conditions_noted": []},
+     {"headline": "h", "known": [], "outstanding": [], "standing_conditions": [],
+      "suspected": [{"statement": "s", "confidence": "plausible",
+                     "falsifying_test": "t", "root_cause": "z"}]}),
+    # Precedent dropped, which is the quieter half of the same rule.
+    ("an entry dropping the precedent its hypothesis cites", "drops the precedent",
+     {"hypotheses": [{"statement": "h0", "confidence": "plausible",
+                      "precedent_cited": ["p-aaaaaaaaaaaa"]}],
+      "blocking_evidence": [], "standing_conditions_noted": []},
+     {"headline": "h", "known": [], "outstanding": [], "standing_conditions": [],
+      "suspected": [{"statement": "s", "confidence": "plausible",
+                     "falsifying_test": "t"}]}),
     # And may not carry a precedent the board did not attach.
     ("an entry carrying a precedent the board did not", "cites none",
      {"hypotheses": [{"statement": "h0", "confidence": "plausible",
@@ -235,8 +292,10 @@ def self_test():
             (root / "board.json").write_text(json.dumps(board))
             (root / "briefing-bridge.json").write_text(json.dumps(brief))
             buf = io.StringIO()
+            spec = yaml.safe_load(pathlib.Path(SPEC).read_text())
             with contextlib.redirect_stdout(buf):
-                count = check(root / "board.json", root / "briefing-bridge.json")
+                count = check(root / "board.json", root / "briefing-bridge.json",
+                              spec["tasks"]["brief"]["output"])
         output = buf.getvalue()
         if expected is None:
             ok, detail = count == 0, "accepted"
@@ -265,7 +324,9 @@ def main():
              if (d / "board.json").exists() and (d / "briefing-bridge.json").exists()]
     if not pairs:
         sys.exit("No board and briefing pair found under docs/samples/.")
-    failures = sum(check(b, r) for b, r in pairs)
+    spec = yaml.safe_load(pathlib.Path(SPEC).read_text())
+    schema = spec["tasks"]["brief"]["output"]
+    failures = sum(check(b, r, schema) for b, r in pairs)
     print()
     if failures:
         sys.exit(f"{failures} grounding failure(s): a briefing is claiming "

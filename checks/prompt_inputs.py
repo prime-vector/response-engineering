@@ -222,6 +222,7 @@ def check_spec(path):
         # Where the prompt enumerates keys, that list is what the model obeys.
         shape_wrong = False
         enumerated = enumerated_keys(prompts_text)
+        strict = "and no others" in prompts_text
         if enumerated is not None:
             allowed = set((task.get("output") or {}).get("properties") or {})
             missing = sorted(out_required - enumerated)
@@ -231,16 +232,26 @@ def check_spec(path):
                 print(f"  FAIL {label} instructs a key list omitting "
                       f"{', '.join(missing)}, which its output requires. A "
                       f"response obeying the prompt fails validation.")
-            # Deliberately no converse check. Reporting a key the schema does
-            # not allow needs the extracted set to be exactly the keys, and it
-            # is not: these prompts qualify their lists in prose, "and
-            # optionally caveats", "plus cause_basis only when cause_status is
-            # confirmed", so the identifiers pulled out include `optionally`,
-            # `when` and `confirmed`. Two legitimate specs failed on that. A
-            # check that fails on correct code gets worked around, which costs
-            # more than this branch was worth; the direction kept is the one
-            # that is sound under a sloppy parse, because a missing required
-            # field is missing whatever extra words came along with it.
+            # The converse, only where the prompt says "and no others". That
+            # phrase is a claim the list is complete, so the extracted set is
+            # the keys and a name outside the schema means a compliant
+            # response fails a closed output. Without it the list is qualified
+            # in prose here, "and optionally caveats", "plus cause_basis only
+            # when cause_status is confirmed", and the identifiers pulled out
+            # include `optionally`, `when` and `confirmed`: two correct specs
+            # failed that way, which is how a check gets worked around. So the
+            # branch is gated on the phrase rather than dropped, because it is
+            # exactly the prompts making the strict claim that can be held to
+            # it.
+            if strict:
+                extra = sorted(enumerated - allowed) if allowed else []
+                if extra:
+                    failures += 1
+                    shape_wrong = True
+                    print(f"  FAIL {label} instructs {', '.join(extra)}, which "
+                          f"its output schema does not allow, in a list saying "
+                          f"'and no others'. A response obeying the prompt "
+                          f"fails validation.")
 
         unseen = sorted(k for k in required if not reads(user, k))
         if unseen:
@@ -404,8 +415,14 @@ SELF_TESTS = (
                                  "properties": {"r_field": {}, "other": {}}}}},
       "prompts": {"system": "produce other. exactly these top-level keys: "
                             "r_field.", "user": "{{ a }}"}}),
-    # A list qualified in prose still yields its keys, which is what the two
-    # specs doing that need, and is why the converse check does not exist.
+    ("a strict key list naming a field the schema forbids", "does not allow",
+     {"tasks": {"t": {"input": {"required": ["a"]},
+                      "output": {"required": ["r_field"],
+                                 "properties": {"r_field": {}}}}},
+      "prompts": {"system": "exactly these top-level keys and no others: "
+                            "r_field, root_cause.", "user": "{{ a }}"}}),
+    # A list qualified in prose still yields its keys and is not held to the
+    # strict rule, which is what the two specs doing that need.
     ("an enumerated key list qualified in prose", None,
      {"tasks": {"t": {"input": {"required": ["a"]},
                       "output": {"required": ["r_field", "other"],
