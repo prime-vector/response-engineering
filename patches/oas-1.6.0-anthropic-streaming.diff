@@ -18,9 +18,13 @@ indistinguishable from a real failure. The commander's assess is the longest
 generation in this repository and the most exposed.
 
 Apply after the other two patches. All three are cut against the 1.6.0 wheel
-in this order and apply with no fuzz:
+in this order and apply with no fuzz. Resolve the file through the interpreter
+`oa` runs on, not through system python3: a pipx install keeps `oas_cli` in its
+own virtualenv, so python3 either cannot import it or finds a different copy
+and patches a provider the demos never load.
 
-    P="$(python3 -c 'import oas_cli.providers.anthropic_http as m; print(m.__file__)')"
+    OA_PY="$(sed -n '1s|^#! *||p' "$(command -v oa)")"
+    P="$("$OA_PY" -c 'import oas_cli.providers.anthropic_http as m; print(m.__file__)')"
     patch "$P" < patches/oas-1.6.0-anthropic-tool-messages.diff
     patch "$P" < patches/oas-1.6.0-anthropic-prompt-caching.diff
     patch "$P" < patches/oas-1.6.0-anthropic-streaming.diff

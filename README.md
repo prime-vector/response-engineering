@@ -101,7 +101,13 @@ export ANTHROPIC_API_KEY=...
 # waited on whole and lost whole; the commander's board is the generation that
 # exposes this. All three are cut against the 1.6.0 wheel and apply with no
 # fuzz in this order.
-OA_PROVIDER="$(python3 -c 'import oas_cli.providers.anthropic_http as m; print(m.__file__)')"
+# `oa` is normally a pipx install, so oas_cli lives in its own virtualenv:
+# system python3 either cannot import it, or imports a different copy and
+# patches a provider the demos never use. Resolve through the interpreter `oa`
+# itself runs on, which is what evals/judgement.py fingerprints for the same
+# reason.
+OA_PY="$(sed -n '1s|^#! *||p' "$(command -v oa)")"
+OA_PROVIDER="$("$OA_PY" -c 'import oas_cli.providers.anthropic_http as m; print(m.__file__)')"
 patch "$OA_PROVIDER" < patches/oas-1.6.0-anthropic-tool-messages.diff
 patch "$OA_PROVIDER" < patches/oas-1.6.0-anthropic-prompt-caching.diff
 patch "$OA_PROVIDER" < patches/oas-1.6.0-anthropic-streaming.diff

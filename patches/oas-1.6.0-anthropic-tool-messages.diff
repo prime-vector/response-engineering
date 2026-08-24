@@ -4,7 +4,9 @@ verbatim, which the Anthropic API rejects with HTTP 400. This converts them to
 tool_use / tool_result content blocks. Apply to the installed package until it
 lands upstream:
 
-    patch "$(python3 -c 'import oas_cli.providers.anthropic_http as m; print(m.__file__)')" \
+    OA_PY="$(sed -n '1s|^#! *||p' "$(command -v oa)")"
+    P="$("$OA_PY" -c 'import oas_cli.providers.anthropic_http as m; print(m.__file__)')"
+    patch "$P" \
         < patches/oas-1.6.0-anthropic-tool-messages.diff
 
 Cut against 1.6.0, which is what this repository targets. The version in the

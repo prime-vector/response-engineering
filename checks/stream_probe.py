@@ -40,15 +40,19 @@ def _reexec_under_oa():
     interpreter = shebang[2:].strip().split()[0]
     if not os.path.isfile(interpreter) or interpreter == sys.executable:
         return
+    # Compared by path, deliberately, and not by realpath: a virtualenv's
+    # python is a symlink to the system binary, so resolving it says they are
+    # the same interpreter when only one of them can see oas_cli. The path is
+    # what selects site-packages.
     os.environ["OA_PROBE_REEXEC"] = "1"
     raise SystemExit(subprocess.call([interpreter, *sys.argv]))
 
 
-try:
-    import oas_cli  # noqa: F401
-except ImportError:
-    if not os.environ.get("OA_PROBE_REEXEC"):
-        _reexec_under_oa()
+# Unconditionally, not merely when the import fails. A system python3 that
+# *can* import some other oas_cli would certify a copy the demos never load,
+# and that is the failure that looks exactly like a pass.
+if not os.environ.get("OA_PROBE_REEXEC"):
+    _reexec_under_oa()
 
 
 # One message, both ways. The left side is what the API returns when the

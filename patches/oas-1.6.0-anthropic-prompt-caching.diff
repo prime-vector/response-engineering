@@ -13,9 +13,11 @@ breakpoint needs.
 Apply the tool-messages patch beside this one first. Both are cut against the
 1.6.0 wheel and both apply with no fuzz in that order:
 
-    patch "$(python3 -c 'import oas_cli.providers.anthropic_http as m; print(m.__file__)')" \
+    OA_PY="$(sed -n '1s|^#! *||p' "$(command -v oa)")"
+    P="$("$OA_PY" -c 'import oas_cli.providers.anthropic_http as m; print(m.__file__)')"
+    patch "$P" \
         < patches/oas-1.6.0-anthropic-tool-messages.diff
-    patch "$(python3 -c 'import oas_cli.providers.anthropic_http as m; print(m.__file__)')" \
+    patch "$P" \
         < patches/oas-1.6.0-anthropic-prompt-caching.diff
 
 Set `intelligence.config.cache_prompt: false` in a spec to switch it off.
