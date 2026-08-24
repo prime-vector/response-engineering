@@ -184,10 +184,17 @@ CASES = [
 # It can apply a subschema to the property. Then either the property is named
 # under `properties`, which the walker reads, or it is reached by indirection
 # (`$ref` and its two dynamic forms), by matching its name
-# (`patternProperties`, `propertyNames`), or as one of the ones nobody named
+# (`patternProperties`), or as one of the ones nobody named
 # (`additionalProperties`, `unevaluatedProperties`). Every other subschema
 # keyword (`items`, `contains`, `allOf`, `if`/`then`, `dependentSchemas`, ...)
 # nests a literal `properties` the walker reaches by recursion.
+#
+# `propertyNames` is deliberately not here. It applies its subschema to the
+# property *names* and never to their values, so it cannot pin a confidence:
+# `{propertyNames: {enum: [confidence]}}` accepts `confidence: anything at
+# all`. It was in this set for a round, rejected conservatively, which sounds
+# harmless and is not: the list stopped being the case split it claims to be,
+# and a set with one member nobody can derive is a list again.
 #
 # Or it can assert the whole object against an instance literal, with `const`
 # or `enum`, which pins the property without any subschema at all. Those two
@@ -204,7 +211,6 @@ HIDES_A_PROPERTY = (
     "$dynamicRef",
     "$recursiveRef",
     "patternProperties",
-    "propertyNames",
 )
 APPLIES_TO_UNNAMED = (
     "additionalProperties",
@@ -214,6 +220,22 @@ ASSERTS_AN_OBJECT = (
     "const",
     "enum",
 )
+
+
+def holds_a_mapping(literal):
+    """Whether an instance literal contains an object at any depth.
+
+    At one level deep this was `any(isinstance(m, dict) for m in members)`, and
+    `enum: [[{confidence: high}]]` walked straight past it: a list of lists of
+    objects is as valid a literal as a list of objects, and nothing downstream
+    recognises a bare `confidence` key outside `properties`. The depth is
+    unbounded in the schema, so it is unbounded here.
+    """
+    if isinstance(literal, dict):
+        return True
+    if isinstance(literal, list):
+        return any(holds_a_mapping(item) for item in literal)
+    return False
 
 
 def declared_scales(specs):
@@ -266,9 +288,7 @@ def declared_scales(specs):
                 # Only when the literal is a mapping. A list of strings under
                 # `enum` is a scale being declared, which is the thing this
                 # check exists to read rather than a place to hide one.
-                literal = node.get(key)
-                members = literal if isinstance(literal, list) else [literal]
-                if key in node and any(isinstance(m, dict) for m in members):
+                if key in node and holds_a_mapping(node[key]):
                     yield f"{path}/{key}", None, False
             for key, value in node.items():
                 if isinstance(value, dict) and key == "properties":
@@ -500,6 +520,18 @@ def scale_self_test():
          ["additionalProperties"]) = False
         return base
 
+    def names_only(base):
+        """`propertyNames` beside a correct declaration. It constrains names
+        and never values, so it cannot pin a confidence and must not be
+        reported: this case is what makes re-adding it to the set cost
+        something, since a conservative rejection nobody can derive is how the
+        list stopped being a case split the first time."""
+        task, = base["tasks"]
+        container, = base["tasks"][task]["output"]["properties"]
+        (base["tasks"][task]["output"]["properties"][container]["items"]
+         ["propertyNames"]) = {"enum": ["confidence", "statement"]}
+        return base
+
     def asserts_object(base, keyword, literal):
         """A whole-object assertion. `const: {confidence: high}` pins the
         property with no subschema anywhere, so there is no `properties` for a
@@ -622,10 +654,19 @@ def scale_self_test():
              spec(scale, "detect", "findings"), "unevaluatedProperties",
              {"enum": ["high", "low"]})},
          1, "form this check cannot read", 1),
-        ("a confidence reachable only through propertyNames",
-         {SPEC.name: spec(scale), "other.yaml": hidden_by(
-             spec(scale, "detect", "findings"), "propertyNames",
-             {"pattern": "^confidence$"})},
+        ("propertyNames constrains names, so it is not in the set",
+         {SPEC.name: spec(scale),
+          "other.yaml": names_only(spec(scale, "detect", "findings"))},
+         0, "in the same order", 2),
+        ("a confidence pinned by an enum of arrays of objects",
+         {SPEC.name: spec(scale), "other.yaml": asserts_object(
+             spec(scale, "detect", "findings"), "enum",
+             [[{"confidence": "high"}]])},
+         1, "form this check cannot read", 1),
+        ("a confidence pinned by a const nested two deep",
+         {SPEC.name: spec(scale), "other.yaml": asserts_object(
+             spec(scale, "detect", "findings"), "const",
+             [[{"confidence": "high"}]])},
          1, "form this check cannot read", 1),
         ("a confidence behind a $dynamicRef",
          {SPEC.name: spec(scale), "other.yaml": hidden_by(

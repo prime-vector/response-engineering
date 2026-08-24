@@ -531,16 +531,25 @@ two goes to enumerate them, because the first pass reasoned over subschemas and
 a schema does not need one. A schema pins the value of a property in exactly two
 ways. It applies a subschema to it, in which case the property is either named
 under `properties`, which the walker reads, or reached by indirection, by
-matching its name, or as one of the ones nobody named: seven keywords. Or it
+matching its name, or as one of the ones nobody named: six keywords. Or it
 asserts the whole object against an instance literal with `const` or `enum`, no
 subschema anywhere, which is how `const: {confidence: high}` pins a scale with
 nothing for a walker to find.
 
-Nine keywords, and the closure argument is over JSON Schema's vocabulary rather
+Eight keywords, and the closure argument is over JSON Schema's vocabulary rather
 than over anything anyone has written. Two are reported only when their literal
-is a mapping, because a string `enum` is how a scale is declared and a scalar
-`const` is how the commander's rules narrow one: report those and six
-declarations and nine narrowing rules go red at once.
+holds a mapping at any depth, because a string `enum` is how a scale is declared
+and a scalar `const` is how the commander's rules narrow one: report those and
+six declarations and nine narrowing rules go red at once. The depth is
+unbounded, which took a round of its own: a list of lists of objects is as valid
+a literal as a list of objects.
+
+`propertyNames` was in the set for a round and is not one of the eight. It
+applies its subschema to property names and never to their values, so it cannot
+pin a confidence at all. Rejecting it was conservative and sounded harmless, and
+was not: a member nobody can derive turns the case split back into a list, which
+is the defect the split exists to prevent. A self-test now asserts it is not
+reported, so putting it back costs a red case and an argument.
 `additionalProperties: false` is exempt for the same shape of reason, since
 forbidding what was not named is the opposite of hiding something in it. A form
 a check cannot read is not a form to skip. It is the claim failing.
