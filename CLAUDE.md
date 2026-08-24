@@ -131,7 +131,7 @@ The bridge view is deliberately evidence-poor. The deciding evidence sits in `mi
 
 ## Before committing
 
-1. `oa validate` passes on every spec touched, `python3 checks/prompt_inputs.py` if any prompt, input schema or `demos/` override moved, and `python3 checks/contract_invariants.py` if either of the commander's output contracts moved or any spec's `confidence` declaration did: it also holds every declared confidence enum equal to the commander board's, since an agent that cannot express a confidence the sender can hold forces the model to pick a different word. `--self-test` drives that check's own branches, which no spec reaches while the scales agree, including the four schema forms it deliberately refuses to read
+1. `oa validate` passes on every spec touched, `python3 checks/prompt_inputs.py` if any prompt, input schema or `demos/` override moved, and `python3 checks/contract_invariants.py` if either of the commander's output contracts moved or any spec's `confidence` declaration did: it also holds every declared confidence enum equal to the commander board's, since an agent that cannot express a confidence the sender can hold forces the model to pick a different word. `--self-test` drives that check's own branches, which no spec reaches while the scales agree, including the schema forms it deliberately refuses to read
 2. Fixture regenerated if the generator changed
 3. Corpus regenerated and both indexes current if the corpus changed: `corpus/ingest.py --check` and `--chunker fixed --check`
 4. `corpus/eval.py` passes against `corpus/index.json` and `corpus/index.fixed.json`
