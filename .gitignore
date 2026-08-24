@@ -12,3 +12,11 @@ __pycache__/
 # the run record, by id and count, and the log itself is per run rather than
 # per artefact.
 evals/results/.logs/
+
+# Captured pipeline runs. Kept so a change to a late act can be driven from a
+# real earlier output rather than paid for again, and kept out of history for
+# the same reason `precedent` has no scripted stand-in in the fixture: a live
+# board is a claim about what the model did on one day, nothing here checks it,
+# and it goes stale the moment a spec or the corpus changes. Per run, not per
+# artefact.
+runs/

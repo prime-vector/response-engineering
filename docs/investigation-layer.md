@@ -97,9 +97,12 @@ demonstrates.
 > change registry, and both typed outputs reach the commander. The board drawn
 > from act one's recall cites `INC-2411` three times, `INC-2419` three times and
 > the memory-pressure runbook once, across two of its four hypotheses, with four
-> items outstanding and convergence blocked. It did not come through the CLI:
-> `docs/precedent-analyst.md` records the transport failure that produced it by
-> another route, and the README carries it as a known limit. Three things
+> items outstanding and convergence blocked. That board did not come through the
+> CLI on the day it was first drawn: `docs/precedent-analyst.md` records the
+> transport failure and the streaming patch that closed it, and the README
+> carries both as a known limit, since anything composing on an unpatched CLI
+> still inherits the failure. The composed pipeline now produces the board
+> through `oa run`. Three things
 > the diagram does not claim. Act one is a separate invocation and its findings
 > are not composed into the board, which reads the bridge view's own signals,
 > and the diagrams that draw that arrow now mark it rather than presenting it

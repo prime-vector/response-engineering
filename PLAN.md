@@ -421,13 +421,16 @@ log to the document the archive returned it from, no hypothesis above
 The board from act one's recall cites `INC-2411` three times, `INC-2419` three
 times and the memory-pressure runbook once, across two of four hypotheses, both
 `speculative`, four items outstanding, convergence blocked, every id resolving
-through act one's adapter log. It did not come through `oa run`: four `assess`
-runs in a row died with `Remote end closed connection without response`, minutes
-into a request the same call had completed twice earlier that day, and removing
-the prompt-caching patch changed nothing. The same request with streaming
-enabled returned a complete, contract-valid board in 79 seconds. The model
-produces it and the contract accepts it; the CLI's non-streaming delivery is
-what fails, which is now a known limit rather than a mystery.
+through act one's adapter log. It did not come through `oa run` on the day it
+was drawn: four `assess` runs in a row died with `Remote end closed connection
+without response`, minutes into a request the same call had completed twice
+earlier that day, and removing the prompt-caching patch changed nothing. The
+same request with streaming enabled returned a complete, contract-valid board in
+79 seconds. The model produced it and the contract accepted it; what failed was
+the CLI's non-streaming delivery. The third patch in `patches/` streams and the
+composed pipeline now draws the board through `oa run`, act two end to end in
+one minute forty-eight. It stays a known limit because an unpatched CLI still
+has it.
 
 **Recall runs in act one, and it took two goes to land there.** It was built at
 the bridge bound on the argument that the board is assembled there and that

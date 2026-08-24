@@ -23,6 +23,43 @@ import sys
 import urllib.error
 import urllib.request
 
+
+# `oa` is usually a pipx install, so oas_cli lives in its own virtualenv and
+# the system interpreter cannot see it. Re-exec under the interpreter `oa`
+# itself runs on, which is the install under test in any case: a probe that
+# imported some other copy of the provider would be reporting on the wrong one.
+def _reexec_under_oa():
+    import shutil
+    import subprocess
+
+    oa = shutil.which("oa")
+    if not oa:
+        return
+    try:
+        with open(oa) as handle:
+            shebang = handle.readline()
+    except (OSError, UnicodeDecodeError):
+        return
+    if not shebang.startswith("#!"):
+        return
+    interpreter = shebang[2:].strip().split()[0]
+    if not os.path.isfile(interpreter) or interpreter == sys.executable:
+        return
+    # Compared by path, deliberately, and not by realpath: a virtualenv's
+    # python is a symlink to the system binary, so resolving it says they are
+    # the same interpreter when only one of them can see oas_cli. The path is
+    # what selects site-packages.
+    os.environ["OA_PROBE_REEXEC"] = "1"
+    raise SystemExit(subprocess.call([interpreter, *sys.argv]))
+
+
+# Unconditionally, not merely when the import fails. A system python3 that
+# *can* import some other oas_cli would certify a copy the demos never load,
+# and that is the failure that looks exactly like a pass.
+if not os.environ.get("OA_PROBE_REEXEC"):
+    _reexec_under_oa()
+
+
 MODEL = os.environ.get("CACHE_PROBE_MODEL", "claude-haiku-4-5-20251001")
 ENDPOINT = "https://api.anthropic.com/v1/messages"
 

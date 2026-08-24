@@ -57,10 +57,19 @@ trap cleanup EXIT
 
 port_in_use() { (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null; }
 
-# Line count now, so a demo reads only its own run's calls out of a log the
-# previous demo has already written to.
-log_mark() { wc -l < "$LOGS/$1.log" 2>/dev/null || echo 0; }
+# A demo reads only its own run's calls out of a log the previous demo has
+# already written to, and only the attempt that produced the output: `oa_run`
+# records where every log stood before each attempt, so a retried run is
+# checked against its own calls rather than the abandoned attempt's as well. A
+# citation the discarded attempt was handed is not evidence about this one.
+# A demo reads only its own run's calls out of a log the previous demo has
+# already written to, and only the attempt that produced the output. See
+# demos/retry.sh for both: the transport retry and the per-attempt window.
+OA_MARKS="$LOGS/.attempt-marks"
+OA_LOG_GLOB="$LOGS/*.log"
+. demos/retry.sh
 log_since() { tail -n "+$(( $2 + 1 ))" "$LOGS/$1.log"; }
+attempt_mark() { attempt_from "$LOGS/$1.log"; }
 
 start_adapter() { # surface port
   case " $STARTED " in *" $1 "*) return 0 ;; esac
@@ -113,7 +122,10 @@ demo_sandbox() {
   echo "   The mitigate prompt cooperates fully. The block below is the sandbox's."
   start_adapter host 8424
   local stderr_out status=0
-  stderr_out=$(oa run --spec .agents/incident-commander.yaml --task mitigate \
+  # Not oa_run: mitigate is the state-changing task. The sandbox blocks it
+  # pre-dispatch so nothing is reached, and a task that would change
+  # production if the fence ever failed is not one to re-run automatically.
+  stderr_out=$(oa_run_once --spec .agents/incident-commander.yaml --task mitigate \
     --input "$(cat fixtures/mitigation-directive.json)" \
     --quiet 2>&1 >/dev/null) || status=$?
   if [ "$status" -eq 0 ]; then
@@ -133,7 +145,7 @@ demo_contract() {
   # No adapter: assess binds no tools. What is being tested is the output
   # contract, which sits between the model and the caller, not a surface.
   local stderr_out status=0
-  stderr_out=$(oa run --spec .agents/incident-commander.yaml --task assess \
+  stderr_out=$(oa_run --spec .agents/incident-commander.yaml --task assess \
     --input "$(cat fixtures/composite-incident.json)" \
     --system-prompt "$(cat demos/caveats-stripped-system-prompt.txt)" \
     --quiet 2>&1 >/dev/null) || status=$?
@@ -153,7 +165,7 @@ demo_attribution() {
   # No adapter, for the same reason as the contract demo: assess reasons over
   # the view it is handed and reaches no surface at all.
   local out
-  out=$(oa run --spec .agents/incident-commander.yaml --task assess \
+  out=$(oa_run --spec .agents/incident-commander.yaml --task assess \
     --input "$(cat fixtures/composite-incident.attribution.json)" --quiet)
   BOARD="$out" python3 - <<'PY'
 import json, os, sys
@@ -190,7 +202,7 @@ PY
   echo "   naming a third party below confirmed confidence with the guard off is"
   echo "   not writable:"
   local stderr_out status=0
-  stderr_out=$(oa run --spec .agents/incident-commander.yaml --task assess \
+  stderr_out=$(oa_run --spec .agents/incident-commander.yaml --task assess \
     --input "$(cat fixtures/composite-incident.attribution.json)" \
     --system-prompt "$(cat demos/guard-stripped-system-prompt.txt)" \
     --quiet 2>&1 >/dev/null) || status=$?
@@ -210,9 +222,9 @@ demo_grounding() {
   echo "   and a working note dated inside this incident's own window."
   start_adapter precedent_archive 8426
   local mark out
-  mark=$(log_mark precedent_archive)
-  out=$(oa run --spec .agents/precedent-analyst.yaml --task recall \
+  out=$(oa_run --spec .agents/precedent-analyst.yaml --task recall \
     --input "$(cat fixtures/composite-incident.json)" --quiet)
+  mark=$(attempt_mark precedent_archive)
   OUT="$out" LOG="$(log_since precedent_archive "$mark")" python3 - <<'PY'
 import json, os, re, sys
 
@@ -294,7 +306,7 @@ PY
   echo "   demos/grounding-stripped-system-prompt.txt, a producer asserting the"
   echo "   precedent from recall without citing passages:"
   local stderr_out status=0
-  stderr_out=$(oa run --spec .agents/precedent-analyst.yaml --task recall \
+  stderr_out=$(oa_run --spec .agents/precedent-analyst.yaml --task recall \
     --input "$(cat fixtures/composite-incident.json)" \
     --system-prompt "$(cat demos/grounding-stripped-system-prompt.txt)" \
     --quiet 2>&1 >/dev/null) || status=$?
@@ -314,9 +326,9 @@ demo_refusal() {
   echo "   is later than every document in it, and it holds nothing that fits."
   start_adapter precedent_archive 8426
   local mark out
-  mark=$(log_mark precedent_archive)
-  out=$(oa run --spec .agents/precedent-analyst.yaml --task recall \
+  out=$(oa_run --spec .agents/precedent-analyst.yaml --task recall \
     --input "$(cat fixtures/novel-incident.json)" --quiet)
+  mark=$(attempt_mark precedent_archive)
   OUT="$out" LOG="$(log_since precedent_archive "$mark")" python3 - <<'PY'
 import json, os, re, sys
 
