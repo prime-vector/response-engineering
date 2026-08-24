@@ -216,11 +216,15 @@ def confidence_scale_holds(spec):
             print(f"  FAIL the briefing rejects a hypothesis at {word}, so a "
                   f"faithful rendering is impossible and the model's way out "
                   f"is to change the word")
-        if accepts(f"un{word} thing, and unfalsifiable."):
-            failures += 1
-            print(f"  FAIL the briefing accepts 'un{word}' as {word} and "
-                  f"'unfalsifiable' as a falsifying test: an entry can assert "
-                  f"the negation of both while validating")
+        # Four negation forms, not one. `un` is the one that shipped; a
+        # pattern bounded against it and not the others would pass a test
+        # written against it and fail in the field.
+        for prefix in ("un", "non-", "not ", "in"):
+            if accepts(f"{prefix}{word} thing, and unfalsifiable."):
+                failures += 1
+                print(f"  FAIL the briefing accepts '{prefix}{word}' as "
+                      f"{word} and 'unfalsifiable' as a falsifying test: an "
+                      f"entry can assert the negation of both while validating")
     if not failures:
         print(f"  ok   the briefing takes all {len(enum)} confidence values "
               f"assess can emit, and no negation of one")

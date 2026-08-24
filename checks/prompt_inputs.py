@@ -333,6 +333,46 @@ SELF_TESTS = (
 )
 
 
+# Every substitution form, live and dead, plus text that must not be read as a
+# placeholder at all. The self-test cases above each drive one branch through a
+# whole spec; this drives the form matching directly, because the claim "matches
+# the three forms the runner replaces, and flags the ones it does not" is about
+# strings and is cheapest to test as strings.
+FORM_CASES = (
+    ("{a}", True, "single brace"),
+    ("{{ a }}", True, "double brace"),
+    ("{{ input.a }}", True, "input dotted"),
+    ("{{  a  }}", False, "double brace with extra spaces"),
+    ("{ a }", False, "single brace with spaces"),
+    ("{{a}}", False, "double brace with no spaces"),
+    ("{{ input.a}}", False, "input dotted, missing space"),
+    ("{{ b }}", False, "not an input"),
+    ("{b}", False, "single brace, not an input"),
+)
+
+# Brace-bearing text that is not a placeholder. These prompts quote JSON at the
+# model, so a form matcher that flags `{"triggered": false}` fails the tree.
+NOT_PLACEHOLDERS = ('reply with {"triggered": false}', "JSON {} empty",
+                    "keys: {a, b}", "set {x: 1} aside", "a { b", "}} stray")
+
+
+def form_self_test():
+    failures = 0
+    for form, substituted, label in FORM_CASES:
+        text = f"x {form} y"
+        dead = unsubstituted(text, {"a"})
+        seen = reads(text, "a")
+        ok = (not dead and seen) if substituted else bool(dead)
+        failures += not ok
+        print(f"  {'ok  ' if ok else 'FAIL'} {form}: "
+              f"{'substituted' if substituted else 'left literal'} ({label})")
+    for text in NOT_PLACEHOLDERS:
+        dead = unsubstituted(text, {"a"})
+        failures += bool(dead)
+        print(f"  {'ok  ' if not dead else 'FAIL'} not a placeholder: {text}")
+    return failures
+
+
 def self_test():
     import contextlib
     import io
@@ -360,12 +400,14 @@ def self_test():
         failures += not ok
         print(f"  {'ok  ' if ok else 'FAIL'} {label}: {detail}")
     failures += override_self_test()
+    failures += form_self_test()
     print()
     if failures:
         sys.exit(f"{failures} self-test(s) failed: the check does not behave "
                  f"the way it is documented to.")
-    print(f"{len(SELF_TESTS) + len(OVERRIDE_SELF_TESTS)} self-tests hold, each "
-          f"on the reason it names.")
+    total = (len(SELF_TESTS) + len(OVERRIDE_SELF_TESTS) + len(FORM_CASES)
+             + len(NOT_PLACEHOLDERS))
+    print(f"{total} self-tests hold, each on the reason it names.")
 
 
 # The override half, driven the same way and for the same reason: its
