@@ -276,6 +276,30 @@ SELF_TESTS = (
      {"headline": "h", "known": [], "outstanding": [], "standing_conditions": [],
       "suspected": [{"statement": "s", "confidence": "plausible",
                      "falsifying_test": "t", "root_cause": "z"}]}),
+    # Three schema requirements whose removal left this suite green, which
+    # made the claim that every guarantee fails on removal untrue.
+    ("an entry with no statement", "output schema",
+     {"hypotheses": [{"statement": "h0", "confidence": "plausible",
+                      "precedent_cited": []}],
+      "blocking_evidence": [], "standing_conditions_noted": []},
+     {"headline": "h", "known": [], "outstanding": [], "standing_conditions": [],
+      "suspected": [{"confidence": "plausible", "falsifying_test": "t"}]}),
+    ("an entry whose falsifying test is empty", "output schema",
+     {"hypotheses": [{"statement": "h0", "confidence": "plausible",
+                      "precedent_cited": []}],
+      "blocking_evidence": [], "standing_conditions_noted": []},
+     {"headline": "h", "known": [], "outstanding": [], "standing_conditions": [],
+      "suspected": [{"statement": "s", "confidence": "plausible",
+                     "falsifying_test": ""}]}),
+    # And the passage-id arm of REFERENCE, which only the INC- arm exercised.
+    ("a passage id the board does not contain", "invented",
+     {"hypotheses": [{"statement": "h0", "confidence": "plausible",
+                      "precedent_cited": []}],
+      "blocking_evidence": [], "standing_conditions_noted": []},
+     {"headline": "h", "known": ["cited p-ffffffffffff"], "outstanding": [],
+      "standing_conditions": [],
+      "suspected": [{"statement": "s", "confidence": "plausible",
+                     "falsifying_test": "t"}]}),
     # Precedent dropped, which is the quieter half of the same rule.
     ("an entry dropping the precedent its hypothesis cites", "drops the precedent",
      {"hypotheses": [{"statement": "h0", "confidence": "plausible",
@@ -346,7 +370,9 @@ def main():
     if failures:
         sys.exit(f"{failures} grounding failure(s): a briefing is claiming "
                  f"something its board does not carry.")
-    print(f"{len(pairs)} briefing(s) carry only what their board gave them.")
+    print(f"{len(pairs)} briefing(s) satisfy the brief schema and carry the "
+          f"board's confidences, precedents and standing conditions. The prose "
+          f"is not compared, and the committed render strengthens it.")
 
 
 if __name__ == "__main__":

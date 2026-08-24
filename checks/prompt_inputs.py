@@ -34,7 +34,10 @@ only reference the wrong variables, it asks for the wrong answer: the pair
 `brief` inherited told the model to produce `assess`'s output shape, against
 `brief`'s output schema. Variables and inputs agreeing does not rule that out,
 so the resolved prompts must also name every field the task's own output
-requires. A prompt that asks for the right shape names it; one written for a
+requires at the top level. Nested requirements, `suspected[].falsifying_test`
+and its siblings, are not traversed: every task here states its shape as a flat
+key list, and walking arbitrary schema nesting to decide what a prompt ought to
+mention invents an obligation the prompts do not have. A prompt that asks for the right shape names it; one written for a
 different task does not. That holds for every task in this repository, which is
 what makes it a check rather than a preference. Matching is on word boundaries
 rather than by substring: a field called `r` is inside "produce", and substring
@@ -73,7 +76,14 @@ SPECS = sorted(pathlib.Path(".agents").glob("*.yaml"))
 # unsubstituted system text by definition, so any placeholder in one is dead.
 OVERRIDES = sorted(pathlib.Path("demos").glob("*-prompt.txt"))
 
-# Substitution, modelled exactly rather than approximated. The runner does
+# Substitution as the runner performs it, for the key shapes these specs use.
+# The runner replaces literally, so an input named `9key` or `team/name` is
+# substituted and is not matched below: the single-brace arm is bounded to
+# identifier shapes because these prompts quote JSON at the model and anything
+# looser reads `{"triggered": false}` as a placeholder. Every input key in this
+# tree is an identifier, and a spec introducing one that is not gets no help
+# from this check, which is a smaller promise than modelling substitution in
+# general and is the one that can be kept. The runner does
 # three literal replaces per input key: `{key}`, `{{ key }}` and
 # `{{ input.key }}`, with exactly one space inside the braces. So a regex over
 # `\s*` accepts `{{  board  }}`, which the runner leaves untouched, and a key
@@ -119,7 +129,8 @@ def unsubstituted(text, required):
 # model obeys omitted it. A compliant response then failed validation, and this
 # check passed the spec.
 KEY_LIST = re.compile(
-    r"exactly these\s+top-level keys(?:\s+and no others)?:\s*(.+?)\.", re.S)
+    r"exactly these\s+top-level keys(?:\s+and no others)?:\s*(.+?)(?:\.|\n\s*\n|$)",
+    re.S)
 # A key is a bare identifier. The list is followed by prose in most of these
 # prompts, "and optionally caveats", "plus cause_basis only when cause_status
 # is confirmed", and a matcher that takes everything up to the full stop reads
