@@ -75,7 +75,15 @@ OVERRIDES = sorted(pathlib.Path("demos").glob("*-prompt.txt"))
 # Two questions are therefore asked separately. Would the runner substitute
 # this occurrence, given the required inputs? And is there any placeholder
 # shaped text left that it would not?
-BRACED = re.compile(r"{{.*?}}|(?<![{\w]){\w[^{}]*}")
+#
+# The single-brace arm allows spaces inside the braces, because `{ board }` is
+# not a form the runner replaces and is exactly the occurrence a check must not
+# walk past: the runner leaves it literal, and a pattern demanding a word
+# character straight after the brace never sees it. It is bounded to something
+# shaped like an identifier rather than anything brace-delimited, because these
+# prompts quote JSON at the model and `{"triggered": false}` is an example,
+# not a placeholder someone misspelled.
+BRACED = re.compile(r"{{[^{}]*}}|(?<!{){\s*[A-Za-z_][\w.-]*\s*}(?!})")
 
 
 def substitutions(key):
@@ -303,6 +311,20 @@ SELF_TESTS = (
      {"tasks": {"t": {"input": {"required": ["audience", "board"]},
                       "output": {"required": ["headline"]}}},
       "prompts": {"system": "produce a headline", "user": "for {{ audience }}"}}),
+    # The other two substitution forms. Every case above uses `{{ key }}`, so
+    # single-brace and `{{ input.key }}` support could both be deleted with the
+    # suite green, which is the coverage the docstring claims.
+    ("the single-brace form the runner also replaces", None,
+     {"tasks": {"t": {"input": {"required": ["a"]}, "output": {"required": ["r_field"]}}},
+      "prompts": {"system": "produce r_field", "user": "value {a}"}}),
+    ("the input-dotted form the runner also replaces", None,
+     {"tasks": {"t": {"input": {"required": ["a"]}, "output": {"required": ["r_field"]}}},
+      "prompts": {"system": "produce r_field", "user": "value {{ input.a }}"}}),
+    # A spaced single brace is not a form the runner replaces, so it is dead
+    # text and must be caught rather than read as a reference to `a`.
+    ("a spaced single brace, which the runner leaves literal", "unsubstituted",
+     {"tasks": {"t": {"input": {"required": ["a"]}, "output": {"required": ["r_field"]}}},
+      "prompts": {"system": "produce r_field", "user": "value { a }"}}),
     # And the only case that reaches `in_system`: a system prompt whose sole
     # defect is a placeholder, which is never substituted in one.
     ("a placeholder in an otherwise correct system prompt", "reach the model literally",

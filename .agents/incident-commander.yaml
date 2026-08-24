@@ -585,8 +585,15 @@ tasks:
           items:
             type: string
             allOf:
-              - pattern: "([Ss][Pp][Ee][Cc][Uu][Ll][Aa][Tt][Ii][Vv][Ee]|[Pp][Ll][Aa][Uu][Ss][Ii][Bb][Ll][Ee]|[Ll][Ii][Kk][Ee][Ll][Yy]|[Ss][Uu][Pp][Pp][Oo][Rr][Tt][Ee][Dd]|[Cc][Oo][Nn][Ff][Ii][Rr][Mm][Ee][Dd])"
-              - pattern: "[Ff][Aa][Ll][Ss][Ii][Ff]"
+              # Word-bounded, and that is the whole of it. Unbounded, `likely`
+              # matched inside `unlikely`, `supported` inside `unsupported`,
+              # `confirmed` inside `unconfirmed`, and `falsif` inside
+              # `unfalsifiable`. An entry reading "UNLIKELY, and unfalsifiable"
+              # asserts the opposite of both things being required and
+              # validated against them.
+              - pattern: '\b([Ss][Pp][Ee][Cc][Uu][Ll][Aa][Tt][Ii][Vv][Ee]|[Pp][Ll][Aa][Uu][Ss][Ii][Bb][Ll][Ee]|[Ll][Ii][Kk][Ee][Ll][Yy]|[Ss][Uu][Pp][Pp][Oo][Rr][Tt][Ee][Dd]|[Cc][Oo][Nn][Ff][Ii][Rr][Mm][Ee][Dd])\b'
+              - pattern: '\b[Ff][Aa][Ll][Ss][Ii][Ff]'
+
         outstanding:
           type: array
           items:
@@ -595,7 +602,32 @@ tasks:
           type: array
           items:
             type: string
-      required: [headline, known, suspected, outstanding]
+        standing_conditions:
+          type: array
+          description: >
+            The board's `standing_conditions_noted`, carried across as its own
+            list rather than folded into `known`. They are directly observed,
+            so `known` is where they would otherwise land, and that is exactly
+            the merge the commander separated them to prevent: a host at 70
+            percent memory for months did not cause this, and a briefing that
+            files it beside the evidence has produced the cause the board
+            refused to record.
+
+            Added because the prompt asked for them and the output had nowhere
+            to put them, so a run filed one under `suspected` and the pattern
+            refused it, correctly: a standing condition is not a hypothesis and
+            carries no confidence or falsifying test. An instruction with no
+            home in the schema is a defect in the schema.
+
+            Required, and empty when the board noted none. Optional, the first
+            run with the field simply omitted it and dropped a standing
+            condition the board had separated out, which is the loss rule 8
+            exists to prevent arriving by omission rather than by argument.
+            Same reason `still_outstanding` is required on the board itself: a
+            rule that can be skipped by leaving a key out is not a rule.
+          items:
+            type: string
+      required: [headline, known, suspected, outstanding, standing_conditions]
       # No room for a field nobody declared, and one field in particular: the
       # briefing is where a `root_cause` key would look most natural and be
       # most wrong. The board refused to record one.
@@ -627,7 +659,19 @@ tasks:
 
         3. known is what the board holds as directly observed, and nothing
            else. Anything resting on correlation, plausibility, precedent or
-           elimination is suspected, however strongly the board leans on it.
+           elimination is suspected, however strongly the board leans on it. A
+           statement the board attributes to the correlator, or carries on a
+           hypothesis at any confidence, is not a direct observation no matter
+           how firmly it reads: "the only change record in the window" is a
+           correlator finding and belongs in suspected with its confidence.
+
+        3a. Do not strengthen the board's own verbs. Where it says a thing
+           correlates with, coincides with or is consistent with another, the
+           briefing says that too. It does not say drives, causes or explains.
+           This is the flattening that survives every check here, because it
+           changes one word in a sentence that is otherwise accurate, and the
+           headline is where it does the most damage: a reader who reads
+           nothing else reads that.
 
         4. Where the board blocks convergence, the headline says the cause is
            not established. You never state a cause the board has not
@@ -647,10 +691,13 @@ tasks:
            outstanding. asks is what you want from the people on the call,
            which follows from outstanding rather than replacing it.
 
-        8. Carry the standing conditions the board separated out, as standing
-           conditions. A host at 70 percent memory for months did not cause
-           this and is why a new consumer could end it, and a briefing that
-           merges the two has produced the cause the board refused to record.
+        8. Carry the standing conditions the board separated out, in
+           standing_conditions and nowhere else. They are directly observed,
+           so known is where they would otherwise land, and that merge
+           produces the cause the board refused to record: a host at 70
+           percent memory for months did not cause this and is why a new
+           consumer could end it. They are not hypotheses either, so they do
+           not belong in suspected and carry no confidence or falsifying test.
            These are the findings that get lost first.
 
         9. Suppression is not resolution. Where the board holds the state as
@@ -698,7 +745,8 @@ tasks:
           range: [0.0, 0.3]
       response_contract:
         output_format:
-          required_fields: [headline, known, suspected, outstanding]
+          required_fields: [headline, known, suspected, outstanding,
+                            standing_conditions]
 
   mitigate:
     description: >

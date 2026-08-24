@@ -54,6 +54,13 @@ Vocabulary to avoid: *governed operations*, *ops automation*, *AIOps*, *single p
 
 Australian English. No em dashes.
 
+That governs copy written here. It does not govern a committed record of what a
+model produced: `evals/results/` and `docs/samples/` hold outputs byte for byte,
+em dashes included, because a record edited to satisfy a style rule is no longer
+a record and a metric computed from an edited one is wrong. The distinction is
+the path, not the judgement of whoever is editing: everything outside those two
+directories is authored and follows the rule.
+
 ---
 
 ## OAS conventions

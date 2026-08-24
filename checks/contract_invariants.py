@@ -168,35 +168,63 @@ CASES = [
 
 
 def confidence_scale_holds(spec):
-    """The briefing's pattern must carry every confidence `assess` can emit.
+    """The briefing's pattern takes every confidence, and no negation of one.
 
-    `brief` renders a hypothesis with the confidence the board gave it, and its
-    output schema requires a confidence word in each entry. If the pattern is
-    missing one of the enum's values, the faithful rendering of a hypothesis at
-    that confidence is rejected and the model's way out is to change the word,
-    so a constraint added to prevent flattening causes it instead. The pattern
-    started life missing `likely` and nothing would have said so.
+    Validated by instance, not by reading the regex. The first version of this
+    checked that each enum value's letters appeared in the pattern string,
+    which agreed with any pattern containing them and so said nothing about
+    what the pattern accepted. It passed an unbounded pattern under which
+    `likely` matched inside `unlikely`, `supported` inside `unsupported`, and
+    `falsif` inside `unfalsifiable`, so an entry reading "UNLIKELY, and
+    unfalsifiable" satisfied a schema requiring a confidence word and a
+    falsifying test while asserting the negation of both.
+
+    Both directions matter and only one of them is obvious. A pattern missing
+    a value rejects the faithful rendering of a hypothesis at that confidence,
+    so the model's route to a valid output is to change the word. A pattern
+    accepting a negation lets an entry drop its caveats while appearing to
+    carry them, which is worse: the first fails loudly and the second passes.
     """
     enum = (spec["tasks"]["assess"]["output"]["properties"]["hypotheses"]
             ["items"]["properties"]["confidence"]["enum"])
-    patterns = (spec["tasks"]["brief"]["output"]["properties"]["suspected"]
-                ["items"]["allOf"])
-    # The case-insensitive spelling is [Ll][Ii][Kk]..., so a value is carried
-    # when its letters appear in order as bracketed pairs. Test it the way the
-    # validator will rather than parsing the pattern by hand.
-    joined = " ".join(p.get("pattern", "") for p in patterns)
-    missing = [v for v in enum
-               if "".join(f"[{c.upper()}{c.lower()}]" for c in v) not in joined
-               and "".join(f"[{c.lower()}{c.upper()}]" for c in v) not in joined
-               and "".join(f"[{c.upper()}{c.lower()}]" for c in v).lower() not in joined.lower()]
-    if missing:
-        print(f"  FAIL the briefing's suspected pattern omits "
-              f"{', '.join(missing)}, which assess can emit. A faithful "
-              f"rendering at that confidence would be rejected.")
-        return 1
-    print(f"  ok   the briefing's suspected pattern carries all "
-          f"{len(enum)} confidence values assess can emit")
-    return 0
+    schema = spec["tasks"]["brief"]["output"]
+
+    # Built from the schema's own required list rather than typed out here.
+    # Hardcoded, this base went stale the moment `standing_conditions` became
+    # required, and every case below then failed on the missing field instead
+    # of on the pattern: a check reporting the right verdict for the wrong
+    # reason, which is the defect it exists to catch.
+    minimal = {"string": "x", "array": [], "object": {},
+               "integer": 0, "number": 0, "boolean": False}
+    base = {}
+    for field in schema.get("required", []):
+        kind = (schema.get("properties", {}).get(field) or {}).get("type", "string")
+        base[field] = minimal.get(kind, "x")
+    base.pop("suspected", None)
+
+    def accepts(entry):
+        try:
+            validate(instance={**base, "suspected": [entry]}, schema=schema)
+            return True
+        except ValidationError:
+            return False
+
+    failures = 0
+    for word in enum:
+        if not accepts(f"{word.upper()} thing. Falsifying test: observe x."):
+            failures += 1
+            print(f"  FAIL the briefing rejects a hypothesis at {word}, so a "
+                  f"faithful rendering is impossible and the model's way out "
+                  f"is to change the word")
+        if accepts(f"un{word} thing, and unfalsifiable."):
+            failures += 1
+            print(f"  FAIL the briefing accepts 'un{word}' as {word} and "
+                  f"'unfalsifiable' as a falsifying test: an entry can assert "
+                  f"the negation of both while validating")
+    if not failures:
+        print(f"  ok   the briefing takes all {len(enum)} confidence values "
+              f"assess can emit, and no negation of one")
+    return failures
 
 
 def main():
