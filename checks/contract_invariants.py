@@ -178,18 +178,42 @@ CASES = [
 # responder's job rather than a validator's.
 
 
-# The keywords that can constrain a property without naming it under
-# `properties`. This is the closed set from JSON Schema's applicator
-# vocabulary rather than a list of shapes anyone has written: indirection,
-# name matching, and the two that apply to whatever was not named. Every other
-# subschema keyword (`items`, `contains`, `allOf`, `if`/`then`,
-# `dependentSchemas`, ...) nests a literal `properties` that the walker below
-# reaches by recursion, so a confidence under one of those is found rather
-# than hidden. Enumerating the routes rather than the sightings is what stops
-# this being one more keyword every review round.
-HIDES_A_PROPERTY = ("$ref", "$dynamicRef", "$recursiveRef",
-                    "patternProperties", "propertyNames")
-APPLIES_TO_UNNAMED = ("additionalProperties", "unevaluatedProperties")
+# A schema can pin the value of a property in exactly two ways, and the
+# keywords below are what each way costs this walker.
+#
+# It can apply a subschema to the property. Then either the property is named
+# under `properties`, which the walker reads, or it is reached by indirection
+# (`$ref` and its two dynamic forms), by matching its name
+# (`patternProperties`, `propertyNames`), or as one of the ones nobody named
+# (`additionalProperties`, `unevaluatedProperties`). Every other subschema
+# keyword (`items`, `contains`, `allOf`, `if`/`then`, `dependentSchemas`, ...)
+# nests a literal `properties` the walker reaches by recursion.
+#
+# Or it can assert the whole object against an instance literal, with `const`
+# or `enum`, which pins the property without any subschema at all. Those two
+# are the only assertion keywords that carry instance values, and they are
+# reported only when the literal is a mapping: `enum` on a string field is the
+# normal way to declare a scale, and `const: confirmed` is how the commander's
+# rules narrow one.
+#
+# Enumerating the routes rather than the sightings is what stops this being one
+# more keyword every review round. Each entry sits on its own line so a test
+# can remove exactly one.
+HIDES_A_PROPERTY = (
+    "$ref",
+    "$dynamicRef",
+    "$recursiveRef",
+    "patternProperties",
+    "propertyNames",
+)
+APPLIES_TO_UNNAMED = (
+    "additionalProperties",
+    "unevaluatedProperties",
+)
+ASSERTS_AN_OBJECT = (
+    "const",
+    "enum",
+)
 
 
 def declared_scales(specs):
@@ -208,9 +232,10 @@ def declared_scales(specs):
 
     Anything else is reported rather than skipped, with `readable` false, and
     this walker reads exactly one form: `properties.confidence` written inline.
-    It resolves no references, matches no patterns, and does not follow a
-    constraint that applies to properties nobody named, so every keyword in
-    `HIDES_A_PROPERTY` and `APPLIES_TO_UNNAMED` above is reported on sight,
+    It resolves no references, matches no patterns, does not follow a
+    constraint that applies to properties nobody named, and does not read an
+    object out of an instance literal, so every keyword in the three tuples
+    above is reported on sight,
     whether or not a confidence is hiding behind it. That is deliberate and it
     is the whole guarantee. `required: [confidence]` beside an
     `additionalProperties` schema declares and constrains a confidence with no
@@ -236,6 +261,14 @@ def declared_scales(specs):
                 # `false` forbids properties that were not named, which is the
                 # opposite of constraining one out of sight.
                 if key in node and node[key] is not False:
+                    yield f"{path}/{key}", None, False
+            for key in ASSERTS_AN_OBJECT:
+                # Only when the literal is a mapping. A list of strings under
+                # `enum` is a scale being declared, which is the thing this
+                # check exists to read rather than a place to hide one.
+                literal = node.get(key)
+                members = literal if isinstance(literal, list) else [literal]
+                if key in node and any(isinstance(m, dict) for m in members):
                     yield f"{path}/{key}", None, False
             for key, value in node.items():
                 if isinstance(value, dict) and key == "properties":
@@ -467,6 +500,39 @@ def scale_self_test():
          ["additionalProperties"]) = False
         return base
 
+    def asserts_object(base, keyword, literal):
+        """A whole-object assertion. `const: {confidence: high}` pins the
+        property with no subschema anywhere, so there is no `properties` for a
+        walker to find and nothing to recurse into that looks like one."""
+        task, = base["tasks"]
+        container, = base["tasks"][task]["output"]["properties"]
+        base["tasks"][task]["output"]["properties"][container]["items"] = {
+            keyword: literal}
+        return base
+
+    def scalar_assertions(base):
+        """The shapes the specs really use: a string `enum` declaring a scale
+        and a scalar `const` narrowing one. Neither hides an object and
+        neither may be reported, or nine narrowing rules and six declarations
+        go red at once."""
+        task, = base["tasks"]
+        container, = base["tasks"][task]["output"]["properties"]
+        items = base["tasks"][task]["output"]["properties"][container]["items"]
+        items["properties"]["severity"] = {"type": "string",
+                                           "enum": ["low", "high"]}
+        items["properties"]["closed"] = {"const": "confirmed"}
+        return base
+
+    def inside_a_list(base):
+        """A declaration nested in a list, which is how `allOf` and friends
+        carry subschemas. Only the walker's list branch reaches it."""
+        task, = base["tasks"]
+        container, = base["tasks"][task]["output"]["properties"]
+        items = base["tasks"][task]["output"]["properties"][container]["items"]
+        items["allOf"] = [{"properties": {"confidence": dict(
+            items["properties"]["confidence"])}}]
+        return base
+
     def decoy_first(base):
         """A second confidence in `assess`, ordered ahead of `hypotheses` and
         carrying a different scale. A scan would take this one as the
@@ -569,6 +635,30 @@ def scale_self_test():
          {SPEC.name: spec(scale),
           "other.yaml": forbids_unnamed(spec(scale, "detect", "findings"))},
          0, "in the same order", 2),
+        ("a confidence pinned by a whole-object const",
+         {SPEC.name: spec(scale), "other.yaml": asserts_object(
+             spec(scale, "detect", "findings"), "const", {"confidence": "high"})},
+         1, "form this check cannot read", 1),
+        ("a confidence pinned by an enum of objects",
+         {SPEC.name: spec(scale), "other.yaml": asserts_object(
+             spec(scale, "detect", "findings"), "enum", [{"confidence": "high"}])},
+         1, "form this check cannot read", 1),
+        ("a scalar const and a string enum are not object assertions",
+         {SPEC.name: spec(scale),
+          "other.yaml": scalar_assertions(spec(scale, "detect", "findings"))},
+         0, "in the same order", 2),
+        ("a confidence behind a $recursiveRef",
+         {SPEC.name: spec(scale), "other.yaml": hidden_by(
+             spec(scale, "detect", "findings"), "$recursiveRef", "#")},
+         1, "form this check cannot read", 1),
+        ("additionalProperties true is a hiding place",
+         {SPEC.name: spec(scale), "other.yaml": hidden_by(
+             spec(scale, "detect", "findings"), "additionalProperties", True)},
+         1, "form this check cannot read", 1),
+        ("a declaration nested inside a list",
+         {SPEC.name: spec(scale),
+          "other.yaml": inside_a_list(spec(scale, "detect", "findings"))},
+         0, "in the same order", 3),
         ("a second confidence in assess, declared first",
          # Names the decoy, not the board: if the reference had been scanned
          # rather than read by path, these two swap and the message would
