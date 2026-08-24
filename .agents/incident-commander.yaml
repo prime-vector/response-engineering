@@ -559,8 +559,21 @@ tasks:
             Each entry must carry its confidence word and its falsifying test
             inline. This is the anti-flattening rule: a suspicion may not be
             restated as a fact when it changes format.
+
+            The pattern below is what a schema can actually hold here, and it
+            is worth being exact about how little that is: it requires a
+            confidence word and the word falsifying to appear in the entry.
+            It cannot check that the confidence matches the one the board
+            gave, that the test named would falsify anything, or that the
+            sentence around them is not an assertion. A reader still has to
+            read it. What it does stop is the entry that drops them entirely,
+            which is the flattening that happens by omission rather than by
+            argument, and which was previously prevented by prompt alone.
           items:
             type: string
+            allOf:
+              - pattern: "([Ss][Pp][Ee][Cc][Uu][Ll][Aa][Tt][Ii][Vv][Ee]|[Pp][Ll][Aa][Uu][Ss][Ii][Bb][Ll][Ee]|[Ss][Uu][Pp][Pp][Oo][Rr][Tt][Ee][Dd]|[Cc][Oo][Nn][Ff][Ii][Rr][Mm][Ee][Dd])"
+              - pattern: "[Ff][Aa][Ll][Ss][Ii][Ff]"
         outstanding:
           type: array
           items:
@@ -570,6 +583,10 @@ tasks:
           items:
             type: string
       required: [headline, known, suspected, outstanding]
+      # No room for a field nobody declared, and one field in particular: the
+      # briefing is where a `root_cause` key would look most natural and be
+      # most wrong. The board refused to record one.
+      additionalProperties: false
     # Its own pair. Without it this task inherits the root prompts, which are
     # written for assess: they ask for assess's output shape, and their ten
     # placeholders are not inputs here, so every one of them reaches the model
@@ -617,6 +634,17 @@ tasks:
            outstanding. asks is what you want from the people on the call,
            which follows from outstanding rather than replacing it.
 
+        8. Carry the standing conditions the board separated out, as standing
+           conditions. A host at 70 percent memory for months did not cause
+           this and is why a new consumer could end it, and a briefing that
+           merges the two has produced the cause the board refused to record.
+           These are the findings that get lost first.
+
+        9. Suppression is not resolution. Where the board holds the state as
+           unresolved_suppressed, the briefing says the symptom is gone and
+           the cause is not established. Service restored is not an answer,
+           and it is the most tempting sentence in a briefing.
+
         The audience changes your register and what you ask for. It does not
         change what is known, what is suspected, or how either is caveated.
       user: >
@@ -639,9 +667,15 @@ tasks:
     behavioural_contract:
       version: "1.0"
       description: >
-        Enforces that a board rendered for people carries the same epistemics
-        it had as data. The briefing is the last hop before a human repeats
-        it, and it is where a caveat is cheapest to drop.
+        Requires the four fields a briefing cannot be read without. It does
+        not enforce that the epistemics survived: field presence is all a
+        contract of this shape checks, and whether a suspicion still reads as
+        a suspicion is a property of a sentence. The output schema carries
+        what can be carried, a confidence word and a falsifying test per
+        entry and no undeclared fields; the prompt carries the rest; and a
+        reader carries what neither can. The briefing is the last hop before
+        a human repeats it, which is where a caveat is cheapest to drop and
+        why the honest statement of what is guarded matters here.
       role: Incident commander
       behavioural_flags:
         conservatism: high

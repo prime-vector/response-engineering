@@ -29,6 +29,19 @@ template is substituted**: the system prompt is returned raw, so a placeholder
 in one is never filled, whatever the inputs are. Substitution matches three
 spellings, `{key}`, `{{ key }}` and `{{ input.key }}`.
 
+THE OTHER HALF OF THE SAME DEFECT. A prompt written for another task does not
+only reference the wrong variables, it asks for the wrong answer: the pair
+`brief` inherited told the model to produce `assess`'s output shape, against
+`brief`'s output schema. Variables and inputs agreeing does not rule that out,
+so the resolved prompts must also name every field the task's own output
+requires. A prompt that asks for the right shape names it; one written for a
+different task does not. That holds for every task in this repository, which is
+what makes it a check rather than a preference. Matching is by substring, which
+is coarse in one direction: an output field named for a common word can be
+"named" by prose that means something else, and `outstanding` in the root pair
+is exactly that. It costs a field, not the check, because a prompt written for
+another task will miss the others.
+
 WHAT THIS CANNOT SEE. `--system-prompt` and `--user-prompt` replace a prompt
 wholesale at the command line, and a spec cannot know what they will carry. The
 override files this repository keeps are checked directly, below; an override
@@ -114,6 +127,18 @@ def check_spec(path):
                   f"{', '.join(unsubstituted)}, which are not required inputs. "
                   f"They will reach the model as literal template text.")
 
+        # The output half. Checked against the resolved pair rather than the
+        # user template alone: an instruction naming the shape is as good in
+        # either, since it is read by the model either way even though only
+        # one of them is substituted.
+        out_required = set(((task.get("output") or {}).get("required")) or [])
+        unnamed = sorted(f for f in out_required if f not in system + " " + user)
+        if unnamed:
+            failures += 1
+            print(f"  FAIL {label} output requires {', '.join(unnamed)}, which "
+                  f"its prompts never name. A prompt written for another task "
+                  f"asks for that task's answer against this task's schema.")
+
         unseen = sorted(required - in_user)
         if unseen:
             failures += 1
@@ -121,9 +146,10 @@ def check_spec(path):
                   f"user template ({user_layer}) never reads. The caller "
                   f"computes and passes them and the model never sees them.")
 
-        if not in_system and not unsubstituted and not unseen:
+        if not in_system and not unsubstituted and not unseen and not unnamed:
             print(f"  ok   {label} system={system_layer}, user={user_layer}, "
-                  f"{len(in_user)} variable(s), all required inputs")
+                  f"{len(in_user)} variable(s) all required inputs, "
+                  f"{len(out_required)} output field(s) all named")
     return failures
 
 
@@ -150,8 +176,9 @@ def main():
     print()
     if failures:
         sys.exit(f"{failures} disagreement(s) between prompts and inputs.")
-    print("Every variable the runner will substitute is a required input, and "
-          "every required input is read by the template it substitutes.")
+    print("Every variable the runner will substitute is a required input, "
+          "every required input is read by the template it substitutes, and "
+          "every task's prompts name the output shape its schema requires.")
 
 
 if __name__ == "__main__":
