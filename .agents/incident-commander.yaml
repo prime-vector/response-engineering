@@ -211,7 +211,13 @@ tasks:
           type: array
           description: >
             Every candidate cause under consideration, including ones being
-            argued against. A hypothesis omitted here cannot be raised downstream.
+            argued against. A hypothesis omitted here has no typed route
+            downstream: the briefing renders one entry per hypothesis and
+            `checks/briefing_grounded.py` holds it to that count, and the
+            Scribe files from this board. What that does not close is prose.
+            A briefing sentence, or a timeline entry, can assert something no
+            hypothesis here holds, which is the same limit the briefing's own
+            contract states about itself.
           items:
             type: object
             properties:
@@ -471,8 +477,19 @@ tasks:
 
   brief:
     description: >
-      Render the hypothesis board as a bridge briefing. Consumes the assess
-      output directly, so the epistemics cannot be dropped in translation.
+      Render the hypothesis board as a bridge briefing. It consumes the assess
+      output directly rather than a retelling of it, which removes one hop a
+      caveat could be lost at.
+
+      It does not make losing one impossible, and this is measured rather than
+      hedged. Four live renders of one board, across three prompt revisions
+      written to prevent it, each strengthened something the board had hedged:
+      a verb, a citation the board did not carry, and a count restated as a
+      rate. What is guaranteed is the typed part, and
+      `checks/briefing_grounded.py` checks it against the board. The prose is
+      not, on the evidence of every run so far. That check compares what it
+      can compare, which is less than a reader would. See
+      `docs/samples/briefing-2026-08-24/`.
     timeout: 60
     # No tool binding, and an explicit empty allow list rather than none: a
     # task without a sandbox is allow-all, so the boundary is declared on the
@@ -485,7 +502,19 @@ tasks:
         allow_domains: [localhost]
       file:
         allow_paths: ["./fixtures/"]
-    depends_on: [assess]
+    # No depends_on, and that is a correction rather than an omission. It
+    # declared [assess], which the runner does not treat as documentation: it
+    # executes the dependency and merges its output into this task's input
+    # flat, key by key, so what arrived was `hypotheses`, `blocking_evidence`
+    # and the rest as separate top-level keys, never a `board`. A prompt asking
+    # for {{ board }} could not have been substituted from it. It also meant
+    # every briefing re-ran assess, which is the longest generation here, so a
+    # board could never be rendered twice the same way or rendered at all from
+    # one already produced.
+    #
+    # The handoff is composition instead, the way every other handoff in this
+    # repository works: the caller passes the typed output it already has. The
+    # Scribe's timeline takes its board exactly this way.
     input:
       type: object
       properties:
@@ -497,14 +526,13 @@ tasks:
             updates are a different artefact and belong to the Comms agent,
             which is not given the board at all.
 
-            The value does not currently reach the model. This task has no
-            prompts of its own, so it inherits the root pair, which is written
-            for assess: it never substitutes {{ audience }}, it asks for
-            assess's output shape rather than this one, and its nine other
-            placeholders are not inputs here, so they arrive as literal
-            template text. brief has never been run and this is why. Do not
-            describe the audience as changing anything until the task has a
-            prompt that reads it. Tracked separately.
+            It changes register and it changes what is asked for. It does
+            not change what is known, what is suspected, or how either is
+            caveated: a board rendered for a sponsor carries the same
+            confidence words and the same falsifying tests as one rendered
+            for the bridge. An audience that gets a cleaner story is the
+            flattening this task exists to prevent, arriving by the one door
+            the schema cannot watch.
 
             executive_sponsor, not executive: the senior person accountable
             for this incident, on the call. The shorter word reads as the
@@ -515,10 +543,23 @@ tasks:
           # could pass "customer" and the contract would accept it, on the
           # one task whose whole job is rendering unconfirmed hypotheses.
           enum: [bridge, incident_manager, executive_sponsor]
+        board:
+          type: object
+          description: >
+            The board this renders, as assess produced it: hypotheses with
+            their confidence and falsifying tests, blocking evidence,
+            convergence ruling, attribution guard.
+
+            An input rather than something depends_on delivers. The runner
+            substitutes a prompt's placeholders only from keys present in the
+            input, so a board arriving any other way reaches the model as the
+            literal text {{ board }}, which is exactly how this task came to
+            have been never run. The caller passes it, the same way the
+            Scribe's timeline is passed the board it files.
       # No default. The runner does not apply input schema defaults, so one
-      # here is a comment that reads as behaviour, and the field is required
+      # here is a comment that reads as behaviour, and the fields are required
       # in any case.
-      required: [audience]
+      required: [audience, board]
     output:
       type: object
       properties:
@@ -532,11 +573,59 @@ tasks:
         suspected:
           type: array
           description: >
-            Each entry must carry its confidence word and its falsifying test
-            inline. This is the anti-flattening rule: a suspicion may not be
-            restated as a fact when it changes format.
+            One entry per hypothesis on the board, in the board's order, with
+            the confidence and the falsifying test as fields rather than as
+            words inside a sentence.
+
+            This was an array of strings whose caveats were held by a regex
+            requiring a confidence word and the letters `falsif` to appear
+            somewhere in the entry. Three review rounds went into that regex:
+            word boundaries so `likely` did not match inside `unlikely`,
+            lookbehinds so it did not match inside `not likely`, and then
+            casing on the lookbehinds so it did not match inside `NOT LIKELY`.
+            Every round closed one spelling of the same hole, and the hole was
+            that a caveat carried as prose can be negated by prose.
+
+            CLAUDE.md has said from the start that an output carrying a claim
+            declares `confidence` and `falsifying_test` as required fields,
+            with the Comms agent the single written-down exception. This is
+            that rule, applied where it should have been applied first. The
+            confidence is an enum, so a value outside the scale is rejected by
+            the schema rather than by a pattern, and no spelling of a negation
+            reaches it. What it still cannot check is whether the confidence
+            matches the one the board gave, which is why the field is compared
+            against the board in `checks/briefing_grounded.py`.
           items:
-            type: string
+            type: object
+            properties:
+              statement:
+                type: string
+                description: >
+                  The hypothesis as the board holds it, rendered for people.
+                  Not strengthened: where the board says a thing correlates
+                  with another, this says that too.
+              confidence:
+                type: string
+                description: >
+                  Copied from the hypothesis this renders. The same scale the
+                  board declares, so a briefing cannot quietly promote one.
+                enum: [speculative, plausible, likely, supported, confirmed]
+              falsifying_test:
+                type: string
+                description: >
+                  The observation that would prove this wrong, from the
+                  hypothesis. Where the board records that none exists, say so
+                  here in those terms rather than leaving it empty.
+                minLength: 1
+              precedent:
+                type: string
+                description: >
+                  Only where the board's hypothesis carries `precedent_cited`.
+                  A prior incident named against a hypothesis that carries none
+                  manufactures the grounding the citation exists to make
+                  checkable, and is what `checks/briefing_grounded.py` refuses.
+            required: [statement, confidence, falsifying_test]
+            additionalProperties: false
         outstanding:
           type: array
           items:
@@ -545,7 +634,182 @@ tasks:
           type: array
           items:
             type: string
-      required: [headline, known, suspected, outstanding]
+        standing_conditions:
+          type: array
+          description: >
+            The board's `standing_conditions_noted`, carried across as its own
+            list rather than folded into `known`. They are directly observed,
+            so `known` is where they would otherwise land, and that is exactly
+            the merge the commander separated them to prevent: a host at 70
+            percent memory for months did not cause this, and a briefing that
+            files it beside the evidence has produced the cause the board
+            refused to record.
+
+            Added because the prompt asked for them and the output had nowhere
+            to put them, so a run filed one under `suspected` and the pattern
+            refused it, correctly: a standing condition is not a hypothesis and
+            carries no confidence or falsifying test. An instruction with no
+            home in the schema is a defect in the schema.
+
+            Required, and empty when the board noted none. Optional, the first
+            run with the field simply omitted it and dropped a standing
+            condition the board had separated out, which is the loss rule 8
+            exists to prevent arriving by omission rather than by argument.
+            Same reason `still_outstanding` is required on the board itself: a
+            rule that can be skipped by leaving a key out is not a rule.
+          items:
+            type: string
+      required: [headline, known, suspected, outstanding, standing_conditions]
+      # No room for a field nobody declared, and one field in particular: the
+      # briefing is where a `root_cause` key would look most natural and be
+      # most wrong. The board refused to record one.
+      additionalProperties: false
+    # Its own pair. Without it this task inherits the root prompts, which are
+    # written for assess: they ask for assess's output shape, and their ten
+    # placeholders are not inputs here, so every one of them reaches the model
+    # as literal template text. A task that renders a board while being shown
+    # the string {{ evidence }} is not degraded, it is a different task.
+    prompts:
+      system: >
+        You are an incident commander briefing your own response. You are
+        rendering a board that already exists. You are not extending it.
+
+        Your rules, in priority order:
+
+        1. Render, do not add. Every statement you make traces to the board
+           you were given. You may not introduce a hypothesis, an item of
+           evidence, a cause or a next step that is not on it. If the board
+           does not say something, the briefing does not either.
+
+        2. Carry the caveats as fields. Each entry in suspected has a
+           statement, the confidence copied from the hypothesis it renders,
+           that hypothesis's falsifying test, and precedent only where the
+           board attached one. A suspicion that reads as a fact once it
+           changes format is the exact failure this task exists to prevent,
+           and fields are how it cannot: there is nowhere to put a hypothesis
+           without saying how strongly it is held.
+
+        3. known is what the board holds as directly observed, and nothing
+           else. Anything resting on correlation, plausibility, precedent or
+           elimination is suspected, however strongly the board leans on it. A
+           statement the board attributes to the correlator, or carries on a
+           hypothesis at any confidence, is not a direct observation no matter
+           how firmly it reads: "the only change record in the window" is a
+           correlator finding and belongs in suspected with its confidence.
+
+        3a. Do not strengthen the board's own verbs. Where it says a thing
+           correlates with, coincides with or is consistent with another, the
+           briefing says that too. It does not say drives, causes or explains.
+           This is the flattening that survives every check here, because it
+           changes one word in a sentence that is otherwise accurate, and the
+           headline is where it does the most damage: a reader who reads
+           nothing else reads that.
+
+        4. Where the board blocks convergence, the headline says the cause is
+           not established. You never state a cause the board has not
+           confirmed, and a board with outstanding deciding evidence has not
+           confirmed one.
+
+        5. Where the board's attribution guard has fired, the briefing names
+           it as unconfirmed and carries the evidence the guard asked for.
+           Never let a third party arrive in a briefing as the answer.
+
+        6. Where a hypothesis cites precedent, say that it is a prior
+           incident and carry the divergence with it. A precedent that has
+           lost its difference is the anchoring failure the citation exists
+           to expose.
+
+        6a. One suspected entry per hypothesis, in the board's order. This
+           is not presentation: it is what makes a citation checkable. With
+           the entries aligned to the board, a prior incident named against
+           entry three can be compared to the precedent the board attached to
+           hypothesis three, and `checks/briefing_grounded.py` does exactly
+           that. Reordered or merged, the briefing still reads well and
+           nothing can be verified against it.
+
+        6b. Only where it cites one. A hypothesis whose precedent_cited is
+           empty has no precedent, and mentioning a prior incident against it,
+           or inventing a divergence for it, manufactures the evidence the
+           citation exists to make checkable. Precedent belongs to the
+           hypothesis the board attached it to and to no other, and a prior
+           incident named against the wrong hypothesis is worse than one
+           omitted: it reads as grounding and there is nothing under it.
+
+        7. outstanding is the board's blocking evidence that is still
+           outstanding. asks is what you want from the people on the call,
+           which follows from outstanding rather than replacing it.
+
+        8. Carry the standing conditions the board separated out, in
+           standing_conditions, and not in known. That is the promotion worth
+           refusing: a condition filed beside the evidence has become
+           evidence, which is the merge the board separated them to prevent.
+
+           Not "nowhere else". The board can hold one thing as both a
+           hypothesis and a standing condition, and it does: the
+           unacknowledged auto-closing problems are a candidate cause and a
+           condition that let the incident run. Rule 6a requires an entry per
+           hypothesis, so a blanket exclusion made the two rules impossible to
+           satisfy together. Where the board holds something as both, render
+           it as both. They are directly observed,
+           so known is where they would otherwise land, and that merge
+           produces the cause the board refused to record: a host at 70
+           percent memory for months did not cause this and is why a new
+           consumer could end it. They are not hypotheses either, so they do
+           not belong in suspected and carry no confidence or falsifying test.
+           These are the findings that get lost first.
+
+        9. Suppression is not resolution. Where the board holds the state as
+           unresolved_suppressed, the briefing says the symptom is gone and
+           the cause is not established. Service restored is not an answer,
+           and it is the most tempting sentence in a briefing.
+
+        The audience changes your register and what you ask for. It does not
+        change what is known, what is suspected, or how either is caveated.
+      user: >
+        Audience: {{ audience }}. Inside the response, and briefed in full.
+
+        The board, as the incident commander produced it:
+        {{ board }}
+
+        Render the briefing. Reply with the JSON object only: the first
+        character of your reply is the opening brace, with exactly these
+        top-level keys and no others: headline, known, suspected, outstanding,
+        standing_conditions, asks. headline is a string. known, outstanding,
+        standing_conditions and asks are arrays of strings, empty when there
+        is nothing to put in them. suspected is an array of objects, one per
+        hypothesis in the board's order, each with statement, confidence and
+        falsifying_test, plus precedent only where the board's hypothesis
+        carries a citation. No markdown fences, no preamble, no text after
+        the closing brace. Do your analysis silently.
+    # Per task, never at root: a root contract merges into every task with
+    # arrays unioned, so assess's required fields would silently become this
+    # one's. Modest on purpose, because the fields it would otherwise repeat
+    # are already required by the output schema, where confidence is an enum
+    # and falsifying_test cannot be empty. What no contract of this shape sees
+    # is whether the sentence around them is a fair rendering.
+    behavioural_contract:
+      version: "1.0"
+      description: >
+        Requires the five fields a briefing cannot be read without. It does
+        not enforce that the epistemics survived: field presence is all a
+        contract of this shape checks, and whether a suspicion still reads as
+        a suspicion is a property of a sentence. The output schema carries
+        what can be carried, a confidence word and a falsifying test per
+        entry and no undeclared fields; the prompt carries the rest; and a
+        reader carries what neither can. The briefing is the last hop before
+        a human repeats it, which is where a caveat is cheapest to drop and
+        why the honest statement of what is guarded matters here.
+      role: Incident commander
+      behavioural_flags:
+        conservatism: high
+        verbosity: balanced
+        temperature_control:
+          mode: strict
+          range: [0.0, 0.3]
+      response_contract:
+        output_format:
+          required_fields: [headline, known, suspected, outstanding,
+                            standing_conditions]
 
   mitigate:
     description: >

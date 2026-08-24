@@ -167,9 +167,56 @@ CASES = [
 # responder's job rather than a validator's.
 
 
+def confidence_scale_holds(spec):
+    """The briefing's confidence enum is the board's, exactly.
+
+    This was a regex over a free string, and three review rounds went into it:
+    word boundaries so `likely` did not match inside `unlikely`, lookbehinds so
+    it did not match inside `not likely`, then casing on those lookbehinds so it
+    did not match inside `NOT LIKELY`. Each round closed one spelling of one
+    hole. The hole was that a caveat carried as prose can be negated by prose,
+    and no pattern closes that.
+
+    `suspected` is an array of objects now, with `confidence` an enum, which is
+    what CLAUDE.md required of any output carrying a claim from the start. So
+    what is left to check is the thing a schema cannot notice: that the two
+    enums have not drifted apart. A briefing that cannot express `likely`
+    rejects the faithful rendering of a hypothesis at that confidence, and the
+    model's way out is to pick a different word.
+    """
+    def scale(task, field, container):
+        node = (spec["tasks"][task]["output"]["properties"][container]
+                ["items"]["properties"][field])
+        # Absent rather than different: a confidence declared as a bare string
+        # accepts anything, which is the failure this whole change was about,
+        # and reading `["enum"]` straight would raise KeyError and report zero
+        # failures to anything counting them.
+        return node.get("enum")
+
+    board = scale("assess", "confidence", "hypotheses")
+    brief = scale("brief", "confidence", "suspected")
+    if brief is None:
+        print("  FAIL the briefing's confidence is not an enum, so any string "
+              "is a valid confidence and a briefing can invent one")
+        return 1
+    if board is None:
+        print("  FAIL the board's confidence is not an enum, so there is no "
+              "scale for the briefing to be held to")
+        return 1
+    if board == brief:
+        print(f"  ok   the briefing's confidence enum is the board's, all "
+              f"{len(board)} values in the same order")
+        return 0
+    print(f"  FAIL the briefing's confidence enum is {brief} against the "
+          f"board's {board}: a hypothesis the board can hold is one the "
+          f"briefing cannot render faithfully")
+    return 1
+
+
 def main():
-    schema = yaml.safe_load(SPEC.read_text())["tasks"]["assess"]["output"]
-    failures = 0
+    spec = yaml.safe_load(SPEC.read_text())
+    schema = spec["tasks"]["assess"]["output"]
+    failures = confidence_scale_holds(spec)
     for name, board, accepted in CASES:
         try:
             validate(instance=board, schema=schema)

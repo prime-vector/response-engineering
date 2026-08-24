@@ -1,0 +1,199 @@
+{
+  "incident_state": "hypothesis_blocked",
+  "summary": "intg-prod-a1 is experiencing recurring nightly memory exhaustion and near-total CPU saturation from setroubleshootd (99.7% CPU since 2026-03-02), which correlates with batch transfer latency and console slowness. The cause of the SELinux AVC denial storm driving setroubleshootd has not been established; audit log evidence is outstanding and convergence is blocked.",
+  "hypotheses": [
+    {
+      "statement": "setroubleshootd is consuming ~100% CPU in response to a high-volume stream of SELinux AVC denials that began on 2026-03-02, and this CPU saturation is the proximate cause of batch transfer latency and console slowness on intg-prod-a1.",
+      "confidence": "supported",
+      "supporting_evidence": [
+        "Process snapshot at 2026-03-17T19:00:00+00:00 shows pid 3501048 (setroubleshootd, user audit-analysis) at 99.7% CPU with 79h 58m cumulative CPU time, started 2026-03-02T06:00:00+00:00 (E-1).",
+        "SELinux confirmed in enforcing mode; denials are real and being logged (E-2). setroubleshootd is the AVC denial analysis daemon and activates in response to denial volume.",
+        "Integration service JVM (pid 3489339) is at only 5.6% CPU, making the JVM an unlikely direct cause of the CPU saturation.",
+        "Memory exhaustion problems P-4100 through P-4112 all opened in the early-morning window (03:00\u201304:00 UTC) and auto-closed ~2.5 hours later, consistent with a nightly batch workload driving memory and CPU to exhaustion before recovering.",
+        "Memory series shows a rising sawtooth pattern beginning 2026-03-02T00:00:00+00:00, coinciding with onset of problems, consistent with a new persistent process activating alongside the batch cycle."
+      ],
+      "contradicting_evidence": [
+        "No direct observation of AVC denial volume or rate; the audit log is outstanding. Without it, the link between setroubleshootd CPU consumption and a denial storm is inferential."
+      ],
+      "falsifying_test": "Inspect /var/log/audit/audit.log for AVC denial counts per hour from 2026-03-02 onward; if denial volume is low or absent, setroubleshootd CPU consumption has a different cause not yet identified.",
+      "third_party_named": false,
+      "rules_in": "Process snapshot directly observes setroubleshootd at 99.7% CPU on an 8-core host, leaving ~0.3 cores for all other processes including the integration service and batch transfers.",
+      "rules_out": "Does not rule out a concurrent or independent cause of memory growth in the JVM."
+    },
+    {
+      "statement": "The installation of endpoint-compliance-agent 7.4.2-27 (CHG-88104) on 2026-02-22 triggered novel SELinux AVC denials that activated setroubleshootd on 2026-03-02, initiating the CPU and memory exhaustion pattern.",
+      "confidence": "plausible",
+      "supporting_evidence": [
+        "CHG-88104 is the only change record in the pre-onset window; installed 8 days before first memory exhaustion alert P-4100 (change correlator, confidence: plausible).",
+        "Registry caveat: self_updating_agents_not_reflected=true \u2014 the agent may have self-updated between 2026-02-22 and 2026-03-02, which could explain the 8-day gap between installation and onset.",
+        "setroubleshootd started at 2026-03-02T06:00:00+00:00, coinciding with close of P-4100; the audit-analysis-server package has been installed for 3 years, so this is an activation event not an installation event (change correlator registry caveat).",
+        "SELinux enforcing mode confirmed (E-2); a new agent performing actions not covered by existing policy would generate AVC denials."
+      ],
+      "contradicting_evidence": [
+        "8-day gap between agent installation and onset weakens temporal proximity; if the agent was idle for 8 days, the installation alone does not explain the onset timing.",
+        "No AVC denial log yet collected to confirm the agent is the source domain of the denials.",
+        "Registry caveat: self_updating_agents_not_reflected=true means the version running at onset may differ from 7.4.2-27 with no registry evidence."
+      ],
+      "falsifying_test": "Inspect /var/log/audit/audit.log for AVC denials from 2026-02-22 through 2026-03-02; if no denials are attributable to the endpoint-compliance-agent source domain, this hypothesis is falsified. Additionally, confirm whether the agent was active and consuming memory between 2026-02-22 and 2026-03-01; flat memory during that period weakens the correlation.",
+      "third_party_named": false,
+      "rules_in": "Only change in the pre-onset window; activation of a long-installed daemon requires a trigger; a new agent generating novel denials is a plausible trigger.",
+      "rules_out": "Does not rule out an unrecorded application-layer change (pipeline deployments list returned empty; any change delivered outside the pipeline is invisible to the registry)."
+    },
+    {
+      "statement": "The integration service JVM has a memory leak contributing to the rising sawtooth memory pattern, with the JVM's resident set growing during each batch cycle and partially recovering, compounding the memory exhaustion alongside setroubleshootd.",
+      "confidence": "plausible",
+      "supporting_evidence": [
+        "Memory series shows a clear rising sawtooth: memory climbs ~3.5 GiB over ~15 hours then drops sharply, repeating each cycle from 2026-03-02 onward.",
+        "JVM resident set at snapshot time is 24.8 GiB (pid 3489339), consistent with the standing condition of 23.1 GiB steady-state noted for 6 months \u2014 the current reading is elevated above that baseline.",
+        "Precedent INC-2411 describes memory exhaustion on an integration-class host with a JVM workload; divergence noted: INC-2411 had a recorded heap configuration change, which is absent here.",
+        "No heap or thread dump has been collected from the JVM to characterise its memory behaviour."
+      ],
+      "contradicting_evidence": [
+        "JVM CPU is only 5.6%, inconsistent with a runaway workload driving memory growth.",
+        "The sawtooth reset pattern (sharp drop) is more consistent with a process restart or GC event than a leak, which would typically not recover without intervention.",
+        "Standing condition notes JVM at 23.1 GiB for 6 months with no alerting \u2014 the current 24.8 GiB reading is elevated but not dramatically so."
+      ],
+      "falsifying_test": "Collect a JVM heap dump from pid 3489339; if heap occupancy is stable and within historical norms, the JVM is not contributing to the memory growth pattern. Swap metrics would also clarify whether the JVM is being paged out during exhaustion events.",
+      "third_party_named": false,
+      "rules_in": "Rising sawtooth pattern requires explanation; JVM is the largest memory consumer on the host.",
+      "rules_out": "Does not rule out the sawtooth being driven entirely by setroubleshootd memory accumulation during denial processing, with the drop corresponding to a process restart or memory release.",
+      "precedent_cited": [
+        "p-b05efbf8f847",
+        "p-fa1b9e69fdee",
+        "p-dd0770fac8bf"
+      ]
+    },
+    {
+      "statement": "The recurring nightly memory exhaustion events (P-4100 through P-4112) have been auto-closing without acknowledgement for 15 days, masking a progressive degradation that has now manifested as user-visible latency.",
+      "confidence": "supported",
+      "supporting_evidence": [
+        "All 13 problems in the window are unacknowledged; observability platform note states 'No problem in this window was acknowledged, assigned or actioned.'",
+        "Problems auto-close after ~2.5 hours each night, creating a false impression of self-resolution.",
+        "User-reported symptoms (batch latency, console slowness) are consistent with the host operating near memory and CPU exhaustion during batch windows.",
+        "Precedent INC-2419 describes the same pattern: same signature, same auto-close behaviour, ran 10 days unacknowledged before action; divergence: INC-2419 was resolved by restart without establishing cause \u2014 that outcome must not be repeated here."
+      ],
+      "contradicting_evidence": [
+        "Auto-close could reflect genuine recovery if the batch workload completes and memory is released; the pattern alone does not confirm suppression of a worsening condition."
+      ],
+      "falsifying_test": "Compare batch transfer completion times and console response times on days when problems were open versus closed; if performance is identical in both states, the auto-closing events are not causing user-visible impact.",
+      "third_party_named": false,
+      "rules_in": "Direct observation of 13 unacknowledged auto-closed problems over 15 days with no assigned owner.",
+      "rules_out": "Nothing ruled out; this is an operational finding regardless of root cause.",
+      "precedent_cited": [
+        "p-97816f4244e0",
+        "p-6bbe7d8a53b6",
+        "p-610e89eb3e32"
+      ]
+    }
+  ],
+  "blocking_evidence": [
+    {
+      "description": "Audit denial log for the affected window, showing the source domain and denied action for each denial.",
+      "how_to_obtain": "Query the audit log for denial records over the last 14 days on the affected host.",
+      "requested_from": "platform_team",
+      "requested_at_elapsed_minutes": 149,
+      "still_outstanding": true
+    },
+    {
+      "description": "Currently running version of endpoint-compliance-agent on intg-prod-a1, to determine whether it has self-updated beyond 7.4.2-27 since 2026-02-22.",
+      "how_to_obtain": "Run agent CLI version command or read /var/lib/endpoint-compliance-agent/version on intg-prod-a1.",
+      "requested_from": "security_engineering",
+      "requested_at_elapsed_minutes": 0,
+      "still_outstanding": true
+    },
+    {
+      "description": "setroubleshootd log (/var/log/setroubleshoot/setroubleshoot.log) from 2026-03-02T06:00:00+00:00 onward, to identify which SELinux denials are being analysed and whether volume is consistent with 99.7% CPU.",
+      "how_to_obtain": "Retrieve /var/log/setroubleshoot/setroubleshoot.log from intg-prod-a1.",
+      "requested_from": "security_engineering",
+      "requested_at_elapsed_minutes": 0,
+      "still_outstanding": true
+    },
+    {
+      "description": "JVM heap and thread dump from pid 3489339 (integration-service) to characterise whether memory growth is attributable to a workload change or internal leak since 2026-03-02.",
+      "how_to_obtain": "Run jcmd 3489339 GC.heap_info and jstack 3489339 on intg-prod-a1.",
+      "requested_from": "platform_engineering",
+      "requested_at_elapsed_minutes": 0,
+      "still_outstanding": true
+    },
+    {
+      "description": "Swap utilisation metric series for intg-prod-a1 covering 2026-03-02 to present, to determine whether the JVM or other processes are being paged out during exhaustion events.",
+      "how_to_obtain": "Pull swap.used metric from observability platform for intg-prod-a1 at 1h resolution for the same window as the memory series.",
+      "requested_from": "platform_engineering",
+      "requested_at_elapsed_minutes": 0,
+      "still_outstanding": true
+    }
+  ],
+  "attribution_guard": {
+    "triggered": false,
+    "party": "",
+    "reason": "No hypothesis currently names a third party. The endpoint-compliance-agent (CHG-88104) is an internal change record; no external vendor is named as a cause at any confidence level.",
+    "evidence_required": "If a future hypothesis names the endpoint-compliance-agent vendor as a cause, direct observation of the agent generating AVC denials (from the audit log, source domain confirmed) would be required before attribution could be considered."
+  },
+  "convergence_allowed": false,
+  "convergence_block_reason": "Five blocking evidence items are outstanding, including the audit denial log (requested at T+149 min, still not received) which is the deciding evidence for the primary causal chain. No cause may be recorded until at minimum the audit log and setroubleshootd log are collected and the source domain of the denials is directly observed.",
+  "next_actions": [
+    {
+      "action": "Escalate the outstanding audit log request to platform_team; the request was made 149 minutes ago and is the deciding evidence. Obtain /var/log/audit/audit.log from intg-prod-a1 covering 2026-02-22 through present, extract AVC denial counts per hour and source domains.",
+      "owner_role": "incident_commander",
+      "intent": "collect_evidence",
+      "authorisation_required": false,
+      "blast_radius": "Read-only log retrieval; no production state change.",
+      "reversible": true
+    },
+    {
+      "action": "Retrieve /var/log/setroubleshoot/setroubleshoot.log from intg-prod-a1 from 2026-03-02T06:00:00+00:00 onward to identify which SELinux denials are being analysed and confirm denial volume consistent with 99.7% CPU.",
+      "owner_role": "security_engineering",
+      "intent": "collect_evidence",
+      "authorisation_required": false,
+      "blast_radius": "Read-only log retrieval; no production state change.",
+      "reversible": true
+    },
+    {
+      "action": "Capture currently running version of endpoint-compliance-agent on intg-prod-a1 via agent CLI or /var/lib/endpoint-compliance-agent/version to determine whether it has self-updated beyond 7.4.2-27.",
+      "owner_role": "security_engineering",
+      "intent": "collect_evidence",
+      "authorisation_required": false,
+      "blast_radius": "Read-only query; no production state change.",
+      "reversible": true
+    },
+    {
+      "action": "Collect JVM heap info (jcmd 3489339 GC.heap_info) and thread dump (jstack 3489339) from intg-prod-a1 to characterise integration-service memory behaviour and determine whether the rising sawtooth is JVM-driven.",
+      "owner_role": "platform_engineering",
+      "intent": "collect_evidence",
+      "authorisation_required": false,
+      "blast_radius": "jstack and jcmd heap_info are non-invasive read operations; negligible risk of JVM pause on a healthy JVM.",
+      "reversible": true
+    },
+    {
+      "action": "Pull swap.used metric series for intg-prod-a1 at 1h resolution from 2026-03-02 to present from the observability platform to determine whether paging is occurring during exhaustion events.",
+      "owner_role": "platform_engineering",
+      "intent": "collect_evidence",
+      "authorisation_required": false,
+      "blast_radius": "Read-only metric query; no production state change.",
+      "reversible": true
+    },
+    {
+      "action": "Notify business stakeholders that the investigation is active, that batch latency is caused by host resource exhaustion under investigation, and that no transfers have failed; provide next update time.",
+      "owner_role": "incident_commander",
+      "intent": "communicate",
+      "authorisation_required": false,
+      "blast_radius": "Communication only.",
+      "reversible": true
+    },
+    {
+      "action": "Do not restart setroubleshootd or the integration service JVM until the audit log and setroubleshootd log have been collected and the source of AVC denials identified; a restart would suppress the symptom without establishing the cause and would destroy in-memory state needed for diagnosis.",
+      "owner_role": "incident_commander",
+      "intent": "communicate",
+      "authorisation_required": true,
+      "blast_radius": "Restarting setroubleshootd or the JVM changes production state and would constitute unresolved suppression per rule 6; authorisation required to prevent premature action.",
+      "reversible": false
+    }
+  ],
+  "standing_conditions_noted": [
+    "Integration service JVM on intg-prod-a1 holds 23.1 GiB resident of 32 GiB total RAM as steady state for at least 6 months, with no alerting configured and no owner assigned. This leaves only ~8.9 GiB free at baseline, meaning any additional persistent process (such as setroubleshootd at 622 MB) materially reduces the margin before memory exhaustion. This condition did not cause the incident but explains why a new consumer was able to trigger exhaustion.",
+    "13 memory exhaustion problems (P-4100 through P-4112) fired and auto-closed over 15 days with zero acknowledgements, zero assignments, and zero actions taken. The auto-close behaviour created a false impression of self-resolution and allowed a progressive degradation to reach user-visible impact undetected. Alerting configuration and on-call response procedures for auto-closing problems on this host require review as a post-incident finding.",
+    "The non-production equivalent host (intg-nonprod-a1) has build_parity=false with a different patch level and different installed agents. This means the non-prod environment cannot be used to safely reproduce or test hypotheses about production behaviour without accounting for these differences.",
+    "The change registry has a confirmed blind spot: self_updating_agents_not_reflected=true. Agents that self-update do not produce package records, meaning the current running version of any self-updating agent on this host may differ from the registry without any audit trail. This is a standing gap in change visibility for this host.",
+    "No pipeline deployments are recorded for intg-prod-a1; any application-layer change delivered outside the pipeline (e.g. integration-service.jar update) is invisible to the change registry. This is a standing gap in change traceability."
+  ]
+}
