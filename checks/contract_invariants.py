@@ -167,9 +167,42 @@ CASES = [
 # responder's job rather than a validator's.
 
 
+def confidence_scale_holds(spec):
+    """The briefing's pattern must carry every confidence `assess` can emit.
+
+    `brief` renders a hypothesis with the confidence the board gave it, and its
+    output schema requires a confidence word in each entry. If the pattern is
+    missing one of the enum's values, the faithful rendering of a hypothesis at
+    that confidence is rejected and the model's way out is to change the word,
+    so a constraint added to prevent flattening causes it instead. The pattern
+    started life missing `likely` and nothing would have said so.
+    """
+    enum = (spec["tasks"]["assess"]["output"]["properties"]["hypotheses"]
+            ["items"]["properties"]["confidence"]["enum"])
+    patterns = (spec["tasks"]["brief"]["output"]["properties"]["suspected"]
+                ["items"]["allOf"])
+    # The case-insensitive spelling is [Ll][Ii][Kk]..., so a value is carried
+    # when its letters appear in order as bracketed pairs. Test it the way the
+    # validator will rather than parsing the pattern by hand.
+    joined = " ".join(p.get("pattern", "") for p in patterns)
+    missing = [v for v in enum
+               if "".join(f"[{c.upper()}{c.lower()}]" for c in v) not in joined
+               and "".join(f"[{c.lower()}{c.upper()}]" for c in v) not in joined
+               and "".join(f"[{c.upper()}{c.lower()}]" for c in v).lower() not in joined.lower()]
+    if missing:
+        print(f"  FAIL the briefing's suspected pattern omits "
+              f"{', '.join(missing)}, which assess can emit. A faithful "
+              f"rendering at that confidence would be rejected.")
+        return 1
+    print(f"  ok   the briefing's suspected pattern carries all "
+          f"{len(enum)} confidence values assess can emit")
+    return 0
+
+
 def main():
-    schema = yaml.safe_load(SPEC.read_text())["tasks"]["assess"]["output"]
-    failures = 0
+    spec = yaml.safe_load(SPEC.read_text())
+    schema = spec["tasks"]["assess"]["output"]
+    failures = confidence_scale_holds(spec)
     for name, board, accepted in CASES:
         try:
             validate(instance=board, schema=schema)

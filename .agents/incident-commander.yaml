@@ -471,8 +471,12 @@ tasks:
 
   brief:
     description: >
-      Render the hypothesis board as a bridge briefing. Consumes the assess
-      output directly, so the epistemics cannot be dropped in translation.
+      Render the hypothesis board as a bridge briefing. It consumes the assess
+      output directly rather than a retelling of it, which removes one hop a
+      caveat could be lost at. It does not make losing one impossible: `board`
+      is an object and nothing compares this output against it, so what is
+      guarded is a confidence word and a falsifying test per suspicion and no
+      undeclared fields, and the rest is the prompt and the reader.
     timeout: 60
     # No tool binding, and an explicit empty allow list rather than none: a
     # task without a sandbox is allow-all, so the boundary is declared on the
@@ -560,8 +564,17 @@ tasks:
             inline. This is the anti-flattening rule: a suspicion may not be
             restated as a fact when it changes format.
 
-            The pattern below is what a schema can actually hold here, and it
-            is worth being exact about how little that is: it requires a
+            The pattern below carries all five values of the confidence
+            scale `assess` declares, and it has to: a pattern missing one
+            rejects the faithful rendering of a hypothesis at that confidence
+            and leaves the model changing the word to satisfy the schema,
+            which is the flattening it was added to prevent, caused by the
+            constraint against it. `checks/contract_invariants.py` holds the
+            two in agreement so the next value added to the enum cannot be
+            missed here.
+
+            It is worth being exact about how little the pattern buys: it
+            requires a
             confidence word and the word falsifying to appear in the entry.
             It cannot check that the confidence matches the one the board
             gave, that the test named would falsify anything, or that the
@@ -572,7 +585,7 @@ tasks:
           items:
             type: string
             allOf:
-              - pattern: "([Ss][Pp][Ee][Cc][Uu][Ll][Aa][Tt][Ii][Vv][Ee]|[Pp][Ll][Aa][Uu][Ss][Ii][Bb][Ll][Ee]|[Ss][Uu][Pp][Pp][Oo][Rr][Tt][Ee][Dd]|[Cc][Oo][Nn][Ff][Ii][Rr][Mm][Ee][Dd])"
+              - pattern: "([Ss][Pp][Ee][Cc][Uu][Ll][Aa][Tt][Ii][Vv][Ee]|[Pp][Ll][Aa][Uu][Ss][Ii][Bb][Ll][Ee]|[Ll][Ii][Kk][Ee][Ll][Yy]|[Ss][Uu][Pp][Pp][Oo][Rr][Tt][Ee][Dd]|[Cc][Oo][Nn][Ff][Ii][Rr][Mm][Ee][Dd])"
               - pattern: "[Ff][Aa][Ll][Ss][Ii][Ff]"
         outstanding:
           type: array

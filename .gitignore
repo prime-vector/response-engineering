@@ -19,4 +19,8 @@ evals/results/.logs/
 # board is a claim about what the model did on one day, nothing here checks it,
 # and it goes stale the moment a spec or the corpus changes. Per run, not per
 # artefact.
+#
+# A capture that a document cites is a different thing and is committed: see
+# docs/samples/. If it is cited it can be opened, and if it is not worth
+# committing the citation goes instead.
 runs/
