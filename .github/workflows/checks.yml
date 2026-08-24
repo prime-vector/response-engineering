@@ -122,4 +122,6 @@ jobs:
       # task shipped that way from the beginning because it had never been
       # run. Needs no key and no model, so it runs beside validation.
       - name: Prompt variables and required inputs agree
-        run: python3 checks/prompt_inputs.py
+        run: |
+          python3 checks/prompt_inputs.py --self-test
+          python3 checks/prompt_inputs.py

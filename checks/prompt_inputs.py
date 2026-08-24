@@ -36,11 +36,12 @@ only reference the wrong variables, it asks for the wrong answer: the pair
 so the resolved prompts must also name every field the task's own output
 requires. A prompt that asks for the right shape names it; one written for a
 different task does not. That holds for every task in this repository, which is
-what makes it a check rather than a preference. Matching is by substring, which
-is coarse in one direction: an output field named for a common word can be
-"named" by prose that means something else, and `outstanding` in the root pair
-is exactly that. It costs a field, not the check, because a prompt written for
-another task will miss the others.
+what makes it a check rather than a preference. Matching is on word boundaries
+rather than by substring: a field called `r` is inside "produce", and substring
+matching would credit a prompt with naming fields it has never heard of. One honest gap remains, that a field named for a common
+word is matched by prose meaning something else, `outstanding` in the root pair
+being the live example. That costs a field, not the check, because a prompt
+written for another task misses the rest.
 
 WHAT THIS CANNOT SEE. `--system-prompt` and `--user-prompt` replace a prompt
 wholesale at the command line, and a spec cannot know what they will carry.
@@ -93,6 +94,17 @@ def unsubstituted(text, required):
     return sorted({m for m in BRACED.findall(text or "") if m not in live})
 
 
+def names(text, field):
+    """Whether this text names this output field, on a word boundary.
+
+    Not a substring: a field called `r` is inside "produce" and one called `id`
+    is inside "consider", so substring matching credits a prompt with naming
+    fields it has never heard of, which is the direction that makes the check
+    useless. The self-test below catches exactly that.
+    """
+    return re.search(rf"\b{re.escape(field)}\b", text or "") is not None
+
+
 def reads(text, key):
     """Whether the runner would put this key's value into this template."""
     return any(form in (text or "") for form in substitutions(key))
@@ -131,10 +143,8 @@ def check_spec(path):
         required = set(((task.get("input") or {}).get("required")) or [])
         label = f"{path.name}:{name}"
 
-        # The system prompt is never substituted. A placeholder in one is dead
-        # text whatever the inputs are, so this is not a comparison.
-        # Nothing in a system prompt is substituted, so any placeholder there
-        # is dead text whatever the inputs are.
+        # Nothing in a system prompt is substituted, so a placeholder there is
+        # dead text whatever the inputs are. Not a comparison against inputs.
         in_system = unsubstituted(system, set())
         if in_system:
             failures += 1
@@ -154,7 +164,7 @@ def check_spec(path):
         # either, since it is read by the model either way even though only
         # one of them is substituted.
         out_required = set(((task.get("output") or {}).get("required")) or [])
-        unnamed = sorted(f for f in out_required if f not in system + " " + user)
+        unnamed = sorted(f for f in out_required if not names(system + " " + user, f))
         if unnamed:
             failures += 1
             print(f"  FAIL {label} output requires {', '.join(unnamed)}, which "
@@ -240,7 +250,77 @@ def check_overrides():
     return failures
 
 
+# The check's own correctness, on the paths this repository's specs do not
+# take. Style B prompts, the runner's default user template and per-key
+# layering precedence are all live code here and all unexercised by any spec in
+# the tree, which is how a resolver that looked right stayed wrong through a
+# whole review round. Run with --self-test; CI does.
+SELF_TESTS = (
+    ("Style B prompts, correct", False,
+     {"tasks": {"t": {"input": {"required": ["a"]}, "output": {"required": ["r"]}}},
+      "prompts": {"t": {"system": "sys names r", "user": "{{ a }}"}}}),
+    ("Style B prompts referencing a non-input", True,
+     {"tasks": {"t": {"input": {"required": ["a"]}, "output": {"required": ["r"]}}},
+      "prompts": {"t": {"system": "sys names r", "user": "{{ a }} {{ b }}"}}}),
+    # The runner defaults the user template to `{{ input }}`, which its own
+    # substitution loop never replaces, so a task with no prompts anywhere
+    # hands the model that literal string.
+    ("no prompts at all, runner default template", True,
+     {"tasks": {"t": {"input": {"required": ["a"]}, "output": {"required": ["r"]}}}}),
+    ("no inputs and no placeholders", False,
+     {"tasks": {"t": {"input": {}, "output": {"required": ["r"]}}},
+      "prompts": {"system": "produce r", "user": "produce r"}}),
+    # Precedence per key: inline system, Style B user, and a root user template
+    # that must not be reached. Resolving the pair as a block takes the root's
+    # broken placeholder and fails this case.
+    ("inline system over Style B user over root", False,
+     {"tasks": {"t": {"prompts": {"system": "names r"},
+                      "input": {"required": ["a"]}, "output": {"required": ["r"]}}},
+      "prompts": {"t": {"user": "{{ a }}"}, "user": "{{ zzz }}"}}),
+    ("a misspaced placeholder the runner will not substitute", True,
+     {"tasks": {"t": {"input": {"required": ["a"]}, "output": {"required": ["r"]}}},
+      "prompts": {"system": "names r", "user": "{{  a  }}"}}),
+    ("a prompt asking for another task's output shape", True,
+     {"tasks": {"t": {"input": {"required": ["a"]},
+                      "output": {"required": ["headline", "known"]}}},
+      "prompts": {"system": "produce incident_state and hypotheses",
+                  "user": "{{ a }}"}}),
+    # The case that found substring matching: `r` is inside "produce", so a
+    # prompt naming nothing was credited with naming this task's whole output.
+    ("a one-letter output field not actually named", True,
+     {"tasks": {"t": {"input": {"required": ["a"]}, "output": {"required": ["r"]}}},
+      "prompts": {"system": "produce the answer", "user": "{{ a }}"}}),
+)
+
+
+def self_test():
+    import contextlib
+    import io
+    import tempfile
+
+    failures = 0
+    for label, should_fail, spec in SELF_TESTS:
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "probe.yaml"
+            path.write_text(yaml.safe_dump(spec))
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                failed = check_spec(path) > 0
+        ok = failed == should_fail
+        failures += not ok
+        print(f"  {'ok  ' if ok else 'FAIL'} {label}: "
+              f"{'rejected' if failed else 'accepted'}, expected "
+              f"{'rejected' if should_fail else 'accepted'}")
+    print()
+    if failures:
+        sys.exit(f"{failures} self-test(s) failed: the check does not behave "
+                 f"the way it is documented to.")
+    print(f"{len(SELF_TESTS)} self-tests hold.")
+
+
 def main():
+    if "--self-test" in sys.argv:
+        return self_test()
     if not SPECS:
         sys.exit("No specs found under .agents/. Run from the repository root.")
     failures = sum(check_spec(path) for path in SPECS)
