@@ -28,7 +28,7 @@
 # that wrote the word, is not the transport losing a generation. A key that is
 # not set raises a ProviderError without that prefix and stays fatal, which is
 # right, because retrying it would only spend the wait twice.
-OA_RETRY_RE='Anthropic request failed:|Anthropic HTTP 5[0-9][0-9]|Anthropic stream error:|Anthropic stream ended|Anthropic stream: unparseable event'
+OA_RETRY_RE='Anthropic request failed:|Anthropic HTTP 5[0-9][0-9]|Anthropic stream error:|Anthropic stream ended|Anthropic stream: unparseable event|Anthropic stream: undecodable bytes'
 
 # Where each adapter log stood before the attempt now running. Tool-use claims
 # are checked against the log, and two attempts concatenated are not one

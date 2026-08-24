@@ -62,7 +62,11 @@ instead of it.
 Two more faults get the same treatment for the same reason, that a response
 which still has its blocks and still passes every shape check is the worst
 thing this can return. A `data:` line that will not parse is text missing from
-the middle of a generation, not noise to step over. And a delta type this does
+the middle of a generation, not noise to step over, and bytes that will not
+decode are refused rather than replaced: the non-streaming path decodes
+strictly and fails, so substituting U+FFFD would put a plausible altered
+string inside a message that then parses cleanly, which is corruption
+surviving every check instead of tripping one. And a delta type this does
 not know how to apply is content going on the floor: `citations_delta` is the
 live example, and a message quietly missing its citations is not the message
 the non-streaming path would have returned, which is the only claim this patch
@@ -90,8 +94,8 @@ argument-free one, and compares the result against the non-streaming shape;
 both call sites reach `_post`. Live: see the note added to README's Known
 limits for what was run.
 
---- a/oas_cli/providers/anthropic_http.py	2026-08-24 07:38:57.620150492 +1000
-+++ b/oas_cli/providers/anthropic_http.py	2026-08-24 07:39:12.775141761 +1000
+--- a/oas_cli/providers/anthropic_http.py	2026-08-24 10:43:37.907410174 +1000
++++ b/oas_cli/providers/anthropic_http.py	2026-08-24 10:43:37.907410174 +1000
 @@ -6,6 +6,7 @@
  import os
  import urllib.error
@@ -100,7 +104,7 @@ limits for what was run.
  from typing import Any
  
  from oas_cli.reasoning import normalise_effort
-@@ -194,6 +195,178 @@
+@@ -194,6 +195,189 @@
      payload.pop("temperature", None)
  
  
@@ -134,7 +138,18 @@ limits for what was run.
 +    reproduces.
 +    """
 +    for raw in resp:
-+        line = raw.decode("utf-8", errors="replace").strip()
++        # Strict, because the non-streaming path is strict: `resp.read()
++        # .decode()` raises on invalid bytes and the request fails. Replacing
++        # them instead would put U+FFFD inside a JSON string, `json.loads`
++        # would succeed, and the caller would get a plausible message whose
++        # text or tool arguments are not what the model sent. Corruption that
++        # still parses is worse than corruption that does not.
++        try:
++            line = raw.decode("utf-8").strip()
++        except UnicodeDecodeError as exc:
++            raise ProviderError(
++                f"Anthropic stream: undecodable bytes on the wire ({exc})"
++            ) from exc
 +        if not line.startswith("data:"):
 +            continue
 +        chunk = line[5:].strip()
@@ -279,7 +294,7 @@ limits for what was run.
  def _extract_text_blocks(data: dict[str, Any]) -> str:
      """Join the text block(s) from an Anthropic message response.
  
-@@ -331,21 +504,9 @@
+@@ -331,21 +515,9 @@
              "content-type": "application/json",
          }
  
@@ -303,7 +318,7 @@ limits for what was run.
  
          try:
              text = _extract_text_blocks(data)
-@@ -423,21 +584,9 @@
+@@ -423,21 +595,9 @@
              "content-type": "application/json",
          }
  

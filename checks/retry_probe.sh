@@ -46,6 +46,9 @@ case "$(sed -n "${attempt}p" "$WORK/script")" in
   badevent)
     echo '{"code": "PROVIDER_ERROR", "error": "Anthropic stream: unparseable event (Unterminated string): {\"type\": \"content_bl"}' >&2
     exit 1 ;;
+  badbytes)
+    echo '{"code": "PROVIDER_ERROR", "error": "Anthropic stream: undecodable bytes on the wire (invalid start byte)"}' >&2
+    exit 1 ;;
   http5xx)
     echo '{"code": "PROVIDER_ERROR", "error": "Anthropic HTTP 529: {\"type\":\"overloaded_error\"}"}' >&2
     exit 1 ;;
@@ -101,7 +104,7 @@ echo "every signature the streamed provider can fail with is retried:"
 # One case per alternative in OA_RETRY_RE. Without these the regex could lose
 # every stream-specific branch and the probe would still pass on the plain
 # request failure above, leaving the shipped streaming failure path unverified.
-for shape in cutstream streamerror badevent http5xx; do
+for shape in cutstream streamerror badevent badbytes http5xx; do
   scenario "$shape
 ok"
   out=$(oa_run --task assess 2>"$WORK/err"); status=$?

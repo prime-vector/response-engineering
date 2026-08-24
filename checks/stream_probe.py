@@ -305,6 +305,30 @@ def check_failures(collect, provider_error):
         print(f"  FAIL {name} returned instead of raising")
         failures += 1
 
+    # Invalid UTF-8 is the one that parses anyway. Replacing the bad bytes
+    # would put U+FFFD inside a JSON string, json.loads would succeed, and the
+    # caller would get a message whose text differs from what the model sent
+    # while passing every check above. The non-streaming path decodes strictly
+    # and fails, so anything else here makes the same-response claim false.
+    text_event = EVENTS[8]
+    mangled = json.dumps(text_event).encode().replace(
+        b'"Recalling "', b'"Recalling \xff\xfe"')
+    undecodable = (sse(EVENTS[:8]) + [b"data: " + mangled + b"\n", b"\n"]
+                   + sse(EVENTS[9:]))
+    try:
+        got = collect(undecodable)
+    except provider_error as exc:
+        if "undecodable" in str(exc):
+            print(f"  ok   undecodable bytes raise: {exc}")
+        else:
+            print(f"  FAIL undecodable bytes raised the wrong check: {exc}")
+            failures += 1
+    else:
+        joined = "".join(b.get("text", "") for b in got["content"])
+        print("  FAIL undecodable bytes were rewritten and parsed: "
+              f"{joined!r}")
+        failures += 1
+
     # Same discipline for the wire itself: a `data:` line that will not parse
     # is text missing from the middle of a generation, and the stream around
     # it is complete, so the refusal has to come from the parse and not from
