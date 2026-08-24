@@ -187,7 +187,10 @@ def declared_scales(specs):
     `confidence` under `properties`, as a bare `not: {const: confirmed}` with
     no type of its own: those constrain a field declared elsewhere rather than
     declaring one, and counting them would report a scale drift for every rule
-    that narrows the scale on purpose.
+    that narrows the scale on purpose. The exemption is any node whose *only*
+    key is `not`, which is broader than that one shape and deliberately so: it
+    is the absence of anything else, rather than the presence of a `const`,
+    that makes a node a constraint rather than a declaration.
 
     Anything else is reported rather than skipped, with `readable` false, and
     this walker reads exactly one form: `properties.confidence` written inline.
@@ -378,8 +381,11 @@ def scale_self_test():
         return base
 
     def pattern_site(base):
-        """A confidence declared through a pattern rather than a name. The
-        walker matches key names and would never look at it."""
+        """A `patternProperties` mapping added beside a correctly declared
+        confidence, which is what makes this a test of the sentinel rather
+        than of the pattern: the walker matches key names, so it cannot know
+        whether a pattern declares a second confidence or nothing at all, and
+        the guarantee is that its presence fails the check either way."""
         task, = base["tasks"]
         base["tasks"][task]["output"]["patternProperties"] = {
             "^confidence$": {"type": "string"}}

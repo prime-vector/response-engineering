@@ -521,10 +521,12 @@ it. The first version did walk past one: it reported a `$ref` written on the
 confidence field and never saw one on the field's parent, which is the shape a
 shared finding object in a `$defs` block actually takes, so a live scale could
 drift under a green check and under a summary line saying they all agree. A
-form a check cannot read is not a form to skip. It is the claim failing. It held the briefing to the board and nothing else, which left the
-four analysts free to drift from the vocabulary their claims are carried in. It
-still does not check whether an output carrying a claim declares a confidence at
-all: that stays the rule in CLAUDE.md with the Comms agent as its one written
+form a check cannot read is not a form to skip. It is the claim failing.
+
+The first version of the check held the briefing to the board and nothing else,
+which left the four analysts free to drift from the vocabulary their claims are
+carried in. What is still not checked, in the current one, is whether an output
+carrying a claim declares a confidence at all: that stays the rule in CLAUDE.md with the Comms agent as its one written
 exception, and the check says so rather than leaving a reader to assume
 otherwise. Its `--self-test` drives the branches no spec reaches while the
 scales agree, and every guard was mutation-tested, including the one that keeps
