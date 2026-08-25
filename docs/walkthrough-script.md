@@ -26,6 +26,13 @@ This is the bridge view's feed, not the day one view. The day one view holds two
 problems and belongs to shot 4, so putting it here would contradict the line
 being spoken over it.
 
+**Crop the header line, or hold below it.** It prints the view's collection
+window, `2026-02-27 to 2026-03-17`, which is nineteen days. The fifteen being
+spoken is the span of the problem days, 2 to 16 March, and the rows show it
+correctly. Both are true and they are different numbers, so leaving the wider
+one above the rows invites a viewer to do the arithmetic against the narration
+and get a mismatch.
+
 **Voice**
 > A production integration host. Over fifteen days, the observability platform
 > opened and closed the same memory exhaustion problem on thirteen of them.
@@ -118,6 +125,17 @@ something the viewer cannot see. Open the act's `act1-detect.json` at a single
 `falsifying_test` sit together, and hold it. Found by checking captured footage
 against this file, which is what that step is for.
 
+Choose the entry by two properties rather than by position, because which entry
+is which is Tier 3 and moves between captures. **Prefer one whose `confidence`
+is below `confirmed`**: the word is doing visible work only when it is not the
+top of the scale, and its `falsifying_test` is then a real observation rather
+than a restatement. **Never the entry that quotes the feed's note string**,
+which reads "No problem in this window was acknowledged, assigned or actioned":
+that is the phrase `docs/walkthrough-claims.md` bans, and putting it on screen
+under a narration about typed fields asserts through the frame what the voice
+is forbidden to say. In the 25 August capture that rules out the first entry
+and leaves the `supported` projection, which is the frame that was checked.
+
 **Voice**
 > This is that layer against the day one view, before anyone knows there is an
 > incident. The view holds only what had actually been collected by then: two
@@ -191,11 +209,19 @@ so hold the frame on it.
 
 **Screen** `ls docs/samples/briefing-2026-08-24/`, then
 `briefing-bridge-before-rule-6a.json` beside `board.json`, on the entry that
-invented a citation against the hypothesis whose `precedent_cited` was empty.
+attaches a precedent to a hypothesis the board cited none against. The
+briefing's second suspected cause names `INC-2411`; the board's matching
+hypothesis carries `precedent_cited: None`.
 
 That is the render worth showing rather than the current one: it is the failure
 the typed fields were added to close, and both files are committed so a viewer
 can open them.
+
+**`INC-2411` is a real document in the corpus.** The render did not fabricate a
+record, it carried one the board did not cite, and prose is what let it. Say it
+that way. "It made up a citation" is the sentence this shot will drift towards
+on the day, and it claims more than the two files on screen support, which is
+the failure this shot exists to name.
 
 **Voice**
 > One last thing, because it is the whole argument.

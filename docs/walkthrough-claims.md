@@ -36,6 +36,14 @@ against the generator on each pull request, so an edit that breaks one goes red.
 There is no assigned or actioned field in the feed. The longer phrase is prose
 from a note string and asserts nothing.
 
+**The ban is on the claim, not on the voiceover.** A frame asserts to a viewer
+whatever it holds long enough to read, so quoting the note string on screen
+makes the same unasserted claim the voice is forbidden to make, and does it
+without a line anyone reviewed. Model output quotes that string readily: one
+`findings` entry in the 25 August act one capture carries it verbatim as
+supporting evidence. Check what a held frame says, not only what is said over
+it.
+
 ## Tier 0b: committed to a fixture, not asserted
 
 Cannot vary between takes, because they are values in a file that a take reads.
@@ -143,6 +151,11 @@ prose and there is no vocabulary to enumerate.
   walkthrough. Do not say it without the rendering half in the same breath.
 - **That every archive call is time bounded.** Two of the three are.
 - **That the cause is established.** It never was.
+- **That the briefing fabricated a record.** The failing render in
+  `docs/samples/briefing-2026-08-24/` attaches `INC-2411` to a hypothesis whose
+  `precedent_cited` is empty. `INC-2411` is a real corpus document. It carried
+  a precedent the board did not cite, which is the failure; inventing a
+  document is a different and larger one that did not happen.
 - **That a check enforces something**, without having read the check.
 - **Any third party in a causal role.**
 
