@@ -17,8 +17,14 @@ of saved call time.
 
 ## 1. The empty room (0:00 to 0:30)
 
-**Screen** `docs/diagrams/fifteen-days.svg`, held. Then the problem feed in the
-day one view.
+**Screen** `docs/diagrams/fifteen-days.svg` to orient, then
+`python3 demos/show.py feed`, held on the thirteen rows. Every line ends
+`auto-closed  unacknowledged`, which is the shot: the column does the work, not
+the voiceover.
+
+This is the bridge view's feed, not the day one view. The day one view holds two
+problems and belongs to shot 4, so putting it here would contradict the line
+being spoken over it.
 
 **Voice**
 > A production integration host. Over fifteen days, the observability platform
@@ -64,8 +70,14 @@ source refuses. No third party is named. Do not say the cause was found.
 
 ## 3. What we build (1:05 to 1:40)
 
-**Screen** `docs/diagrams/architecture.svg`, then a spec open at the
-`confidence` and `falsifying_test` declarations.
+**Screen** `docs/diagrams/architecture.svg`, then `.agents/telemetry-analyst.yaml`
+open at the `findings` item schema, which fits on one screen and shows
+`confidence` with its five values and `falsifying_test` in the same `required`
+line. Search `required: [statement, confidence, falsifying_test]`.
+
+Use an analyst rather than the commander. The commander's contract is 1,078
+lines and the interesting part is buried; the analyst makes the same point in a
+screenful.
 
 **Voice**
 > Operations is a software problem. We build the production agent layer:
@@ -91,8 +103,20 @@ retraction rather than as the argument.
 
 ## 4. Day one (1:40 to 2:25)
 
-**Screen** `demos/investigate.sh act1` starting. Cut on the generation, return
-on the output.
+**Screen** `python3 demos/show.py day-one` first, held on `alerting: false` and
+`owner: none` against the standing condition. Then `demos/investigate.sh act1`.
+
+The `show.py` frame is what makes the act mean anything: two problems, no
+evidence, no changes, no incident, and the line that is the whole incident
+sitting there alerting nobody.
+
+Then **end on one finding object from the act's own output**, not on the
+driver's summary. The driver prints the confidence word in brackets and does not
+print the falsifying test, so a narration that mentions both is describing
+something the viewer cannot see. Open the act's `act1-detect.json` at a single
+`findings` entry, where `statement`, `confidence`, `supporting_evidence` and
+`falsifying_test` sit together, and hold it. Found by checking captured footage
+against this file, which is what that step is for.
 
 **Voice**
 > This is that layer against the day one view, before anyone knows there is an
@@ -165,8 +189,13 @@ so hold the frame on it.
 
 ## 7. What we will not claim (3:30 to 4:00)
 
-**Screen** `docs/samples/briefing-2026-08-24/`, the file list, then the failing
-render beside the board.
+**Screen** `ls docs/samples/briefing-2026-08-24/`, then
+`briefing-bridge-before-rule-6a.json` beside `board.json`, on the entry that
+invented a citation against the hypothesis whose `precedent_cited` was empty.
+
+That is the render worth showing rather than the current one: it is the failure
+the typed fields were added to close, and both files are committed so a viewer
+can open them.
 
 **Voice**
 > One last thing, because it is the whole argument.
@@ -189,6 +218,24 @@ are committed evidence about prose rather than something a check covers, which
 is the point being made. Hero line verbatim.
 
 ---
+
+## Capture order
+
+Shots 1, 2, 3 and 7 read committed files and can be captured any time on a green
+commit. Shots 4, 5 and 6 are runs, and they are captured first so the narration
+is written over output that has already been checked.
+
+    python3 demos/show.py feed          # shot 1, free
+    python3 demos/show.py day-one       # shot 4, free
+    ./demos/investigate.sh act1         # shot 4, about 30c
+    ./demos/governance.sh attribution   # shot 5
+    ./demos/governance.sh sandbox       # shot 6
+
+`governance.sh` writes its own verdict as its exit status, so capture the status
+with the footage. `investigate.sh act1` has no expected-outcome assertion of its
+own: check its output against Tier 0b and Tier 1 by hand before using the take,
+and in particular do not let the narration describe a shape the run did not
+produce.
 
 ## Recording the live shots
 
