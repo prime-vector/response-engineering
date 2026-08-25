@@ -235,6 +235,16 @@ That is the render worth showing rather than the current one: it is the failure
 the typed fields were added to close, and both files are committed so a viewer
 can open them.
 
+**Two frames with a cut between them, not both files side by side.** Pretty
+printed these carry lines of 464 and 1,515 characters, the 1,515 being the entry
+this shot ends on, so side by side is unreadable at any legible size. Show the
+board hypothesis first, eleven lines, `confidence` and `precedent_cited (none)`
+above the statement. Cut. Then the briefing entry it became, wrapped, about
+thirty lines, with the sentence naming `INC-2411` marked in the gutter. The
+sequence is the argument: what the board held, then what the prose did to it.
+Mark the sentence, never edit it. The samples are committed byte for byte, em
+dashes and all, and a frame that tidies one is no longer evidence.
+
 **`INC-2411` is a real document in the corpus.** The render did not fabricate a
 record, it carried one the board did not cite, and prose is what let it. Say it
 that way. "It made up a citation" is the sentence this shot will drift towards
