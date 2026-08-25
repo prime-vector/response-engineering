@@ -165,9 +165,11 @@ prose and there is no vocabulary to enumerate.
    on screen and Tier 0b is true of the fixture in shot.
 2. This file read against the script, line by line. Tier 3 leaks are usually
    not digits, they are sentences that only one run satisfies.
-3. `demos/governance.sh all` run inside the take where its shots appear, so the
-   exit status is the take's own verdict rather than a claim about an earlier
-   run.
+3. `demos/governance.sh all` run **before** the take, with its exit status
+   captured beside the footage the take will show. The guarantee is that the
+   exit status belongs to the run on screen, not that it was produced while
+   recording, and `docs/walkthrough-script.md` records why pre-running is the
+   settled practice.
 4. Three patches applied and `checks/stream_probe.py` green, or a long
    generation can be cut in transit and the take is lost at length rather than
    at content.

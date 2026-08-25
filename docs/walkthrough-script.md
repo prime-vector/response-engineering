@@ -5,8 +5,17 @@ with the tier that guarantees it. **No line speaks a Tier 3 number.** Where a
 figure has to appear it is read off the screen inside the take, not asserted
 from here.
 
-Seven shots, about 560 words of voice, which is four minutes at a measured
-pace. Timings are a budget, not a metronome.
+Seven shots, 596 words of voice. At 145 words a minute, which is a normal
+presenter pace for technical copy carrying numbers, that is 4 minutes 7 seconds
+of speech, and the timings below add 13 seconds of air across the seven holds.
+**It lands at 4:20, not 4:00.** Four minutes is the format's name and the
+budget it was written to; this is where the writing actually came out, recorded
+here rather than discovered in an edit. Timings are a budget, not a metronome.
+
+The budgets are apportioned to the word counts. They were not, until 26 Aug:
+shot 2 was written to 195 words a minute and shot 7 to 222, which is not a
+measured pace but an auctioneer, and shot 7 is the close carrying the hero line.
+Every shot below is now inside 145.
 
 The order is the argument: the failure, then the moment it happened, then the
 layer, then the layer doing it, then what we will not claim. It opens on day
@@ -15,7 +24,7 @@ of saved call time.
 
 ---
 
-## 1. The empty room (0:00 to 0:30)
+## 1. The empty room (0:00 to 0:25)
 
 **Screen** `docs/diagrams/fifteen-days.svg` to orient, then
 `python3 demos/show.py feed`, held on the thirteen rows. Every line ends
@@ -48,22 +57,22 @@ add "assigned or actioned": there is no such field and nothing asserts it.
 
 ---
 
-## 2. Twenty two minutes (0:30 to 1:05)
+## 2. Twenty two minutes (0:25 to 1:11)
 
 **Screen** `docs/diagrams/caveat-decay.svg`.
 
 **Voice**
-> On day fifteen a business user raises a ticket about late batch transfers and
-> a bridge convenes. Nobody on it has seen the fifteen days.
+> On day fifteen a business user raises a ticket about late batch transfers. A
+> bridge convenes. Nobody on it has seen the fifteen days.
 >
-> A process dump is analysed, and the analysis is good. It names a lead, states
-> plainly that it is a lead and not proof, and names the single piece of
-> evidence that would settle it.
+> A process dump is analysed, and the analysis is good. It names a lead, says
+> plainly that it is a lead and not proof, and names the one piece of evidence
+> that would settle it.
 >
-> Within the hour, what reaches the bridge is a sentence. The
-> confidence is gone. The falsifying test is gone. A third party is engaged and
-> the investigation converges on them, and the next morning that third party
-> demonstrates it was never their agent.
+> Within the hour, what reaches the bridge is a sentence. The confidence is
+> gone. The falsifying test is gone. A third party is engaged, the investigation
+> converges on them, and the next morning they demonstrate it was never their
+> agent.
 >
 > The cause was never established. It was made to stop mattering.
 
@@ -75,7 +84,7 @@ source refuses. No third party is named. Do not say the cause was found.
 
 ---
 
-## 3. What we build (1:05 to 1:40)
+## 3. What we build (1:11 to 1:48)
 
 **Screen** `docs/diagrams/architecture.svg`, then `.agents/telemetry-analyst.yaml`
 open at the `findings` item schema, which fits on one screen and shows
@@ -108,7 +117,7 @@ retraction rather than as the argument.
 
 ---
 
-## 4. Day one (1:40 to 2:25)
+## 4. Day one (1:48 to 2:37)
 
 **Screen** `python3 demos/show.py day-one` first, held on `alerting: false` and
 `owner: none` against the standing condition. Then `demos/investigate.sh act1`.
@@ -161,7 +170,7 @@ them.
 
 ---
 
-## 5. The board refuses (2:25 to 3:05)
+## 5. The board refuses (2:37 to 3:08)
 
 **Screen** `demos/governance.sh attribution` live, ending on the guard and the
 convergence note.
@@ -188,7 +197,7 @@ measured runs.
 
 ---
 
-## 6. The change that does not dispatch (3:05 to 3:30)
+## 6. The change that does not dispatch (3:08 to 3:33)
 
 **Screen** `demos/governance.sh sandbox`, ending on the violation line.
 
@@ -205,7 +214,7 @@ so hold the frame on it.
 
 ---
 
-## 7. What we will not claim (3:30 to 4:00)
+## 7. What we will not claim (3:33 to 4:20)
 
 **Screen** `ls docs/samples/briefing-2026-08-24/`, then
 `briefing-bridge-before-rule-6a.json` beside `board.json`, on the entry that
@@ -285,8 +294,12 @@ the claim list forbids speaking moved.
    of what is on screen.
 2. This file read against `docs/walkthrough-claims.md`, line by line, for Tier 3
    numbers that crept in during editing.
-3. `demos/governance.sh all` inside the take where shots 5 and 6 run, so the
-   exit status is the take's own verdict rather than a claim about earlier runs.
+3. `demos/governance.sh all` run **before** the take, with its exit status
+   captured beside the footage that take will show, the way
+   `runs/2026-08-25-footage/exits.txt` records it. This item used to say inside
+   the take, which is what the section above supersedes: the guarantee is that
+   the exit status belongs to the run on screen, and pre-running satisfies that
+   while a live run adds the retake risk M3 took two attempts to close.
 4. Three patches applied and `checks/stream_probe.py` green, or a long
    generation can be cut in transit and the take is lost at length rather than
    at content.
