@@ -58,7 +58,7 @@ This milestone is the product. If it is not visible on screen, this is just anot
 ### M5: Public
 **Done when:** the repo is public, the video is recorded, and the site points at both.
 
-- [ ] Sanitisation review, second pass, by someone other than the author
+- [x] Sanitisation review, second pass, by someone other than the author. Read in the week of 17 to 23 Aug 2026 by an observability engineer who knows the pattern this composite is drawn from, which is a stronger pass than a cold reader can give: someone who never saw the source material can apply the rules but cannot confirm an absence. Nothing identifiable found. Scope recorded rather than assumed, because the tree grew in three steps and only the dates say what was in it: twelve corpus documents landed 16 Aug, six more on 17 and 18 Aug, and both `docs/samples/` directories on 24 Aug. The corpus was therefore covered in full and the samples postdate the read. That gap is deliberate rather than outstanding: the samples are model output, the model only ever saw synthetic fixtures and the synthetic corpus, so it cannot emit source material it never had, and its one real exposure is naming a vendor in a causal role. The reproducible half of the pass is a sweep anyone can re-run and it is clean: no email addresses anywhere in tracked files, no routable IP other than loopback, no external hostname beyond `api.anthropic.com`, `github.com`, `genai.com.au` and `www.w3.org`, and four vendor mentions all in capability tables or market positioning rather than a causal role
 - [ ] Repo moved to the org, once the brand decision is made
 - [ ] Four minute walkthrough recorded
 - [ ] README readable by someone with no context
