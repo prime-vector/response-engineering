@@ -35,6 +35,12 @@ jobs:
           python3 checks/contract_invariants.py --self-test
           python3 checks/contract_invariants.py
 
+      - name: The walkthrough's claim list cites checks that exist
+        run: |
+          pip install pyyaml jsonschema
+          python3 checks/walkthrough_claims.py --self-test
+          python3 checks/walkthrough_claims.py
+
       - name: Corpus documents match the generator
         run: |
           python3 fixtures/generate.py --corpus corpus/documents
