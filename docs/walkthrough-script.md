@@ -23,14 +23,15 @@ day one view.
 **Voice**
 > A production integration host. Over fifteen days, the observability platform
 > opened and closed the same memory exhaustion problem on thirteen of them.
-> Same signature, same severity, every one auto closed. Not one was
-> acknowledged, assigned or actioned by anybody.
+> Same signature, same severity, every one auto closed. Not one of them was
+> acknowledged.
 >
 > Detection existed. Consumption did not. The tooling was not the failure, and
 > buying more of it would not have helped.
 
-**Claims** Thirteen problems, fifteen days, all auto closed, none acknowledged:
-**Tier 0**, asserted by `fixtures/generate.py` and diffed in CI.
+**Claims** Thirteen, fifteen, auto closed, unacknowledged, one signature, one
+severity: **Tier 0a**, each one an assertion in `assert_feed_shape`. Do not
+add "assigned or actioned": there is no such field and nothing asserts it.
 
 ---
 
@@ -46,15 +47,18 @@ day one view.
 > plainly that it is a lead and not proof, and names the single piece of
 > evidence that would settle it.
 >
-> Twenty two minutes later, what reaches the bridge is a sentence. The
+> Within the hour, what reaches the bridge is a sentence. The
 > confidence is gone. The falsifying test is gone. A third party is engaged and
 > the investigation converges on them, and the next morning that third party
 > demonstrates it was never their agent.
 >
 > The cause was never established. It was made to stop mattering.
 
-**Claims** The composite's own timeline, **Tier 0**, from `SCENARIO.md`. No
-third party is named. Do not say the cause was found.
+**Claims** The composite's own timeline, from `SCENARIO.md`. That is authored
+fiction, fixed for a given commit and checked by nobody, so it is not Tier 0 and
+not a guarantee. `SCENARIO.md` itself says the relay happened at around 19:00,
+so the script says "within the hour" rather than asserting a precision the
+source refuses. No third party is named. Do not say the cause was found.
 
 ---
 
@@ -68,14 +72,20 @@ third party is named. Do not say the cause was found.
 > defined as code, tested in CI, constrained by contract.
 >
 > Every arrow between these agents is a typed output. Any claim carries a
-> confidence word and a falsifying test as required fields, so the thing that
-> fell off the analysis on that bridge has nowhere to fall. Confidence is one
-> enum in one order in every spec that carries a claim, and a check in
-> continuous integration holds all six of them to it.
+> confidence word and a falsifying test as required fields. Between agents,
+> the thing that fell off the analysis on that bridge has no field to fall out
+> of. Confidence is one enum in one order, six declarations across five specs,
+> and a check in continuous integration holds every one of them to the same
+> scale.
 
 **Claims** Required fields and the single scale: **Tier 1**, enforced by the
 output contracts and `checks/contract_invariants.py`. Descriptor is verbatim
 from the language rules and does not get paraphrased.
+
+The line is "no field to fall out of", and it is scoped to the handoff between
+agents on purpose. "Nowhere to fall" is false the moment anything renders prose,
+including shot seven, and saying it here is what makes shot seven read as a
+retraction rather than as the argument.
 
 ---
 
@@ -89,16 +99,23 @@ on the output.
 > incident. The view holds only what had actually been collected by then: two
 > problems, a metric series, and a standing condition nobody owns.
 >
-> The analyst reports the recurrence and states how far each finding can be
-> carried. The archive is asked as it stood that day, so a note written later
-> in the incident is out of reach of the query rather than filtered out of the
-> answer.
+> Whatever the analyst reports, it reports with a confidence word and the
+> observation that would prove it wrong. The archive is searched as it stood
+> that day, so a note written later in the incident is out of reach of the
+> search rather than filtered out of the answer.
 >
 > Opening at the bridge sells two hours of saved call time. Opening here sells
 > fifteen days of degraded production and an unnecessary escalation.
 
-**Claims** Day one view contents: **Tier 0**. Bounded recall: **Tier 1**. Read
-the finding count off the screen if it is mentioned at all, it is Tier 3.
+**Claims** Day one view contents: **Tier 0b**, committed to the fixture and not
+asserted. Required fields on whatever is reported: **Tier 1**. The bound on
+search is **Tier 2**, verified from the adapter log by the driver in this run,
+and the script says "searched" rather than "asked" because `passage_get` takes
+no bound.
+
+Do not say "the recurrence" or "each finding". `recurrence_detected` is a
+required boolean, not a constant, and both are Tier 3 shapes with no digit in
+them.
 
 ---
 
@@ -113,13 +130,19 @@ convergence note.
 > down.
 >
 > The board refuses. Convergence cannot be allowed while a blocking item is
-> outstanding, and the deciding evidence is outstanding. Naming a third party
-> below confirmed forces a guard onto the board that states what is missing and
-> what would settle it.
+> outstanding, and this board has them outstanding. Naming a third party below
+> confirmed forces a guard onto the board, and here it names the evidence that
+> is missing.
 
-**Claims** Both **Tier 1**, and the take's own **Tier 2** verdict is its exit
-status. Say "while a blocking item is outstanding", never "convergence is
-always blocked".
+**Claims** The convergence rule and the guard being forced are **Tier 1**. What
+the guard *contains* is **Tier 2**: `party`, `reason` and `evidence_required`
+are optional in the schema and the demo is what checks them, so the line is
+scoped to this board with "here it names".
+
+Say "while a blocking item is outstanding", never "convergence is always
+blocked". Do not say the deciding evidence is outstanding: which item is
+outstanding is the board's judgement, and that count already moved between two
+measured runs.
 
 ---
 
@@ -149,9 +172,10 @@ render beside the board.
 > One last thing, because it is the whole argument.
 >
 > Our own briefing agent still strengthens its board. Four renders of one board
-> are committed here, including the ones that failed. The typed half holds and
-> is checked against the board it came from. The prose half is not, and cannot
-> be, because a caveat carried in a sentence can be negated by a sentence.
+> are committed here, including the ones that failed. The current render's
+> typed half is checked against the board it came from, entry by entry. The
+> prose half is not, and cannot be, because a caveat carried in a sentence can
+> be negated by a sentence.
 >
 > That is why the contract carries the caveat as a field and does not trust the
 > paragraph to carry it as a word.
@@ -159,8 +183,10 @@ render beside the board.
 > You shifted left and fixed the pipeline. Production is still a person reading
 > a dashboard at 3am. We engineer that layer.
 
-**Claims** The briefing measurement: **Tier 1**, the samples are committed and
-`checks/briefing_grounded.py` runs over them. Hero line verbatim.
+**Claims** `checks/briefing_grounded.py` runs over the current render only, not
+over the three failing ones, so the line is scoped to it. The failing renders
+are committed evidence about prose rather than something a check covers, which
+is the point being made. Hero line verbatim.
 
 ---
 

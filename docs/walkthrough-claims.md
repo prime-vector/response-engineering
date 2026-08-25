@@ -5,100 +5,110 @@ prose, and prose losing its caveats is the thing this project exists to
 demonstrate, so a voiceover is checked against this file the way a spec is
 checked against its contract.
 
-Three tiers, sorted by what guarantees the claim rather than by how confident
-anyone feels about it.
+Claims are sorted by what guarantees them. Two different questions matter and
+they have different answers, so they are kept apart:
+
+- **Can it vary between takes?** That is the retake risk.
+- **Can it drift as the repository changes?** That is whether the sentence is
+  still true of the commit being recorded.
+
+A value read out of a committed file cannot vary between takes and can still
+drift. A schema rule cannot do either. Model output can do both.
 
 ---
 
-## Tier 0: guaranteed by the fixture
+## Tier 0a: asserted by the generator, and diffed in CI
 
-The most quotable numbers in this story are not model output at all. They are
-asserted by `fixtures/generate.py`, and CI diffs every view against the
-generator on each pull request, so they cannot drift without the build going
-red.
+Cannot vary between takes and cannot drift. `fixtures/generate.py` asserts
+these in `assert_feed_shape`, and the workflow diffs every committed view
+against the generator on each pull request, so an edit that breaks one goes red.
 
-| May be spoken | Where it comes from |
+| May be spoken | The assertion |
 | --- | --- |
-| Thirteen problems across fifteen days, on one host | `fixtures/generate.py`, asserted at generation |
-| Every one auto closed | same |
-| None acknowledged, assigned or actioned | same |
-| The application holds 23 of 32 GiB, and has for months | the standing condition in `SCENARIO.md`, generated into every view |
-| The change lands eight days before onset | the generated change registry |
-| The day one view holds two problems and no incident | `--at d1`, deliberately near empty |
+| Thirteen problems | `len(feed) == 13` |
+| Across fifteen days | span of `PROBLEM_DAYS` is 15 |
+| Every one auto closed | `all(p["auto_closed"])` |
+| None acknowledged | `not any(p["acknowledged_by"])` |
+| The same signature throughout | one distinct signature |
+| The same severity throughout | one distinct severity |
 
-This tier matters more than it looks. The hook is thirteen, fifteen and zero,
-and none of those three depends on what a model decides to say.
+**Say "none acknowledged", not "none acknowledged, assigned or actioned".**
+There is no assigned or actioned field in the feed. The longer phrase is prose
+from a note string and asserts nothing.
+
+## Tier 0b: committed to a fixture, not asserted
+
+Cannot vary between takes, because they are values in a file that a take reads.
+They can drift, because a generator edit moves the fixture and the diff stays
+green: nothing asserts the value itself.
+
+Safe to show on screen and safe to speak in a take recorded on a green commit.
+Not safe to write into permanent copy as though a check defends them.
+
+- The application holds 23.1 GiB of 32, and has for at least six months
+- The change lands eight days before onset
+- The day one view holds two problems, no incident, and no change query
 
 ## Tier 1: guaranteed by the contract
 
-Safe to assert flatly, on any run, without watching the screen. Each row names
-what enforces it and the committed case that proves the guarantee can fail.
+Cannot vary and cannot drift without a check going red. Each row names the
+mechanism and the committed case that proves the guarantee can fail.
 `python3 checks/contract_invariants.py` runs the cases with no model and no key.
 
 | May be spoken | Enforced by | Proven by |
 | --- | --- | --- |
-| Convergence cannot be allowed while a blocking item is outstanding | `assess` output schema, `if`/`then` over `still_outstanding`, which is a required field | `convergence allowed with an item outstanding` |
+| Convergence cannot be allowed while a blocking item is outstanding | `if`/`then` over `still_outstanding`, which is required so it cannot be dodged by omission | `convergence allowed with an item outstanding` |
 | A hypothesis citing precedent cannot be confirmed | `not: {const: confirmed}` over a pinned enum, so both spellings close | `cited and confirmed`, `cited and Confirmed` |
-| A passage id cannot appear on the blocking list | `blocking_evidence` is a closed object | `precedent attached to blocking evidence` |
-| Naming a third party below confirmed forces the attribution guard onto the board | `if`/`then` over `third_party_named` and `confidence` | `a third party named below confirmed, guard silent` |
-| Every hypothesis carries a confidence word and a falsifying test | both are required fields | `demos/governance.sh contract` |
-| Confidence is one enum, in one order, in every spec that carries a claim | `checks/contract_invariants.py` holds all six specs to the board's scale | the scale check, plus 28 self-tests |
-| A briefing renders one entry per hypothesis, in the board's order, carrying that hypothesis's confidence | `checks/briefing_grounded.py` over the committed samples | the sample that failed, kept in the tree |
-| The sandbox refuses the directed production change before dispatch | the task's own sandbox denies the tool | `demos/governance.sh sandbox` |
-| A novel incident returns no applicable precedent, with coverage populated | the surface's relevance floor, not a prompt instruction | `demos/governance.sh refusal` |
+| A blocking item has no field a passage id can be filed in | `blocking_evidence` is a closed object | `precedent attached to blocking evidence` |
+| Naming a third party below confirmed forces an attribution guard onto the board | `if`/`then` over `third_party_named` and `confidence` | `a third party named below confirmed, guard silent` |
+| Every hypothesis carries a confidence word and a falsifying test | both are required fields on the hypothesis | required in the schema; the contract demo shows the falsifying half |
+| Confidence is one enum, in one order, in every spec that declares one | `checks/contract_invariants.py` holds all six declarations, across five specs, to the board's scale | the scale check, plus 28 self-tests |
+| The task that would change production state binds no tools at all | an empty allow list on `mitigate`, which denies every tool by name | `demos/governance.sh sandbox` |
+
+**The guard row is presence only.** `attribution_guard` has no required
+properties: `party`, `reason` and `evidence_required` are optional. A script
+may say the guard is forced onto the board. It may not say what the guard
+contains. The demo checks the contents, which makes that Tier 2.
+
+**Comms declares no confidence**, by a written exception, so it is six
+declarations across five specs. "All six specs" is wrong in both halves.
 
 ## Tier 2: asserted at run time
 
-`demos/governance.sh` exits zero only if every demo produced its expected
-outcome, across all five modes. A recorded take carries its own verdict: if the
-run in the take exited zero, every Tier 2 claim in that take held.
+The take carries its own verdict. `demos/governance.sh` exits zero only if
+every mode produced its expected outcome, and `demos/investigate.sh` verifies
+tool use from the adapter log rather than from the output.
 
-This is the only tier where a claim is verified by the take itself rather than
-in advance.
+Anything here is safe to say **about the run on screen** and unsafe to say about
+runs in general.
 
-### Measured, 25 August 2026
-
-One full pass, exit zero, all five modes producing their expected outcome.
-
-| Mode | What the run produced |
+| Claim | What asserts it |
 | --- | --- |
-| sandbox | `SANDBOX_TOOL_VIOLATION`, tool not in the allow list for `mitigate`, `Allowed: []` |
-| attribution | guard triggered, convergence blocked, and the guard-stripped arm rejected by the schema (`True was expected`) |
-| contract | `OUTPUT_SCHEMA_ERROR`, `'falsifying_test' is a required property` |
-| grounding | `OUTPUT_SCHEMA_ERROR`, `'grounded_in' is a required property` |
-| refusal | `no_applicable_precedent`, `precedents []` |
+| A novel incident returned no applicable precedent, with coverage populated | `governance.sh refusal` |
+| The guard named the missing evidence and what would settle it | `governance.sh attribution` checks the guard's contents |
+| A board with no falsifying test was rejected | `governance.sh contract` |
+| A precedent with no grounding was rejected | `governance.sh grounding` |
+| Every citation came from what the archive returned this run, at that bound | `investigate.sh` checks each id against the bounded search |
 
-Worth knowing before scripting the attribution shot: the board's own convergence
-note said that the relay had dropped the analyst's caveat and the deciding
-evidence requirement, and that the board restored both. That is the 19:00
-failure from the scenario, reproduced and then refused, in the board's own
-words. It is Tier 3 prose and must not be quoted from a script, but it is the
-thing to have on screen.
+**Recall is not fully bounded and a script must not say it is.**
+`precedent_search` and `coverage_describe` take a required `before`.
+`passage_get` takes an id and no bound, so the bound reaches it only through
+where the id came from, checked by the driver. Two of the three calls are
+bounded.
 
-## Tier 3: true of one run, guaranteed by nothing
+## Tier 3: guaranteed by nothing
 
-Read off `runs/2026-08-24-investigate-all`, which is one composed run on one
-day: four hypotheses, five blocking items with all five outstanding, one
-recurrence, three findings, two precedents recalled, forty three timeline
-entries, seven gaps, and which passages were cited. All generated prose sits
-here too.
+Model output. Everything in `runs/`, all generated prose, and every count the
+board or the timeline produces.
 
-**A Tier 3 number is never spoken.** If one has to appear, read it off the
-screen inside the take, or rewrite the line to the invariant underneath it.
-"Four hypotheses and five items outstanding" needs a run that produces exactly
-that. "The board blocks convergence while deciding evidence is outstanding" is
-true of every run that will ever execute, and it is the more interesting
-sentence anyway.
-
-The four committed briefing renders are the evidence for this split, already
-paid for: across three prompt revisions the prose changed every time and the
-typed fields held every time.
+**A Tier 3 number is never spoken, and neither is a sentence only one run
+satisfies.** "The analyst reports the recurrence" is a Tier 3 claim without a
+digit in it: `recurrence_detected` is a required boolean, not a constant.
 
 ### Measured, 25 August 2026
 
-Two composed runs a day apart, on different commits, at temperature 0.2.
-Twelve of fifteen narrative fields came out identical. Three varied, and these
-are the ones a script must not speak:
+Two composed `investigate.sh all` runs a day apart on different commits, and one
+`governance.sh all` pass, five modes, all expected outcomes.
 
 | Field | 24 Aug | 25 Aug |
 | --- | --- | --- |
@@ -106,36 +116,45 @@ are the ones a script must not speak:
 | blocking evidence items | 5 | 4 |
 | timeline entries | 43 | 44 |
 
-Identical across both: incident state, hypothesis count, third parties named,
-attribution guard present, convergence blocked, hypotheses carrying a citation,
-correlations, findings, recurrences, precedents recalled, gaps.
-
-Two runs is not a distribution, and stability across two runs does not promote a
-field out of Tier 3. Only the contract promotes anything. The measurement is
-here to say which fields are known to move, not to license the rest.
+Twelve other narrative fields were identical. That is worth knowing and it
+guarantees nothing: two runs is not a distribution, the captures are in `runs/`
+and therefore gitignored, so no reader can recount them, and stability across
+two runs promotes nothing out of Tier 3.
 
 ---
 
 ## What the walkthrough must not claim
 
+This list is **not closed**. It holds the false sentences found so far, and
+finding another is expected rather than surprising, because it is a claim about
+prose and there is no vocabulary to enumerate.
+
 - **That convergence is always blocked.** It is blocked while a blocking item
-  is outstanding. A board that lists no blocking evidence may converge, and
-  `a board with no blocking evidence at all` is accepted on purpose.
-- **That precedent can never settle a blocking item.** No typed route allows
-  it, and prose is not closed: `precedent asserted in prose as satisfying a
-  blocking item` is accepted, and that case is in the suite to keep this
-  sentence honest.
-- **That the cause is established.** It never was. The demo does not resolve
-  it, and the deciding evidence sits in `missing_evidence` by design.
-- **That a check enforces something**, without having read the check. That is
-  the most frequent defect in this repository's history and it has appeared in
-  a contract description on the change whose central promise it was.
-- **Any third party in a causal role.** Generic categories only.
+  is outstanding. `a board with no blocking evidence at all` is accepted.
+- **That the deciding evidence is always outstanding.** The schema knows that
+  *some* item is outstanding. Which item, and whether it is the audit log, is
+  the board's judgement. The blocking count already moved between two runs.
+- **That precedent can never settle a blocking item.** Not by any typed route.
+  It can in prose, and that case is accepted deliberately.
+- **That a passage id cannot appear on the blocking list.** No field can carry
+  one. A `description` or a `how_to_obtain` string can.
+- **That a caveat has nowhere to fall.** True of a typed handoff between
+  agents. False of any prose rendering, including the briefing, including this
+  walkthrough. Do not say it without the rendering half in the same breath.
+- **That every archive call is time bounded.** Two of the three are.
+- **That the cause is established.** It never was.
+- **That a check enforces something**, without having read the check.
+- **Any third party in a causal role.**
 
 ## Before a take
 
-1. `python3 checks/contract_invariants.py` and the other checks green, so Tier 1
-   is true of the commit being recorded.
-2. The script read against this file, line by line, for Tier 3 numbers.
-3. `demos/governance.sh all` inside the take, so its exit status is the take's
-   own verdict on Tier 2.
+1. All checks green on the commit being recorded, so Tier 1 is true of what is
+   on screen and Tier 0b is true of the fixture in shot.
+2. This file read against the script, line by line. Tier 3 leaks are usually
+   not digits, they are sentences that only one run satisfies.
+3. `demos/governance.sh all` run inside the take where its shots appear, so the
+   exit status is the take's own verdict rather than a claim about an earlier
+   run.
+4. Three patches applied and `checks/stream_probe.py` green, or a long
+   generation can be cut in transit and the take is lost at length rather than
+   at content.
