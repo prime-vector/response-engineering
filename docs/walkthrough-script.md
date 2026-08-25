@@ -190,6 +190,22 @@ is the point being made. Hero line verbatim.
 
 ---
 
+## Recording the live shots
+
+Shots 4, 5 and 6 show generations. They are **not** generated during the take.
+Run them first, check the output against `docs/walkthrough-claims.md`, and
+narrate over footage that is already known good.
+
+This is what closes the retake risk, and it costs nothing. A run that comes out
+a shape the narration does not fit is then a re-run and a re-check, not a
+re-record. The Tier 2 guarantee is untouched: `demos/governance.sh` exiting zero
+for the footage on screen is still that footage's own verdict, and the exit
+status belongs to the run being shown.
+
+Measured across three composed runs, including one at `temperature: 0`: every
+field the script is allowed to claim was identical in all three, and every field
+the claim list forbids speaking moved.
+
 ## Before recording
 
 1. All checks green on the commit being recorded, so every Tier 1 claim is true
