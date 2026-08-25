@@ -172,8 +172,17 @@ them.
 
 ## 5. The board refuses (2:37 to 3:08)
 
-**Screen** `demos/governance.sh attribution` live, ending on the guard and the
-convergence note.
+**Screen** the captured `governance.sh attribution` output, ending on the guard
+and the convergence note.
+
+**Re-wrap it first.** The driver emits a labelled value on one line however long
+the value is, which is right for someone reading a terminal and wrong for a
+camera. In the 25 August capture three of those lines are 336, 263 and 470
+characters, and the 470 is the convergence note this shot ends on. Wrapped under
+its own label column it is 23 lines inside 78 columns, which is one screen and
+holds. Shot 6 gains from the same treatment even though its longest line is only
+111: wrapping puts `Allowed: []` on a short line of its own under the violation
+reason, which is the frame.
 
 **Voice**
 > Now the same material the bridge had. The relay with the caveats stripped, a
@@ -272,7 +281,7 @@ own: check its output against Tier 0b and Tier 1 by hand before using the take,
 and in particular do not let the narration describe a shape the run did not
 produce.
 
-## Recording the live shots
+## Why the runs happen before the take
 
 Shots 4, 5 and 6 show generations. They are **not** generated during the take.
 Run them first, check the output against `docs/walkthrough-claims.md`, and
@@ -288,18 +297,60 @@ Measured across three composed runs, including one at `temperature: 0`: every
 field the script is allowed to claim was identical in all three, and every field
 the claim list forbids speaking moved.
 
+## Recording
+
+Record audio and picture separately, and **record the audio first**. The voice
+is the spine and the picture is cut to it. Done the other way you are reading to
+fit a fixed visual timing, which is the pacing defect above in another form.
+
+**Voice.** Seven files, one per shot, not one continuous take, so a fluffed shot
+2 does not cost shot 7. Two or three seconds of silence at each head and tail
+for the edit. Read the whole script aloud once before recording anything:
+phrases that break the mouth are invisible on the page and obvious the first
+time you say them. Keep ten seconds of room silence, the edit will want it.
+
+**Picture.** Nothing on screen wider than 78 columns, which is what both scratch
+renderers wrap to. Terminal at about 90 columns, 18pt or larger, minimal prompt,
+notifications off. Diagrams in a browser at fixed zoom with the chrome hidden,
+or dropped into the edit as stills.
+
+What plays, by shot:
+
+- `show.py feed` and `show.py day-one` are free and deterministic, so run them
+  live if you prefer the look. They cannot vary
+- Act one, attribution and sandbox play from the capture. They are verified,
+  `exits.txt` carries the verdict, and re-running costs money and risks a shape
+  the narration no longer fits
+- Do not fake a live prompt with instant output. Display the captured file, or
+  replay it with real timing. Cutting the generation wait is normal; implying a
+  run produced something it did not is the thing this whole document exists to
+  stop
+
+**Two renderers, uncommitted on purpose.** One picks and wraps a findings entry
+for shot 4, the other re-wraps a captured governance run for shots 5 and 6. Both
+read gitignored `runs/` and render Tier 3 output, so neither belongs in
+`demos/show.py`, whose docstring says everything it prints is Tier 0 and
+reproducible by anyone with the repository. Keep them in a scratch directory and
+let them be rebuilt.
+
+**Not** one continuous live take. It fights the pre-run decision, and 596 words
+of dense copy unbroken takes a dozen attempts to get clean.
+
 ## Before recording
 
 1. All checks green on the commit being recorded, so every Tier 1 claim is true
    of what is on screen.
 2. This file read against `docs/walkthrough-claims.md`, line by line, for Tier 3
    numbers that crept in during editing.
-3. `demos/governance.sh all` run **before** the take, with its exit status
-   captured beside the footage that take will show, the way
-   `runs/2026-08-25-footage/exits.txt` records it. This item used to say inside
-   the take, which is what the section above supersedes: the guarantee is that
-   the exit status belongs to the run on screen, and pre-running satisfies that
-   while a live run adds the retake risk M3 took two attempts to close.
+3. `demos/governance.sh` run **before** the take, with each exit status captured
+   beside the footage it produced, the way `runs/2026-08-25-footage/exits.txt`
+   records it. The mode behind a shot is that shot's verdict, because
+   `governance.sh attribution` exits zero only if attribution produced its
+   expected outcome; `all` is broader coverage rather than a stronger guarantee
+   for these two shots. This item used to say inside the take, which is what
+   "Why the runs happen before the take" supersedes: the guarantee is that the
+   exit status belongs to the run on screen, pre-running satisfies it, and a
+   live run adds back the retake risk M3 took two attempts to close.
 4. Three patches applied and `checks/stream_probe.py` green, or a long
    generation can be cut in transit and the take is lost at length rather than
    at content.
