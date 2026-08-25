@@ -110,6 +110,14 @@ The `show.py` frame is what makes the act mean anything: two problems, no
 evidence, no changes, no incident, and the line that is the whole incident
 sitting there alerting nobody.
 
+Then **end on one finding object from the act's own output**, not on the
+driver's summary. The driver prints the confidence word in brackets and does not
+print the falsifying test, so a narration that mentions both is describing
+something the viewer cannot see. Open the act's `act1-detect.json` at a single
+`findings` entry, where `statement`, `confidence`, `supporting_evidence` and
+`falsifying_test` sit together, and hold it. Found by checking captured footage
+against this file, which is what that step is for.
+
 **Voice**
 > This is that layer against the day one view, before anyone knows there is an
 > incident. The view holds only what had actually been collected by then: two
