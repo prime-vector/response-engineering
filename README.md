@@ -20,7 +20,7 @@ Early. Six agents written, mock adapters serving five tool surfaces. The five in
 
 | Artefact | State |
 | --- | --- |
-| `SCENARIO.md` | Reviewed, cadence fixed as asserted properties, first sanitisation pass done, second pass outstanding |
+| `SCENARIO.md` | Reviewed, cadence fixed as asserted properties, both sanitisation passes done, the second by someone other than the author. What each pass covered is recorded in `PLAN.md`, including the directories that postdate the second |
 | `.agents/incident-commander.yaml` | Written, validates against OAS 1.6.0 |
 | `.agents/telemetry-analyst.yaml` | Written, validates against OAS 1.6.0 |
 | `.agents/change-correlator.yaml` | Written, validates against OAS 1.6.0 |
@@ -32,7 +32,7 @@ Early. Six agents written, mock adapters serving five tool surfaces. The five in
 | `interfaces/PRECEDENT.md` | Draft interface contract, the `precedent_archive` surface |
 | `corpus/ingest.py`, `corpus/documents/` | Written, 17 documents indexed with both chunkers, five of them distractors, re-ingest verified idempotent |
 | `mock/adapter.py` | Written, smoke-tested against both fixture views, host, record-sink and precedent surfaces added |
-| `demos/investigate.sh` | Written. Act one and act two verified live on the shipped path, the board included, once the streaming patch made a long generation deliverable. Act three is unexercised since recall moved |
+| `demos/investigate.sh` | Written. All three acts verified live on the shipped path in one composed run, exit zero, the board included, once the streaming patch made a long generation deliverable |
 | `demos/governance.sh` | Written, all five failure modes verified live |
 
 ## Layout
