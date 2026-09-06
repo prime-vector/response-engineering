@@ -5,8 +5,17 @@ with the tier that guarantees it. **No line speaks a Tier 3 number.** Where a
 figure has to appear it is read off the screen inside the take, not asserted
 from here.
 
-Seven shots, about 560 words of voice, which is four minutes at a measured
-pace. Timings are a budget, not a metronome.
+Seven shots, 596 words of voice. At 145 words a minute, which is a normal
+presenter pace for technical copy carrying numbers, that is 4 minutes 7 seconds
+of speech, and the timings below add 13 seconds of air across the seven holds.
+**It lands at 4:20, not 4:00.** Four minutes is the format's name and the
+budget it was written to; this is where the writing actually came out, recorded
+here rather than discovered in an edit. Timings are a budget, not a metronome.
+
+The budgets are apportioned to the word counts. They were not, until 26 Aug:
+shot 2 was written to 195 words a minute and shot 7 to 222, which is not a
+measured pace but an auctioneer, and shot 7 is the close carrying the hero line.
+Every shot below is now inside 145.
 
 The order is the argument: the failure, then the moment it happened, then the
 layer, then the layer doing it, then what we will not claim. It opens on day
@@ -15,7 +24,7 @@ of saved call time.
 
 ---
 
-## 1. The empty room (0:00 to 0:30)
+## 1. The empty room (0:00 to 0:25)
 
 **Screen** `docs/diagrams/fifteen-days.svg` to orient, then
 `python3 demos/show.py feed`, held on the thirteen rows. Every line ends
@@ -25,6 +34,13 @@ the voiceover.
 This is the bridge view's feed, not the day one view. The day one view holds two
 problems and belongs to shot 4, so putting it here would contradict the line
 being spoken over it.
+
+**Crop the header line, or hold below it.** It prints the view's collection
+window, `2026-02-27 to 2026-03-17`, which is nineteen days. The fifteen being
+spoken is the span of the problem days, 2 to 16 March, and the rows show it
+correctly. Both are true and they are different numbers, so leaving the wider
+one above the rows invites a viewer to do the arithmetic against the narration
+and get a mismatch.
 
 **Voice**
 > A production integration host. Over fifteen days, the observability platform
@@ -41,22 +57,22 @@ add "assigned or actioned": there is no such field and nothing asserts it.
 
 ---
 
-## 2. Twenty two minutes (0:30 to 1:05)
+## 2. Twenty two minutes (0:25 to 1:11)
 
 **Screen** `docs/diagrams/caveat-decay.svg`.
 
 **Voice**
-> On day fifteen a business user raises a ticket about late batch transfers and
-> a bridge convenes. Nobody on it has seen the fifteen days.
+> On day fifteen a business user raises a ticket about late batch transfers. A
+> bridge convenes. Nobody on it has seen the fifteen days.
 >
-> A process dump is analysed, and the analysis is good. It names a lead, states
-> plainly that it is a lead and not proof, and names the single piece of
-> evidence that would settle it.
+> A process dump is analysed, and the analysis is good. It names a lead, says
+> plainly that it is a lead and not proof, and names the one piece of evidence
+> that would settle it.
 >
-> Within the hour, what reaches the bridge is a sentence. The
-> confidence is gone. The falsifying test is gone. A third party is engaged and
-> the investigation converges on them, and the next morning that third party
-> demonstrates it was never their agent.
+> Within the hour, what reaches the bridge is a sentence. The confidence is
+> gone. The falsifying test is gone. A third party is engaged, the investigation
+> converges on them, and the next morning they demonstrate it was never their
+> agent.
 >
 > The cause was never established. It was made to stop mattering.
 
@@ -68,7 +84,7 @@ source refuses. No third party is named. Do not say the cause was found.
 
 ---
 
-## 3. What we build (1:05 to 1:40)
+## 3. What we build (1:11 to 1:48)
 
 **Screen** `docs/diagrams/architecture.svg`, then `.agents/telemetry-analyst.yaml`
 open at the `findings` item schema, which fits on one screen and shows
@@ -101,7 +117,7 @@ retraction rather than as the argument.
 
 ---
 
-## 4. Day one (1:40 to 2:25)
+## 4. Day one (1:48 to 2:37)
 
 **Screen** `python3 demos/show.py day-one` first, held on `alerting: false` and
 `owner: none` against the standing condition. Then `demos/investigate.sh act1`.
@@ -117,6 +133,17 @@ something the viewer cannot see. Open the act's `act1-detect.json` at a single
 `findings` entry, where `statement`, `confidence`, `supporting_evidence` and
 `falsifying_test` sit together, and hold it. Found by checking captured footage
 against this file, which is what that step is for.
+
+Choose the entry by two properties rather than by position, because which entry
+is which is Tier 3 and moves between captures. **Prefer one whose `confidence`
+is below `confirmed`**: the word is doing visible work only when it is not the
+top of the scale, and its `falsifying_test` is then a real observation rather
+than a restatement. **Never the entry that quotes the feed's note string**,
+which reads "No problem in this window was acknowledged, assigned or actioned":
+that is the phrase `docs/walkthrough-claims.md` bans, and putting it on screen
+under a narration about typed fields asserts through the frame what the voice
+is forbidden to say. In the 25 August capture that rules out the first entry
+and leaves the `supported` projection, which is the frame that was checked.
 
 **Voice**
 > This is that layer against the day one view, before anyone knows there is an
@@ -143,10 +170,19 @@ them.
 
 ---
 
-## 5. The board refuses (2:25 to 3:05)
+## 5. The board refuses (2:37 to 3:08)
 
-**Screen** `demos/governance.sh attribution` live, ending on the guard and the
-convergence note.
+**Screen** the captured `governance.sh attribution` output, ending on the guard
+and the convergence note.
+
+**Re-wrap it first.** The driver emits a labelled value on one line however long
+the value is, which is right for someone reading a terminal and wrong for a
+camera. In the 25 August capture three of those lines are 336, 263 and 470
+characters, and the 470 is the convergence note this shot ends on. Wrapped under
+its own label column it is 23 lines inside 78 columns, which is one screen and
+holds. Shot 6 gains from the same treatment even though its longest line is only
+111: wrapping puts `Allowed: []` on a short line of its own under the violation
+reason, which is the frame.
 
 **Voice**
 > Now the same material the bridge had. The relay with the caveats stripped, a
@@ -170,7 +206,7 @@ measured runs.
 
 ---
 
-## 6. The change that does not dispatch (3:05 to 3:30)
+## 6. The change that does not dispatch (3:08 to 3:33)
 
 **Screen** `demos/governance.sh sandbox`, ending on the violation line.
 
@@ -187,15 +223,33 @@ so hold the frame on it.
 
 ---
 
-## 7. What we will not claim (3:30 to 4:00)
+## 7. What we will not claim (3:33 to 4:20)
 
 **Screen** `ls docs/samples/briefing-2026-08-24/`, then
 `briefing-bridge-before-rule-6a.json` beside `board.json`, on the entry that
-invented a citation against the hypothesis whose `precedent_cited` was empty.
+attaches a precedent to a hypothesis the board cited none against. The
+briefing's second suspected cause names `INC-2411`; the board's matching
+hypothesis carries `precedent_cited: None`.
 
 That is the render worth showing rather than the current one: it is the failure
 the typed fields were added to close, and both files are committed so a viewer
 can open them.
+
+**Two frames with a cut between them, not both files side by side.** Pretty
+printed these carry lines of 464 and 1,515 characters, the 1,515 being the entry
+this shot ends on, so side by side is unreadable at any legible size. Show the
+board hypothesis first, eleven lines, `confidence` and `precedent_cited (none)`
+above the statement. Cut. Then the briefing entry it became, wrapped, about
+thirty lines, with the sentence naming `INC-2411` marked in the gutter. The
+sequence is the argument: what the board held, then what the prose did to it.
+Mark the sentence, never edit it. The samples are committed byte for byte, em
+dashes and all, and a frame that tidies one is no longer evidence.
+
+**`INC-2411` is a real document in the corpus.** The render did not fabricate a
+record, it carried one the board did not cite, and prose is what let it. Say it
+that way. "It made up a citation" is the sentence this shot will drift towards
+on the day, and it claims more than the two files on screen support, which is
+the failure this shot exists to name.
 
 **Voice**
 > One last thing, because it is the whole argument.
@@ -237,7 +291,7 @@ own: check its output against Tier 0b and Tier 1 by hand before using the take,
 and in particular do not let the narration describe a shape the run did not
 produce.
 
-## Recording the live shots
+## Why the runs happen before the take
 
 Shots 4, 5 and 6 show generations. They are **not** generated during the take.
 Run them first, check the output against `docs/walkthrough-claims.md`, and
@@ -253,14 +307,60 @@ Measured across three composed runs, including one at `temperature: 0`: every
 field the script is allowed to claim was identical in all three, and every field
 the claim list forbids speaking moved.
 
+## Recording
+
+Record audio and picture separately, and **record the audio first**. The voice
+is the spine and the picture is cut to it. Done the other way you are reading to
+fit a fixed visual timing, which is the pacing defect above in another form.
+
+**Voice.** Seven files, one per shot, not one continuous take, so a fluffed shot
+2 does not cost shot 7. Two or three seconds of silence at each head and tail
+for the edit. Read the whole script aloud once before recording anything:
+phrases that break the mouth are invisible on the page and obvious the first
+time you say them. Keep ten seconds of room silence, the edit will want it.
+
+**Picture.** Nothing on screen wider than 78 columns, which is what both scratch
+renderers wrap to. Terminal at about 90 columns, 18pt or larger, minimal prompt,
+notifications off. Diagrams in a browser at fixed zoom with the chrome hidden,
+or dropped into the edit as stills.
+
+What plays, by shot:
+
+- `show.py feed` and `show.py day-one` are free and deterministic, so run them
+  live if you prefer the look. They cannot vary
+- Act one, attribution and sandbox play from the capture. They are verified,
+  `exits.txt` carries the verdict, and re-running costs money and risks a shape
+  the narration no longer fits
+- Do not fake a live prompt with instant output. Display the captured file, or
+  replay it with real timing. Cutting the generation wait is normal; implying a
+  run produced something it did not is the thing this whole document exists to
+  stop
+
+**Two renderers, uncommitted on purpose.** One picks and wraps a findings entry
+for shot 4, the other re-wraps a captured governance run for shots 5 and 6. Both
+read gitignored `runs/` and render Tier 3 output, so neither belongs in
+`demos/show.py`, whose docstring says everything it prints is Tier 0 and
+reproducible by anyone with the repository. Keep them in a scratch directory and
+let them be rebuilt.
+
+**Not** one continuous live take. It fights the pre-run decision, and 596 words
+of dense copy unbroken takes a dozen attempts to get clean.
+
 ## Before recording
 
 1. All checks green on the commit being recorded, so every Tier 1 claim is true
    of what is on screen.
 2. This file read against `docs/walkthrough-claims.md`, line by line, for Tier 3
    numbers that crept in during editing.
-3. `demos/governance.sh all` inside the take where shots 5 and 6 run, so the
-   exit status is the take's own verdict rather than a claim about earlier runs.
+3. `demos/governance.sh` run **before** the take, with each exit status captured
+   beside the footage it produced, the way `runs/2026-08-25-footage/exits.txt`
+   records it. The mode behind a shot is that shot's verdict, because
+   `governance.sh attribution` exits zero only if attribution produced its
+   expected outcome; `all` is broader coverage rather than a stronger guarantee
+   for these two shots. This item used to say inside the take, which is what
+   "Why the runs happen before the take" supersedes: the guarantee is that the
+   exit status belongs to the run on screen, pre-running satisfies it, and a
+   live run adds back the retake risk M3 took two attempts to close.
 4. Three patches applied and `checks/stream_probe.py` green, or a long
    generation can be cut in transit and the take is lost at length rather than
    at content.

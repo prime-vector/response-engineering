@@ -17,6 +17,7 @@ here is Tier 0 in `docs/walkthrough-claims.md`, asserted by
 import json
 import pathlib
 import sys
+import textwrap
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
@@ -75,9 +76,15 @@ def day_one():
     table(rows)
     # The standing condition is the incident and is on nobody's list, so it is
     # printed rather than counted: "1 standing condition" is the wrong shot.
+    # Wrapped under its own label column because this frame is held on camera
+    # in shot 4 of the walkthrough, and one long line pushes the two fields the
+    # shot is about, alerting and owner, off the readable width.
     for c in v["entity"].get("standing_conditions", []):
         print()
-        print(f'  standing condition   {c["description"]}')
+        for i, line in enumerate(textwrap.wrap(c["description"], width=55,
+                                               break_on_hyphens=False)):
+            label = "standing condition" if i == 0 else ""
+            print(f'  {label:<19}  {line}')
         print(f'  {"":19}  alerting: {str(c["alerting"]).lower()}   '
               f'owner: {c["owner"] or "none"}')
 
