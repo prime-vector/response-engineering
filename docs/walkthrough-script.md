@@ -5,7 +5,7 @@ with the tier that guarantees it. **No line speaks a Tier 3 number.** Where a
 figure has to appear it is read off the screen inside the take, not asserted
 from here.
 
-Seven shots, 591 words of voice. **It lands at 4:32, and that number is
+Seven shots, 585 words of voice. **It lands at 4:30, and that number is
 measured rather than assumed.** Shot 1 was recorded on 11 Sep and read in 24.45
 seconds, first word to last, which is 137 words a minute. The timings below are
 cut from that rate, plus 13 seconds of air across the seven holds. Timings are a
@@ -94,7 +94,7 @@ source refuses. No third party is named. Do not say the cause was found.
 
 ---
 
-## 3. What we build (1:15 to 1:53)
+## 3. What we build (1:15 to 1:51)
 
 **Screen** `docs/diagrams/architecture.svg`, then `.agents/telemetry-analyst.yaml`
 open at the `findings` item schema, which fits on one screen and shows
@@ -112,9 +112,8 @@ screenful.
 > Every arrow between these agents is a typed output. Any claim carries a
 > confidence word and a falsifying test as required fields. What went missing
 > on that bridge cannot go missing between them: the contract rejects the
-> claim instead. Confidence is one enum in one order, six declarations across
-> five specs, and a check in continuous integration holds every one of them to
-> the same scale.
+> claim instead. Confidence is one enum in one order, declared six times across
+> five specs. CI goes red if any of them drifts.
 
 **Claims** Required fields and the single scale: **Tier 1**, enforced by the
 output contracts and `checks/contract_invariants.py`. Descriptor is verbatim
@@ -127,7 +126,7 @@ retraction rather than as the argument.
 
 ---
 
-## 4. Day one (1:53 to 2:44)
+## 4. Day one (1:51 to 2:42)
 
 **Screen** `python3 demos/show.py day-one` first, held on `alerting: false` and
 `owner: none` against the standing condition. Then `demos/investigate.sh act1`.
@@ -180,7 +179,7 @@ them.
 
 ---
 
-## 5. The board refuses (2:44 to 3:16)
+## 5. The board refuses (2:42 to 3:14)
 
 **Screen** the captured `governance.sh attribution` output, ending on the guard
 and the convergence note.
@@ -215,7 +214,7 @@ measured runs.
 
 ---
 
-## 6. The change that does not dispatch (3:16 to 3:42)
+## 6. The change that does not dispatch (3:14 to 3:40)
 
 **Screen** `demos/governance.sh sandbox`, ending on the violation line.
 
@@ -232,7 +231,7 @@ so hold the frame on it.
 
 ---
 
-## 7. What we will not claim (3:42 to 4:32)
+## 7. What we will not claim (3:40 to 4:30)
 
 **Screen** `ls docs/samples/briefing-2026-08-24/`, then
 `briefing-bridge-before-rule-6a.json` beside `board.json`, on the entry that
