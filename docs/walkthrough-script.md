@@ -5,7 +5,7 @@ with the tier that guarantees it. **No line speaks a Tier 3 number.** Where a
 figure has to appear it is read off the screen inside the take, not asserted
 from here.
 
-Seven shots, 585 words of voice. **It lands at 4:30, and that number is
+Seven shots, 581 words of voice. **It lands at 4:28, and that number is
 measured rather than assumed.** Shot 1 was recorded on 11 Sep and read in 24.45
 seconds, first word to last, which is 137 words a minute. The timings below are
 cut from that rate, plus 13 seconds of air across the seven holds. Timings are a
@@ -126,7 +126,7 @@ retraction rather than as the argument.
 
 ---
 
-## 4. Day one (1:51 to 2:42)
+## 4. Day one (1:51 to 2:40)
 
 **Screen** `python3 demos/show.py day-one` first, held on `alerting: false` and
 `owner: none` against the standing condition. Then `demos/investigate.sh act1`.
@@ -164,8 +164,8 @@ and leaves the `supported` projection, which is the frame that was checked.
 > that day. A note written later in the incident is not filtered out of the
 > answer. On day one it does not exist yet.
 >
-> Opening at the bridge sells two hours of saved call time. Opening here sells
-> fifteen days of degraded production and an unnecessary escalation.
+> The cost was never a long bridge call. It was fifteen days of degraded
+> production, and an unnecessary escalation.
 
 **Claims** Day one view contents: **Tier 0b**, committed to the fixture and not
 asserted. Required fields on whatever is reported: **Tier 1**. The bound on
@@ -179,7 +179,7 @@ them.
 
 ---
 
-## 5. The board refuses (2:42 to 3:14)
+## 5. The board refuses (2:40 to 3:12)
 
 **Screen** the captured `governance.sh attribution` output, ending on the guard
 and the convergence note.
@@ -214,7 +214,7 @@ measured runs.
 
 ---
 
-## 6. The change that does not dispatch (3:14 to 3:40)
+## 6. The change that does not dispatch (3:12 to 3:38)
 
 **Screen** `demos/governance.sh sandbox`, ending on the violation line.
 
@@ -231,7 +231,7 @@ so hold the frame on it.
 
 ---
 
-## 7. What we will not claim (3:40 to 4:30)
+## 7. What we will not claim (3:38 to 4:28)
 
 **Screen** `ls docs/samples/briefing-2026-08-24/`, then
 `briefing-bridge-before-rule-6a.json` beside `board.json`, on the entry that
