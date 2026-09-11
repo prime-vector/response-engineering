@@ -5,17 +5,27 @@ with the tier that guarantees it. **No line speaks a Tier 3 number.** Where a
 figure has to appear it is read off the screen inside the take, not asserted
 from here.
 
-Seven shots, 596 words of voice. At 145 words a minute, which is a normal
-presenter pace for technical copy carrying numbers, that is 4 minutes 7 seconds
-of speech, and the timings below add 13 seconds of air across the seven holds.
-**It lands at 4:20, not 4:00.** Four minutes is the format's name and the
-budget it was written to; this is where the writing actually came out, recorded
-here rather than discovered in an edit. Timings are a budget, not a metronome.
+Seven shots, 591 words of voice. **It lands at 4:32, and that number is
+measured rather than assumed.** Shot 1 was recorded on 11 Sep and read in 24.45
+seconds, first word to last, which is 137 words a minute. The timings below are
+cut from that rate, plus 13 seconds of air across the seven holds. Timings are a
+budget, not a metronome.
+
+**The pace is not a problem to fix, and the length is the cost of that.** 137
+wpm is a comfortable, clearly enunciated read; the earlier 145 was a figure
+taken off a table rather than off a voice, and reading to it would buy twelve
+seconds by making the delivery worse. Four minutes is the format's name. This is
+where the writing and the reading actually came out, recorded here rather than
+discovered in an edit.
+
+**The alternative was cutting about thirty words, and it was rejected on
+purpose.** Compressing checked copy to hit a clock is the exact pressure shot 2
+is about, and the odds of taking a qualifier rather than a filler word are not
+low enough to spend the claim list on.
 
 The budgets are apportioned to the word counts. They were not, until 26 Aug:
 shot 2 was written to 195 words a minute and shot 7 to 222, which is not a
 measured pace but an auctioneer, and shot 7 is the close carrying the hero line.
-Every shot below is now inside 145.
 
 The order is the argument: the failure, then the moment it happened, then the
 layer, then the layer doing it, then what we will not claim. It opens on day
@@ -24,7 +34,7 @@ of saved call time.
 
 ---
 
-## 1. The empty room (0:00 to 0:25)
+## 1. The empty room (0:00 to 0:26)
 
 **Screen** `docs/diagrams/fifteen-days.svg` to orient, then
 `python3 demos/show.py feed`, held on the thirteen rows. Every line ends
@@ -57,7 +67,7 @@ add "assigned or actioned": there is no such field and nothing asserts it.
 
 ---
 
-## 2. Twenty two minutes (0:25 to 1:11)
+## 2. Twenty two minutes (0:26 to 1:15)
 
 **Screen** `docs/diagrams/caveat-decay.svg`.
 
@@ -84,7 +94,7 @@ source refuses. No third party is named. Do not say the cause was found.
 
 ---
 
-## 3. What we build (1:11 to 1:48)
+## 3. What we build (1:15 to 1:53)
 
 **Screen** `docs/diagrams/architecture.svg`, then `.agents/telemetry-analyst.yaml`
 open at the `findings` item schema, which fits on one screen and shows
@@ -100,11 +110,11 @@ screenful.
 > defined as code, tested in CI, constrained by contract.
 >
 > Every arrow between these agents is a typed output. Any claim carries a
-> confidence word and a falsifying test as required fields. Between agents,
-> the thing that fell off the analysis on that bridge has no field to fall out
-> of. Confidence is one enum in one order, six declarations across five specs,
-> and a check in continuous integration holds every one of them to the same
-> scale.
+> confidence word and a falsifying test as required fields. What went missing
+> on that bridge cannot go missing between them: the contract rejects the
+> claim instead. Confidence is one enum in one order, six declarations across
+> five specs, and a check in continuous integration holds every one of them to
+> the same scale.
 
 **Claims** Required fields and the single scale: **Tier 1**, enforced by the
 output contracts and `checks/contract_invariants.py`. Descriptor is verbatim
@@ -117,7 +127,7 @@ retraction rather than as the argument.
 
 ---
 
-## 4. Day one (1:48 to 2:37)
+## 4. Day one (1:53 to 2:44)
 
 **Screen** `python3 demos/show.py day-one` first, held on `alerting: false` and
 `owner: none` against the standing condition. Then `demos/investigate.sh act1`.
@@ -150,10 +160,10 @@ and leaves the `supported` projection, which is the frame that was checked.
 > incident. The view holds only what had actually been collected by then: two
 > problems, a metric series, and a standing condition nobody owns.
 >
-> Whatever the analyst reports, it reports with a confidence word and the
+> Everything the analyst reports comes with a confidence word and the
 > observation that would prove it wrong. The archive is searched as it stood
-> that day, so a note written later in the incident is out of reach of the
-> search rather than filtered out of the answer.
+> that day. A note written later in the incident is not filtered out of the
+> answer. On day one it does not exist yet.
 >
 > Opening at the bridge sells two hours of saved call time. Opening here sells
 > fifteen days of degraded production and an unnecessary escalation.
@@ -170,7 +180,7 @@ them.
 
 ---
 
-## 5. The board refuses (2:37 to 3:08)
+## 5. The board refuses (2:44 to 3:16)
 
 **Screen** the captured `governance.sh attribution` output, ending on the guard
 and the convergence note.
@@ -189,10 +199,9 @@ reason, which is the frame.
 > third party already engaged, and a direction to record the cause and stand
 > down.
 >
-> The board refuses. Convergence cannot be allowed while a blocking item is
-> outstanding, and this board has them outstanding. Naming a third party below
-> confirmed forces a guard onto the board, and here it names the evidence that
-> is missing.
+> The board refuses. It cannot converge while a blocking item is outstanding,
+> and this board has them. Naming a third party below confirmed forces a guard
+> onto the board, and here it names the evidence that is missing.
 
 **Claims** The convergence rule and the guard being forced are **Tier 1**. What
 the guard *contains* is **Tier 2**: `party`, `reason` and `evidence_required`
@@ -206,7 +215,7 @@ measured runs.
 
 ---
 
-## 6. The change that does not dispatch (3:08 to 3:33)
+## 6. The change that does not dispatch (3:16 to 3:42)
 
 **Screen** `demos/governance.sh sandbox`, ending on the violation line.
 
@@ -223,7 +232,7 @@ so hold the frame on it.
 
 ---
 
-## 7. What we will not claim (3:33 to 4:20)
+## 7. What we will not claim (3:42 to 4:32)
 
 **Screen** `ls docs/samples/briefing-2026-08-24/`, then
 `briefing-bridge-before-rule-6a.json` beside `board.json`, on the entry that
@@ -320,9 +329,14 @@ phrases that break the mouth are invisible on the page and obvious the first
 time you say them. Keep ten seconds of room silence, the edit will want it.
 
 **Picture.** Nothing on screen wider than 78 columns, which is what both scratch
-renderers wrap to. Terminal at about 90 columns, 18pt or larger, minimal prompt,
-notifications off. Diagrams in a browser at fixed zoom with the chrome hidden,
-or dropped into the edit as stills.
+renderers wrap to. The terminal is pinned rather than set by hand, because text
+that changes size between cuts is what makes a video look amateur without a
+viewer being able to say why: one Windows Terminal profile, launched the same
+way for every shot, holding at least 79 columns and 28 rows so the widest and
+the tallest frame both fit. `runs/RECORDING-STEPS.md` carries the command.
+Notifications off. Capture the window rather than the display, or an ultrawide
+monitor hands you a picture that is a thin strip on a phone. Diagrams in a
+browser sized to match, or dropped into the edit as stills.
 
 What plays, by shot:
 
