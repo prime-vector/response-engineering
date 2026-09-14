@@ -5,7 +5,7 @@ with the tier that guarantees it. **No line speaks a Tier 3 number.** Where a
 figure has to appear it is read off the screen inside the take, not asserted
 from here.
 
-Seven shots, 581 words of voice. **It lands at 4:28, and that number is
+Seven shots, 597 words of voice. **It lands at 4:35, and that number is
 measured rather than assumed.** Shot 1 was recorded on 11 Sep and read in 24.45
 seconds, first word to last, which is 137 words a minute. The timings below are
 cut from that rate, plus 13 seconds of air across the seven holds. Timings are a
@@ -231,7 +231,7 @@ so hold the frame on it.
 
 ---
 
-## 7. What we will not claim (3:38 to 4:28)
+## 7. What we will not claim (3:38 to 4:35)
 
 **Screen** `ls docs/samples/briefing-2026-08-24/`, then
 `briefing-bridge-before-rule-6a.json` beside `board.json`, on the entry that
@@ -262,14 +262,16 @@ the failure this shot exists to name.
 **Voice**
 > One last thing, because it is the whole argument.
 >
-> Our own briefing agent still strengthens its board. Four renders of one board
-> are committed here, including the ones that failed. The current render's
-> typed half is checked against the board it came from, entry by entry. The
-> prose half is not, and cannot be, because a caveat carried in a sentence can
-> be negated by a sentence.
+> This happens to us too. Our briefing agent writes the board up for people,
+> and what the board hedged comes out firmer. Four of those briefings are
+> committed here, the current one included, because it still does it.
 >
-> That is why the contract carries the caveat as a field and does not trust the
-> paragraph to carry it as a word.
+> The current one's typed fields are checked against the board they came from,
+> entry by entry. The sentences around them are not, and cannot be: a caveat
+> written in a sentence can be taken out by a sentence.
+>
+> So the contract carries the caveat as a field, and does not trust a paragraph
+> to carry it as a word.
 >
 > You shifted left and fixed the pipeline. Production is still a person reading
 > a dashboard at 3am. We engineer that layer.
