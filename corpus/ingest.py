@@ -266,41 +266,34 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--chunker", choices=sorted(INDEXES), default="heading")
     parser.add_argument("--check", action="store_true",
-                        help="Report whether the index is current, write nothing")
+                        help="Report whether generated artefacts are current, write nothing")
     args = parser.parse_args()
 
     index = build(args.chunker)
     target = INDEXES[args.chunker]
     rendered = json.dumps(index, indent=2) + "\n"
 
-    existing = None
-    if os.path.exists(target):
-        with open(target) as fh:
-            existing = fh.read()
-
-    unchanged = existing == rendered
+    artefacts = {target: rendered}
+    if args.chunker == "heading":
+        artefacts[MANIFEST] = write_manifest(index)
+    stale = []
+    for path, content in artefacts.items():
+        existing = None
+        if os.path.exists(path):
+            with open(path) as fh:
+                existing = fh.read()
+        if existing != content:
+            stale.append(path)
     summary = (f"{index['document_count']} documents, "
                f"{index['passage_count']} passages, chunker={args.chunker}")
-
     if args.check:
-        print(f"{summary}: {'current' if unchanged else 'STALE'}")
-        return 0 if unchanged else 1
-
-    if unchanged:
-        # The Phase 1 acceptance criterion: re-ingesting unchanged sources
-        # embeds nothing new. Saying "0 new" while rewriting the file would
-        # be a claim the file itself contradicts, so nothing is written.
-        print(f"{summary}: unchanged, 0 new passages, nothing written")
-        return 0
-
-    with open(target, "w") as fh:
-        fh.write(rendered)
-    if args.chunker == "heading":
-        with open(MANIFEST, "w") as fh:
-            fh.write(write_manifest(index))
-        print(f"{summary}: wrote {target} and {MANIFEST}")
-    else:
-        print(f"{summary}: wrote {target}")
+        print(f"{summary}: " + (f"STALE: {', '.join(stale)}" if stale else "current"))
+        return 1 if stale else 0
+    for path in stale:
+        with open(path, "w") as fh:
+            fh.write(artefacts[path])
+    print(f"{summary}: " + (f"wrote {', '.join(stale)}" if stale else
+                           "unchanged, 0 new passages, nothing written"))
     return 0
 
 

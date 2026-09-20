@@ -245,7 +245,7 @@ tasks:
           description: >
             True only if record_update succeeded. A timeline that was not
             filed is a chat message, not a record; say so honestly.
-      required: [entries, gaps, record_updated]
+      required: [entries, gaps, record_ref, record_updated]
 
   draft_change_record:
     # Act three's closer: the change record that in the source pattern was
@@ -555,7 +555,10 @@ prompts:
     7. File it. When the timeline is assembled, write it to the incident
        record with record_update, using the incident reference as
        record_ref; if there is no incident reference, create the record
-       with record_create. Do not report until you have filed the timeline
+       with record_create, then append with record_update. The update payload
+       must be exactly {entries: [...], gaps: [...]} matching your final
+       output, and record_ref must match the accepted call.
+       Do not report until you have filed the timeline
        with a tool call: record_updated true without a successful
        record_update call is itself a false record, and if the call fails
        you report record_updated false rather than pretending. Closing,

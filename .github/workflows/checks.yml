@@ -51,6 +51,9 @@ jobs:
           python3 corpus/ingest.py --check
           python3 corpus/ingest.py --chunker fixed --check
 
+      - name: Evidence controls, argument validation and provenance regressions
+        run: python3 -m unittest discover -s tests -v
+
       - name: precedent_archive conformance, both chunkers
         run: |
           python3 corpus/eval.py

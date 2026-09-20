@@ -44,7 +44,7 @@ import hashlib
 import json
 import math
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 DEFAULT_PORTS = {"telemetry": 8422, "change_registry": 8423, "host": 8424,
@@ -62,7 +62,22 @@ SURFACE = ""
 
 
 def _ts(value):
-    return datetime.fromisoformat(value)
+    if not isinstance(value, str) or not re.match(r"^\d{4}-\d{2}-\d{2}(?:T|$)", value):
+        raise ValueError("Expected an ISO date or timestamp")
+    parsed = datetime.fromisoformat(value)
+    return parsed.replace(tzinfo=timezone.utc) if parsed.tzinfo is None else parsed
+
+
+def _bound(args):
+    value = args.get("before")
+    if not value:
+        raise ToolFault("before is required. Pass the view's as_of.")
+    try:
+        _ts(value)
+    except (ValueError, TypeError):
+        raise ToolFault("before must be an ISO date or timestamp.") from None
+    # Corpus records have calendar-day precision, including the bound date.
+    return value[:10]
 
 
 def _signal(sig_type):
@@ -359,37 +374,28 @@ def _terms(text):
     return _WORD.findall(str(text).lower())
 
 
-def _idf():
-    """Inverse document frequency over passages, computed once per process.
+def _idf(passages):
+    """Score using only the archive visible to this query's time bound.
 
-    Also fixes the weight of a term the corpus has never seen. That weight is
-    the refusal mechanism: an unseen term is maximally informative and matches
-    nothing, so a genuinely novel incident cannot score its way past the floor
-    on the handful of ordinary English words it shares with the archive.
-    Weighting unknown terms at zero instead scores a query only on what the
-    corpus happens to contain, which reads every novel incident as familiar.
+    Computing once per query avoids a global cache that would let future
+    documents change an earlier query's ranking or relevance-floor decision.
+    Unseen terms retain their penalty instead of making novel incidents familiar.
     """
-    if "_idf" not in INDEX:
-        passages = INDEX.get("passages", [])
-        seen = {}
-        for passage in passages:
-            for term in set(_terms(passage["text"]) + _terms(passage["heading_path"])):
-                seen[term] = seen.get(term, 0) + 1
-        total = max(len(passages), 1)
-        INDEX["_idf"] = {t: math.log(1 + total / c) for t, c in seen.items()}
-        INDEX["_idf_unknown"] = math.log(1 + 2 * total)
-    return INDEX["_idf"]
+    seen = {}
+    for passage in passages:
+        for term in set(_terms(passage["text"]) + _terms(passage["heading_path"])):
+            seen[term] = seen.get(term, 0) + 1
+    total = max(len(passages), 1)
+    return {t: math.log(1 + total / c) for t, c in seen.items()}, math.log(1 + 2 * total)
 
 
-def _score(query_terms, passage):
+def _score(query_terms, passage, idf, unknown):
     """Fraction of the query's information content the passage matches.
 
     Normalised to 0..1 deliberately: a floor is only meaningful if the score
     means the same thing across queries of different lengths. A raw sum would
     make the floor a function of how much the caller typed.
     """
-    idf = _idf()
-    unknown = INDEX["_idf_unknown"]
     weights = {t: idf.get(t, unknown) for t in set(query_terms)}
     available = sum(weights.values())
     if not available:
@@ -452,20 +458,16 @@ def precedent_search(args):
     # gets in: a replay of what was knowable on day two that forgets the bound
     # still looks correct, and nothing in the result says otherwise. Callers
     # who genuinely want the whole archive pass the incident's own as_of.
-    before = args.get("before")
-    if not before:
-        raise ToolFault(
-            "before is required. Precedent is time-ordered evidence, so every "
-            "search has to say what it was allowed to know. Pass the view's "
-            "as_of; there is no value meaning 'no bound'."
-        )
-    limit = int(args.get("limit") or 5)
+    before = _bound(args)
+    limit = args.get("limit", 5)
+    if type(limit) is not int or limit < 1:
+        raise ToolFault("limit must be a positive integer.")
 
-    candidates = []
-    for passage in INDEX.get("passages", []):
-        if passage.get("recorded_at", "") > str(before)[:10]:
-            continue
-        candidates.append((_score(terms, passage), passage))
+    visible = [p for p in INDEX.get("passages", [])
+               if p.get("recorded_at", "") <= before]
+    idf, unknown = _idf(visible)
+    candidates = [(_score(terms, passage, idf, unknown), passage)
+                  for passage in visible]
 
     # Ties are the common case, not the edge one. A short signature query is
     # a handful of the corpus's most common terms, so every passage carrying
@@ -551,14 +553,7 @@ def coverage_describe(args):
     # holds something dated during the incident it is investigating. Search
     # was honest and coverage was not, which is worse than either being
     # wrong, because coverage is what a refusal cites as proof it looked.
-    before = args.get("before")
-    if not before:
-        raise ToolFault(
-            "before is required. Coverage is what a report of no applicable "
-            "precedent rests on, so it has to describe the archive the caller "
-            "was allowed to see, not the one that exists."
-        )
-    bound = str(before)[:10]
+    bound = _bound(args)
 
     docs = [d for d in INDEX.get("documents", [])
             if d.get("recorded_at", "") <= bound]
@@ -633,7 +628,7 @@ TOOLS = {
             _schema({**_ENTITY_PROP,
                      "order_by": {"type": "string",
                                   "enum": ["cpu_percent", "memory_bytes"]},
-                     "limit": {"type": "integer", "default": 10}},
+                     "limit": {"type": "integer", "minimum": 1, "default": 10}},
                     ["entity_id"]),
         ),
     },
@@ -656,7 +651,7 @@ TOOLS = {
         "process_kill": (
             process_kill,
             "Terminate a process on the host by pid.",
-            _schema({"pid": {"type": "integer", "description": "Process id"}},
+            _schema({"pid": {"type": "integer", "minimum": 1, "description": "Process id"}},
                     ["pid"]),
         ),
     },
@@ -677,7 +672,7 @@ TOOLS = {
                                     "description": "The record to append to"},
                      "update": {"type": "object",
                                 "description": "The content to append"}},
-                    ["record_ref"]),
+                    ["record_ref", "update"]),
         ),
         "change_draft": (
             change_draft,
@@ -732,7 +727,7 @@ TOOLS = {
                     "type": "string",
                     "description": "Required. Exclude anything recorded after "
                                    "this date. Pass the view's as_of."},
-                "limit": {"type": "integer", "default": 5},
+                "limit": {"type": "integer", "minimum": 1, "default": 5},
             }, ["before"]),
              },
         ),
@@ -815,9 +810,8 @@ def _audit_lines(name, result):
     log that reproduces the archive is a second copy of it in a file nobody
     is treating as one.
 
-    Only the archive's calls have lines here. The other surfaces return the
-    fixture view itself, where the claim in question is whether the call
-    happened at all, which the call line already settles.
+    Archive responses are described here. Successful record_update receipts
+    are emitted separately by _tools_call and bind content to its reference.
     """
     if name == "precedent_search":
         yield (f"returned {len(result['passages'])} passages of "
@@ -839,22 +833,70 @@ def _audit_lines(name, result):
                f"{passage['source_uri']}#{passage['ordinal']}")
 
 
+def _validate(value, schema, path="arguments"):
+    """Check the type/required/enum/minimum/items vocabulary in our tool schemas.
+
+    This is not a general JSON Schema implementation. Additional fields stay
+    allowed, as tools/list advertises; domain refusals still run in the handler.
+    """
+    types = {"object": dict, "array": list, "string": str,
+             "integer": int, "boolean": bool}
+    kind = schema.get("type")
+    if kind is not None and (not isinstance(kind, str) or kind not in types):
+        raise ToolFault(f"Unsupported schema type at {path}: {kind!r}.")
+    if kind and (not isinstance(value, types[kind])
+                 or (kind == "integer" and isinstance(value, bool))):
+        raise ToolFault(f"{path} must be {kind}.")
+    if "enum" in schema and value not in schema["enum"]:
+        raise ToolFault(f"{path} must be one of {schema['enum']}.")
+    if "minimum" in schema and value < schema["minimum"]:
+        raise ToolFault(f"{path} must be at least {schema['minimum']}.")
+    if kind == "object":
+        for key in schema.get("required", []):
+            if key not in value:
+                raise ToolFault(f"{key} is required.")
+        for key, prop in schema.get("properties", {}).items():
+            if key in value:
+                _validate(value[key], prop, f"{path}.{key}")
+    if kind == "array":
+        for i, item in enumerate(value):
+            _validate(item, schema.get("items", {}), f"{path}[{i}]")
+
+
 def _tools_call(params):
+    if not isinstance(params, dict):
+        raise ToolFault("params must be an object.")
     name = params.get("name", "")
-    if name not in TOOLS[SURFACE]:
+    if not isinstance(name, str) or name not in TOOLS[SURFACE]:
         raise ToolFault(
             f"Tool '{name}' is not on the {SURFACE} surface. "
             f"Available: {sorted(TOOLS[SURFACE])}."
         )
-    fn = TOOLS[SURFACE][name][0]
+    fn, _, schema = TOOLS[SURFACE][name]
+    args = params.get("arguments", {})
+    _validate(args, schema)
+    for key in ("from", "to"):
+        if key in args:
+            try:
+                _ts(args[key])
+            except (TypeError, ValueError):
+                raise ToolFault(f"{key} must be an ISO date or timestamp.") from None
+    if "from" in args and "to" in args and _ts(args["from"]) > _ts(args["to"]):
+        raise ToolFault("from must not be after to.")
     try:
-        result = fn(params.get("arguments") or {})
+        result = fn(args)
     except ToolFault:
         raise
     except KeyError as exc:
         raise ToolFault(f"Missing required argument: {exc}") from exc
     for line in _audit_lines(name, result):
         _log(line)
+    if SURFACE == "incident_record" and name == "record_update" and result.get("accepted") is True:
+        # Accepted content, not just an attempted call. No incident text in the log.
+        receipt = {"tool": name, "record_ref": result["record_ref"],
+                   "payload_sha256": hashlib.sha256(
+                       json.dumps(args["update"], sort_keys=True).encode()).hexdigest()}
+        _log("receipt " + json.dumps(receipt, sort_keys=True))
     return {"content": [{"type": "text", "text": json.dumps(result, indent=2)}]}
 
 
@@ -862,11 +904,22 @@ class Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
     def do_POST(self):
-        length = int(self.headers.get("Content-Length", 0))
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+            if length < 0:
+                raise ValueError()
+        except ValueError:
+            self.close_connection = True
+            return self._reply(None, error={"code": -32600, "message": "Invalid request size"})
         try:
             req = json.loads(self.rfile.read(length))
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, UnicodeDecodeError):
             return self._reply(None, error={"code": -32700, "message": "Parse error"})
+
+        if (not isinstance(req, dict) or req.get("jsonrpc") != "2.0"
+                or not isinstance(req.get("method"), str)
+                or not isinstance(req.get("params", {}), dict)):
+            return self._reply(None, error={"code": -32600, "message": "Invalid request"})
 
         req_id = req.get("id")
         method = req.get("method", "")
@@ -887,7 +940,10 @@ class Handler(BaseHTTPRequestHandler):
             # the sink is exactly the claim its output cannot prove. Logged
             # before dispatch so a call that faults is still on the record;
             # what came back is logged after, by _audit_lines.
-            _log(f"tools/call {params.get('name')}")
+            name = params.get("name")
+            # Tool names cannot inject a forged receipt or archive hit into the log.
+            safe_name = name if isinstance(name, str) and re.fullmatch(r"[a-z_]+", name) else "<invalid>"
+            _log(f"tools/call {safe_name}")
             if SURFACE == "precedent_archive":
                 # What the caller asked for, verbatim. The passage lines
                 # below record what came back; without this the log answers
@@ -900,7 +956,7 @@ class Handler(BaseHTTPRequestHandler):
                 # Caller text, not archive text: this reproduces the query,
                 # never a passage, so the log is still not a second copy of
                 # the corpus.
-                _log(f"args {params.get('name')} "
+                _log(f"args {safe_name} "
                      f"{json.dumps(params.get('arguments') or {}, sort_keys=True)}")
             try:
                 result = _tools_call(params)
