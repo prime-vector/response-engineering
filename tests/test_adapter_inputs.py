@@ -85,6 +85,31 @@ class Arguments(unittest.TestCase):
             with self.subTest(limit=limit), self.assertRaisesRegex(adapter.ToolFault, 'positive integer'):
                 adapter.precedent_search({'symptom_text': 'memory', 'before': '2026-03-03', 'limit': limit})
 
+    def test_sink_domain_refusals_keep_their_guidance(self):
+        adapter.SURFACE = 'incident_record'
+        with self.assertRaisesRegex(adapter.ToolFault, 'Draft refused, missing:') as raised:
+            adapter._tools_call({'name': 'change_draft', 'arguments': {'summary': 's'}})
+        for field in adapter._DRAFT_REQUIRED[1:]:
+            self.assertIn(field, str(raised.exception))
+        self.assertIn('An incomplete change record is how caveats get lost', str(raised.exception))
+        for name, args, reason in (
+            ('record_update', {'update': {}}, 'create one with record_create first'),
+            ('record_update', {'record_ref': 'r'}, 'Supply the content to append'),
+            ('record_create', {}, 'A record needs a summary'),
+        ):
+            with self.subTest(name=name, args=args), self.assertRaisesRegex(adapter.ToolFault, reason):
+                adapter._tools_call({'name': name, 'arguments': args})
+
+    def test_offset_bounds_use_the_same_utc_day_for_search_and_coverage(self):
+        for offset, utc in (('2026-03-04T06:00:00+10:00', '2026-03-03T20:00:00Z'),
+                            ('2026-03-03T23:00:00-10:00', '2026-03-04T09:00:00Z')):
+            with self.subTest(offset=offset):
+                self.assertEqual(adapter._bound({'before': offset}), utc[:10])
+                self.assertEqual(adapter.coverage_describe({'before': offset}),
+                                 adapter.coverage_describe({'before': utc}))
+                self.assertEqual(adapter.precedent_search({'before': offset, 'symptom_text': 'memory'}),
+                                 adapter.precedent_search({'before': utc, 'symptom_text': 'memory'}))
+
 
 class Protocol(unittest.TestCase):
     @classmethod

@@ -40,13 +40,13 @@ class EvidenceControls(unittest.TestCase):
         verify(self.output, log)
         self.assertNotIn('synthetic event', log)
         for key, value in [('record_ref', 'other'), ('entries', []), ('gaps', ['missing'])]:
-            with self.subTest(key=key), self.assertRaisesRegex(ValueError, 'No successful receipt matches'):
+            with self.subTest(key=key), self.assertRaisesRegex(ValueError, 'matches record_ref' if key == 'record_ref' else 'payload differs'):
                 verify({**self.output, key: value}, log)
         with self.assertRaisesRegex(ValueError, 'successful filing and record_ref'):
             verify({**self.output, 'record_updated': False}, log)
         with self.assertRaisesRegex(ValueError, 'successful filing and record_ref'):
             verify({**self.output, 'record_ref': ''}, log)
-        with self.assertRaisesRegex(ValueError, 'No successful receipt matches'):
+        with self.assertRaisesRegex(ValueError, 'No successful record_update receipt'):
             verify(self.output, log.replace('"record_update"', '"record_create"'))
 
     def test_refused_write_or_call_attempt_does_not_prove_filing(self):
@@ -55,7 +55,7 @@ class EvidenceControls(unittest.TestCase):
             adapter._tools_call({'name': 'record_update', 'arguments': {
                 'record_ref': 'synthetic-record', 'update': {}, 'submit': True}})
         self.assertNotIn('receipt ', log.getvalue())
-        with self.assertRaisesRegex(ValueError, 'No successful receipt matches'):
+        with self.assertRaisesRegex(ValueError, 'No successful record_update receipt'):
             verify(self.output, '[mock-incident_record] tools/call record_update\n' + log.getvalue())
 
     def test_nonaccepted_result_emits_no_receipt(self):
@@ -75,7 +75,7 @@ class EvidenceControls(unittest.TestCase):
             command = '. demos/retry.sh; mark_logs; attempt_log "$1"'
             old = subprocess.check_output(['bash', '-c', command, 'test', str(log)],
                                           cwd=ROOT, env=env, text=True)
-            with self.assertRaisesRegex(ValueError, 'No successful receipt matches'):
+            with self.assertRaisesRegex(ValueError, 'No successful record_update receipt'):
                 verify(self.output, old)
             with log.open('a') as handle:
                 handle.write(receipt)
@@ -153,3 +153,56 @@ class EvidenceControls(unittest.TestCase):
                 with patch('sys.argv', ['ingest']):
                     self.assertEqual(ingest.main(), 0)
                 self.assertEqual(manifest.stat().st_mtime_ns, manifest_mtime)
+
+    def test_verifier_cli_rejects_nonobject_json_without_traceback(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / 'timeline.json'
+            log = Path(directory) / 'sink.log'
+            for value in ([], None, True, 42, "text"):
+                for target in ('timeline', 'receipt'):
+                    with self.subTest(value=value, target=target):
+                        output.write_text(json.dumps(value if target == 'timeline' else self.output))
+                        log.write_text('' if target == 'timeline' else
+                                       '[mock-incident_record] receipt ' + json.dumps(value))
+                        result = subprocess.run([sys.executable, 'checks/timeline_filed.py',
+                                                 str(output), str(log)], cwd=ROOT,
+                                                capture_output=True, text=True)
+                        self.assertNotEqual(result.returncode, 0)
+                        self.assertIn('must be a JSON object', result.stderr)
+                        self.assertIn('FAIL:', result.stderr)
+                        self.assertNotIn('Traceback', result.stderr)
+
+    def test_payload_mismatch_names_both_digests(self):
+        import hashlib
+        log = self.receipt()
+        changed = {**self.output, 'entries': []}
+        expected = hashlib.sha256(json.dumps({'entries': [], 'gaps': []}, sort_keys=True).encode()).hexdigest()
+        accepted = json.loads(log.split(' receipt ', 1)[1])['payload_sha256']
+        with self.assertRaisesRegex(ValueError, 'payload differs') as raised:
+            verify(changed, log)
+        self.assertIn(expected, str(raised.exception))
+        self.assertIn(accepted, str(raised.exception))
+        # An earlier mismatching receipt must not hide a later exact match.
+        verify(self.output, log.replace(accepted, 'wrong') + log)
+
+    def test_failed_filing_is_valid_output_but_not_verified_success(self):
+        import yaml
+        import jsonschema
+        spec = yaml.safe_load((ROOT / '.agents/scribe.yaml').read_text())
+        output = {'entries': [], 'gaps': [], 'record_ref': '', 'record_updated': False}
+        jsonschema.validate(output, spec['tasks']['timeline']['output'])
+        self.assertIn('empty string', spec['tasks']['timeline']['output']['properties']['record_ref']['description'])
+        self.assertIn('record_ref an empty string', spec['prompts']['system'])
+        with self.assertRaisesRegex(ValueError, 'successful filing and record_ref'):
+            verify(output, '')
+
+    def test_local_packages_win_over_installed_namesakes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            for name in ('mock', 'checks', 'corpus'):
+                package = Path(directory) / name
+                package.mkdir()
+                (package / '__init__.py').write_text('raise RuntimeError("external package imported")')
+            subprocess.run([sys.executable, '-c',
+                            'from mock import adapter; from checks import timeline_filed; from corpus import ingest'],
+                           cwd=ROOT, env={**os.environ, 'PYTHONPATH': directory},
+                           capture_output=True, text=True, check=True)

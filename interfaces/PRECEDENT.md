@@ -37,7 +37,7 @@ Request: `signature_terms` (the stable signature type the Telemetry Analyst dete
 
 Pass the signature *type*, never the entity id. The host is identity, not symptom, and a similarity query built on it makes identity a retrieval feature: the archive starts returning records because they mention the same machine rather than because they describe the same failure.
 
-`before` must be a valid ISO date or timestamp. Corpus dates have calendar-day precision, so the bound includes its stated date. Retrieval weights are computed only from passages visible at that bound: adding future documents cannot change historical scores, rankings or relevance-floor decisions. `excluded_by_before` still reports the excluded passages.
+`before` must be a valid ISO date or timestamp. Corpus dates have calendar-day precision, so the bound includes the UTC date of that instant. Date-only and timezone-naive inputs are treated as UTC. Retrieval weights are computed only from passages visible at that bound: adding future documents cannot change historical scores, rankings or relevance-floor decisions. `excluded_by_before` still reports the excluded passages.
 
 `before` exists because precedent is time-ordered evidence. An investigation reconstructing what was knowable on day two must not retrieve a record written on day fifteen. Without this the archive quietly leaks hindsight into a replay.
 

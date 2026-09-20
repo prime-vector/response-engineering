@@ -73,11 +73,11 @@ def _bound(args):
     if not value:
         raise ToolFault("before is required. Pass the view's as_of.")
     try:
-        _ts(value)
+        parsed = _ts(value)
     except (ValueError, TypeError):
         raise ToolFault("before must be an ISO date or timestamp.") from None
     # Corpus records have calendar-day precision, including the bound date.
-    return value[:10]
+    return parsed.astimezone(timezone.utc).date().isoformat()
 
 
 def _signal(sig_type):
@@ -315,6 +315,8 @@ def record_update(args):
             "record_ref is required. Update an existing record, or create "
             "one with record_create first."
         )
+    if "update" not in args:
+        raise ToolFault("update is required. Supply the content to append.")
     return {
         "record_ref": args["record_ref"],
         "accepted": True,
@@ -833,7 +835,7 @@ def _audit_lines(name, result):
                f"{passage['source_uri']}#{passage['ordinal']}")
 
 
-def _validate(value, schema, path="arguments"):
+def _validate(value, schema, path="arguments", *, check_required=True):
     """Check the type/required/enum/minimum/items vocabulary in our tool schemas.
 
     This is not a general JSON Schema implementation. Additional fields stay
@@ -852,7 +854,7 @@ def _validate(value, schema, path="arguments"):
     if "minimum" in schema and value < schema["minimum"]:
         raise ToolFault(f"{path} must be at least {schema['minimum']}.")
     if kind == "object":
-        for key in schema.get("required", []):
+        for key in schema.get("required", []) if check_required else ():
             if key not in value:
                 raise ToolFault(f"{key} is required.")
         for key, prop in schema.get("properties", {}).items():
@@ -874,7 +876,11 @@ def _tools_call(params):
         )
     fn, _, schema = TOOLS[SURFACE][name]
     args = params.get("arguments", {})
-    _validate(args, schema)
+    # Sink handlers explain missing fields together with their domain refusal.
+    # Keep their advertised schemas intact and validate supplied values first.
+    domain_required = SURFACE == "incident_record" and name in {
+        "record_create", "record_update", "change_draft"}
+    _validate(args, schema, check_required=not domain_required)
     for key in ("from", "to"):
         if key in args:
             try:
