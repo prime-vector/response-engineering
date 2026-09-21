@@ -463,15 +463,11 @@ print(json.dumps(view))')
   # Not oa_run: this task files to the incident sink with a tool call, so a
   # transport failure after the write cannot be retried blind. See demos/retry.sh.
   out=$(oa_run_once --spec .agents/scribe.yaml --task timeline --input "$input" --quiet)
-  require_json "timeline" "$out" entries gaps record_updated
+  require_json "timeline" "$out" entries gaps record_ref record_updated
   printf '%s' "$out" > "$OUT/act3-timeline.json"
-  # Self-attestation check: the output's record_updated claim counts for
-  # nothing unless the adapter actually logged the sink call.
-  if ! attempt_log "$OUT/adapter-incident_record.log" | grep -q "tools/call record_"; then
-    echo "FAIL: the timeline claims filing but the record sink logged no" >&2
-    echo "tools/call. Output self-attestation; see $OUT/adapter-incident_record.log" >&2
-    return 1
-  fi
+  # Only this write attempt's receipts can attest to its final output.
+  attempt_log "$OUT/adapter-incident_record.log" > "$OUT/act3-sink.log"
+  python3 checks/timeline_filed.py "$OUT/act3-timeline.json" "$OUT/act3-sink.log"
   OUTJSON="$out" python3 - <<'PY'
 import json, os
 t = json.loads(os.environ["OUTJSON"])

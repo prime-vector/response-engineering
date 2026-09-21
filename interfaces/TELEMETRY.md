@@ -111,7 +111,9 @@ Creates an incident record and returns a `record_ref`. The record is created ope
 
 ### `record.update`
 
-Appends to an existing record, e.g. the assembled timeline. Request: `record_ref`, `update`. Cannot change record state.
+Appends to an existing record, e.g. the assembled timeline. Request: `record_ref`, `update`, both required. Cannot change record state.
+
+An adapter must distinguish an accepted update from a rejected one. The mock implements this with a receipt containing the record reference and a payload digest. The receipt format and Python serialisation used for that digest are internal to the mock and its verifier, not a conformance requirement for other adapters. The timeline driver checks its current attempt's receipts against the final output's reference and exact `{entries, gaps}` payload. A rejected call, a different payload or a previous attempt cannot satisfy this check. The mock acknowledges writes without persisting them; this receipt proves acceptance by the mock, not durable storage.
 
 ### `change.draft`
 
