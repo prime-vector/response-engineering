@@ -358,7 +358,7 @@ read gitignored `runs/` and render Tier 3 output, so neither belongs in
 reproducible by anyone with the repository. Keep them in a scratch directory and
 let them be rebuilt.
 
-**Not** one continuous live take. It fights the pre-run decision, and 596 words
+**Not** one continuous live take. It fights the pre-run decision, and 597 words
 of dense copy unbroken takes a dozen attempts to get clean.
 
 ## Before recording
