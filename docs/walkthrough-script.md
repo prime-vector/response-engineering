@@ -5,20 +5,27 @@ with the tier that guarantees it. **No line speaks a Tier 3 number.** Where a
 figure has to appear it is read off the screen inside the take, not asserted
 from here.
 
-Seven shots, 597 words of voice. **It lands at 4:35, and that number is
-measured rather than assumed.** Shot 1 was recorded on 11 Sep and read in 24.45
-seconds, first word to last, which is 137 words a minute. The timings below are
-cut from that rate, plus 13 seconds of air across the seven holds. Timings are a
-budget, not a metronome.
+Seven shots, 689 words of voice. **It lands at 4:46, and that number is
+measured rather than assumed.** Six shots of an earlier draft of these words
+were recorded on 11 and 12 Sep: 470 words in 186 seconds of speech, first word
+to last, which is 151 words a minute. The timings below are cut from that rate,
+plus 13 seconds of air across the seven holds. Timings are a budget, not a
+metronome.
 
-**The pace is not a problem to fix, and the length is the cost of that.** 137
-wpm is a comfortable, clearly enunciated read; the earlier 145 was a figure
-taken off a table rather than off a voice, and reading to it would buy twelve
-seconds by making the delivery worse. Four minutes is the format's name. This is
-where the writing and the reading actually came out, recorded here rather than
-discovered in an edit.
+**The words were rewritten on 23 Sep to be said rather than read.** The earlier
+draft was written as copy and checked as copy, and read aloud it sounded like
+an instruction manual. Every claim still sits where the claim list pins it;
+what changed is contractions, sentence length and a person in the sentences.
+The six takes of the old words are superseded.
 
-**The alternative was cutting about thirty words, and it was rejected on
+**The pace is not a problem to fix, and the length is the cost of that.** 151
+wpm is where a comfortable, clearly enunciated read actually came out across
+six takes; the 137 before it was one shot's figure and the 145 before that was
+taken off a table rather than off a voice. Four minutes is the format's name.
+This is where the writing and the reading actually came out, recorded here
+rather than discovered in an edit.
+
+**The alternative was cutting words to the clock, and it was rejected on
 purpose.** Compressing checked copy to hit a clock is the exact pressure shot 2
 is about, and the odds of taking a qualifier rather than a filler word are not
 low enough to spend the claim list on.
@@ -54,12 +61,12 @@ and get a mismatch.
 
 **Voice**
 > A production integration host. Over fifteen days, the observability platform
-> opened and closed the same memory exhaustion problem on thirteen of them.
-> Same signature, same severity, every one auto closed. Not one of them was
-> acknowledged.
+> opened the same memory exhaustion problem on thirteen of them. Same
+> signature, same severity, and every time it closed it again by itself. Not
+> one of the thirteen was ever acknowledged.
 >
-> Detection existed. Consumption did not. The tooling was not the failure, and
-> buying more of it would not have helped.
+> Detection was fine. Nobody was consuming it. The tooling didn't fail here,
+> and buying more of it wouldn't have helped.
 
 **Claims** Thirteen, fifteen, auto closed, unacknowledged, one signature, one
 severity: **Tier 0a**, each one an assertion in `assert_feed_shape`. Do not
@@ -72,19 +79,19 @@ add "assigned or actioned": there is no such field and nothing asserts it.
 **Screen** `docs/diagrams/caveat-decay.svg`.
 
 **Voice**
-> On day fifteen a business user raises a ticket about late batch transfers. A
-> bridge convenes. Nobody on it has seen the fifteen days.
+> Day fifteen. Someone in the business raises a ticket: batch transfers are
+> late. A bridge convenes, and nobody on it has seen those fifteen days.
 >
-> A process dump is analysed, and the analysis is good. It names a lead, says
-> plainly that it is a lead and not proof, and names the one piece of evidence
-> that would settle it.
+> Someone analyses a process dump, and the analysis is genuinely good. It names
+> a lead. It says plainly, this is a lead, not proof. And it names the one
+> piece of evidence that would settle it.
 >
-> Within the hour, what reaches the bridge is a sentence. The confidence is
-> gone. The falsifying test is gone. A third party is engaged, the investigation
-> converges on them, and the next morning they demonstrate it was never their
-> agent.
+> Within the hour, what reaches the bridge is one sentence. The confidence is
+> gone. The test that would have proved it wrong is gone. A third party gets
+> pulled in, the investigation converges on them, and the next morning they
+> show it was never their agent.
 >
-> The cause was never established. It was made to stop mattering.
+> Nobody ever established the cause. It was made to stop mattering.
 
 **Claims** The composite's own timeline, from `SCENARIO.md`. That is authored
 fiction, fixed for a given commit and checked by nobody, so it is not Tier 0 and
@@ -94,7 +101,7 @@ source refuses. No third party is named. Do not say the cause was found.
 
 ---
 
-## 3. What we build (1:15 to 1:51)
+## 3. What we build (1:15 to 1:55)
 
 **Screen** `docs/diagrams/architecture.svg`, then `.agents/telemetry-analyst.yaml`
 open at the `findings` item schema, which fits on one screen and shows
@@ -109,24 +116,25 @@ screenful.
 > Operations is a software problem. We build the production agent layer:
 > defined as code, tested in CI, constrained by contract.
 >
-> Every arrow between these agents is a typed output. Any claim carries a
-> confidence word and a falsifying test as required fields. What went missing
-> on that bridge cannot go missing between them: the contract rejects the
-> claim instead. Confidence is one enum in one order, declared six times across
-> five specs. CI goes red if any of them drifts.
+> Here's what that means. Every arrow between these agents is a typed output.
+> If an agent makes a claim, it carries a confidence word and a falsifying
+> test, because the contract won't accept it without them. So what went missing
+> on that bridge can't go missing between these agents. The contract rejects
+> the claim instead. And it's one confidence scale, in one order, declared six
+> times across five specs. If any of them drifts, CI goes red.
 
 **Claims** Required fields and the single scale: **Tier 1**, enforced by the
 output contracts and `checks/contract_invariants.py`. Descriptor is verbatim
 from the language rules and does not get paraphrased.
 
-The line is "no field to fall out of", and it is scoped to the handoff between
-agents on purpose. "Nowhere to fall" is false the moment anything renders prose,
-including shot seven, and saying it here is what makes shot seven read as a
-retraction rather than as the argument.
+The line is "can't go missing between these agents", and it is scoped to the
+handoff between agents on purpose. "Nowhere to fall" is false the moment
+anything renders prose, including shot seven, and saying it here is what makes
+shot seven read as a retraction rather than as the argument.
 
 ---
 
-## 4. Day one (1:51 to 2:40)
+## 4. Day one (1:55 to 2:41)
 
 **Screen** `python3 demos/show.py day-one` first, held on `alerting: false` and
 `owner: none` against the standing condition. Then `demos/investigate.sh act1`.
@@ -155,17 +163,18 @@ is forbidden to say. In the 25 August capture that rules out the first entry
 and leaves the `supported` projection, which is the frame that was checked.
 
 **Voice**
-> This is that layer against the day one view, before anyone knows there is an
-> incident. The view holds only what had actually been collected by then: two
-> problems, a metric series, and a standing condition nobody owns.
+> Now put that layer on day one, before anyone knows there's an incident. The
+> view holds only what had actually been collected by then: two problems, a
+> metric series, and a standing condition nobody owns.
 >
 > Everything the analyst reports comes with a confidence word and the
-> observation that would prove it wrong. The archive is searched as it stood
-> that day. A note written later in the incident is not filtered out of the
-> answer. On day one it does not exist yet.
+> observation that would prove it wrong. When it searches the archive, it
+> searches it as it stood that day. There's a note written later in this
+> incident. It isn't filtered out of the answer. On day one, it doesn't exist
+> yet.
 >
-> The cost was never a long bridge call. It was fifteen days of degraded
-> production, and an unnecessary escalation.
+> The cost here was never a long bridge call. It was fifteen days of degraded
+> production, and an escalation that never needed to happen.
 
 **Claims** Day one view contents: **Tier 0b**, committed to the fixture and not
 asserted. Required fields on whatever is reported: **Tier 1**. The bound on
@@ -179,7 +188,7 @@ them.
 
 ---
 
-## 5. The board refuses (2:40 to 3:12)
+## 5. The board refuses (2:41 to 3:09)
 
 **Screen** the captured `governance.sh attribution` output, ending on the guard
 and the convergence note.
@@ -194,13 +203,13 @@ holds. Shot 6 gains from the same treatment even though its longest line is only
 reason, which is the frame.
 
 **Voice**
-> Now the same material the bridge had. The relay with the caveats stripped, a
-> third party already engaged, and a direction to record the cause and stand
-> down.
+> Now give it exactly what the bridge had. The relay, caveats stripped. A third
+> party already engaged. And an instruction: record the cause and stand down.
 >
-> The board refuses. It cannot converge while a blocking item is outstanding,
-> and this board has them. Naming a third party below confirmed forces a guard
-> onto the board, and here it names the evidence that is missing.
+> The board refuses. It can't converge while a blocking item is outstanding,
+> and this board has them. Name a third party at anything below confirmed and a
+> guard gets forced onto the board. Here, that guard names the evidence that's
+> missing.
 
 **Claims** The convergence rule and the guard being forced are **Tier 1**. What
 the guard *contains* is **Tier 2**: `party`, `reason` and `evidence_required`
@@ -214,24 +223,25 @@ measured runs.
 
 ---
 
-## 6. The change that does not dispatch (3:12 to 3:38)
+## 6. The change that does not dispatch (3:09 to 3:34)
 
 **Screen** `demos/governance.sh sandbox`, ending on the violation line.
 
 **Voice**
-> And the directed production change. The prompt cooperates fully. The sandbox
-> refuses it before dispatch, because the allow list on that task is empty.
+> And then the directed production change. The prompt does exactly what it's
+> told. The sandbox refuses it before anything dispatches, because the allow
+> list on that task is empty.
 >
-> Anything that changes production state, alters a security control, or cannot
-> be reversed inside the incident window requires human authorisation. There is
-> no configuration option to turn that off.
+> Anything that changes production state, alters a security control, or can't
+> be reversed inside the incident window needs a human to authorise it. There's
+> no setting to turn that off.
 
 **Claims** **Tier 1**, structural. The `Allowed: []` on screen is the evidence,
 so hold the frame on it.
 
 ---
 
-## 7. What we will not claim (3:38 to 4:35)
+## 7. What we will not claim (3:34 to 4:46)
 
 **Screen** `ls docs/samples/briefing-2026-08-24/`, then
 `briefing-bridge-before-rule-6a.json` beside `board.json`, on the entry that
@@ -260,18 +270,22 @@ on the day, and it claims more than the two files on screen support, which is
 the failure this shot exists to name.
 
 **Voice**
-> One last thing, because it is the whole argument.
+> Last thing, and it's the whole point.
 >
-> This happens to us too. Our briefing agent writes the board up for people,
-> and what the board hedged comes out firmer. Four of those briefings are
-> committed here, the current one included, because it still does it.
+> Everything you've just seen rests on one idea: a claim keeps its caveats as a
+> field and loses them as a sentence. I'd love to tell you we're immune. We're
+> not.
 >
-> The current one's typed fields are checked against the board they came from,
-> entry by entry. The sentences around them are not, and cannot be: a caveat
-> written in a sentence can be taken out by a sentence.
+> We have an agent whose whole job is writing the board up for people who
+> weren't in the room. Here's the board on one lead. Plausible. No precedent.
+> And here's what came out the other side. Still plausible, but now there's a
+> prior incident attached. The board never said that. Nothing typed was in the
+> way, so the prose did what prose does.
 >
-> So the contract carries the caveat as a field, and does not trust a paragraph
-> to carry it as a word.
+> We kept it. It's in the repo with the others that got it wrong, because the
+> answer isn't better writing. The answer is the field. Every entry is now
+> checked back against the board. A precedent can only show up where the board
+> cited one. The words around it? No check can reach those.
 >
 > You shifted left and fixed the pipeline. Production is still a person reading
 > a dashboard at 3am. We engineer that layer.
@@ -358,7 +372,7 @@ read gitignored `runs/` and render Tier 3 output, so neither belongs in
 reproducible by anyone with the repository. Keep them in a scratch directory and
 let them be rebuilt.
 
-**Not** one continuous live take. It fights the pre-run decision, and 597 words
+**Not** one continuous live take. It fights the pre-run decision, and 689 words
 of dense copy unbroken takes a dozen attempts to get clean.
 
 ## Before recording
