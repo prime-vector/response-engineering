@@ -5,34 +5,36 @@ with the tier that guarantees it. **No line speaks a Tier 3 number.** Where a
 figure has to appear it is read off the screen inside the take, not asserted
 from here.
 
-Seven shots, 689 words of voice. **It lands at 4:46, and that number is
-measured rather than assumed.** Six shots of an earlier draft of these words
-were recorded on 11 and 12 Sep: 470 words in 186 seconds of speech, first word
-to last, which is 151 words a minute. The timings below are cut from that rate,
-plus 13 seconds of air across the seven holds. Timings are a budget, not a
-metronome.
+Seven shots, 689 words of voice. **It lands at 4:11, and that number is
+measured rather than assumed.** All seven shots were recorded on 1 Oct: 689
+words in 238.5 seconds of speech, first word to last, which is 173 words a
+minute. Each shot's timing below is its own take's speech, plus 13 seconds of
+air shared across the seven holds. The voice is the spine and the picture is
+cut to it, so these are the lengths the footage has to fill.
 
 **The words were rewritten on 23 Sep to be said rather than read.** The earlier
 draft was written as copy and checked as copy, and read aloud it sounded like
 an instruction manual. Every claim still sits where the claim list pins it;
 what changed is contractions, sentence length and a person in the sentences.
-The six takes of the old words are superseded.
+The six takes of the old words, recorded 11 and 12 Sep, are superseded.
 
-**The pace is not a problem to fix, and the length is the cost of that.** 151
-wpm is where a comfortable, clearly enunciated read actually came out across
-six takes; the 137 before it was one shot's figure and the 145 before that was
-taken off a table rather than off a voice. Four minutes is the format's name.
-This is where the writing and the reading actually came out, recorded here
-rather than discovered in an edit.
+**The pace moved because the words did.** The old words came out at 151 words
+a minute across six takes, and the shot list was cut to 4:46 from that. The
+same claims written to be spoken came out at 173 across all seven. Shot 4 is
+the fastest at 190 and shot 7, carrying the hero line, is 180; both were
+listened back and kept. Four minutes is the format's name. This is where the
+writing and the reading actually came out, recorded here rather than
+discovered in an edit.
 
 **The alternative was cutting words to the clock, and it was rejected on
 purpose.** Compressing checked copy to hit a clock is the exact pressure shot 2
 is about, and the odds of taking a qualifier rather than a filler word are not
 low enough to spend the claim list on.
 
-The budgets are apportioned to the word counts. They were not, until 26 Aug:
-shot 2 was written to 195 words a minute and shot 7 to 222, which is not a
-measured pace but an auctioneer, and shot 7 is the close carrying the hero line.
+The budgets used to be apportioned to the word counts at a single pace measured
+on the old words, and before 26 Aug not even that: shot 2 was written to 195 words a minute and shot
+7 to 222, which is not a measured pace but an auctioneer. Now there is nothing
+to apportion. Each budget is a take that exists.
 
 The order is the argument: the failure, then the moment it happened, then the
 layer, then the layer doing it, then what we will not claim. It opens on day
@@ -41,7 +43,7 @@ of saved call time.
 
 ---
 
-## 1. The empty room (0:00 to 0:26)
+## 1. The empty room (0:00 to 0:23)
 
 **Screen** `docs/diagrams/fifteen-days.svg` to orient, then
 `python3 demos/show.py feed`, held on the thirteen rows. Every line ends
@@ -74,7 +76,7 @@ add "assigned or actioned": there is no such field and nothing asserts it.
 
 ---
 
-## 2. Twenty two minutes (0:26 to 1:15)
+## 2. Twenty two minutes (0:23 to 1:05)
 
 **Screen** `docs/diagrams/caveat-decay.svg`.
 
@@ -101,7 +103,7 @@ source refuses. No third party is named. Do not say the cause was found.
 
 ---
 
-## 3. What we build (1:15 to 1:55)
+## 3. What we build (1:05 to 1:44)
 
 **Screen** `docs/diagrams/architecture.svg`, then `.agents/telemetry-analyst.yaml`
 open at the `findings` item schema, which fits on one screen and shows
@@ -134,7 +136,7 @@ shot seven read as a retraction rather than as the argument.
 
 ---
 
-## 4. Day one (1:55 to 2:41)
+## 4. Day one (1:44 to 2:21)
 
 **Screen** `python3 demos/show.py day-one` first, held on `alerting: false` and
 `owner: none` against the standing condition. Then `demos/investigate.sh act1`.
@@ -188,7 +190,7 @@ them.
 
 ---
 
-## 5. The board refuses (2:41 to 3:09)
+## 5. The board refuses (2:21 to 2:47)
 
 **Screen** the captured `governance.sh attribution` output, ending on the guard
 and the convergence note.
@@ -223,7 +225,7 @@ measured runs.
 
 ---
 
-## 6. The change that does not dispatch (3:09 to 3:34)
+## 6. The change that does not dispatch (2:47 to 3:11)
 
 **Screen** `demos/governance.sh sandbox`, ending on the violation line.
 
@@ -241,7 +243,7 @@ so hold the frame on it.
 
 ---
 
-## 7. What we will not claim (3:34 to 4:46)
+## 7. What we will not claim (3:11 to 4:11)
 
 **Screen** `ls docs/samples/briefing-2026-08-24/`, then
 `briefing-bridge-before-rule-6a.json` beside `board.json`, on the entry that
