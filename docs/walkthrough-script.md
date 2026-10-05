@@ -274,20 +274,21 @@ the failure this shot exists to name.
 **Voice**
 > Last thing, and it's the whole point.
 >
-> Everything you've just seen rests on one idea: a claim keeps its caveats as a
-> field and loses them as a sentence. I'd love to tell you we're immune. We're
-> not.
+> Everything you've seen rests on one idea. Put a caveat in a field and it
+> survives. Put it in a sentence and it can quietly go. I'd love to tell you
+> we're immune. We're not.
 >
-> We have an agent whose whole job is writing the board up for people who
-> weren't in the room. Here's the board on one lead. Plausible. No precedent.
-> And here's what came out the other side. Still plausible, but now there's a
-> prior incident attached. The board never said that. Nothing typed was in the
-> way, so the prose did what prose does.
+> One of our agents writes the board up for people who weren't in the room.
+> Here's the board on one lead. It says plausible, and it cites no precedent.
 >
-> We kept it. It's in the repo with the others that got it wrong, because the
-> answer isn't better writing. The answer is the field. Every entry is now
-> checked back against the board. A precedent can only show up where the board
-> cited one. The words around it? No check can reach those.
+> And here's what the agent wrote. Still plausible, but now there's a prior
+> incident attached. The board never said that. Nothing typed stood in the way,
+> so the sentence carried it in.
+>
+> We kept it. It's in the repo with the others that got it wrong. Better
+> writing isn't the fix. The field is. Each entry's citations are now checked
+> against the board, so a precedent can only show up where the board cited one.
+> The words around it? No check can reach those.
 >
 > You shifted left and fixed the pipeline. Production is still a person reading
 > a dashboard at 3am. We engineer that layer.
