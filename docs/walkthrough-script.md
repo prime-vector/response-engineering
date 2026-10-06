@@ -5,10 +5,10 @@ with the tier that guarantees it. **No line speaks a Tier 3 number.** Where a
 figure has to appear it is read off the screen inside the take, not asserted
 from here.
 
-Seven shots, 685 words of voice. **It lands at 4:13, and that number is
-measured rather than assumed.** Shots 1 to 6 were recorded on 1 Oct and shot 7
-on 6 Oct: 685 words in 240.4 seconds of speech, first word to last, which is
-171 words a minute. Each shot's timing below is its own take's speech, plus 13 seconds of
+Seven shots, 685 words of voice. **It lands at 4:37, and that number is
+measured rather than assumed.** All seven shots were recorded on 6 Oct: 685
+words in 264.0 seconds of speech, first word to last, which is 156 words a
+minute. Each shot's timing below is its own take's speech, plus 13 seconds of
 air shared across the seven holds. The voice is the spine and the picture is
 cut to it, so these are the lengths the footage has to fill.
 
@@ -18,14 +18,17 @@ an instruction manual. Every claim still sits where the claim list pins it;
 what changed is contractions, sentence length and a person in the sentences.
 The six takes of the old words, recorded 11 and 12 Sep, are superseded.
 
-**The pace moved because the words did.** The old words came out at 151 words
-a minute across six takes, and the shot list was cut to 4:46 from that. The
-same claims written to be spoken came out at 171 across all seven. Shot 4 is
-the fastest at 190 and was listened back and kept. Shot 7 was rewritten again
-after the first assembly, because heard in sequence it was the one shot still
-reading like copy, and its take over the plainer words is 171. Four minutes is the format's name. This is where the
-writing and the reading actually came out, recorded here rather than
-discovered in an edit.
+**The pace moved because the words did, and then because the delivery did.**
+The old words came out at 151 words a minute across six takes, and the shot
+list was cut to 4:46 from that. The same claims written to be spoken came out
+at 173 on 1 Oct, landing at 4:11. Heard assembled, those takes were even and
+flat, with little pause between thoughts. Shot 7, rewritten once more in
+plainer words, came back phrased: natural speed inside a phrase and a real
+stop between them. The other six were recorded again to match. 156 is what
+that delivery measures, with more of each take spent pausing rather than
+speaking slowly. Four minutes is the format's name. This is where the writing
+and the reading actually came out, recorded here rather than discovered in an
+edit.
 
 **The alternative was cutting words to the clock, and it was rejected on
 purpose.** Compressing checked copy to hit a clock is the exact pressure shot 2
@@ -44,7 +47,7 @@ of saved call time.
 
 ---
 
-## 1. The empty room (0:00 to 0:23)
+## 1. The empty room (0:00 to 0:27)
 
 **Screen** `docs/diagrams/fifteen-days.svg` to orient, then
 `python3 demos/show.py feed`, held on the thirteen rows. Every line ends
@@ -77,7 +80,7 @@ add "assigned or actioned": there is no such field and nothing asserts it.
 
 ---
 
-## 2. Twenty two minutes (0:23 to 1:05)
+## 2. Twenty two minutes (0:27 to 1:14)
 
 **Screen** `docs/diagrams/caveat-decay.svg`.
 
@@ -104,7 +107,7 @@ source refuses. No third party is named. Do not say the cause was found.
 
 ---
 
-## 3. What we build (1:05 to 1:44)
+## 3. What we build (1:14 to 1:56)
 
 **Screen** `docs/diagrams/architecture.svg`, then `.agents/telemetry-analyst.yaml`
 open at the `findings` item schema, which fits on one screen and shows
@@ -137,7 +140,7 @@ shot seven read as a retraction rather than as the argument.
 
 ---
 
-## 4. Day one (1:44 to 2:21)
+## 4. Day one (1:56 to 2:40)
 
 **Screen** `python3 demos/show.py day-one` first, held on `alerting: false` and
 `owner: none` against the standing condition. Then `demos/investigate.sh act1`.
@@ -191,7 +194,7 @@ them.
 
 ---
 
-## 5. The board refuses (2:21 to 2:47)
+## 5. The board refuses (2:40 to 3:09)
 
 **Screen** the captured `governance.sh attribution` output, ending on the guard
 and the convergence note.
@@ -226,7 +229,7 @@ measured runs.
 
 ---
 
-## 6. The change that does not dispatch (2:47 to 3:11)
+## 6. The change that does not dispatch (3:09 to 3:35)
 
 **Screen** `demos/governance.sh sandbox`, ending on the violation line.
 
@@ -244,7 +247,7 @@ so hold the frame on it.
 
 ---
 
-## 7. What we will not claim (3:11 to 4:13)
+## 7. What we will not claim (3:35 to 4:37)
 
 **Screen** `ls docs/samples/briefing-2026-08-24/`, then
 `briefing-bridge-before-rule-6a.json` beside `board.json`, on the entry that
