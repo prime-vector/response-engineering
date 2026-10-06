@@ -73,7 +73,6 @@
         <text class="t-e" x="24" y="264">CONSUMPTION, HUMAN</text>
         <line class="ln dash" x1="252" y1="288" x2="784" y2="288"/>
         <text class="t" x="252" y="308">acknowledged: 0</text>
-        <text class="t-s" x="252" y="322">assigned: 0        actioned: 0</text>
         <circle class="mk-h" cx="796" cy="288" r="4"/>
         <text class="t t-h" x="806" y="292">bridge, 17:00</text>
 
