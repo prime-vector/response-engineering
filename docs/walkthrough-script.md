@@ -5,10 +5,10 @@ with the tier that guarantees it. **No line speaks a Tier 3 number.** Where a
 figure has to appear it is read off the screen inside the take, not asserted
 from here.
 
-Seven shots, 685 words of voice. **It lands at 4:12, and that number is
+Seven shots, 685 words of voice. **It lands at 4:13, and that number is
 measured rather than assumed.** Shots 1 to 6 were recorded on 1 Oct and shot 7
-on 6 Oct: 685 words in 239.5 seconds of speech, first word to last, which is
-172 words a minute. Each shot's timing below is its own take's speech, plus 13 seconds of
+on 6 Oct: 685 words in 240.4 seconds of speech, first word to last, which is
+171 words a minute. Each shot's timing below is its own take's speech, plus 13 seconds of
 air shared across the seven holds. The voice is the spine and the picture is
 cut to it, so these are the lengths the footage has to fill.
 
@@ -20,10 +20,10 @@ The six takes of the old words, recorded 11 and 12 Sep, are superseded.
 
 **The pace moved because the words did.** The old words came out at 151 words
 a minute across six takes, and the shot list was cut to 4:46 from that. The
-same claims written to be spoken came out at 172 across all seven. Shot 4 is
+same claims written to be spoken came out at 171 across all seven. Shot 4 is
 the fastest at 190 and was listened back and kept. Shot 7 was rewritten again
 after the first assembly, because heard in sequence it was the one shot still
-reading like copy, and its take over the plainer words is 173. Four minutes is the format's name. This is where the
+reading like copy, and its take over the plainer words is 171. Four minutes is the format's name. This is where the
 writing and the reading actually came out, recorded here rather than
 discovered in an edit.
 
@@ -244,7 +244,7 @@ so hold the frame on it.
 
 ---
 
-## 7. What we will not claim (3:11 to 4:12)
+## 7. What we will not claim (3:11 to 4:13)
 
 **Screen** `ls docs/samples/briefing-2026-08-24/`, then
 `briefing-bridge-before-rule-6a.json` beside `board.json`, on the entry that
