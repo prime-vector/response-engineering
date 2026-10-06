@@ -282,9 +282,9 @@ the failure this shot exists to name.
 > One of our agents writes the board up for people who weren't in the room.
 > Here's the board on one lead. It says plausible, and it cites no precedent.
 >
-> And here's what the agent wrote. Still plausible, but now there's a prior
-> incident attached. The board never said that. Nothing typed stood in the way,
-> so the sentence carried it in.
+> And here's what the agent wrote. Still plausible. But now it points to an
+> earlier incident. The board never did. Nothing checked the sentence, so it
+> slipped in.
 >
 > We kept it. It's in the repo with the others that got it wrong. Better
 > writing isn't the fix. The field is. Each entry's citations are now checked
