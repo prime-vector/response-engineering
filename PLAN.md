@@ -60,7 +60,7 @@ This milestone is the product. If it is not visible on screen, this is just anot
 
 - [x] Sanitisation review, second pass, by someone other than the author. Read in the week of 17 to 23 Aug 2026 by an observability engineer who knows the pattern this composite is drawn from, which is a stronger pass than a cold reader can give: someone who never saw the source material can apply the rules but cannot confirm an absence. Nothing identifiable found. Scope recorded rather than assumed, because the tree grew in four steps and only the dates say what was in it: eleven corpus documents landed 16 Aug, `DRAFT-2601` on 17 Aug, the five distractors on 18 Aug in `3706dd2`, and both `docs/samples/` directories on 24 Aug. Seventeen, which is the count `README.md` and M6 carry, and the twelve M1 records as read by the first pass are the 16 Aug eleven plus `DRAFT-2601`. The whole corpus was in the tree by 18 Aug and the read ran to 23 Aug, so the corpus was covered in full and the samples postdate the read. That gap is deliberate rather than outstanding: the samples are model output, the model only ever saw synthetic fixtures and the synthetic corpus, so it cannot emit source material it never had, and its one real exposure is naming a vendor in a causal role. The reproducible half of the pass is a sweep anyone can re-run and it is clean: no email addresses anywhere in tracked files, no routable IP other than loopback, no external hostname beyond `api.anthropic.com`, `github.com`, `genai.com.au` and `www.w3.org`, and four vendor mentions all in capability tables or market positioning rather than a causal role
 - [x] Repo moved to the org. Already there: `prime-vector/response-engineering`, which is the standards home the brand decision put it under. **Still private**, and that is the separate condition in this milestone's done-when rather than a leftover of this item. Going public is now gated on nothing in the tree: the sanitisation second pass is done and recorded above, and the mechanical sweep in that item is the part a reader can re-run
-- [ ] Four minute walkthrough recorded
+- [x] Four minute walkthrough recorded. 4:37, uploaded unlisted on 7 Oct 2026: https://youtu.be/OTdecUh1C98. Over the four minute name on purpose, for the reason `docs/walkthrough-script.md` gives: the length is where the spoken copy and a phrased read came out, and words were not cut to a clock. The shot list's timings are cut from the recorded takes
 - [ ] README readable by someone with no context
 
 ### M6: Precedent Analyst
@@ -622,7 +622,7 @@ Three acts, four minutes, in this order:
 
 | Decision | Status |
 | --- | --- |
-| Brand and org the repo lands under | Open. Blocks M5, nothing earlier. |
+| Brand and org the repo lands under | Resolved 27 Jul 2026: `prime-vector/response-engineering`, beside Open Agent Spec, with Genai Pty Ltd credited as the practice that builds and maintains it. See Where this sits in `README.md`. |
 | Whether act one is a separate invocation or the first turn of the pipeline | Resolved during M3: a separate invocation of the Telemetry Analyst against the D+1 view. |
 | Whether the mock adapter becomes its own package | The mock exists in-repo. Repackage only if a second consumer appears. |
 | Who owns the change registry | Resolved: the Change Correlator, exclusively. The commander consumes the correlator's typed output through its `correlation` input, never raw registry rows, and declares no evidence surface at all. Its only surface is `host` actuation, bound by `mitigate` so the sandbox has something to block. |
