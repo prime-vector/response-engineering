@@ -762,6 +762,68 @@ metric it is contrasted with unchecked is the fix stopping one line short.
 For Phase 5 the consequence is that both numbers get reported. Either alone
 answers a question it was not asked.
 
+### What a responder waits for
+
+The eval harness is slow and that is fine, because none of it is in the
+incident path. The judge scores recorded outputs after the fact, in CI or on a
+laptop; a model grading another model is not something anyone waits on during
+an incident, and putting it in the path would be a design error rather than a
+tuning problem.
+
+What an operator waits for is one recall. Measured across the shipped arm's 38
+runs, p50 26.9s and p95 52.8s, provider time included. The retrieval surface
+itself answers in about two milliseconds, so essentially all of that is the
+model. The baseline this project is built against is a change correlation that
+was available for fifteen days and got run two hours and twenty-one minutes
+into the bridge call.
+
+**The contract is what makes a slow recall survivable, rather than a timeout.**
+Precedent is supporting evidence, and no typed route on the board makes it
+deciding evidence, so a recall that is slow, fails or refuses costs the board
+its precedent column and nothing else, while convergence goes on blocking against outstanding deciding
+evidence, which is a different field. That is wiring rather than intent now:
+`assess` takes a `precedent` input, `demos/investigate.sh` composes act one's
+live recall into it, and the property sits in the output contract rather than
+in the prompt. It is run rather than asserted: a recall that fails, or whose
+conduct the adapter log does not support, is discarded, the board is drawn
+without it, and the run reports the failure after every act has had its turn. A passage id is expressible in one field on the board,
+`hypotheses[].precedent_cited`; `blocking_evidence` is closed against one;
+`convergence_allowed` must be false while any blocking item is outstanding; and
+a hypothesis resting on precedent cannot be confirmed. Those close the typed
+routes and not the prose ones: a board that writes into an item's description
+that a passage settled it, and marks it not outstanding, converges. The limit
+is carried as a case in `checks/contract_invariants.py` rather than as a
+sentence, so closing it later would show up as a case that started failing. On the board recorded in
+`docs/precedent-analyst.md`, five cited passages across three of four
+hypotheses, five items still outstanding and convergence blocked; the
+governance demos run the same task with no precedent at all and produce the
+same blocked board. What is measured is the latency above. The degradation is a
+property of the contract, and one composed run is one run.
+
+If latency ever does bind, the levers are measured rather than guessed. One
+query instead of several halves it, p95 27.1s against 52.8s, and reaches 22 of
+60 relevant documents instead of 54: half the latency for a third of the reach,
+which argues for tiering by severity rather than choosing once. Retrieval with
+no agent at all is two milliseconds and gives up applicability, divergence and
+refusal, which is most of the point. A cheaper model is untested here.
+
+The retrieval tables regenerate with `python3 evals/runner.py --config
+evals/config.yaml` and are checked for drift in CI. On the judgement side the
+distinction is between the runs and everything downstream of them. A run does
+not regenerate: a fresh sweep of the same arm gives different numbers, so each
+record carries the timestamp, spec, prompt, model, runtime and case ids that
+produced it, and nothing diffs a sweep against a committed one. Every table
+derived from those records does regenerate, with `evals/judgement.py
+--comparison`, and CI diffs all six: the three per-arm tables, the comparison
+file, and the copies of the grid in this file and in the top-level README. `--rescore` recomputes
+the deterministic half from a stored record and prints which figures moved.
+
+These three records predate the runtime pin, so which CLI and which provider
+patch produced them is an assertion rather than something the record carries.
+The patch itself is evidenced by the runs, since an unpatched install fails the
+first tool call and these made hundreds; the version is not. Later sweeps pin
+both, and `evals/judgement.py --check-records` reports the gap per arm.
+
 ### Notes for the runner
 
 Two things the dataset already forces.
