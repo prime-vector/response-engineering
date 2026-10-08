@@ -50,22 +50,27 @@ def read_spans(path):
     return result, []
 
 
-def provider_failure(root, verdict, reason):
+def provider_failure(root, verdict, reason, members):
     """The signature OA 1.6.2 leaves on a run a transport failure ended.
 
     Its outer handler records any error that is not a sandbox block, a
     validation failure or a bad input as indeterminate / execution_failed,
     and sets error.type to the error code. Read from a live run on
     8 Oct 2026, not inferred: the inner runner raises PROVIDER_ERROR without
-    a verdict, and the outer handler is what adds one. PROVIDER_ERROR is the
-    provider failing, a dropped connection or a rejected key, so the run never
-    reached a verdict; the drivers retry the transport kind once. Any other
-    crash, RUN_ERROR included, stays a failure.
+    a verdict, and the outer handler is what adds one. 1.6.2 also relabels a
+    ToolError that escapes the tool loop as PROVIDER_ERROR, chiefly an MCP
+    adapter failing tool discovery before any model call, so the code alone
+    does not mean the provider failed. A failed model call in the same trace
+    does: that is what separates a dropped connection or a rejected key from
+    an adapter that was down. Any other crash, RUN_ERROR included, stays a
+    failure.
     """
     return (root["status_code"] == 2  # condition indeterminate_without_error
             and verdict == "indeterminate"  # condition error_with_verdict
             and reason == "execution_failed"  # condition error_with_reason
-            and root["attributes"].get("error.type") == "PROVIDER_ERROR")  # condition run_error
+            and root["attributes"].get("error.type") == "PROVIDER_ERROR"  # condition run_error
+            and any(s["name"].startswith("chat ") and s["status_code"] == 2
+                    for s in members))  # condition tool_discovery_error
 
 
 def check(spans, expected=(), expect_write=()):
@@ -90,7 +95,7 @@ def check(spans, expected=(), expect_write=()):
             failures.append(f"{stage}: missing or invalid stage metadata")
             continue
         reason = attrs.get("oa.conformance.reason", "")
-        ended_before_verdict = provider_failure(root, verdict, reason)
+        ended_before_verdict = provider_failure(root, verdict, reason, members)
         tools = [s for s in members if s["name"].startswith("execute_tool ")]
         called = []
         successful = set()
@@ -153,7 +158,7 @@ def check(spans, expected=(), expect_write=()):
 
 def canned(*, verdict="conformant", reason="", override="none", tool=None,
            status=1, blocked=False, trace="01", root=True, root_status=1,
-           error_type=None):
+           error_type=None, chat_status=None):
     """One builder keeps cases tied to the sink's format and runner attributes."""
     def span(name, parent, attributes, code=1):
         return {"trace_id": trace, "span_id": str(len(result) + 1),
@@ -170,6 +175,8 @@ def canned(*, verdict="conformant", reason="", override="none", tool=None,
             del result[0]["attributes"]["oa.conformance.reason"]
         if error_type is not None:
             result[0]["attributes"]["error.type"] = error_type
+    if chat_status is not None:
+        result.append(span("chat claude-sonnet-4-6", "1", {"gen_ai.operation.name": "chat"}, chat_status))
     if tool:
         result.append(span(f"execute_tool {tool}", "1", {"gen_ai.tool.name": tool}, status))
     if blocked:
@@ -239,7 +246,7 @@ def self_test():
          "expected conformant, got nonconformant", expected=[("scribe:timeline:none", "conformant")])
     # A transport failure as OA 1.6.2 records it, from a live run.
     gone = dict(verdict="indeterminate", reason="execution_failed",
-                root_status=2, error_type="PROVIDER_ERROR")
+                root_status=2, error_type="PROVIDER_ERROR", chat_status=2)
     case("abandoned_retry", canned(**gone) + canned(trace="02"),
          expected=[("scribe:timeline:none", "conformant")])
     case("abandoned_only_expect", canned(**gone),
@@ -255,6 +262,11 @@ def self_test():
     case("error_with_reason", canned(**{**gone, "reason": "tool_error"}),
          expected=[("scribe:timeline:none", "indeterminate")])
     case("run_error", canned(**{**gone, "error_type": "RUN_ERROR"}),
+         expected=[("scribe:timeline:none", "indeterminate")])
+    # An adapter down during tool discovery: OA labels it PROVIDER_ERROR too,
+    # but no model call was made, so it is a real failure, not an abandoned
+    # attempt.
+    case("tool_discovery_error", canned(**{**gone, "chat_status": None}),
          expected=[("scribe:timeline:none", "indeterminate")])
     case("abandoned_blocked", canned(**gone, blocked=True),
          "blocked sandbox decision without violation_prevented")
@@ -325,7 +337,8 @@ def mutation_test():
         ("indeterminate_without_error", 'root["status_code"] == 2  # condition', 'True  # condition'),
         ("error_with_verdict", 'verdict == "indeterminate"  # condition', 'True  # condition'),
         ("error_with_reason", 'reason == "execution_failed"  # condition', 'True  # condition'),
-        ("run_error", 'root["attributes"].get("error.type") == "PROVIDER_ERROR")  # condition', 'True)  # condition'),
+        ("run_error", 'root["attributes"].get("error.type") == "PROVIDER_ERROR"  # condition', 'True  # condition'),
+        ("tool_discovery_error", 'any(s["name"].startswith("chat ") and s["status_code"] == 2\n                    for s in members)', 'True'),
         ("expected_count", "need = wanted_list.count(wanted_verdict)", "need = 1"),
         ("expected_count", "if matched and have < need:", "if matched and len(matched) < len(wanted_list):"),
         ("abandoned_only_expect", 'if not matched:  # expectation expected_missing',
