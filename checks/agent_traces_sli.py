@@ -433,7 +433,7 @@ def mutation_test():
     mutations = []
     lines = source.splitlines()
     for index, line in enumerate(lines):
-        if not re.search(r"# guard [a-z_]+$", line):
+        if not re.search(r"# guard [a-z_+]+$", line):
             continue
         name = tuple(line.split("# guard ")[1].split("+"))
         original = lines[index + 1]
