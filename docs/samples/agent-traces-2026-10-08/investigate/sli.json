@@ -3,6 +3,7 @@
   "spans": "docs/samples/agent-traces-2026-10-08/investigate/spans.jsonl",
   "span_count": 57,
   "window": {
+    "source": "agent traces",
     "start_unix_nano": 1791451945462641655,
     "end_unix_nano": 1791452377863602454,
     "duration_ms": 432400,

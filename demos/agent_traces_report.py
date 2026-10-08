@@ -2,8 +2,11 @@
 """Render one run's agent traces indicators (sli.json) as a self-contained page.
 
 No scripts, no fonts, no network: the page is a record and opens anywhere.
-Every number on it is read from sli.json, so what it can claim is what
-checks/agent_traces_sli.py computed, and each indicator shows its source.
+Every figure on it is formatted from a field in sli.json: this file rounds
+cost to cents, converts milliseconds to seconds and ratios to percent, places
+bars by start and duration, and counts failed model calls from their recorded
+status. It computes no indicator of its own, so what the page can claim is
+what checks/agent_traces_sli.py computed, with the source each entry carries.
 """
 import argparse
 import html
@@ -149,7 +152,7 @@ def render(run, aggregate=None):
 <title>Agent traces report</title><style>{CSS}</style></head>
 <body><main>
 <h1>Agent traces: {esc(title)}</h1>
-<p class="sub">{esc(run['span_count'])} spans, {esc(len(run['attempts']))} stage attempts, {esc(seconds(run['window']['duration_ms']))} first stage start to last stage end. <span class="mono">{esc(run['spans'])}</span></p>
+<p class="sub">{esc(run['span_count'])} spans, {esc(len(run['attempts']))} stage attempts, {esc(seconds(run['window']['duration_ms']))} first stage start to last stage end<span class="src">{esc(run['window']['source'])}</span>. <span class="mono">{esc(run['spans'])}</span></p>
 <div class="badges">{status_badge('driver', run['driver_status'])}{status_badge('stage check', run['check_status'])}</div>
 <h2>Indicators</h2>
 <div class="tiles">
@@ -200,6 +203,7 @@ def self_test():
                    'class="bar v-prevented"', 'class="bar ended"', 'class="bar v-non"', 'class="bar v-ind"',
                    "target 100%", "target 0", "success / error / blocked"):
         assert needle in page, needle
+    assert all("source" in run["indicators"][k] for k in run["indicators"]) and run["window"]["source"] == "agent traces"
     assert "<script" not in page and "http" not in page.replace("https://github.com/prime-vector/open-agent-spec/issues/116", "")
     unknown, _ = compute(canned(), "x", None, None, None)
     page = render(unknown)

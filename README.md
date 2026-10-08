@@ -313,8 +313,10 @@ its source. `agent traces` indicators are computed from the spans: attempts
 that reached a verdict, `validation_skipped` and `sandbox_not_declared` counts,
 nonconformant stages that ran without a prompt override, blocked sandbox
 decisions recorded as `violation_prevented`, tool calls by outcome, recall
-stages that described coverage before searching, per-stage and first-to-last
-duration, and token and cost figures as the runner recorded them. The `check`
+stages that described coverage before searching, per-stage duration and the
+first-to-last window, and token and cost figures as the runner recorded them.
+The page formats those, rounding cost to cents and ratios to percent and
+placing bars by start and duration, and computes no indicator of its own. The `check`
 indicator is the stage check's exit status, which is where handoff integrity
 lives: the expectations stay in `demos/traced.sh` and the page shows what the
 check reported rather than reading them again. The `driver` indicator is the
@@ -329,7 +331,8 @@ nearest rank, so a quoted figure is one that occurred.
 acceptance day, their indicators and their pages. The investigate run is
 committed with its driver failing and its stage check passing, because that is
 the pairing the split above predicts and the one a page must be able to show.
-CI regenerates both samples from their spans and fails if either differs.
+CI regenerates both samples from their spans and recorded statuses and fails
+if any generated file differs.
 
 ## Known limits
 

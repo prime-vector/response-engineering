@@ -138,6 +138,11 @@ jobs:
           python3 checks/agent_traces_sli.py --mutation-test
           python3 demos/agent_traces_report.py --self-test
           for d in docs/samples/agent-traces-2026-10-08/*/; do
+            # check.log is the stage check's output on these spans. Re-run
+            # without the mode's expectations, which on a passing run prints
+            # the same lines; the verdict against them is the recorded status.
+            python3 checks/agent_traces.py "$d/spans.jsonl" > /tmp/check.log 2>&1
+            cmp /tmp/check.log "$d/check.log"
             python3 checks/agent_traces_sli.py "$d/spans.jsonl" --status-file "$d/status" \
               --check-output "$d/check.log" -o /tmp/sli.json
             cmp /tmp/sli.json "$d/sli.json"

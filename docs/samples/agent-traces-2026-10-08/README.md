@@ -13,7 +13,7 @@ conformant, and a driver that failed anyway.
 | --- | --- | --- |
 | `spans.jsonl` | the span metadata the local sink received, one span per line, byte for byte | the live run |
 | `status` | `driver=N` and `check=N`, the two exit statuses the wrapper recorded | the live run's output, as recorded on the task board the same day; the wrapper did not yet write this file |
-| `check.log` | what `checks/agent_traces.py` printed for this run | re-run on the committed spans with the expectations `demos/traced.sh` sets for that mode; the check is deterministic |
+| `check.log` | what `checks/agent_traces.py` printed for this run | re-run on the committed spans with the expectations `demos/traced.sh` sets for that mode; CI re-runs it without them, which on a passing run prints the same lines, and compares |
 | `sli.json` | the stage attempts and indicators `checks/agent_traces_sli.py` computed | generated from the three files above |
 | `report.html` | the page `demos/agent_traces_report.py` rendered from `sli.json` | generated |
 
@@ -33,12 +33,19 @@ would say everything was fine. This one shows `stage check: pass` beside
 
 ## Regenerating
 
-Re-running these writes nothing if the artefacts are current, and CI checks
-that they are. From the repository root:
+`status` is the one hand-written file: the wrapper did not write it on 8 Oct,
+and the two numbers come from this run's record on the task board. Everything
+else regenerates from `spans.jsonl` and `status`. Re-running writes nothing if
+the artefacts are current, and CI checks that they are. The stage check's
+verdict against the mode's expectations is the recorded `check=` status; CI
+re-runs the check without expectations, so a change to what it prints fails
+here, and a change to what it would decide about these spans does not. From
+the repository root:
 
 ```bash
 for run in governance-all investigate; do
   d=docs/samples/agent-traces-2026-10-08/$run
+  python3 checks/agent_traces.py "$d/spans.jsonl" > "$d/check.log" 2>&1
   python3 checks/agent_traces_sli.py "$d/spans.jsonl" --status-file "$d/status" \
     --check-output "$d/check.log" -o "$d/sli.json"
   python3 demos/agent_traces_report.py "$d/sli.json"

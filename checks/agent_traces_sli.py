@@ -202,7 +202,7 @@ def compute(spans, path, driver_status=None, check_status=None, check_output=Non
     attempts.sort(key=lambda r: (r["start_unix_nano"], r["trace_id"]))
     starts = [r["start_unix_nano"] for r in attempts]
     ends = [r["start_unix_nano"] + r["duration_ms"] * 1_000_000 for r in attempts]
-    window = {"start_unix_nano": min(starts), "end_unix_nano": max(ends),
+    window = {"source": "agent traces", "start_unix_nano": min(starts), "end_unix_nano": max(ends),
               "duration_ms": ms(max(ends) - min(starts)),
               "note": "First root span start to last root span end, so it includes the driver's own work between stages and nothing before the first stage or after the last."}
     return {
@@ -240,7 +240,8 @@ def aggregate(runs):
     out["window_ms"] = {"p50": percentile(windows, 50), "p95": percentile(windows, 95), "max": max(windows)}
     for name in ("stage_check", "driver"):
         known = [run["indicators"][name]["value"] for run in runs if run["indicators"][name]["value"] is not None]
-        out[name] = {**ratio(sum(known), len(known)), "note": "Runs that passed, over runs whose status was recorded."}
+        out[name] = {"source": name if name == "driver" else "check", **ratio(sum(known), len(known)),
+                     "note": "Runs that passed, over runs whose status was recorded."}
     return out
 
 
@@ -249,9 +250,11 @@ def load_status(path):
     values = {}
     for line in Path(path).read_text(encoding="utf-8").splitlines():
         key, sep, value = line.partition("=")
-        if not sep or key not in ("driver", "check") or not re.fullmatch(r"[0-9]+", value):  # guard status_key
-            raise ValueError(f"status file {path}: expected driver=N or check=N, got {line!r}")
-        values[key] = int(value)
+        if not sep or key not in ("driver", "check"):  # guard status_key+status_nosep
+            raise ValueError(f"status file {path}: expected a driver= or check= line, got {line!r}")
+        if not re.fullmatch(r"[0-9]+", value):  # guard status_line
+            raise ValueError(f"status file {path}: expected an exit status, got {line!r}")
+        values[key] = int(value, 10)
     return values.get("driver"), values.get("check")
 
 
@@ -354,7 +357,7 @@ def self_test():
     case("statuses_unknown", canned(), check=lambda r: r["indicators"]["driver"]["value"] is None and r["indicators"]["stage_check"]["value"] is None)
     late = canned(trace="02"); late[0]["start_time_unix_nano"], late[0]["end_time_unix_nano"] = 5_000_000, 9_000_000
     case("window_and_order", canned() + late,
-         check=lambda r: r["window"] == {"start_unix_nano": 10, "end_unix_nano": 9_000_000, "duration_ms": 8, "note": r["window"]["note"]}
+         check=lambda r: r["window"] == {"source": "agent traces", "start_unix_nano": 10, "end_unix_nano": 9_000_000, "duration_ms": 8, "note": r["window"]["note"]}
          and [a["trace_id"] for a in r["attempts"]] == ["01", "02"])
 
     failed = 0
@@ -381,8 +384,9 @@ def self_test():
             return load_status(Path(tmp, "s"))
         extra = [("status_file", lambda: status_of("driver=1\ncheck=0\n") == (1, 0)),
                  ("status_partial", lambda: status_of("check=2\n") == (None, 2)),
-                 ("status_line", lambda: rejects(lambda: status_of("driver=ok\n"))),
-                 ("status_key", lambda: rejects(lambda: status_of("report=0\n"))),
+                 ("status_line", lambda: rejects(lambda: status_of("driver=ok\n"), "expected an exit status")),
+                 ("status_key", lambda: rejects(lambda: status_of("report=0\n"), "expected a driver= or check= line")),
+                 ("status_nosep", lambda: rejects(lambda: status_of("driver\n"), "expected a driver= or check= line")),
                  ("percentile", lambda: (percentile([30, 10, 20], 50), percentile([30, 10, 20], 95), percentile([7], 95)) == (20, 30, 7)),
                  ("aggregate", lambda: aggregate_case())]
         for name, probe in extra:
@@ -397,11 +401,12 @@ def self_test():
     return failed
 
 
-def rejects(call):
+def rejects(call, message):
+    """A rejection with this check's own message: int() raising on the same input is not the guard."""
     try:
         call()
-    except ValueError:
-        return True
+    except ValueError as exc:
+        return message in str(exc)
     return False
 
 
@@ -419,7 +424,8 @@ def aggregate_case():
             and stage["verdicts"] == {"conformant": 2, "indeterminate": 1, "nonconformant": 1}
             and stage["duration_ms"] == {"p50": 2, "p95": 3, "max": 3}
             and out["window_ms"] == {"p50": 2, "p95": 3, "max": 3}
-            and out["driver"]["value"] == 0.5 and out["stage_check"]["numerator"] == 1)
+            and out["driver"]["value"] == 0.5 and out["stage_check"]["numerator"] == 1
+            and out["driver"]["source"] == "driver" and out["stage_check"]["source"] == "check")
 
 
 def mutation_test():
@@ -429,7 +435,7 @@ def mutation_test():
     for index, line in enumerate(lines):
         if not re.search(r"# guard [a-z_]+$", line):
             continue
-        name = line.split("# guard ")[1]
+        name = tuple(line.split("# guard ")[1].split("+"))
         original = lines[index + 1]
         indent = original[:len(original) - len(original.lstrip())]
         mutations.append((name, original, indent + "pass"))
@@ -457,6 +463,7 @@ def mutation_test():
         ("window_and_order", 'attempts.sort(key=lambda r: (r["start_unix_nano"], r["trace_id"]))', 'attempts.sort(key=lambda r: r["trace_id"], reverse=True)'),
         (("window_and_order", "aggregate"), '"duration_ms": ms(max(ends) - min(starts))', '"duration_ms": ms(max(starts) - min(starts))'),
         ("status_partial", 'return values.get("driver"), values.get("check")', 'return values.get("driver", 0), values.get("check")'),
+        ("status_line", 'if not re.fullmatch(r"[0-9]+", value):', 'if not re.fullmatch(r"[0-9a-z]+", value):'),
         (("percentile", "aggregate"), "ordered[max(0, math.ceil(p / 100 * len(ordered)) - 1)]", "ordered[min(len(ordered) - 1, math.ceil(p / 100 * len(ordered)))]"),
         ("aggregate", 'if r["attempt"] == "completed":\n                entry["durations_ms"].append', 'if True:\n                entry["durations_ms"].append'),
     ])
