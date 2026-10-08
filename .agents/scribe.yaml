@@ -102,10 +102,11 @@ tasks:
       tools:
         allow: [record_create, record_update, change_draft]
       http:
-        # Constrains only the runner's generic http.* tools, which this task
-        # does not bind; MCP calls are gated by the tool allow list above. The
-        # runner matches hostnames with the port stripped, so this cannot pin
-        # ports: a second fence, not a boundary.
+        # From CLI 1.6.1, allow_domains gates generic http.* tools and
+        # preflights statically configured MCP endpoints; MCP tool calls
+        # also use the tool allow list above. The runner can pin host:port,
+        # but this bare host still allows any port. Pinning is a separate
+        # change.
         allow_domains: [localhost]
       file:
         allow_paths: ["./fixtures/"]

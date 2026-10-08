@@ -28,14 +28,15 @@ esac
 
 : "${ANTHROPIC_API_KEY:?Set ANTHROPIC_API_KEY first; every demo is a live run.}"
 
-# The runner skips contract validation with only a warning when the
-# behavioural-contracts extra is missing (a pipx upgrade drops it). These
-# demos are the acceptance check, so that silent degradation fails closed here.
+# From CLI 1.6.1, a task declaring behavioural_contract stops with
+# CONTRACTS_UNAVAILABLE before the model call when behavioural-contracts is
+# unavailable (a pipx upgrade drops it). Checked here as well, so a missing
+# extra fails before any adapter starts rather than partway through a paid run.
 OA_PY="$(sed -n '1s/^#! *//p' "$(command -v oa)")"
 if [ -x "$OA_PY" ]; then
   "$OA_PY" -c 'import sys; from oas_cli.runner import CONTRACTS_ENABLED; sys.exit(0 if CONTRACTS_ENABLED else 1)' || {
     echo "behavioural-contracts is missing from oa's environment: the runner" >&2
-    echo "would skip contract validation with only a warning. Reinstall it:" >&2
+    echo "would stop with CONTRACTS_UNAVAILABLE before the model call. Reinstall it:" >&2
     echo "  pipx runpip open-agent-spec install behavioural-contracts" >&2
     exit 1
   }

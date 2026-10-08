@@ -113,11 +113,11 @@ jobs:
         with:
           python-version: "3.11"
 
-      # The contracts extra matters: without it contract validation skips
-      # with a warning rather than failing, which is the fail-open behaviour
-      # CLAUDE.md warns about.
+      # The contracts extra matters: from CLI 1.6.1, a task declaring a
+      # behavioural_contract stops with CONTRACTS_UNAVAILABLE before the model
+      # call when behavioural-contracts is unavailable.
       - name: Install the CLI
-        run: pip install "open-agent-spec[contracts]==1.6.0"
+        run: pip install "open-agent-spec[contracts]==1.6.2"
 
       - name: Validate every spec
         run: |

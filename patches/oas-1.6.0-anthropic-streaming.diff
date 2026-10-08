@@ -1,6 +1,6 @@
 Streaming for the Anthropic provider, Open Agent Spec CLI 1.6.0. The provider
 posts a message request and waits for the whole generation to come back as one
-body, and through 1.6.0 there is no option to do otherwise. A long generation
+body, and through 1.6.2 there is no option to do otherwise. A long generation
 delivered that way can be lost in transit. This streams instead, and
 reassembles the events into the response dict the non-streaming path already
 returns, so nothing downstream changes shape.
