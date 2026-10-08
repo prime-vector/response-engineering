@@ -31,14 +31,18 @@ def file_timeline(endpoint, record_ref, output):
     )
     with urllib.request.urlopen(request, timeout=30) as response:
         reply = json.load(response)
-    if not isinstance(reply, dict) or reply.get("jsonrpc") != "2.0" or reply.get("id") != 1:
+    # bool is an int in Python, so `id: true` would equal 1; compare the type too.
+    if (not isinstance(reply, dict) or reply.get("jsonrpc") != "2.0"
+            or isinstance(reply.get("id"), bool) or reply.get("id") != 1):
         raise ValueError("Sink response is not the expected JSON-RPC reply.")
     if "error" in reply:
         raise ValueError("Sink returned a JSON-RPC error.")
     result = reply.get("result")
     if not isinstance(result, dict):
         raise ValueError("Sink response has no tool result.")
-    if result.get("isError") is True:
+    # Anything but absent or exactly false is an error flag: `1`, `"true"` and
+    # `{}` are all a sink saying something other than "accepted".
+    if result.get("isError", False) is not False:
         raise ValueError("Sink returned isError for record_update.")
     content = result.get("content")
     if not isinstance(content, list) or len(content) != 1 or not isinstance(content[0], dict) or content[0].get("type") != "text":

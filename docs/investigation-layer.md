@@ -58,7 +58,7 @@ will *not* do is the load-bearing half.
 | **Telemetry Analyst** | `telemetry` 8422 | `detect` | `recurrence_detected`, `recurrences[]` with `occurrence_count`, `auto_closed_count`, `acknowledged_count`, `standing_conditions_implicated` | Propose a cause. Zero acknowledgements is the finding that matters most. |
 | **Change Correlator** | `change_registry` 8423 | `correlate` | `onset_at`, `correlation_found`, `correlations[]`, `registry_caveats` | Name a cause. Carries the caveat that self-updating agents do not appear in package history with a current timestamp, so absence from the list is not absence of change. |
 | **Precedent Analyst** | `precedent_archive` 8426 | `recall` | `no_applicable_precedent`, `search_coverage`, `precedents[]` with `grounded_in`, `divergence`, `applicability` | Return the nearest-looking match. No applicable precedent, with coverage populated, is a complete answer. |
-| **Incident Commander** | none | `assess`, `brief`, `mitigate` | `hypotheses[]` with `statement`, `confidence`, `supporting_evidence`, `contradicting_evidence`, `falsifying_test`, `rules_in`; `blocking_evidence`; `attribution_guard`; `convergence_allowed` | Converge while deciding evidence is outstanding. A hypothesis omitted from the board has no typed route downstream: the briefing renders one entry per hypothesis, held to that by `checks/briefing_grounded.py`, and the Scribe files from this board. Prose is not closed, so a briefing sentence can still assert what no hypothesis holds. |
+| **Incident Commander** | none | `assess`, `brief`, `mitigate` | `hypotheses[]` with `statement`, `confidence`, `supporting_evidence`, `contradicting_evidence`, `falsifying_test`, `rules_in`; `blocking_evidence`; `attribution_guard`; `convergence_allowed` | Converge while deciding evidence is outstanding. A hypothesis omitted from the board has no typed route downstream: the briefing renders one entry per hypothesis, held to that by `checks/briefing_grounded.py`, and the Scribe writes its timeline from this board. Prose is not closed, so a briefing sentence can still assert what no hypothesis holds. |
 | **Scribe** | `incident_record` 8425, from `draft_change_record` only; `timeline` binds nothing and the driver files its reply | `timeline`, `draft_change_record` | `entries[]`, `gaps[]`, `blast_radius`, `backout_plan`, `validation_plan`, `cause_status`, `submitted: false` | Submit, approve or close. Everything it writes is a draft or an append, and the sink has no call that would let it do otherwise. |
 | **Comms** | none | `update` | `headline`, `impact_statement`, `what_is_being_done`, `cause_status`, `next_update_at` | State a cause, or name a third party at all. It is given no evidence, no hypotheses and no board, so a hypothesis has no field to arrive in. Prose still travels: this narrows, it does not fence. |
 
@@ -172,7 +172,7 @@ one's detect is a separate invocation, and the diagrams that draw that arrow
 mark it for the same reason.
 
 There is a closure worth noticing: the archive holds records in the shape the
-Scribe files. The fifth agent reads what the fourth writes.
+Scribe writes. The fifth agent reads what the fourth writes.
 
 **The failure mode is not a missed precedent. It is a confident wrong one.** A
 prior incident that resembles this one arrives already believed. It anchors the
