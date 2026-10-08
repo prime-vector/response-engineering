@@ -119,6 +119,9 @@ jobs:
       - name: Install the CLI
         run: pip install "open-agent-spec[contracts,otel]==1.6.2"
 
+      - name: Retry wrapper retries the transport only, and adds no argument when agent traces are off
+        run: bash checks/retry_probe.sh
+
       - name: Agent traces stage checks, free and without a key
         run: |
           python3 checks/agent_traces.py --self-test

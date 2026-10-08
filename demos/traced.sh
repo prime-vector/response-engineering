@@ -22,9 +22,19 @@ add_mode() {
 case "$MODE" in
   investigate)
     DRIVER=demos/investigate.sh
+    # Every stage an act runs is named, not only the write: with no
+    # expectation the check passes any well-formed file, so a partial export
+    # that kept one stage and dropped the rest would otherwise pass.
+    ACT1=(--expect telemetry-analyst:detect:none=conformant
+          --expect precedent-analyst:recall:none=conformant)
+    ACT2=(--expect change-correlator:correlate:none=conformant
+          --expect incident-commander:assess:none=conformant)
+    ACT3=(--expect scribe:timeline:none=conformant --expect-write scribe:timeline)
     case "${1:-all}" in
-      all|act3) EXPECT+=(--expect-write scribe:timeline) ;;
-      act1|act2) ;; # These acts do not run the Scribe.
+      act1) EXPECT+=("${ACT1[@]}") ;;
+      act2) EXPECT+=("${ACT2[@]}") ;;
+      act3) EXPECT+=("${ACT3[@]}") ;;
+      all) EXPECT+=("${ACT1[@]}" "${ACT2[@]}" "${ACT3[@]}") ;;
       *) echo "Usage: demos/traced.sh investigate [act1|act2|act3|all]" >&2; exit 2 ;;
     esac ;;
   sandbox|contract|attribution|grounding|refusal)
