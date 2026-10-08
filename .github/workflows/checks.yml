@@ -117,7 +117,15 @@ jobs:
       # behavioural_contract stops with CONTRACTS_UNAVAILABLE before the model
       # call when behavioural-contracts is unavailable.
       - name: Install the CLI
-        run: pip install "open-agent-spec[contracts]==1.6.2"
+        run: pip install "open-agent-spec[contracts,otel]==1.6.2"
+
+      - name: Agent traces stage checks, free and without a key
+        run: |
+          python3 checks/agent_traces.py --self-test
+          python3 checks/agent_traces.py --mutation-test
+
+      - name: Local agent traces sink accepts protobuf exports
+        run: python3 demos/agent_traces_sink.py --self-test
 
       - name: Validate every spec
         run: |

@@ -68,6 +68,9 @@ attempt_log() { # logfile: the lines the surviving attempt wrote
 # what it lost instead.
 oa_run_once() { # same arguments, no retry: the task changes state elsewhere
   local err status=0
+  if [ -n "${OTEL_EXPORTER_OTLP_ENDPOINT:-}" ]; then
+    set -- "$@" --telemetry
+  fi
   mark_logs
   err=$(mktemp)
   if oa run "$@" 2>"$err"; then
@@ -89,6 +92,9 @@ oa_run_once() { # same arguments, no retry: the task changes state elsewhere
 
 oa_run() { # arguments are passed to `oa run`; stdout is the run's output
   local attempt err status=0
+  if [ -n "${OTEL_EXPORTER_OTLP_ENDPOINT:-}" ]; then
+    set -- "$@" --telemetry
+  fi
   for attempt in 1 2; do
     mark_logs
     err=$(mktemp)
