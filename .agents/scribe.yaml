@@ -35,10 +35,14 @@ intelligence:
   model: claude-sonnet-4-6
   config:
     temperature: 0.2
-    # One copy of a live-board timeline. Keep headroom because a truncated
-    # output fails open to exit 0 upstream; the driver's require_json is
-    # what catches it.
-    max_tokens: 12000
+    # Agent-wide, so it is sized for the task that needs the most. The
+    # timeline is one generation now that the driver files it, but
+    # draft_change_record still generates its draft twice in one response,
+    # once as change_draft's arguments and once as the reply, and at 8000 a
+    # composed run once truncated inside the tool call and the runner failed
+    # open to an empty, exit-zero output. Headroom is a correctness setting
+    # here and this value is the one that passed before the timeline changed.
+    max_tokens: 16000
     # Provider HTTP read timeout, matching the other specs.
     timeout: 300
 
