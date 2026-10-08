@@ -5,8 +5,8 @@
   "window": {
     "source": "agent traces",
     "start_unix_nano": 1791451945462641655,
-    "end_unix_nano": 1791452377863602454,
-    "duration_ms": 432400,
+    "end_unix_nano": 1791452377864537320,
+    "duration_ms": 432401,
     "note": "First root span start to last root span end, so it includes the driver's own work between stages and nothing before the first stage or after the last."
   },
   "driver_status": 1,
@@ -30,6 +30,7 @@
       "attempt": "completed",
       "spec_hash": "sha256:4b7a4c1465d36bdb7b93310c6496050fd90ca632790ffcaf50c7eac8c13de095",
       "start_unix_nano": 1791451945462641655,
+      "end_unix_nano": 1791451990916028916,
       "duration_ms": 45453,
       "model_calls": [
         {
@@ -65,6 +66,7 @@
       "attempt": "completed",
       "spec_hash": "sha256:db5c3128ab968ba57dbc42e0710eafafde48e59228d35fd0aedcad130bb27284",
       "start_unix_nano": 1791451991874226787,
+      "end_unix_nano": 1791452040579258689,
       "duration_ms": 48705,
       "model_calls": [
         {
@@ -178,6 +180,7 @@
       "attempt": "completed",
       "spec_hash": "sha256:4e4587e002e6bfd898f2982b4e5330940ff249c83fd1d846df922072de2bfb0f",
       "start_unix_nano": 1791452041384625805,
+      "end_unix_nano": 1791452078016531671,
       "duration_ms": 36631,
       "model_calls": [
         {
@@ -237,6 +240,7 @@
       "attempt": "completed",
       "spec_hash": "sha256:54263f1de62e35c544191cfa5384fb81711279de48737112efdbbda98cf3426a",
       "start_unix_nano": 1791452078583092007,
+      "end_unix_nano": 1791452157923266066,
       "duration_ms": 79340,
       "model_calls": [
         {
@@ -272,6 +276,7 @@
       "attempt": "completed",
       "spec_hash": "sha256:304bfe95a9e70a747a6bad2144e0ac9aa4f5df0750fb6cfd427b59c7fc146804",
       "start_unix_nano": 1791452158766602454,
+      "end_unix_nano": 1791452377864537320,
       "duration_ms": 219097,
       "model_calls": [
         {
@@ -329,7 +334,7 @@
       "value": 1.0,
       "numerator": 5,
       "denominator": 5,
-      "note": "Attempts that reached a verdict. The remainder ended on a failed model call, OA 1.6.2's signature for a transport failure, and the drivers retry those once."
+      "note": "Attempts that reached a verdict. The remainder ended on a failed model call, which is how OA 1.6.2 records a transport failure and equally a rejected key; the drivers retry a transport failure once, and only on a stage that does not write."
     },
     "validation_skipped": {
       "source": "agent traces",

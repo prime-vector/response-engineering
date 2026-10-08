@@ -171,7 +171,7 @@ def render(run, aggregate=None):
 {aggregate_section(aggregate) if aggregate else ''}
 <h2>What each source can say</h2>
 <dl>{sources}</dl>
-<p class="sub">A span shows that a tool was called and whether the call raised. It does not show what was filed, which passages were cited, or what the model wrote. The adapter log is the record for those and the driver is the check.</p>
+<p class="sub">A span shows that a tool was called and whether the call raised. It does not show what was filed, which passages were cited, or what the model wrote. What the surface accepted and which passages left it are in the adapter log; what the model wrote, citations included, is its output; the driver holds the one against the other.</p>
 </main></body></html>
 """
 

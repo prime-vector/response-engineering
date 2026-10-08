@@ -112,7 +112,7 @@ def attempt(trace, members):
         "stage": f"{spec}:{task}:{override}", "verdict": verdict, "reason": reason,
         "attempt": "ended_before_verdict" if provider_failure(root, verdict, reason, members) else "completed",
         "spec_hash": a.get("oa.spec.hash"),
-        "start_unix_nano": root["start_time_unix_nano"],
+        "start_unix_nano": root["start_time_unix_nano"], "end_unix_nano": root["end_time_unix_nano"],
         "duration_ms": ms(root["end_time_unix_nano"] - root["start_time_unix_nano"]),
         "model_calls": model_calls, "tools": tools, "sandbox_decisions": sandbox,
         "validation": validation, "contract": contract,
@@ -156,7 +156,7 @@ def indicators(attempts, driver_status, check_status):
             "note": "The driver's verdict on content. Filing integrity, grounding and output parsing are in here and are not separable from this file."},
         "attempts_with_verdict": {
             "source": "agent traces", **ratio(len(completed), len(attempts)),
-            "note": "Attempts that reached a verdict. The remainder ended on a failed model call, OA 1.6.2's signature for a transport failure, and the drivers retry those once."},
+            "note": "Attempts that reached a verdict. The remainder ended on a failed model call, which is how OA 1.6.2 records a transport failure and equally a rejected key; the drivers retry a transport failure once, and only on a stage that does not write."},
         "validation_skipped": {
             "source": "agent traces", "value": sum(1 for r in attempts if r["verdict"] == "indeterminate" and r["reason"] == "validation_skipped"),
             "target": 0, "note": "Stages whose output never reached schema or contract validation: the truncated-JSON fail-open."},
@@ -200,8 +200,10 @@ def compute(spans, path, driver_status=None, check_status=None, check_output=Non
     if errors:
         return None, errors
     attempts.sort(key=lambda r: (r["start_unix_nano"], r["trace_id"]))
+    # From the recorded nanoseconds, not from the truncated duration: a
+    # window rebuilt from milliseconds is short by the part each one dropped.
     starts = [r["start_unix_nano"] for r in attempts]
-    ends = [r["start_unix_nano"] + r["duration_ms"] * 1_000_000 for r in attempts]
+    ends = [r["end_unix_nano"] for r in attempts]
     window = {"source": "agent traces", "start_unix_nano": min(starts), "end_unix_nano": max(ends),
               "duration_ms": ms(max(ends) - min(starts)),
               "note": "First root span start to last root span end, so it includes the driver's own work between stages and nothing before the first stage or after the last."}
@@ -359,6 +361,12 @@ def self_test():
     case("window_and_order", canned() + late,
          check=lambda r: r["window"] == {"source": "agent traces", "start_unix_nano": 10, "end_unix_nano": 9_000_000, "duration_ms": 8, "note": r["window"]["note"]}
          and [a["trace_id"] for a in r["attempts"]] == ["01", "02"])
+    # Endpoints off the millisecond grid: the last stage ends 0.9 ms after a
+    # whole millisecond, and the window must end where the span ended.
+    odd = canned(); odd[0]["start_time_unix_nano"], odd[0]["end_time_unix_nano"] = 100_000, 4_900_000
+    case("window_sub_millisecond", odd,
+         check=lambda r: rec(r)["end_unix_nano"] == 4_900_000 and rec(r)["duration_ms"] == 4
+         and r["window"]["end_unix_nano"] == 4_900_000 and r["window"]["duration_ms"] == 4)
 
     failed = 0
     with tempfile.TemporaryDirectory() as tmp:
@@ -461,7 +469,8 @@ def mutation_test():
         (("statuses", "aggregate"), '"value": None if driver_status is None else driver_status == 0', '"value": None if driver_status is None else True'),
         ("statuses_unknown", '"value": None if check_status is None else check_status == 0', '"value": check_status == 0'),
         ("window_and_order", 'attempts.sort(key=lambda r: (r["start_unix_nano"], r["trace_id"]))', 'attempts.sort(key=lambda r: r["trace_id"], reverse=True)'),
-        (("window_and_order", "aggregate"), '"duration_ms": ms(max(ends) - min(starts))', '"duration_ms": ms(max(starts) - min(starts))'),
+        (("window_and_order", "window_sub_millisecond", "aggregate"), '"duration_ms": ms(max(ends) - min(starts))', '"duration_ms": ms(max(starts) - min(starts))'),
+        ("window_sub_millisecond", 'ends = [r["end_unix_nano"] for r in attempts]', 'ends = [r["start_unix_nano"] + r["duration_ms"] * 1_000_000 for r in attempts]'),
         ("status_partial", 'return values.get("driver"), values.get("check")', 'return values.get("driver", 0), values.get("check")'),
         ("status_line", 'if not re.fullmatch(r"[0-9]+", value):', 'if not re.fullmatch(r"[0-9a-z]+", value):'),
         (("percentile", "aggregate"), "ordered[max(0, math.ceil(p / 100 * len(ordered)) - 1)]", "ordered[min(len(ordered) - 1, math.ceil(p / 100 * len(ordered)))]"),

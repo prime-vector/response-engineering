@@ -5,8 +5,8 @@
   "window": {
     "source": "agent traces",
     "start_unix_nano": 1791451694387304569,
-    "end_unix_nano": 1791451925983779149,
-    "duration_ms": 231596,
+    "end_unix_nano": 1791451925984766153,
+    "duration_ms": 231597,
     "note": "First root span start to last root span end, so it includes the driver's own work between stages and nothing before the first stage or after the last."
   },
   "driver_status": 0,
@@ -32,6 +32,7 @@
       "attempt": "completed",
       "spec_hash": "sha256:54263f1de62e35c544191cfa5384fb81711279de48737112efdbbda98cf3426a",
       "start_unix_nano": 1791451694387304569,
+      "end_unix_nano": 1791451701481464264,
       "duration_ms": 7094,
       "model_calls": [
         {
@@ -71,6 +72,7 @@
       "attempt": "completed",
       "spec_hash": "sha256:54263f1de62e35c544191cfa5384fb81711279de48737112efdbbda98cf3426a",
       "start_unix_nano": 1791451702003123041,
+      "end_unix_nano": 1791451753999389685,
       "duration_ms": 51996,
       "model_calls": [
         {
@@ -106,6 +108,7 @@
       "attempt": "completed",
       "spec_hash": "sha256:54263f1de62e35c544191cfa5384fb81711279de48737112efdbbda98cf3426a",
       "start_unix_nano": 1791451754742353530,
+      "end_unix_nano": 1791451794885084476,
       "duration_ms": 40142,
       "model_calls": [
         {
@@ -141,6 +144,7 @@
       "attempt": "completed",
       "spec_hash": "sha256:54263f1de62e35c544191cfa5384fb81711279de48737112efdbbda98cf3426a",
       "start_unix_nano": 1791451795373681008,
+      "end_unix_nano": 1791451830923014732,
       "duration_ms": 35549,
       "model_calls": [
         {
@@ -176,6 +180,7 @@
       "attempt": "completed",
       "spec_hash": "sha256:db5c3128ab968ba57dbc42e0710eafafde48e59228d35fd0aedcad130bb27284",
       "start_unix_nano": 1791451831843420063,
+      "end_unix_nano": 1791451881390351879,
       "duration_ms": 49546,
       "model_calls": [
         {
@@ -281,6 +286,7 @@
       "attempt": "completed",
       "spec_hash": "sha256:db5c3128ab968ba57dbc42e0710eafafde48e59228d35fd0aedcad130bb27284",
       "start_unix_nano": 1791451881863706342,
+      "end_unix_nano": 1791451905981994510,
       "duration_ms": 24118,
       "model_calls": [
         {
@@ -345,6 +351,7 @@
       "attempt": "completed",
       "spec_hash": "sha256:db5c3128ab968ba57dbc42e0710eafafde48e59228d35fd0aedcad130bb27284",
       "start_unix_nano": 1791451906445779149,
+      "end_unix_nano": 1791451925984766153,
       "duration_ms": 19538,
       "model_calls": [
         {
@@ -443,7 +450,7 @@
       "value": 1.0,
       "numerator": 7,
       "denominator": 7,
-      "note": "Attempts that reached a verdict. The remainder ended on a failed model call, OA 1.6.2's signature for a transport failure, and the drivers retry those once."
+      "note": "Attempts that reached a verdict. The remainder ended on a failed model call, which is how OA 1.6.2 records a transport failure and equally a rejected key; the drivers retry a transport failure once, and only on a stage that does not write."
     },
     "validation_skipped": {
       "source": "agent traces",
