@@ -1,0 +1,386 @@
+{
+  "schema": "agent-traces-sli/1",
+  "spans": "docs/samples/agent-traces-2026-10-08/investigate/spans.jsonl",
+  "span_count": 57,
+  "window": {
+    "start_unix_nano": 1791451945462641655,
+    "end_unix_nano": 1791452377863602454,
+    "duration_ms": 432400,
+    "note": "First root span start to last root span end, so it includes the driver's own work between stages and nothing before the first stage or after the last."
+  },
+  "driver_status": 1,
+  "check_status": 0,
+  "check_output": [
+    "telemetry-analyst:detect:none [trace 5c7ec96235d774dcc9b477006f5b4823] spec=telemetry-analyst task=detect prompt_override=none verdict=conformant reason=- tools=- attempt=completed",
+    "precedent-analyst:recall:none [trace 64606016cad7b4414cf24962cb42773a] spec=precedent-analyst task=recall prompt_override=none verdict=conformant reason=- tools=coverage_describe=success,precedent_search=success,precedent_search=success,precedent_search=success,precedent_search=success,precedent_search=success,precedent_search=success,passage_get=success,passage_get=success attempt=completed",
+    "change-correlator:correlate:none [trace 2735c53733fd5635d3b4e3d773bb9cf1] spec=change-correlator task=correlate prompt_override=none verdict=conformant reason=- tools=changes_list=success,packages_installed=success,deployments_list=success attempt=completed",
+    "incident-commander:assess:none [trace 1f6c66ff5042a09a4fd49dded18f686e] spec=incident-commander task=assess prompt_override=none verdict=conformant reason=- tools=- attempt=completed",
+    "scribe:timeline:none [trace d4b6203f8d2a6a6147232d3ce9fd05e3] spec=scribe task=timeline prompt_override=none verdict=conformant reason=- tools=record_update=success attempt=completed"
+  ],
+  "attempts": [
+    {
+      "trace_id": "5c7ec96235d774dcc9b477006f5b4823",
+      "spec": "telemetry-analyst",
+      "task": "detect",
+      "prompt_override": "none",
+      "stage": "telemetry-analyst:detect:none",
+      "verdict": "conformant",
+      "reason": "",
+      "attempt": "completed",
+      "spec_hash": "sha256:4b7a4c1465d36bdb7b93310c6496050fd90ca632790ffcaf50c7eac8c13de095",
+      "start_unix_nano": 1791451945462641655,
+      "duration_ms": 45453,
+      "model_calls": [
+        {
+          "model": "claude-sonnet-4-6",
+          "status": "ok",
+          "duration_ms": 45422,
+          "estimated_cost_usd": 0.033381,
+          "input_tokens": 2,
+          "output_tokens": 2225
+        }
+      ],
+      "tools": [],
+      "sandbox_decisions": {
+        "allowed": 0,
+        "blocked": 0
+      },
+      "validation": {
+        "output_schema": "passed"
+      },
+      "contract": "passed",
+      "input_tokens": 2,
+      "output_tokens": 2225,
+      "estimated_cost_usd": 0.033381
+    },
+    {
+      "trace_id": "64606016cad7b4414cf24962cb42773a",
+      "spec": "precedent-analyst",
+      "task": "recall",
+      "prompt_override": "none",
+      "stage": "precedent-analyst:recall:none",
+      "verdict": "conformant",
+      "reason": "",
+      "attempt": "completed",
+      "spec_hash": "sha256:db5c3128ab968ba57dbc42e0710eafafde48e59228d35fd0aedcad130bb27284",
+      "start_unix_nano": 1791451991874226787,
+      "duration_ms": 48705,
+      "model_calls": [
+        {
+          "model": "claude-sonnet-4-6",
+          "status": "ok",
+          "duration_ms": 5419,
+          "estimated_cost_usd": 0.004251,
+          "input_tokens": 2,
+          "output_tokens": 283
+        },
+        {
+          "model": "claude-sonnet-4-6",
+          "status": "ok",
+          "duration_ms": 4608,
+          "estimated_cost_usd": 0.011523,
+          "input_tokens": 2626,
+          "output_tokens": 243
+        },
+        {
+          "model": "claude-sonnet-4-6",
+          "status": "ok",
+          "duration_ms": 4735,
+          "estimated_cost_usd": 0.016374,
+          "input_tokens": 4333,
+          "output_tokens": 225
+        },
+        {
+          "model": "claude-sonnet-4-6",
+          "status": "ok",
+          "duration_ms": 4327,
+          "estimated_cost_usd": 0.021711,
+          "input_tokens": 6687,
+          "output_tokens": 110
+        },
+        {
+          "model": "claude-sonnet-4-6",
+          "status": "ok",
+          "duration_ms": 29559,
+          "estimated_cost_usd": 0.043533,
+          "input_tokens": 7231,
+          "output_tokens": 1456
+        }
+      ],
+      "tools": [
+        {
+          "name": "coverage_describe",
+          "outcome": "success",
+          "duration_ms": 1
+        },
+        {
+          "name": "precedent_search",
+          "outcome": "success",
+          "duration_ms": 2
+        },
+        {
+          "name": "precedent_search",
+          "outcome": "success",
+          "duration_ms": 2
+        },
+        {
+          "name": "precedent_search",
+          "outcome": "success",
+          "duration_ms": 3
+        },
+        {
+          "name": "precedent_search",
+          "outcome": "success",
+          "duration_ms": 3
+        },
+        {
+          "name": "precedent_search",
+          "outcome": "success",
+          "duration_ms": 3
+        },
+        {
+          "name": "precedent_search",
+          "outcome": "success",
+          "duration_ms": 3
+        },
+        {
+          "name": "passage_get",
+          "outcome": "success",
+          "duration_ms": 1
+        },
+        {
+          "name": "passage_get",
+          "outcome": "success",
+          "duration_ms": 1
+        }
+      ],
+      "sandbox_decisions": {
+        "allowed": 9,
+        "blocked": 0
+      },
+      "validation": {
+        "output_schema": "passed"
+      },
+      "contract": "passed",
+      "input_tokens": 20879,
+      "output_tokens": 2317,
+      "estimated_cost_usd": 0.097392
+    },
+    {
+      "trace_id": "2735c53733fd5635d3b4e3d773bb9cf1",
+      "spec": "change-correlator",
+      "task": "correlate",
+      "prompt_override": "none",
+      "stage": "change-correlator:correlate:none",
+      "verdict": "conformant",
+      "reason": "",
+      "attempt": "completed",
+      "spec_hash": "sha256:4e4587e002e6bfd898f2982b4e5330940ff249c83fd1d846df922072de2bfb0f",
+      "start_unix_nano": 1791452041384625805,
+      "duration_ms": 36631,
+      "model_calls": [
+        {
+          "model": "claude-sonnet-4-6",
+          "status": "ok",
+          "duration_ms": 9113,
+          "estimated_cost_usd": 0.003696,
+          "input_tokens": 2,
+          "output_tokens": 246
+        },
+        {
+          "model": "claude-sonnet-4-6",
+          "status": "ok",
+          "duration_ms": 27484,
+          "estimated_cost_usd": 0.023955,
+          "input_tokens": 710,
+          "output_tokens": 1455
+        }
+      ],
+      "tools": [
+        {
+          "name": "changes_list",
+          "outcome": "success",
+          "duration_ms": 1
+        },
+        {
+          "name": "packages_installed",
+          "outcome": "success",
+          "duration_ms": 0
+        },
+        {
+          "name": "deployments_list",
+          "outcome": "success",
+          "duration_ms": 0
+        }
+      ],
+      "sandbox_decisions": {
+        "allowed": 3,
+        "blocked": 0
+      },
+      "validation": {
+        "output_schema": "passed"
+      },
+      "contract": "passed",
+      "input_tokens": 712,
+      "output_tokens": 1701,
+      "estimated_cost_usd": 0.027651
+    },
+    {
+      "trace_id": "1f6c66ff5042a09a4fd49dded18f686e",
+      "spec": "incident-commander",
+      "task": "assess",
+      "prompt_override": "none",
+      "stage": "incident-commander:assess:none",
+      "verdict": "conformant",
+      "reason": "",
+      "attempt": "completed",
+      "spec_hash": "sha256:54263f1de62e35c544191cfa5384fb81711279de48737112efdbbda98cf3426a",
+      "start_unix_nano": 1791452078583092007,
+      "duration_ms": 79340,
+      "model_calls": [
+        {
+          "model": "claude-sonnet-4-6",
+          "status": "ok",
+          "duration_ms": 79317,
+          "estimated_cost_usd": 0.122817,
+          "input_tokens": 19939,
+          "output_tokens": 4200
+        }
+      ],
+      "tools": [],
+      "sandbox_decisions": {
+        "allowed": 0,
+        "blocked": 0
+      },
+      "validation": {
+        "output_schema": "passed"
+      },
+      "contract": "passed",
+      "input_tokens": 19939,
+      "output_tokens": 4200,
+      "estimated_cost_usd": 0.122817
+    },
+    {
+      "trace_id": "d4b6203f8d2a6a6147232d3ce9fd05e3",
+      "spec": "scribe",
+      "task": "timeline",
+      "prompt_override": "none",
+      "stage": "scribe:timeline:none",
+      "verdict": "conformant",
+      "reason": "",
+      "attempt": "completed",
+      "spec_hash": "sha256:304bfe95a9e70a747a6bad2144e0ac9aa4f5df0750fb6cfd427b59c7fc146804",
+      "start_unix_nano": 1791452158766602454,
+      "duration_ms": 219097,
+      "model_calls": [
+        {
+          "model": "claude-sonnet-4-6",
+          "status": "ok",
+          "duration_ms": 108390,
+          "estimated_cost_usd": 0.117006,
+          "input_tokens": 2,
+          "output_tokens": 7800
+        },
+        {
+          "model": "claude-sonnet-4-6",
+          "status": "ok",
+          "duration_ms": 110674,
+          "estimated_cost_usd": 0.141168,
+          "input_tokens": 8346,
+          "output_tokens": 7742
+        }
+      ],
+      "tools": [
+        {
+          "name": "record_update",
+          "outcome": "success",
+          "duration_ms": 2
+        }
+      ],
+      "sandbox_decisions": {
+        "allowed": 1,
+        "blocked": 0
+      },
+      "validation": {
+        "output_schema": "passed"
+      },
+      "contract": "passed",
+      "input_tokens": 8348,
+      "output_tokens": 15542,
+      "estimated_cost_usd": 0.258174
+    }
+  ],
+  "indicators": {
+    "stage_check": {
+      "source": "check",
+      "status": 0,
+      "value": true,
+      "note": "Handoff integrity: every stage the mode expects present, with its expected verdict, each listing matched once. Not computed here; reported by the check."
+    },
+    "driver": {
+      "source": "driver",
+      "status": 1,
+      "value": false,
+      "note": "The driver's verdict on content. Filing integrity, grounding and output parsing are in here and are not separable from this file."
+    },
+    "attempts_with_verdict": {
+      "source": "agent traces",
+      "value": 1.0,
+      "numerator": 5,
+      "denominator": 5,
+      "note": "Attempts that reached a verdict. The remainder ended on a failed model call, OA 1.6.2's signature for a transport failure, and the drivers retry those once."
+    },
+    "validation_skipped": {
+      "source": "agent traces",
+      "value": 0,
+      "target": 0,
+      "note": "Stages whose output never reached schema or contract validation: the truncated-JSON fail-open."
+    },
+    "sandbox_not_declared": {
+      "source": "agent traces",
+      "value": 0,
+      "target": 0,
+      "note": "Stages that ran a task with no sandbox, which is allow-all."
+    },
+    "nonconformant_without_override": {
+      "source": "agent traces",
+      "value": 0,
+      "note": "Nonconformant stages that ran the spec's own prompt. The governance reject paths run under a system override, so these are outside them. Whether one was expected is the check's call."
+    },
+    "blocked_recorded_as_prevented": {
+      "source": "agent traces",
+      "value": null,
+      "numerator": 0,
+      "denominator": 0,
+      "target": 1.0,
+      "note": "Stages with a blocked sandbox decision that ended violation_prevented."
+    },
+    "tool_calls": {
+      "source": "agent traces",
+      "success": 13,
+      "error": 0,
+      "blocked": 0,
+      "note": "Tool spans by outcome. Success means the call did not raise; what it returned is in the adapter log."
+    },
+    "recall_coverage_first": {
+      "source": "agent traces",
+      "value": 1.0,
+      "numerator": 1,
+      "denominator": 1,
+      "note": "Completed recall stages that called coverage_describe before any precedent_search, by span start order. Whether the search was bounded is an argument, and arguments are not in spans."
+    },
+    "model_usage": {
+      "source": "agent traces",
+      "model_calls": 11,
+      "input_tokens": 49880,
+      "output_tokens": 25985,
+      "estimated_cost_usd": 0.539415,
+      "note": "As the runner recorded them. The CLI's usage mapper keeps input and output tokens and drops the cache fields, so cached input is absent from the count and from the runner's estimate."
+    }
+  },
+  "sources": {
+    "agent traces": "computed from span metadata: that a call was made and how it ended, never what it carried",
+    "check": "what checks/agent_traces.py reported for this run against the expectations the driver mode set",
+    "driver": "the driver's own exit status, which folds in every check about content: outputs parsed, citations verified against the adapter log, and the filed timeline matching its receipt"
+  }
+}

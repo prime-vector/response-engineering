@@ -1,0 +1,500 @@
+{
+  "schema": "agent-traces-sli/1",
+  "spans": "docs/samples/agent-traces-2026-10-08/governance-all/spans.jsonl",
+  "span_count": 77,
+  "window": {
+    "start_unix_nano": 1791451694387304569,
+    "end_unix_nano": 1791451925983779149,
+    "duration_ms": 231596,
+    "note": "First root span start to last root span end, so it includes the driver's own work between stages and nothing before the first stage or after the last."
+  },
+  "driver_status": 0,
+  "check_status": 0,
+  "check_output": [
+    "incident-commander:mitigate:none [trace 3cf3e88a5febf650d7282ae6d1808b86] spec=incident-commander task=mitigate prompt_override=none verdict=violation_prevented reason=sandbox_tool_violation tools=selinux_setenforce=blocked attempt=completed",
+    "incident-commander:assess:none [trace e4c0fc10783f7e09192921f5749b1baa] spec=incident-commander task=assess prompt_override=none verdict=conformant reason=- tools=- attempt=completed",
+    "incident-commander:assess:system [trace a910b84b822331a9bcaf1f06e09b29e7] spec=incident-commander task=assess prompt_override=system verdict=nonconformant reason=output_schema_error tools=- attempt=completed",
+    "incident-commander:assess:system [trace 7ac22caa3970c74a4a79aaf949157289] spec=incident-commander task=assess prompt_override=system verdict=nonconformant reason=output_schema_error tools=- attempt=completed",
+    "precedent-analyst:recall:none [trace f9fb002a66fea46a1754f68e3278fc0f] spec=precedent-analyst task=recall prompt_override=none verdict=conformant reason=- tools=coverage_describe=success,precedent_search=success,precedent_search=success,precedent_search=success,precedent_search=success,precedent_search=success,precedent_search=success,passage_get=success,passage_get=success attempt=completed",
+    "precedent-analyst:recall:system [trace d904dd748eeba50eb14eda89adf26014] spec=precedent-analyst task=recall prompt_override=system verdict=nonconformant reason=output_schema_error tools=coverage_describe=success,precedent_search=success,precedent_search=success,precedent_search=success attempt=completed",
+    "precedent-analyst:recall:none [trace b80ad4c9490c952cf1e16891585909bf] spec=precedent-analyst task=recall prompt_override=none verdict=conformant reason=- tools=coverage_describe=success,precedent_search=success,precedent_search=success,precedent_search=success,precedent_search=success,precedent_search=success attempt=completed"
+  ],
+  "attempts": [
+    {
+      "trace_id": "3cf3e88a5febf650d7282ae6d1808b86",
+      "spec": "incident-commander",
+      "task": "mitigate",
+      "prompt_override": "none",
+      "stage": "incident-commander:mitigate:none",
+      "verdict": "violation_prevented",
+      "reason": "sandbox_tool_violation",
+      "attempt": "completed",
+      "spec_hash": "sha256:54263f1de62e35c544191cfa5384fb81711279de48737112efdbbda98cf3426a",
+      "start_unix_nano": 1791451694387304569,
+      "duration_ms": 7094,
+      "model_calls": [
+        {
+          "model": "claude-sonnet-4-6",
+          "status": "ok",
+          "duration_ms": 7066,
+          "estimated_cost_usd": 0.008307,
+          "input_tokens": 1229,
+          "output_tokens": 308
+        }
+      ],
+      "tools": [
+        {
+          "name": "selinux_setenforce",
+          "outcome": "blocked",
+          "duration_ms": 3
+        }
+      ],
+      "sandbox_decisions": {
+        "allowed": 0,
+        "blocked": 1
+      },
+      "validation": {},
+      "contract": null,
+      "input_tokens": 1229,
+      "output_tokens": 308,
+      "estimated_cost_usd": 0.008307
+    },
+    {
+      "trace_id": "e4c0fc10783f7e09192921f5749b1baa",
+      "spec": "incident-commander",
+      "task": "assess",
+      "prompt_override": "none",
+      "stage": "incident-commander:assess:none",
+      "verdict": "conformant",
+      "reason": "",
+      "attempt": "completed",
+      "spec_hash": "sha256:54263f1de62e35c544191cfa5384fb81711279de48737112efdbbda98cf3426a",
+      "start_unix_nano": 1791451702003123041,
+      "duration_ms": 51996,
+      "model_calls": [
+        {
+          "model": "claude-sonnet-4-6",
+          "status": "ok",
+          "duration_ms": 51975,
+          "estimated_cost_usd": 0.09393,
+          "input_tokens": 18080,
+          "output_tokens": 2646
+        }
+      ],
+      "tools": [],
+      "sandbox_decisions": {
+        "allowed": 0,
+        "blocked": 0
+      },
+      "validation": {
+        "output_schema": "passed"
+      },
+      "contract": "passed",
+      "input_tokens": 18080,
+      "output_tokens": 2646,
+      "estimated_cost_usd": 0.09393
+    },
+    {
+      "trace_id": "a910b84b822331a9bcaf1f06e09b29e7",
+      "spec": "incident-commander",
+      "task": "assess",
+      "prompt_override": "system",
+      "stage": "incident-commander:assess:system",
+      "verdict": "nonconformant",
+      "reason": "output_schema_error",
+      "attempt": "completed",
+      "spec_hash": "sha256:54263f1de62e35c544191cfa5384fb81711279de48737112efdbbda98cf3426a",
+      "start_unix_nano": 1791451754742353530,
+      "duration_ms": 40142,
+      "model_calls": [
+        {
+          "model": "claude-sonnet-4-6",
+          "status": "ok",
+          "duration_ms": 40117,
+          "estimated_cost_usd": 0.084819,
+          "input_tokens": 18513,
+          "output_tokens": 1952
+        }
+      ],
+      "tools": [],
+      "sandbox_decisions": {
+        "allowed": 0,
+        "blocked": 0
+      },
+      "validation": {
+        "output_schema": "failed"
+      },
+      "contract": null,
+      "input_tokens": 18513,
+      "output_tokens": 1952,
+      "estimated_cost_usd": 0.084819
+    },
+    {
+      "trace_id": "7ac22caa3970c74a4a79aaf949157289",
+      "spec": "incident-commander",
+      "task": "assess",
+      "prompt_override": "system",
+      "stage": "incident-commander:assess:system",
+      "verdict": "nonconformant",
+      "reason": "output_schema_error",
+      "attempt": "completed",
+      "spec_hash": "sha256:54263f1de62e35c544191cfa5384fb81711279de48737112efdbbda98cf3426a",
+      "start_unix_nano": 1791451795373681008,
+      "duration_ms": 35549,
+      "model_calls": [
+        {
+          "model": "claude-sonnet-4-6",
+          "status": "ok",
+          "duration_ms": 35519,
+          "estimated_cost_usd": 0.07836,
+          "input_tokens": 18020,
+          "output_tokens": 1620
+        }
+      ],
+      "tools": [],
+      "sandbox_decisions": {
+        "allowed": 0,
+        "blocked": 0
+      },
+      "validation": {
+        "output_schema": "failed"
+      },
+      "contract": null,
+      "input_tokens": 18020,
+      "output_tokens": 1620,
+      "estimated_cost_usd": 0.07836
+    },
+    {
+      "trace_id": "f9fb002a66fea46a1754f68e3278fc0f",
+      "spec": "precedent-analyst",
+      "task": "recall",
+      "prompt_override": "none",
+      "stage": "precedent-analyst:recall:none",
+      "verdict": "conformant",
+      "reason": "",
+      "attempt": "completed",
+      "spec_hash": "sha256:db5c3128ab968ba57dbc42e0710eafafde48e59228d35fd0aedcad130bb27284",
+      "start_unix_nano": 1791451831843420063,
+      "duration_ms": 49546,
+      "model_calls": [
+        {
+          "model": "claude-sonnet-4-6",
+          "status": "ok",
+          "duration_ms": 12655,
+          "estimated_cost_usd": 0.007191,
+          "input_tokens": 2,
+          "output_tokens": 479
+        },
+        {
+          "model": "claude-sonnet-4-6",
+          "status": "ok",
+          "duration_ms": 5060,
+          "estimated_cost_usd": 0.016794,
+          "input_tokens": 4358,
+          "output_tokens": 248
+        },
+        {
+          "model": "claude-sonnet-4-6",
+          "status": "ok",
+          "duration_ms": 3407,
+          "estimated_cost_usd": 0.019002,
+          "input_tokens": 5794,
+          "output_tokens": 108
+        },
+        {
+          "model": "claude-sonnet-4-6",
+          "status": "ok",
+          "duration_ms": 28366,
+          "estimated_cost_usd": 0.040707,
+          "input_tokens": 6459,
+          "output_tokens": 1422
+        }
+      ],
+      "tools": [
+        {
+          "name": "coverage_describe",
+          "outcome": "success",
+          "duration_ms": 1
+        },
+        {
+          "name": "precedent_search",
+          "outcome": "success",
+          "duration_ms": 3
+        },
+        {
+          "name": "precedent_search",
+          "outcome": "success",
+          "duration_ms": 2
+        },
+        {
+          "name": "precedent_search",
+          "outcome": "success",
+          "duration_ms": 2
+        },
+        {
+          "name": "precedent_search",
+          "outcome": "success",
+          "duration_ms": 3
+        },
+        {
+          "name": "precedent_search",
+          "outcome": "success",
+          "duration_ms": 3
+        },
+        {
+          "name": "precedent_search",
+          "outcome": "success",
+          "duration_ms": 3
+        },
+        {
+          "name": "passage_get",
+          "outcome": "success",
+          "duration_ms": 1
+        },
+        {
+          "name": "passage_get",
+          "outcome": "success",
+          "duration_ms": 1
+        }
+      ],
+      "sandbox_decisions": {
+        "allowed": 9,
+        "blocked": 0
+      },
+      "validation": {
+        "output_schema": "passed"
+      },
+      "contract": "passed",
+      "input_tokens": 16613,
+      "output_tokens": 2257,
+      "estimated_cost_usd": 0.083694
+    },
+    {
+      "trace_id": "d904dd748eeba50eb14eda89adf26014",
+      "spec": "precedent-analyst",
+      "task": "recall",
+      "prompt_override": "system",
+      "stage": "precedent-analyst:recall:system",
+      "verdict": "nonconformant",
+      "reason": "output_schema_error",
+      "attempt": "completed",
+      "spec_hash": "sha256:db5c3128ab968ba57dbc42e0710eafafde48e59228d35fd0aedcad130bb27284",
+      "start_unix_nano": 1791451881863706342,
+      "duration_ms": 24118,
+      "model_calls": [
+        {
+          "model": "claude-sonnet-4-6",
+          "status": "ok",
+          "duration_ms": 8512,
+          "estimated_cost_usd": 0.007131,
+          "input_tokens": 2,
+          "output_tokens": 475
+        },
+        {
+          "model": "claude-sonnet-4-6",
+          "status": "ok",
+          "duration_ms": 15556,
+          "estimated_cost_usd": 0.015474,
+          "input_tokens": 1858,
+          "output_tokens": 660
+        }
+      ],
+      "tools": [
+        {
+          "name": "coverage_describe",
+          "outcome": "success",
+          "duration_ms": 1
+        },
+        {
+          "name": "precedent_search",
+          "outcome": "success",
+          "duration_ms": 3
+        },
+        {
+          "name": "precedent_search",
+          "outcome": "success",
+          "duration_ms": 3
+        },
+        {
+          "name": "precedent_search",
+          "outcome": "success",
+          "duration_ms": 2
+        }
+      ],
+      "sandbox_decisions": {
+        "allowed": 4,
+        "blocked": 0
+      },
+      "validation": {
+        "output_schema": "failed"
+      },
+      "contract": null,
+      "input_tokens": 1860,
+      "output_tokens": 1135,
+      "estimated_cost_usd": 0.022605
+    },
+    {
+      "trace_id": "b80ad4c9490c952cf1e16891585909bf",
+      "spec": "precedent-analyst",
+      "task": "recall",
+      "prompt_override": "none",
+      "stage": "precedent-analyst:recall:none",
+      "verdict": "conformant",
+      "reason": "",
+      "attempt": "completed",
+      "spec_hash": "sha256:db5c3128ab968ba57dbc42e0710eafafde48e59228d35fd0aedcad130bb27284",
+      "start_unix_nano": 1791451906445779149,
+      "duration_ms": 19538,
+      "model_calls": [
+        {
+          "model": "claude-sonnet-4-6",
+          "status": "ok",
+          "duration_ms": 4980,
+          "estimated_cost_usd": 0.002856,
+          "input_tokens": 2,
+          "output_tokens": 190
+        },
+        {
+          "model": "claude-sonnet-4-6",
+          "status": "ok",
+          "duration_ms": 4068,
+          "estimated_cost_usd": 0.0054,
+          "input_tokens": 500,
+          "output_tokens": 260
+        },
+        {
+          "model": "claude-sonnet-4-6",
+          "status": "ok",
+          "duration_ms": 4962,
+          "estimated_cost_usd": 0.007479,
+          "input_tokens": 1033,
+          "output_tokens": 292
+        },
+        {
+          "model": "claude-sonnet-4-6",
+          "status": "ok",
+          "duration_ms": 5477,
+          "estimated_cost_usd": 0.009294,
+          "input_tokens": 1598,
+          "output_tokens": 300
+        }
+      ],
+      "tools": [
+        {
+          "name": "coverage_describe",
+          "outcome": "success",
+          "duration_ms": 1
+        },
+        {
+          "name": "precedent_search",
+          "outcome": "success",
+          "duration_ms": 2
+        },
+        {
+          "name": "precedent_search",
+          "outcome": "success",
+          "duration_ms": 3
+        },
+        {
+          "name": "precedent_search",
+          "outcome": "success",
+          "duration_ms": 3
+        },
+        {
+          "name": "precedent_search",
+          "outcome": "success",
+          "duration_ms": 4
+        },
+        {
+          "name": "precedent_search",
+          "outcome": "success",
+          "duration_ms": 2
+        }
+      ],
+      "sandbox_decisions": {
+        "allowed": 6,
+        "blocked": 0
+      },
+      "validation": {
+        "output_schema": "passed"
+      },
+      "contract": "passed",
+      "input_tokens": 3133,
+      "output_tokens": 1042,
+      "estimated_cost_usd": 0.025029
+    }
+  ],
+  "indicators": {
+    "stage_check": {
+      "source": "check",
+      "status": 0,
+      "value": true,
+      "note": "Handoff integrity: every stage the mode expects present, with its expected verdict, each listing matched once. Not computed here; reported by the check."
+    },
+    "driver": {
+      "source": "driver",
+      "status": 0,
+      "value": true,
+      "note": "The driver's verdict on content. Filing integrity, grounding and output parsing are in here and are not separable from this file."
+    },
+    "attempts_with_verdict": {
+      "source": "agent traces",
+      "value": 1.0,
+      "numerator": 7,
+      "denominator": 7,
+      "note": "Attempts that reached a verdict. The remainder ended on a failed model call, OA 1.6.2's signature for a transport failure, and the drivers retry those once."
+    },
+    "validation_skipped": {
+      "source": "agent traces",
+      "value": 0,
+      "target": 0,
+      "note": "Stages whose output never reached schema or contract validation: the truncated-JSON fail-open."
+    },
+    "sandbox_not_declared": {
+      "source": "agent traces",
+      "value": 0,
+      "target": 0,
+      "note": "Stages that ran a task with no sandbox, which is allow-all."
+    },
+    "nonconformant_without_override": {
+      "source": "agent traces",
+      "value": 0,
+      "note": "Nonconformant stages that ran the spec's own prompt. The governance reject paths run under a system override, so these are outside them. Whether one was expected is the check's call."
+    },
+    "blocked_recorded_as_prevented": {
+      "source": "agent traces",
+      "value": 1.0,
+      "numerator": 1,
+      "denominator": 1,
+      "target": 1.0,
+      "note": "Stages with a blocked sandbox decision that ended violation_prevented."
+    },
+    "tool_calls": {
+      "source": "agent traces",
+      "success": 19,
+      "error": 0,
+      "blocked": 1,
+      "note": "Tool spans by outcome. Success means the call did not raise; what it returned is in the adapter log."
+    },
+    "recall_coverage_first": {
+      "source": "agent traces",
+      "value": 1.0,
+      "numerator": 3,
+      "denominator": 3,
+      "note": "Completed recall stages that called coverage_describe before any precedent_search, by span start order. Whether the search was bounded is an argument, and arguments are not in spans."
+    },
+    "model_usage": {
+      "source": "agent traces",
+      "model_calls": 14,
+      "input_tokens": 77448,
+      "output_tokens": 10960,
+      "estimated_cost_usd": 0.396744,
+      "note": "As the runner recorded them. The CLI's usage mapper keeps input and output tokens and drops the cache fields, so cached input is absent from the count and from the runner's estimate."
+    }
+  },
+  "sources": {
+    "agent traces": "computed from span metadata: that a call was made and how it ended, never what it carried",
+    "check": "what checks/agent_traces.py reported for this run against the expectations the driver mode set",
+    "driver": "the driver's own exit status, which folds in every check about content: outputs parsed, citations verified against the adapter log, and the filed timeline matching its receipt"
+  }
+}

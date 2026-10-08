@@ -1,0 +1,119 @@
+{
+  "schema": "agent-traces-sli/1/aggregate",
+  "runs": 2,
+  "stages": {
+    "change-correlator:correlate:none": {
+      "attempts": 1,
+      "verdicts": {
+        "conformant": 1
+      },
+      "completed": 1,
+      "duration_ms": {
+        "p50": 36631,
+        "p95": 36631,
+        "max": 36631
+      }
+    },
+    "incident-commander:assess:none": {
+      "attempts": 2,
+      "verdicts": {
+        "conformant": 2
+      },
+      "completed": 2,
+      "duration_ms": {
+        "p50": 51996,
+        "p95": 79340,
+        "max": 79340
+      }
+    },
+    "incident-commander:assess:system": {
+      "attempts": 2,
+      "verdicts": {
+        "nonconformant": 2
+      },
+      "completed": 2,
+      "duration_ms": {
+        "p50": 35549,
+        "p95": 40142,
+        "max": 40142
+      }
+    },
+    "incident-commander:mitigate:none": {
+      "attempts": 1,
+      "verdicts": {
+        "violation_prevented": 1
+      },
+      "completed": 1,
+      "duration_ms": {
+        "p50": 7094,
+        "p95": 7094,
+        "max": 7094
+      }
+    },
+    "precedent-analyst:recall:none": {
+      "attempts": 3,
+      "verdicts": {
+        "conformant": 3
+      },
+      "completed": 3,
+      "duration_ms": {
+        "p50": 48705,
+        "p95": 49546,
+        "max": 49546
+      }
+    },
+    "precedent-analyst:recall:system": {
+      "attempts": 1,
+      "verdicts": {
+        "nonconformant": 1
+      },
+      "completed": 1,
+      "duration_ms": {
+        "p50": 24118,
+        "p95": 24118,
+        "max": 24118
+      }
+    },
+    "scribe:timeline:none": {
+      "attempts": 1,
+      "verdicts": {
+        "conformant": 1
+      },
+      "completed": 1,
+      "duration_ms": {
+        "p50": 219097,
+        "p95": 219097,
+        "max": 219097
+      }
+    },
+    "telemetry-analyst:detect:none": {
+      "attempts": 1,
+      "verdicts": {
+        "conformant": 1
+      },
+      "completed": 1,
+      "duration_ms": {
+        "p50": 45453,
+        "p95": 45453,
+        "max": 45453
+      }
+    }
+  },
+  "window_ms": {
+    "p50": 231596,
+    "p95": 432400,
+    "max": 432400
+  },
+  "stage_check": {
+    "value": 1.0,
+    "numerator": 2,
+    "denominator": 2,
+    "note": "Runs that passed, over runs whose status was recorded."
+  },
+  "driver": {
+    "value": 0.5,
+    "numerator": 1,
+    "denominator": 2,
+    "note": "Runs that passed, over runs whose status was recorded."
+  }
+}

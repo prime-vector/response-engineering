@@ -90,7 +90,18 @@ bash "$DRIVER" "$@" || DRIVER_STATUS=$?
 cleanup
 SINK_PID=""
 CHECK_STATUS=0
-python3 checks/agent_traces.py "$RUN/spans.jsonl" "${EXPECT[@]}" || CHECK_STATUS=$?
-printf 'Agent traces: %s (driver=%s, check=%s)\n' "$RUN/spans.jsonl" "$DRIVER_STATUS" "$CHECK_STATUS"
+# The check's own output is kept beside the spans, so the report shows what
+# the check reported rather than a second reading of the expectations.
+python3 checks/agent_traces.py "$RUN/spans.jsonl" "${EXPECT[@]}" > "$RUN/check.log" 2>&1 || CHECK_STATUS=$?
+cat "$RUN/check.log"
+printf 'driver=%s\ncheck=%s\n' "$DRIVER_STATUS" "$CHECK_STATUS" > "$RUN/status"
+# Indicators and the page come after both verdicts and change neither: a
+# report that could not be written is reported after them, not instead.
+REPORT_STATUS=0
+python3 checks/agent_traces_sli.py "$RUN/spans.jsonl" --status-file "$RUN/status" \
+  --check-output "$RUN/check.log" -o "$RUN/sli.json" \
+  && python3 demos/agent_traces_report.py "$RUN/sli.json" || REPORT_STATUS=$?
+printf 'Agent traces: %s (driver=%s, check=%s, report=%s)\n' "$RUN/spans.jsonl" "$DRIVER_STATUS" "$CHECK_STATUS" "$REPORT_STATUS"
 if [ "$DRIVER_STATUS" -ne 0 ]; then exit "$DRIVER_STATUS"; fi
-exit "$CHECK_STATUS"
+if [ "$CHECK_STATUS" -ne 0 ]; then exit "$CHECK_STATUS"; fi
+exit "$REPORT_STATUS"

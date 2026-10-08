@@ -130,6 +130,22 @@ jobs:
       - name: Local agent traces sink accepts protobuf exports
         run: python3 demos/agent_traces_sink.py --self-test
 
+      # The indicators and the page are generated from committed spans, so a
+      # stale sample would show numbers the current code no longer computes.
+      - name: Agent traces indicators and report, self-tested and current
+        run: |
+          python3 checks/agent_traces_sli.py --self-test
+          python3 checks/agent_traces_sli.py --mutation-test
+          python3 demos/agent_traces_report.py --self-test
+          for d in docs/samples/agent-traces-2026-10-08/*/; do
+            python3 checks/agent_traces_sli.py "$d/spans.jsonl" --status-file "$d/status" \
+              --check-output "$d/check.log" -o /tmp/sli.json
+            cmp /tmp/sli.json "$d/sli.json"
+            python3 demos/agent_traces_report.py "$d/sli.json" --check
+          done
+          python3 checks/agent_traces_sli.py --aggregate docs/samples/agent-traces-2026-10-08/*/sli.json -o /tmp/baseline.json
+          cmp /tmp/baseline.json docs/samples/agent-traces-2026-10-08/baseline.json
+
       - name: Validate every spec
         run: |
           for spec in .agents/*.yaml; do
