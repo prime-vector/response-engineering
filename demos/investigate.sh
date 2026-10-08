@@ -14,7 +14,7 @@
 #
 #   demos/investigate.sh act1   # D+1: recurrence in the feed, and recall at that bound
 #   demos/investigate.sh act2   # bridge: correlate, then assess on that and act one's precedent
-#   demos/investigate.sh act3   # Scribe files the timeline from the act-two board
+#   demos/investigate.sh act3   # Scribe writes the timeline from the act-two board; the driver files it
 #   demos/investigate.sh all    # default: the full pipeline, composed
 #
 # Acts compose within one invocation: act3 consumes the board act2 just
@@ -449,32 +449,35 @@ CITE
 }
 
 act3() {
-  echo "== Act three: the Scribe files the timeline from the live board =="
+  echo "== Act three: the Scribe writes the timeline from the live board; the driver files it =="
   if [ -z "$BOARD" ]; then
     echo "   (no act-two board in this invocation; filing with an empty board)"
   fi
   start_adapter incident_record 8425
-  local board_json="$BOARD" input out
+  local board_json="$BOARD" input out ref
   [ -z "$board_json" ] && board_json="{}"
   input=$(BOARD_JSON="$board_json" python3 -c '
 import json, os
 view = json.load(open("fixtures/composite-incident.json"))
 view.update(board=json.loads(os.environ["BOARD_JSON"]), mitigation_attempts=[])
 print(json.dumps(view))')
-  # Not oa_run: this task files to the incident sink with a tool call, so a
-  # transport failure after the write cannot be retried blind. See demos/retry.sh.
-  out=$(oa_run_once --spec .agents/scribe.yaml --task timeline --input "$input" --quiet)
-  require_json "timeline" "$out" entries gaps record_ref record_updated
+  # This stage may retry because its one effect is its output; the driver
+  # files only after the surviving run returns. See demos/retry.sh.
+  out=$(oa_run --spec .agents/scribe.yaml --task timeline --input "$input" --quiet)
+  require_json "timeline" "$out" entries gaps
   printf '%s' "$out" > "$OUT/act3-timeline.json"
-  # Only this write attempt's receipts can attest to its final output.
+  ref=$(python3 -c 'import json; print(json.load(open("fixtures/composite-incident.json"))["incident_id"])')
+  python3 demos/file_timeline.py --endpoint http://localhost:8425 --record-ref "$ref" \
+    "$OUT/act3-timeline.json" > "$OUT/act3-filing.json"
+  # Filing is inside this attempt's window, after the surviving oa run, so
+  # only its receipt can attest to the output that survived.
   attempt_log "$OUT/adapter-incident_record.log" > "$OUT/act3-sink.log"
-  python3 checks/timeline_filed.py "$OUT/act3-timeline.json" "$OUT/act3-sink.log"
-  OUTJSON="$out" python3 - <<'PY'
+  python3 checks/timeline_filed.py "$OUT/act3-timeline.json" "$ref" "$OUT/act3-sink.log"
+  OUTJSON="$out" RECORD_REF="$ref" python3 - <<'PY'
 import json, os
 t = json.loads(os.environ["OUTJSON"])
 print(f"  entries: {len(t['entries'])}, gaps: {len(t['gaps'])}")
-print(f"  record_updated: {t['record_updated']} "
-      "(verified against the adapter log, not the output)")
+print(f"  filed as {os.environ['RECORD_REF']} (receipt verified against the adapter log)")
 PY
   stop_adapter incident_record 8425
   echo

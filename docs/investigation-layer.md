@@ -127,7 +127,7 @@ on an entity; which platform answers is the adapter's problem. Swap the
 platform, change one endpoint, change no agent. See `interfaces/TELEMETRY.md`
 and `interfaces/PRECEDENT.md`.
 
-![Evidence surfaces reached over MCP, each owned by exactly one agent. The Telemetry Analyst, Change Correlator and Precedent Analyst each read one surface, and the correlator's correlation and the analyst's precedent reach the Incident Commander as typed input while the Telemetry Analyst's findings are marked as the handoff the pipeline does not compose, whose live board goes to the Scribe, which writes to the incident record sink through a tool call. A crossed arc shows that raw registry rows never reach the commander.](diagrams/mcp-surfaces.svg)
+![Evidence surfaces reached over MCP, each owned by exactly one agent. The Telemetry Analyst, Change Correlator and Precedent Analyst each read one surface, and the correlator's correlation and the analyst's precedent reach the Incident Commander as typed input while the Telemetry Analyst's findings are marked as the handoff the pipeline does not compose, whose live board goes to the Scribe, whose timeline the driver files on the incident record sink, verified in the adapter log. A crossed arc shows that raw registry rows never reach the commander.](diagrams/mcp-surfaces.svg)
 
 *One agent, one surface; every arrow between agents is a typed object.* The
 bridge view holds the raw change rows, and the commander never sees them: what
@@ -308,8 +308,10 @@ a prior incident that does not transfer.
 ## The record: what the Scribe writes, and the two fences it passes
 
 In the composite, the change record was never written. The Scribe writes the
-one that should have existed, and it is the only agent in the system that
-writes anywhere. That makes it the one worth fencing twice.
+one that should have existed and lodges it through the sink itself. It is
+the only agent write in the system: the timeline is filed by the driver from
+the Scribe's validated output. That makes the change record the one worth
+fencing twice.
 
 ![The Scribe's draft change record passes its own output contract, then the sink's refusal of incomplete drafts, and reaches the incident record sink. Beyond the sink, a submit, approve or close call does not exist at all rather than being blocked.](diagrams/scribe-fences.svg)
 

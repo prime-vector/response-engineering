@@ -16,9 +16,9 @@ The incident is a composite of a recurring pattern. Its hosts, dates, numbers an
 
 The agents here are built so that cannot happen quietly. Every claim one agent hands another carries a confidence word and the test that would prove it wrong, as required fields the output contract enforces. The Incident Commander's board cannot converge on a cause while the deciding evidence is outstanding. A directed change to production is blocked before it is sent. Each of those is a command you can run, below.
 
-![Three evidence surfaces, each read by exactly one agent. The Telemetry Analyst, Change Correlator and Precedent Analyst each read one surface, and typed correlation and precedent reach the Incident Commander, with the Telemetry Analyst's findings marked as the handoff the pipeline does not compose, whose live board goes to the Scribe, which writes to the incident record sink through a tool call.](docs/diagrams/architecture.svg)
+![Three evidence surfaces, each read by exactly one agent. The Telemetry Analyst, Change Correlator and Precedent Analyst each read one surface, and typed correlation and precedent reach the Incident Commander, with the Telemetry Analyst's findings marked as the handoff the pipeline does not compose, whose live board goes to the Scribe, whose timeline the driver files on the incident record sink, verified in the adapter log.](docs/diagrams/architecture.svg)
 
-Every arrow between agents is a typed output whose claims carry `confidence` and `falsifying_test` as required fields: a claim cannot shed its caveats when it changes hands. No agent reads another's evidence surface, and the record is written only through a tool call the adapter log can prove.
+Every arrow between agents is a typed output whose claims carry `confidence` and `falsifying_test` as required fields: a claim cannot shed its caveats when it changes hands. No agent reads another's evidence surface. The timeline is filed by the driver from the contract-validated output and the change record is lodged by the Scribe through a tool call, and both writes are proved from the adapter log.
 
 [**The Investigation Layer**](docs/investigation-layer.md) walks the whole thing through with diagrams: the fifteen days nobody consumed, what each of the six agents refuses to do, where the sandbox block actually lives, and why the retrieval surface returns an empty set rather than the nearest match.
 
@@ -76,7 +76,7 @@ CLAUDE.md                          working rules for this repo
 .agents/incident-commander.yaml    holds the hypothesis board
 .agents/telemetry-analyst.yaml     detects recurrence in the problem feed
 .agents/change-correlator.yaml     correlates change history against onset
-.agents/scribe.yaml                files the timeline, drafts the change record
+.agents/scribe.yaml                writes the timeline, drafts the change record
 .agents/precedent-analyst.yaml     recalls prior incidents, cited and bounded
 .agents/comms.yaml                 writes outward, and is never given the board
 interfaces/TELEMETRY.md            platform-agnostic tool surface
@@ -219,7 +219,8 @@ oa run --spec .agents/precedent-analyst.yaml --task recall \
   --input "$(python3 -c 'import json; v = json.load(open("fixtures/composite-incident.d1.json")); v["symptom"] = ""; print(json.dumps(v))')" \
   --quiet
 
-# the timeline standalone, filed on the incident record. board and
+# The standalone run returns the timeline and does not file it; the pipeline
+# driver files it. board and
 # mitigation_attempts carry earlier agent outputs; the driver passes the live
 # board, and a standalone run passes them empty, because the runner renders a
 # missing input key as literal {{ placeholder }} text.
@@ -287,8 +288,8 @@ whose stage did not end `violation_prevented`. Mode expectations require the
 specified stage and verdict, including `system` override reject paths, with one
 matching stage for each time an expectation is listed: under `all`, a stage two
 modes both expect must appear twice. Investigation names every stage each act
-runs, and requires a successful write-tool span on `scribe:timeline` when it
-runs act three. Success here means the tool call did not raise. The contract
+runs. Act three's filing is the driver's, outside any trace, and
+`checks/timeline_filed.py` checks it. The contract
 mode runs only its reject path; attribution and grounding run both paths.
 
 A span shows **that** a tool was called and whether the call raised. It does
@@ -309,7 +310,7 @@ The controls above are real, and so are their edges. Know these before composing
 
 - **The runner fails open on truncated JSON.** Through OAS 1.6.2, a json-task output that does not parse skips schema and contract validation and exits zero (filed upstream). A bare `oa run` exiting zero is not proof of a valid output. Both demo drivers fail closed instead, parsing every stage's output before using it, and every spec sizes `max_tokens` with real headroom so truncation does not arise. Compose on the CLI the same way.
 - **Missing contracts extra stops the run.** From CLI 1.6.1, a task declaring `behavioural_contract` fails closed with `CONTRACTS_UNAVAILABLE` before the model call when `behavioural-contracts` is unavailable. A pipx upgrade still drops the extra, so the run stops rather than quietly validating less. Both demo drivers check for it and refuse to run before any adapter starts.
-- **Tool-use claims are self-attested.** The runner cannot bind tool results into outputs, so `record_updated: true`, a returned `draft_ref` or a cited `passage_id` proves nothing on its own: they are strings the model wrote either way. The drivers verify those claims against the adapter log, which names every `tools/call` and, on the archive, every passage that left the surface by id and uri. For timeline filing, the driver requires a successful update receipt from the current attempt matching both the record reference and a digest of the final entries and gaps. The mock receipt proves acceptance, not durable storage. Anything consuming these outputs must apply the corresponding verification.
+- **Tool-use claims are self-attested.** The runner cannot bind tool results into outputs, so a returned `draft_ref` or a cited `passage_id` proves nothing on its own: they are strings the model wrote either way. The drivers verify those claims against the adapter log, which names every `tools/call` and, on the archive, every passage that left the surface by id and uri. The timeline is no longer filed by the agent: the driver files the validated output through `demos/file_timeline.py`, and `checks/timeline_filed.py` requires a successful `record_update` receipt from the current attempt matching the reference and the digest of the exact entries and gaps the contract validated. Two generations in one response drifted on a live run and nothing structural made them equal. The mock receipt proves acceptance, not durable storage. Anything consuming these outputs must apply the corresponding verification.
 - **A long generation can be lost in transit, and the stock provider cannot stream.** Through OAS 1.6.2 the provider posts and waits for the whole response as one body. On 23 Aug 2026 four consecutive `assess` runs died with `PROVIDER_ERROR: Remote end closed connection without response`, minutes into a request the same call had completed twice earlier that day, and nothing distinguishes that from a real failure at the CLI's exit status. The third patch in `patches/` streams instead and reassembles the events into the response shape the callers already expect; act two then ran end to end, correlator and board, in one minute forty-eight. Both demo drivers also retry once on a transport failure and never on anything else, because a retry that fires on a contract rejection or a sandbox block would be re-running the demonstration, and not at all for a stage that writes: the Scribe has already filed by the time a long generation is lost, and a second attempt would file again. Anything else composing on this CLI inherits the unpatched behaviour and should assume a long generation is the exposed one.
 - **The mock adapters are not a security boundary.** They bind 127.0.0.1 with no authentication, and the block in the sandbox demo lives in the runner, not the adapter. A vendor adapter fronts real systems, so it authenticates its callers and carries the host and sink refusals at its own layer; `interfaces/TELEMETRY.md` specifies that defence in depth, this repo demonstrates the runner's fence.
 - **CLI access is privileged.** `--system-prompt` replaces an agent's prompt wholesale, which the governance demos use deliberately. Schema pins survive an overridden prompt; prompt-dependent judgement does not, and whoever can run the CLI can also edit the spec. Treat CLI access to these agents like deploy access. It also sets what the three reject paths can prove: a stripped run is a different producer, not an ablation of one rule, because the operating rules, the output pins and the retrieval guidance all go with the prompt. Each stripped prompt therefore has to name the claim it wants malformed, or the substitute producer behaves well for its own reasons and demonstrates nothing.
