@@ -114,8 +114,13 @@ def check(spans, expected=(), expect_write=()):
         matched = [s for s in stages if ":".join(s[:3]) == key]
         if not matched:  # expectation expected_missing
             failures.append(f"{key}: expected stage missing (wanted {wanted})")
-        if matched and len(matched) < len(wanted_list):  # guard expected_count
-            failures.append(f"{key}: expected {len(wanted_list)} stages, found {len(matched)}")
+        # Counted per verdict, not per stage: two expectations on one stage,
+        # one conformant and one nonconformant, need one stage of each.
+        for wanted_verdict in sorted(set(wanted_list)):
+            need = wanted_list.count(wanted_verdict)
+            have = sum(1 for s in matched if s[3] == wanted_verdict)
+            if matched and have < need:  # guard expected_count
+                failures.append(f"{key}: expected {need} {wanted_verdict} stage(s), found {have}")
         for spec, task, override, verdict, successful, stage in matched:
             if verdict not in wanted_list:  # guard expected_verdict
                 failures.append(f"{stage}: expected {wanted}, got {verdict}")
@@ -191,8 +196,13 @@ def self_test():
     case("tool_error", canned(tool="read", status=2, verdict="indeterminate", reason="tool_error"))
     case("prevented", canned(blocked=True, verdict="violation_prevented"))
     case("normal", canned(), expected=[("scribe:timeline:none", "conformant")])
-    case("expected_count", canned(), "expected 2 stages, found 1",
-         expected=[("scribe:timeline:none", "conformant")] * 2)
+    # Two stages for two expectations on one stage, but both conformant when
+    # one nonconformant was expected: a per-stage count would pass this.
+    case("expected_count", canned() + canned(trace="02"),
+         "expected 1 nonconformant stage(s), found 0",
+         expected=[("scribe:timeline:none", "conformant"), ("scribe:timeline:none", "nonconformant")])
+    case("expected_count_repeat", canned() + canned(trace="02", verdict="nonconformant"),
+         expected=[("scribe:timeline:none", "conformant"), ("scribe:timeline:none", "nonconformant")])
     case("expected_count_met", canned() + canned(trace="02"),
          expected=[("scribe:timeline:none", "conformant")] * 2)
     for override in ("system", "user", "both"):

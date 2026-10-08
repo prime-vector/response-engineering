@@ -288,9 +288,15 @@ mode runs only its reject path; attribution and grounding run both paths.
 
 A span shows **that** a tool was called and whether the call raised. It does
 not show **what** was filed, which passages were cited, or what the model
-wrote: spans are metadata only. The adapter log stays the record for those,
-and `checks/timeline_filed.py` stays the check of what was filed. Agent traces
+wrote. The adapter log stays the record for those, and
+`checks/timeline_filed.py` stays the check of what was filed. Agent traces
 cannot verify a filing or a citation.
+
+What reaches the file is what the runner chose to record. OA 1.6.2 puts only
+metadata in span attributes, with content capture off, and puts exception text
+in span events. The sink keeps span names, status codes and attributes as the
+exporter sends them and drops events and status messages. It does not filter
+attributes itself.
 
 ## Known limits
 
