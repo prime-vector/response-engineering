@@ -279,8 +279,10 @@ and tool-call outcomes for each stage. It rejects empty or unreadable input and
 traces without a root; it rejects `indeterminate` stages with reason
 `validation_skipped` or `sandbox_not_declared`, and blocked sandbox decisions
 whose stage did not end `violation_prevented`. Mode expectations require the
-specified stage and verdict, including `system` override reject paths, and
-require a successful write-tool span on `scribe:timeline` when investigation
+specified stage and verdict, including `system` override reject paths, with one
+matching stage for each time an expectation is listed: under `all`, a stage two
+modes both expect must appear twice. Investigation names every stage each act
+runs, and requires a successful write-tool span on `scribe:timeline` when it
 runs act three. Success here means the tool call did not raise. The contract
 mode runs only its reject path; attribution and grounding run both paths.
 
