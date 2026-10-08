@@ -196,11 +196,16 @@ def self_test():
     case("tool_error", canned(tool="read", status=2, verdict="indeterminate", reason="tool_error"))
     case("prevented", canned(blocked=True, verdict="violation_prevented"))
     case("normal", canned(), expected=[("scribe:timeline:none", "conformant")])
-    # Two stages for two expectations on one stage, but both conformant when
-    # one nonconformant was expected: a per-stage count would pass this.
-    case("expected_count", canned() + canned(trace="02"),
-         "expected 1 nonconformant stage(s), found 0",
-         expected=[("scribe:timeline:none", "conformant"), ("scribe:timeline:none", "nonconformant")])
+    # One input for every weakening of the count: conformant listed twice
+    # (the shape traced.sh all produces) against one conformant stage, beside
+    # a nonconformant listing. A per-stage count passes it (three stages, three
+    # listings), so does counting each verdict once, and so does no count.
+    case("expected_count",
+         canned() + canned(trace="02", verdict="nonconformant")
+         + canned(trace="03", verdict="nonconformant"),
+         "expected 2 conformant stage(s), found 1",
+         expected=[("scribe:timeline:none", "conformant")] * 2
+         + [("scribe:timeline:none", "nonconformant")])
     case("expected_count_repeat", canned() + canned(trace="02", verdict="nonconformant"),
          expected=[("scribe:timeline:none", "conformant"), ("scribe:timeline:none", "nonconformant")])
     case("expected_count_met", canned() + canned(trace="02"),
@@ -293,6 +298,8 @@ def mutation_test():
         ("indeterminate_without_error", 'root["status_code"] == 2 and', 'True and'),
         ("error_with_verdict", 'verdict == "indeterminate" and reason == ""', 'reason == ""'),
         ("error_with_reason", 'verdict == "indeterminate" and reason == ""', 'verdict == "indeterminate"'),
+        ("expected_count", "need = wanted_list.count(wanted_verdict)", "need = 1"),
+        ("expected_count", "if matched and have < need:", "if matched and len(matched) < len(wanted_list):"),
         ("abandoned_only_expect", 'if not matched:  # expectation expected_missing',
          'if not matched and stages:  # expectation expected_missing'),
         ("abandoned_only_write", 'if not matched:  # expectation write_missing',
