@@ -43,9 +43,9 @@ python3 demos/show.py day-one     # what had been collected by day one
 pipx install "open-agent-spec[contracts]==1.6.0"
 oa validate --spec .agents/incident-commander.yaml
 
-python3 checks/contract_invariants.py   # the board's contract holds, and all six confidence scales agree
-python3 checks/prompt_inputs.py         # prompts and their tasks' required inputs match, both ways
-python3 checks/briefing_grounded.py     # the committed briefing cites precedent only where its board did
+python3 checks/contract_invariants.py   # the board's contract holds its invariants
+python3 checks/prompt_inputs.py         # prompts read exactly their required inputs
+python3 checks/briefing_grounded.py     # the briefing cites only what its board cited
 python3 corpus/eval.py                  # the precedent archive meets its interface contract
 ```
 
@@ -58,12 +58,7 @@ Six agents written, each validating against OAS 1.6.0. The five investigation ag
 | Artefact | State |
 | --- | --- |
 | `SCENARIO.md` | Reviewed, cadence fixed as asserted properties, both sanitisation passes done, the second by someone other than the author. What each pass covered is recorded in `PLAN.md`, including the directories that postdate the second |
-| `.agents/incident-commander.yaml` | Written, validates against OAS 1.6.0 |
-| `.agents/telemetry-analyst.yaml` | Written, validates against OAS 1.6.0 |
-| `.agents/change-correlator.yaml` | Written, validates against OAS 1.6.0 |
-| `.agents/scribe.yaml` | Written, validates against OAS 1.6.0 |
-| `.agents/precedent-analyst.yaml` | Written, validates against OAS 1.6.0, recall verified live against the archive |
-| `.agents/comms.yaml` | Written, validates against OAS 1.6.0. Outward audiences only, and never given the board |
+| `.agents/*.yaml` | Six specs, all written and validating against OAS 1.6.0. The Precedent Analyst's recall is verified live against the archive; Comms writes to outward audiences only and is never given the board |
 | `interfaces/TELEMETRY.md` | Draft interface contract |
 | `fixtures/composite-incident*.json` | Generated, two views (D+1 and D+15) plus three demo forcing inputs, feed properties asserted by the generator |
 | `interfaces/PRECEDENT.md` | Draft interface contract, the `precedent_archive` surface |
@@ -130,11 +125,6 @@ oa validate --spec .agents/scribe.yaml
 oa validate --spec .agents/precedent-analyst.yaml
 oa validate --spec .agents/comms.yaml
 
-# the mock adapters, one terminal each, fixture-backed. Only the agents that
-# own a surface need one: assess binds no tools and reaches nothing.
-python3 mock/adapter.py --surface telemetry                # 8422, D+15 bridge view
-python3 mock/adapter.py --surface change_registry          # 8423
-
 export ANTHROPIC_API_KEY=...
 
 # three patches to the Anthropic provider, in this order. The first is
@@ -173,8 +163,20 @@ checks/retry_probe.sh   # and that the drivers' retry fires on transport only
 # the commander's board, then the live board into the Scribe's timeline.
 # Manages its own adapters; stop yours first.
 ./demos/investigate.sh
+```
 
-# or act two standalone. The correlator needs 8423 and assess needs no adapter
+<details>
+<summary>Each agent on its own</summary>
+
+The driver above manages its own adapters. Running one agent alone means starting the adapter it owns first.
+
+```bash
+# the mock adapters, one terminal each, fixture-backed. Only the agents that
+# own a surface need one: assess binds no tools and reaches nothing.
+python3 mock/adapter.py --surface telemetry                # 8422, D+15 bridge view
+python3 mock/adapter.py --surface change_registry          # 8423
+
+# act two standalone. The correlator needs 8423 and assess needs no adapter
 # at all: the archive belongs to act one. The bridge view embeds a scripted
 # correlator output shaped to the correlate contract, so a standalone assess
 # receives the same typed handoff the driver composes live; its precedent field
@@ -222,6 +224,8 @@ oa run --spec .agents/scribe.yaml --task timeline \
   --quiet
 ```
 
+</details>
+
 ## Governance, on demand
 
 Five failure modes, each demonstrable with one command rather than described on a slide. The driver manages its own adapters; don't leave yours running on the same ports.
@@ -242,7 +246,7 @@ Five failure modes, each demonstrable with one command rather than described on 
 - **Grounding.** The Precedent Analyst recalls against the bridge view, where the archive holds a near miss on the same signature whose resolution would be wrong to repeat here. Fire: precedents come back cited, each carrying the divergence that limits it, and the script checks every cited `passage_id` against the adapter log rather than against the output's own word, so a citation the archive never returned fails the demo. Reject: the same input with `demos/grounding-stripped-system-prompt.txt`, a producer asserting the precedent from recall, is refused with `OUTPUT_SCHEMA_ERROR: 'grounded_in' is a required property`. A precedent that cannot show its passages cannot exist.
 - **Refusal.** A separate incident, session establishment failing between a broker and its consumers, with nothing like it in the archive. The correct answer is `no_applicable_precedent: true` with `search_coverage` populated, and the script asserts the coverage call and every search happened, that each one came back empty, and that the queries are recorded verbatim. Refusal is a feature: the nearest-looking match is how the anchoring failure starts.
 
-These are not all the same class of control, and the difference is worth being precise about. The sandbox and the output contract fail closed in the runner: the model's intent is irrelevant, and the grounding guard is the same kind of thing one level down, in the precedent schema. The attribution guard is the agent's judgement made structural rather than optional: whether to trigger is the model's call, but the typed output cannot omit the guard, and a board that names a third party on less than confirmed confidence without `triggered: true` is a schema violation, exercised by the script's reject path. The judgement stays with the model; the record of it cannot be dropped. Refusal is different again and weaker to claim: no schema can require it, because a wrong precedent and a right one have the same shape. What the harness contributes is a relevance floor that returns nothing rather than the nearest match, and a coverage field that makes a refusal checkable. Say it that way.
+These are not all the same class of control, and the difference is worth being precise about. The sandbox and the output contract fail closed in the runner: the model's intent is irrelevant, and the grounding guard is the same kind of thing one level down, in the precedent schema. The attribution guard is the agent's judgement made structural rather than optional: whether to trigger is the model's call, but the typed output cannot omit the guard, and a board that names a third party on less than confirmed confidence without `triggered: true` is a schema violation, exercised by the script's reject path. The judgement stays with the model; the record of it cannot be dropped. Refusal is different again and weaker to claim: no schema can require it, because a wrong precedent and a right one have the same shape. What the harness contributes is a relevance floor that returns nothing rather than the nearest match, and a coverage field that makes a refusal checkable.
 
 ## Known limits
 
@@ -348,3 +352,7 @@ Generated by `python3 evals/judgement.py --comparison` from 3 records: `judgemen
 ![Open Agent Spec and Response Engineering both sit under Prime Vector, the standards home, with the spec the base for the implementation. Genai Pty Ltd builds and maintains the implementation and co-maintains the standard.](docs/diagrams/where-this-sits.svg)
 
 The standard and its reference implementation live together under Prime Vector. The implementation is built and maintained by [Genai Pty Ltd](https://genai.com.au), the engineering practice of the same engineers who co-maintain Open Agent Spec; that dual role is stated here so nobody has to discover it. Genai takes this layer into production incident response engagements.
+
+## Licence
+
+MIT, the same as Open Agent Spec. See [`LICENSE`](LICENSE).
