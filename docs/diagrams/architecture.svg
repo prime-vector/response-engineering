@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 624" width="560" height="624" role="img" aria-label="Three evidence surfaces, each read by exactly one agent. The Telemetry Analyst, Change Correlator and Precedent Analyst hand typed correlation and precedent to the Incident Commander, with the Telemetry Analyst's findings marked as the one handoff the pipeline does not compose today, whose live board goes to the Scribe, whose timeline the driver files on the incident record sink, verified in the adapter log.">
-  <title>Three evidence surfaces, each read by exactly one agent, handing typed output to the Incident Commander, whose board goes to the Scribe and then to the incident record sink.</title>
+  <title>Three evidence surfaces, each read by exactly one agent, handing typed output to the Incident Commander, whose board goes to the Scribe, whose timeline the driver files on the incident record sink.</title>
   <style>
     text{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;fill:#131A1C}
     .t{font-size:12px;font-weight:600}
