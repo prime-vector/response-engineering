@@ -103,12 +103,21 @@ def check(spans, expected=(), expect_write=()):
                       s["attributes"].get("oa.sandbox.result") == "blocked" for s in members)
         if blocked and verdict != "violation_prevented":  # expectation blocked
             failures.append(f"{stage}: blocked sandbox decision without violation_prevented")
+    # An expectation listed twice needs two stages: traced.sh all runs two
+    # modes that each expect assess:system, and one surviving trace must not
+    # satisfy both.
+    wanted_by_key = {}
     for key, wanted in expected:
+        wanted_by_key.setdefault(key, []).append(wanted)
+    for key, wanted_list in wanted_by_key.items():
+        wanted = "/".join(sorted(set(wanted_list)))
         matched = [s for s in stages if ":".join(s[:3]) == key]
         if not matched:  # expectation expected_missing
             failures.append(f"{key}: expected stage missing (wanted {wanted})")
+        if matched and len(matched) < len(wanted_list):  # guard expected_count
+            failures.append(f"{key}: expected {len(wanted_list)} stages, found {len(matched)}")
         for spec, task, override, verdict, successful, stage in matched:
-            if verdict != wanted:  # guard expected_verdict
+            if verdict not in wanted_list:  # guard expected_verdict
                 failures.append(f"{stage}: expected {wanted}, got {verdict}")
     for key in expect_write:
         matched = [s for s in stages if ":".join(s[:2]) == key]
@@ -182,6 +191,10 @@ def self_test():
     case("tool_error", canned(tool="read", status=2, verdict="indeterminate", reason="tool_error"))
     case("prevented", canned(blocked=True, verdict="violation_prevented"))
     case("normal", canned(), expected=[("scribe:timeline:none", "conformant")])
+    case("expected_count", canned(), "expected 2 stages, found 1",
+         expected=[("scribe:timeline:none", "conformant")] * 2)
+    case("expected_count_met", canned() + canned(trace="02"),
+         expected=[("scribe:timeline:none", "conformant")] * 2)
     for override in ("system", "user", "both"):
         case(f"override_{override}", canned(override=override, verdict="nonconformant"),
              expected=[(f"scribe:timeline:{override}", "nonconformant")])
