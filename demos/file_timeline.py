@@ -31,9 +31,10 @@ def file_timeline(endpoint, record_ref, output):
     )
     with urllib.request.urlopen(request, timeout=30) as response:
         reply = json.load(response)
-    # bool is an int in Python, so `id: true` would equal 1; compare the type too.
+    # The id sent was the int 1 and only the int 1 echoes it: a bool is an int
+    # in Python and 1.0 compares equal, so the type is checked, not just the value.
     if (not isinstance(reply, dict) or reply.get("jsonrpc") != "2.0"
-            or isinstance(reply.get("id"), bool) or reply.get("id") != 1):
+            or type(reply.get("id")) is not int or reply.get("id") != 1):
         raise ValueError("Sink response is not the expected JSON-RPC reply.")
     if "error" in reply:
         raise ValueError("Sink returned a JSON-RPC error.")
