@@ -91,11 +91,13 @@ def tiles(indicators):
 
 def gantt(run):
     window = run["window"]
-    span = max(window["duration_ms"], 1)
+    # Nanoseconds throughout: a bar placed by the truncated millisecond
+    # figures can overrun a short window or vanish inside one.
+    span = max(window["end_unix_nano"] - window["start_unix_nano"], 1)
     rows = []
     for a in run["attempts"]:
-        left = (a["start_unix_nano"] - window["start_unix_nano"]) / 1_000_000 / span * 100
-        width = a["duration_ms"] / span * 100
+        left = (a["start_unix_nano"] - window["start_unix_nano"]) / span * 100
+        width = (a["end_unix_nano"] - a["start_unix_nano"]) / span * 100
         ended = a["attempt"] == "ended_before_verdict"
         cls = "ended" if ended else VERDICT_CLASS[a["verdict"]]
         title = f"{a['stage']}: {a['verdict']}" + (f" ({a['reason']})" if a["reason"] else "") + f", {seconds(a['duration_ms'])}"
@@ -137,7 +139,7 @@ def aggregate_section(agg):
             f"<p class=\"sub\">End to end p50 {esc(seconds(w['p50']))}, p95 {esc(seconds(w['p95']))}, max {esc(seconds(w['max']))}. "
             f"Stage check passed {agg['stage_check']['numerator']} of {agg['stage_check']['denominator']} recorded; "
             f"driver passed {agg['driver']['numerator']} of {agg['driver']['denominator']} recorded. "
-            "Percentiles are nearest rank over completed attempts, so each is a duration that occurred.</p>"
+            "Stage percentiles are over completed attempts; the end-to-end figures are over every run. All are nearest rank, so each is a duration that occurred.</p>"
             f"<table><thead><tr>{head}</tr></thead><tbody>{''.join(rows)}</tbody></table>")
 
 
@@ -204,7 +206,13 @@ def self_test():
                    "target 100%", "target 0", "success / error / blocked"):
         assert needle in page, needle
     assert all("source" in run["indicators"][k] for k in run["indicators"]) and run["window"]["source"] == "agent traces"
-    assert "<script" not in page and "http" not in page.replace("https://github.com/prime-vector/open-agent-spec/issues/116", "")
+    for forbidden in ("<script", "http", "//", "href=", "src=", "url(", "@import", "@font-face", "<link", "<iframe", "<object", "<embed"):
+        assert forbidden not in page, forbidden
+    tiny = canned(); tiny[0]["start_time_unix_nano"], tiny[0]["end_time_unix_nano"] = 0, 1_999_000
+    late = canned(trace="02"); late[0]["start_time_unix_nano"], late[0]["end_time_unix_nano"] = 1_500_000, 1_999_000
+    short, _ = compute(tiny + late, "x", None, None, None)
+    bars = gantt(short)
+    assert "left:75.04%;width:24.96%" in bars and "left:0.00%;width:100.00%" in bars, bars
     unknown, _ = compute(canned(), "x", None, None, None)
     page = render(unknown)
     assert "driver: not recorded" in page and "stage check: not recorded" in page and "<pre>not recorded</pre>" in page

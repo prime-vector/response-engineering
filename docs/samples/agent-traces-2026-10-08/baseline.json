@@ -102,7 +102,8 @@
   "window_ms": {
     "p50": 231597,
     "p95": 432401,
-    "max": 432401
+    "max": 432401,
+    "note": "Over every run, abandoned attempts included: a run's window is its first start to its last end whatever happened between."
   },
   "stage_check": {
     "source": "check",

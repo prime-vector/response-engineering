@@ -31,6 +31,14 @@ OVERRIDES = ("none", "system", "user", "both")
 RECALL_STAGE = ("precedent-analyst", "recall")
 COVERAGE_TOOL, SEARCH_TOOL = "coverage_describe", "precedent_search"
 USAGE_KEYS = ("gen_ai.usage.input_tokens", "gen_ai.usage.output_tokens")
+# Which source each indicator carries. A test holds indicators() to this, so
+# moving one is a deliberate edit here and not a drift there.
+INDICATOR_SOURCES = {
+    "stage_check": "check", "driver": "driver", "attempts_with_verdict": "agent traces",
+    "validation_skipped": "agent traces", "sandbox_not_declared": "agent traces",
+    "nonconformant_without_override": "agent traces", "blocked_recorded_as_prevented": "agent traces",
+    "tool_calls": "agent traces", "recall_coverage_first": "agent traces", "model_usage": "agent traces",
+}
 SOURCES = {
     "agent traces": "computed from span metadata: that a call was made and how it ended, never what it carried",
     "check": "what checks/agent_traces.py reported for this run against the expectations the driver mode set",
@@ -79,7 +87,7 @@ def attempt(trace, members):
             cost = attrs.get("oa.usage.estimated_cost_usd")
             if cost is not None and (isinstance(cost, bool) or not isinstance(cost, (int, float))):  # guard cost_bool
                 return None, f"trace {trace}: oa.usage.estimated_cost_usd must be a number"
-            if cost is not None and cost < 0:  # guard cost
+            if cost is not None and (cost < 0 or not math.isfinite(cost)):  # guard cost+cost_infinite
                 return None, f"trace {trace}: oa.usage.estimated_cost_usd must be a non-negative number"
             model_calls.append({"model": attrs.get("gen_ai.request.model"),
                                 "status": "error" if span["status_code"] == 2 else "ok",
@@ -239,7 +247,8 @@ def aggregate(runs):
         entry["completed"] = len(d)
         entry["duration_ms"] = {"p50": percentile(d, 50), "p95": percentile(d, 95), "max": max(d)} if d else None
         out["stages"][key] = entry
-    out["window_ms"] = {"p50": percentile(windows, 50), "p95": percentile(windows, 95), "max": max(windows)}
+    out["window_ms"] = {"p50": percentile(windows, 50), "p95": percentile(windows, 95), "max": max(windows),
+                        "note": "Over every run, abandoned attempts included: a run's window is its first start to its last end whatever happened between."}
     for name in ("stage_check", "driver"):
         known = [run["indicators"][name]["value"] for run in runs if run["indicators"][name]["value"] is not None]
         out[name] = {"source": name if name == "driver" else "check", **ratio(sum(known), len(known)),
@@ -289,6 +298,8 @@ def self_test():
     case("usage_bool", data, "must be an integer")
     data = canned(chat_status=1); data[1]["attributes"]["oa.usage.estimated_cost_usd"] = -0.5
     case("cost", data, "must be a non-negative number")
+    data = canned(chat_status=1); data[1]["attributes"]["oa.usage.estimated_cost_usd"] = 1e309
+    case("cost_infinite", data, "must be a non-negative number")
     data = canned(chat_status=1); data[1]["attributes"]["oa.usage.estimated_cost_usd"] = True
     case("cost_bool", data, "must be a number")
     data = canned(tool="read"); data[1]["attributes"]["gen_ai.tool.name"] = ""
@@ -357,6 +368,13 @@ def self_test():
          check=lambda r: r["indicators"]["driver"]["value"] is False and r["indicators"]["stage_check"]["value"] is True
          and r["driver_status"] == 1 and r["check_status"] == 0 and r["check_output"] == ["x"])
     case("statuses_unknown", canned(), check=lambda r: r["indicators"]["driver"]["value"] is None and r["indicators"]["stage_check"]["value"] is None)
+    case("sources", canned(), check=lambda r: {k: v["source"] for k, v in r["indicators"].items()} == INDICATOR_SOURCES
+         and set(INDICATOR_SOURCES.values()) == set(SOURCES) == {"agent traces", "check", "driver"}
+         and r["window"]["source"] == "agent traces" and set(r["sources"]) == set(SOURCES))
+    # 5: the forms the parser accepts that no sample exercises.
+    for override in ("user", "both"):
+        case(f"override_{override}", canned(override=override), check=lambda r, o=override: rec(r)["prompt_override"] == o and rec(r)["stage"].endswith(":" + o))
+    case("tool_status_unset", canned(tool="record_update", status=0), check=lambda r: rec(r)["tools"][0]["outcome"] == "success")
     late = canned(trace="02"); late[0]["start_time_unix_nano"], late[0]["end_time_unix_nano"] = 5_000_000, 9_000_000
     case("window_and_order", canned() + late,
          check=lambda r: r["window"] == {"source": "agent traces", "start_unix_nano": 10, "end_unix_nano": 9_000_000, "duration_ms": 8, "note": r["window"]["note"]}
@@ -392,6 +410,7 @@ def self_test():
             return load_status(Path(tmp, "s"))
         extra = [("status_file", lambda: status_of("driver=1\ncheck=0\n") == (1, 0)),
                  ("status_partial", lambda: status_of("check=2\n") == (None, 2)),
+                 ("status_partial_check", lambda: status_of("driver=1\n") == (1, None)),
                  ("status_line", lambda: rejects(lambda: status_of("driver=ok\n"), "expected an exit status")),
                  ("status_key", lambda: rejects(lambda: status_of("report=0\n"), "expected a driver= or check= line")),
                  ("status_nosep", lambda: rejects(lambda: status_of("driver\n"), "expected a driver= or check= line")),
@@ -431,7 +450,7 @@ def aggregate_case():
     return (out["runs"] == 3 and stage["attempts"] == 4 and stage["completed"] == 3
             and stage["verdicts"] == {"conformant": 2, "indeterminate": 1, "nonconformant": 1}
             and stage["duration_ms"] == {"p50": 2, "p95": 3, "max": 3}
-            and out["window_ms"] == {"p50": 2, "p95": 3, "max": 3}
+            and {k: out["window_ms"][k] for k in ("p50", "p95", "max")} == {"p50": 2, "p95": 3, "max": 3}
             and out["driver"]["value"] == 0.5 and out["stage_check"]["numerator"] == 1
             and out["driver"]["source"] == "driver" and out["stage_check"]["source"] == "check")
 
@@ -472,6 +491,11 @@ def mutation_test():
         (("window_and_order", "window_sub_millisecond", "aggregate"), '"duration_ms": ms(max(ends) - min(starts))', '"duration_ms": ms(max(starts) - min(starts))'),
         ("window_sub_millisecond", 'ends = [r["end_unix_nano"] for r in attempts]', 'ends = [r["start_unix_nano"] + r["duration_ms"] * 1_000_000 for r in attempts]'),
         ("status_partial", 'return values.get("driver"), values.get("check")', 'return values.get("driver", 0), values.get("check")'),
+        ("status_partial_check", 'return values.get("driver"), values.get("check")', 'return values.get("driver"), values.get("check", 0)'),
+        ("sources", '"source": "check", "status": check_status,', '"source": "agent traces", "status": check_status,'),
+        ("sources", '"source": "driver", "status": driver_status,', '"source": "check", "status": driver_status,'),
+        ("cost_infinite", "cost < 0 or not math.isfinite(cost)", "cost < 0"),
+        ("tool_status_unset", '"error" if span["status_code"] == 2 else "success")', '"error" if span["status_code"] != 1 else "success")'),
         ("status_line", 'if not re.fullmatch(r"[0-9]+", value):', 'if not re.fullmatch(r"[0-9a-z]+", value):'),
         (("percentile", "aggregate"), "ordered[max(0, math.ceil(p / 100 * len(ordered)) - 1)]", "ordered[min(len(ordered) - 1, math.ceil(p / 100 * len(ordered)))]"),
         ("aggregate", 'if r["attempt"] == "completed":\n                entry["durations_ms"].append', 'if True:\n                entry["durations_ms"].append'),
