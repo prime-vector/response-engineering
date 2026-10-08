@@ -50,6 +50,24 @@ def read_spans(path):
     return result, []
 
 
+def provider_failure(root, verdict, reason):
+    """The signature OA 1.6.2 leaves on a run a transport failure ended.
+
+    Its outer handler records any error that is not a sandbox block, a
+    validation failure or a bad input as indeterminate / execution_failed,
+    and sets error.type to the error code. Read from a live run on
+    8 Oct 2026, not inferred: the inner runner raises PROVIDER_ERROR without
+    a verdict, and the outer handler is what adds one. PROVIDER_ERROR is the
+    provider failing, a dropped connection or a rejected key, so the run never
+    reached a verdict; the drivers retry the transport kind once. Any other
+    crash, RUN_ERROR included, stays a failure.
+    """
+    return (root["status_code"] == 2  # condition indeterminate_without_error
+            and verdict == "indeterminate"  # condition error_with_verdict
+            and reason == "execution_failed"  # condition error_with_reason
+            and root["attributes"].get("error.type") == "PROVIDER_ERROR")  # condition run_error
+
+
 def check(spans, expected=(), expect_write=()):
     traces = {}
     for span in spans:
@@ -72,8 +90,7 @@ def check(spans, expected=(), expect_write=()):
             failures.append(f"{stage}: missing or invalid stage metadata")
             continue
         reason = attrs.get("oa.conformance.reason", "")
-        ended_before_verdict = (root["status_code"] == 2 and
-                                verdict == "indeterminate" and reason == "")
+        ended_before_verdict = provider_failure(root, verdict, reason)
         tools = [s for s in members if s["name"].startswith("execute_tool ")]
         called = []
         successful = set()
@@ -135,7 +152,8 @@ def check(spans, expected=(), expect_write=()):
 
 
 def canned(*, verdict="conformant", reason="", override="none", tool=None,
-           status=1, blocked=False, trace="01", root=True, root_status=1):
+           status=1, blocked=False, trace="01", root=True, root_status=1,
+           error_type=None):
     """One builder keeps cases tied to the sink's format and runner attributes."""
     def span(name, parent, attributes, code=1):
         return {"trace_id": trace, "span_id": str(len(result) + 1),
@@ -150,6 +168,8 @@ def canned(*, verdict="conformant", reason="", override="none", tool=None,
             "oa.conformance.reason": reason}, root_status))
         if reason is None:
             del result[0]["attributes"]["oa.conformance.reason"]
+        if error_type is not None:
+            result[0]["attributes"]["error.type"] = error_type
     if tool:
         result.append(span(f"execute_tool {tool}", "1", {"gen_ai.tool.name": tool}, status))
     if blocked:
@@ -217,18 +237,26 @@ def self_test():
          expected=[("scribe:timeline:none", "conformant"), ("scribe:timeline:system", "nonconformant")])
     case("expected_verdict", canned() + canned(trace="02", verdict="nonconformant"),
          "expected conformant, got nonconformant", expected=[("scribe:timeline:none", "conformant")])
-    case("abandoned_retry", canned(verdict="indeterminate", reason=None, root_status=2) +
-         canned(trace="02"), expected=[("scribe:timeline:none", "conformant")])
-    case("abandoned_only_expect", canned(verdict="indeterminate", root_status=2),
+    # A transport failure as OA 1.6.2 records it, from a live run.
+    gone = dict(verdict="indeterminate", reason="execution_failed",
+                root_status=2, error_type="PROVIDER_ERROR")
+    case("abandoned_retry", canned(**gone) + canned(trace="02"),
+         expected=[("scribe:timeline:none", "conformant")])
+    case("abandoned_only_expect", canned(**gone),
          "expected stage missing", expected=[("scribe:timeline:none", "conformant")])
-    case("abandoned_only_write", canned(verdict="indeterminate", root_status=2, tool="record_update"),
+    case("abandoned_only_write", canned(**gone, tool="record_update"),
          "expected write stage missing", writes=["scribe:timeline"])
-    case("error_with_reason", canned(verdict="indeterminate", reason="tool_error", root_status=2),
+    # Each is the signature with one part changed, so it is a real stage and
+    # meets its expectation; dropping that part of the rule hides it.
+    case("indeterminate_without_error", canned(**{**gone, "root_status": 1}),
          expected=[("scribe:timeline:none", "indeterminate")])
-    case("indeterminate_without_error", canned(verdict="indeterminate"),
+    case("error_with_verdict", canned(**{**gone, "verdict": "conformant"}),
+         expected=[("scribe:timeline:none", "conformant")])
+    case("error_with_reason", canned(**{**gone, "reason": "tool_error"}),
          expected=[("scribe:timeline:none", "indeterminate")])
-    case("error_with_verdict", canned(root_status=2))
-    case("abandoned_blocked", canned(verdict="indeterminate", root_status=2, blocked=True),
+    case("run_error", canned(**{**gone, "error_type": "RUN_ERROR"}),
+         expected=[("scribe:timeline:none", "indeterminate")])
+    case("abandoned_blocked", canned(**gone, blocked=True),
          "blocked sandbox decision without violation_prevented")
     data = canned(tool="record_update"); del data[1]["attributes"]["gen_ai.tool.name"]
     case("tool_name_fallback", data)
@@ -294,10 +322,10 @@ def mutation_test():
     mutations.extend([
         ("blocked", 'if blocked and verdict != "violation_prevented":',
          'if blocked and verdict == "indeterminate":'),
-        ("error_with_reason", 'if not ended_before_verdict:', 'if root["status_code"] != 2:'),
-        ("indeterminate_without_error", 'root["status_code"] == 2 and', 'True and'),
-        ("error_with_verdict", 'verdict == "indeterminate" and reason == ""', 'reason == ""'),
-        ("error_with_reason", 'verdict == "indeterminate" and reason == ""', 'verdict == "indeterminate"'),
+        ("indeterminate_without_error", 'root["status_code"] == 2  # condition', 'True  # condition'),
+        ("error_with_verdict", 'verdict == "indeterminate"  # condition', 'True  # condition'),
+        ("error_with_reason", 'reason == "execution_failed"  # condition', 'True  # condition'),
+        ("run_error", 'root["attributes"].get("error.type") == "PROVIDER_ERROR")  # condition', 'True)  # condition'),
         ("expected_count", "need = wanted_list.count(wanted_verdict)", "need = 1"),
         ("expected_count", "if matched and have < need:", "if matched and len(matched) < len(wanted_list):"),
         ("abandoned_only_expect", 'if not matched:  # expectation expected_missing',

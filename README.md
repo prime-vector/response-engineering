@@ -270,9 +270,11 @@ own verdict; the wrapper fails if either the driver or the agent traces check
 fails. One `oa run` is one trace until OA issue
 [#116 (TRACEPARENT)](https://github.com/prime-vector/open-agent-spec/issues/116)
 lands, so the check reports each stage attempt, but excludes attempts that
-ended before a verdict from expectation matching. These are roots with ERROR
-status, an `indeterminate` verdict and an empty or absent reason; they remain
-subject to the other rules, and cannot satisfy an expectation on their own.
+ended before a verdict from expectation matching. These are runs the provider
+failed, which OA 1.6.2 records as a root with ERROR status, verdict
+`indeterminate`, reason `execution_failed` and `error.type` `PROVIDER_ERROR`.
+Any other crash is not excluded. Excluded attempts remain subject to the other
+rules, and cannot satisfy an expectation on their own.
 
 `checks/agent_traces.py` prints the spec, task, prompt override, verdict, reason
 and tool-call outcomes for each stage. It rejects empty or unreadable input and
