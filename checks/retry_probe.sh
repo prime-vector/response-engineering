@@ -26,6 +26,7 @@ OA_LOG_GLOB="$WORK/adapter-*.log"
 mkdir -p "$WORK/bin"
 cat > "$WORK/bin/oa" <<'STUB'
 #!/usr/bin/env bash
+printf '%s\0' "$@" >> "$WORK/arguments"
 attempt=$(( $(cat "$WORK/attempts" 2>/dev/null || echo 0) + 1 ))
 echo "$attempt" > "$WORK/attempts"
 echo "hit passage-attempt-$attempt archive://doc#$attempt" >> "$WORK/adapter-precedent_archive.log"
@@ -78,9 +79,31 @@ check() { # description expected actual
 
 scenario() { # newline-separated outcomes, one per attempt
   printf '%s\n' "$1" > "$WORK/script"
+  : > "$WORK/arguments"
   : > "$WORK/attempts"
   : > "$WORK/adapter-precedent_archive.log"
 }
+
+# A caller's environment must not change the other probe scenarios.
+unset OTEL_EXPORTER_OTLP_ENDPOINT
+for runner in oa_run oa_run_once; do
+  for setting in unset empty enabled; do
+    unset OTEL_EXPORTER_OTLP_ENDPOINT
+    case "$setting" in
+      empty) export OTEL_EXPORTER_OTLP_ENDPOINT="" ;;
+      enabled) export OTEL_EXPORTER_OTLP_ENDPOINT="http://127.0.0.1:4318" ;;
+    esac
+    scenario "ok"
+    "$runner" --task assess --input 'a value with spaces' >/dev/null
+    printf '%s\0' run --task assess --input 'a value with spaces' > "$WORK/expected-arguments"
+    if [ "$setting" = enabled ]; then
+      printf '%s\0' --telemetry >> "$WORK/expected-arguments"
+    fi
+    cmp -s "$WORK/expected-arguments" "$WORK/arguments"
+    check "$runner arguments with endpoint $setting" 0 "$?"
+  done
+done
+unset OTEL_EXPORTER_OTLP_ENDPOINT
 
 echo "a transport failure is retried once:"
 scenario "transport

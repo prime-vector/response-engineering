@@ -40,7 +40,7 @@ Everything here is free and needs no key: the incident data, the schema checks t
 python3 demos/show.py feed        # the fifteen days nobody read
 python3 demos/show.py day-one     # what had been collected by day one
 
-pipx install "open-agent-spec[contracts]==1.6.2"
+pipx install "open-agent-spec[contracts,otel]==1.6.2"
 oa validate --spec .agents/incident-commander.yaml
 
 python3 checks/contract_invariants.py   # the board's contract holds its invariants
@@ -97,6 +97,9 @@ mock/adapter.py                    mock MCP adapter, all five surfaces
 demos/show.py                      renders the incident data, free, no key
 demos/investigate.sh               the three acts composed: correlator and analyst into commander into Scribe
 demos/governance.sh                the five governance demos, on demand
+demos/traced.sh                    runs a demo with local agent traces and a stage check
+demos/agent_traces_sink.py          local OTLP/HTTP receiver, writes span metadata to JSONL
+checks/agent_traces.py             checks stage verdicts and tool-call outcomes
 demos/retry.sh                     one retry, on transport failures and nothing else
 demos/caveats-stripped-system-prompt.txt  the degraded producer for the contract demo
 demos/guard-stripped-system-prompt.txt  the guard-off producer for the attribution reject path
@@ -117,7 +120,7 @@ Live runs need Python 3, an Anthropic API key and the three provider patches bel
 # behavioural_contract stops with CONTRACTS_UNAVAILABLE before the model call
 # without it. Both demo drivers check before any adapter starts. The specs
 # declare 1.6.0; the CLI is pinned to 1.6.2, which CI tests against.
-pipx install "open-agent-spec[contracts]==1.6.2"
+pipx install "open-agent-spec[contracts,otel]==1.6.2"
 
 oa validate --spec .agents/incident-commander.yaml
 oa validate --spec .agents/telemetry-analyst.yaml
@@ -248,6 +251,52 @@ Five failure modes, each demonstrable with one command rather than described on 
 - **Refusal.** A separate incident, session establishment failing between a broker and its consumers, with nothing like it in the archive. The correct answer is `no_applicable_precedent: true` with `search_coverage` populated, and the script asserts the coverage call and every search happened, that each one came back empty, and that the queries are recorded verbatim. Refusal is a feature: the nearest-looking match is how the anchoring failure starts.
 
 These are not all the same class of control, and the difference is worth being precise about. The sandbox and the output contract fail closed in the runner: the model's intent is irrelevant, and the grounding guard is the same kind of thing one level down, in the precedent schema. The attribution guard is the agent's judgement made structural rather than optional: whether to trigger is the model's call, but the typed output cannot omit the guard, and a board that names a third party on less than confirmed confidence without `triggered: true` is a schema violation, exercised by the script's reject path. The judgement stays with the model; the record of it cannot be dropped. Refusal is different again and weaker to claim: no schema can require it, because a wrong precedent and a right one have the same shape. What the harness contributes is a relevance floor that returns nothing rather than the nearest match, and a coverage field that makes a refusal checkable.
+
+## Agent traces
+
+Run a driver with agent traces collected locally, with no hosted collector:
+
+```bash
+./demos/traced.sh sandbox
+./demos/traced.sh attribution       # also contract, grounding, refusal or all
+./demos/traced.sh investigate       # full pipeline; accepts act1, act2 or act3
+```
+
+Install the `otel` extra shown above. The wrapper starts a loopback OTLP/HTTP
+sink under the interpreter that runs `oa`, enables the CLI's `--telemetry`
+flag through `OTEL_EXPORTER_OTLP_ENDPOINT`, and keeps span metadata in a fresh
+`runs/agent-traces-<UTC timestamp>-<suffix>/spans.jsonl`. The driver retains its
+own verdict; the wrapper fails if either the driver or the agent traces check
+fails. One `oa run` is one trace until OA issue
+[#116 (TRACEPARENT)](https://github.com/prime-vector/open-agent-spec/issues/116)
+lands, so the check reports each stage attempt, but excludes attempts that
+ended before a verdict from expectation matching. These are roots with ERROR
+status, an `indeterminate` verdict and an empty or absent reason; they remain
+subject to the other rules, and cannot satisfy an expectation on their own.
+
+`checks/agent_traces.py` prints the spec, task, prompt override, verdict, reason
+and tool-call outcomes for each stage. It rejects empty or unreadable input and
+traces without a root; it rejects `indeterminate` stages with reason
+`validation_skipped` or `sandbox_not_declared`, and blocked sandbox decisions
+whose stage did not end `violation_prevented`. Mode expectations require the
+specified stage and verdict, including `system` override reject paths, with one
+matching stage for each time an expectation is listed: under `all`, a stage two
+modes both expect must appear twice. Investigation names every stage each act
+runs, and requires a successful write-tool span on `scribe:timeline` when it
+runs act three. Success here means the tool call did not raise. The contract
+mode runs only its reject path; attribution and grounding run both paths.
+
+A span shows **that** a tool was called and whether the call raised. It does
+not show **what** was filed, which passages were cited, or what the model
+wrote. The adapter log stays the record for those, and
+`checks/timeline_filed.py` stays the check of what was filed. Agent traces
+cannot verify a filing or a citation.
+
+What reaches the file is what the runner chose to record. OA 1.6.2 puts only
+metadata in span attributes, with content capture off, and puts exception text
+in span events. The sink keeps span names, status codes and attributes as the
+exporter sends them and drops events and status messages. It does not filter
+attributes itself.
 
 ## Known limits
 
