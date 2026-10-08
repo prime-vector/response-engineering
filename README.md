@@ -40,7 +40,7 @@ Everything here is free and needs no key: the incident data, the schema checks t
 python3 demos/show.py feed        # the fifteen days nobody read
 python3 demos/show.py day-one     # what had been collected by day one
 
-pipx install "open-agent-spec[contracts]==1.6.0"
+pipx install "open-agent-spec[contracts]==1.6.2"
 oa validate --spec .agents/incident-commander.yaml
 
 python3 checks/contract_invariants.py   # the board's contract holds its invariants
@@ -53,12 +53,12 @@ python3 corpus/eval.py                  # the precedent archive meets its interf
 
 ## Status
 
-Six agents written, each validating against OAS 1.6.0. The five investigation agents run live against mock adapters serving five tool surfaces, and the handoffs between them are dataflow rather than narration: `demos/investigate.sh` composes the three acts in one run, each stage's typed output becoming the next stage's input. `demos/governance.sh` demonstrates five failure modes and exits zero only when every one is refused the way it should be. The Comms agent is written and validated, and is never given the board.
+Six agents written, each validating under the OAS 1.6.2 CLI. The five investigation agents run live against mock adapters serving five tool surfaces, and the handoffs between them are dataflow rather than narration: `demos/investigate.sh` composes the three acts in one run, each stage's typed output becoming the next stage's input. `demos/governance.sh` demonstrates five failure modes and exits zero only when every one is refused the way it should be. The Comms agent is written and validated, and is never given the board.
 
 | Artefact | State |
 | --- | --- |
 | `SCENARIO.md` | Reviewed, cadence fixed as asserted properties, both sanitisation passes done, the second by someone other than the author. What each pass covered is recorded in `PLAN.md`, including the directories that postdate the second |
-| `.agents/*.yaml` | Six specs, all written and validating against OAS 1.6.0. The Precedent Analyst's recall is verified live against the archive; Comms writes to outward audiences only and is never given the board |
+| `.agents/*.yaml` | Six specs, all written and validating under the OAS 1.6.2 CLI. The Precedent Analyst's recall is verified live against the archive; Comms writes to outward audiences only and is never given the board |
 | `interfaces/TELEMETRY.md` | Draft interface contract |
 | `fixtures/composite-incident*.json` | Generated, two views (D+1 and D+15) plus three demo forcing inputs, feed properties asserted by the generator |
 | `interfaces/PRECEDENT.md` | Draft interface contract, the `precedent_archive` surface |
@@ -113,10 +113,11 @@ docs/samples/                      committed model outputs, byte for byte, failu
 Live runs need Python 3, an Anthropic API key and the three provider patches below, and they cost real money: every `oa run` is a metered model call. One full three-act run of `demos/investigate.sh` came to roughly a US dollar on `claude-sonnet-4-6` in August 2026, most of it the board. The free path above needs none of this.
 
 ```bash
-# The contracts extra is not optional: without it the runner skips contract
-# validation with only a warning, and both demo drivers refuse to start. The
-# version is pinned because the specs declare 1.6.0 and CI tests against it.
-pipx install "open-agent-spec[contracts]==1.6.0"
+# The contracts extra is not optional: from CLI 1.6.1, a task declaring a
+# behavioural_contract stops with CONTRACTS_UNAVAILABLE before the model call
+# without it. Both demo drivers check before any adapter starts. The specs
+# declare 1.6.0; the CLI is pinned to 1.6.2, which CI tests against.
+pipx install "open-agent-spec[contracts]==1.6.2"
 
 oa validate --spec .agents/incident-commander.yaml
 oa validate --spec .agents/telemetry-analyst.yaml
@@ -128,14 +129,14 @@ oa validate --spec .agents/comms.yaml
 export ANTHROPIC_API_KEY=...
 
 # three patches to the Anthropic provider, in this order. The first is
-# required: through OAS 1.6.0 the provider does not translate tool messages to
+# required: through OAS 1.6.2 the provider does not translate tool messages to
 # Anthropic's format, so the first tool call 400s. The second is optional and
 # pays for itself on anything multi-round: without it every round re-sends the
 # system prompt, the tool definitions and the whole incident view uncached. The
 # third streams, so a long generation is delivered as it is made rather than
 # waited on whole and lost whole; the commander's board is the generation that
-# exposes this. All three are cut against the 1.6.0 wheel and apply with no
-# fuzz in this order.
+# exposes this. All three were cut against the 1.6.0 wheel and apply unchanged to
+# 1.6.2 with no fuzz or offsets in this order.
 # `oa` is normally a pipx install, so oas_cli lives in its own virtualenv:
 # system python3 either cannot import it, or imports a different copy and
 # patches a provider the demos never use. Resolve through the interpreter `oa`
@@ -252,10 +253,10 @@ These are not all the same class of control, and the difference is worth being p
 
 The controls above are real, and so are their edges. Know these before composing on the pattern.
 
-- **The runner fails open on truncated JSON.** Through OAS 1.6.0, a json-task output that does not parse skips schema and contract validation and exits zero (filed upstream). A bare `oa run` exiting zero is not proof of a valid output. Both demo drivers fail closed instead, parsing every stage's output before using it, and every spec sizes `max_tokens` with real headroom so truncation does not arise. Compose on the CLI the same way.
-- **Contract validation can degrade silently.** Without the `behavioural-contracts` extra the runner skips contract validation with only a warning, and a pipx upgrade drops the extra. Both demo drivers check for it and refuse to run without it.
+- **The runner fails open on truncated JSON.** Through OAS 1.6.2, a json-task output that does not parse skips schema and contract validation and exits zero (filed upstream). A bare `oa run` exiting zero is not proof of a valid output. Both demo drivers fail closed instead, parsing every stage's output before using it, and every spec sizes `max_tokens` with real headroom so truncation does not arise. Compose on the CLI the same way.
+- **Missing contracts extra stops the run.** From CLI 1.6.1, a task declaring `behavioural_contract` fails closed with `CONTRACTS_UNAVAILABLE` before the model call when `behavioural-contracts` is unavailable. A pipx upgrade still drops the extra, so the run stops rather than quietly validating less. Both demo drivers check for it and refuse to run before any adapter starts.
 - **Tool-use claims are self-attested.** The runner cannot bind tool results into outputs, so `record_updated: true`, a returned `draft_ref` or a cited `passage_id` proves nothing on its own: they are strings the model wrote either way. The drivers verify those claims against the adapter log, which names every `tools/call` and, on the archive, every passage that left the surface by id and uri. For timeline filing, the driver requires a successful update receipt from the current attempt matching both the record reference and a digest of the final entries and gaps. The mock receipt proves acceptance, not durable storage. Anything consuming these outputs must apply the corresponding verification.
-- **A long generation can be lost in transit, and the stock provider cannot stream.** Through OAS 1.6.0 the provider posts and waits for the whole response as one body. On 23 Aug 2026 four consecutive `assess` runs died with `PROVIDER_ERROR: Remote end closed connection without response`, minutes into a request the same call had completed twice earlier that day, and nothing distinguishes that from a real failure at the CLI's exit status. The third patch in `patches/` streams instead and reassembles the events into the response shape the callers already expect; act two then ran end to end, correlator and board, in one minute forty-eight. Both demo drivers also retry once on a transport failure and never on anything else, because a retry that fires on a contract rejection or a sandbox block would be re-running the demonstration, and not at all for a stage that writes: the Scribe has already filed by the time a long generation is lost, and a second attempt would file again. Anything else composing on this CLI inherits the unpatched behaviour and should assume a long generation is the exposed one.
+- **A long generation can be lost in transit, and the stock provider cannot stream.** Through OAS 1.6.2 the provider posts and waits for the whole response as one body. On 23 Aug 2026 four consecutive `assess` runs died with `PROVIDER_ERROR: Remote end closed connection without response`, minutes into a request the same call had completed twice earlier that day, and nothing distinguishes that from a real failure at the CLI's exit status. The third patch in `patches/` streams instead and reassembles the events into the response shape the callers already expect; act two then ran end to end, correlator and board, in one minute forty-eight. Both demo drivers also retry once on a transport failure and never on anything else, because a retry that fires on a contract rejection or a sandbox block would be re-running the demonstration, and not at all for a stage that writes: the Scribe has already filed by the time a long generation is lost, and a second attempt would file again. Anything else composing on this CLI inherits the unpatched behaviour and should assume a long generation is the exposed one.
 - **The mock adapters are not a security boundary.** They bind 127.0.0.1 with no authentication, and the block in the sandbox demo lives in the runner, not the adapter. A vendor adapter fronts real systems, so it authenticates its callers and carries the host and sink refusals at its own layer; `interfaces/TELEMETRY.md` specifies that defence in depth, this repo demonstrates the runner's fence.
 - **CLI access is privileged.** `--system-prompt` replaces an agent's prompt wholesale, which the governance demos use deliberately. Schema pins survive an overridden prompt; prompt-dependent judgement does not, and whoever can run the CLI can also edit the spec. Treat CLI access to these agents like deploy access. It also sets what the three reject paths can prove: a stripped run is a different producer, not an ablation of one rule, because the operating rules, the output pins and the retrieval guidance all go with the prompt. Each stripped prompt therefore has to name the claim it wants malformed, or the substitute producer behaves well for its own reasons and demonstrates nothing.
 

@@ -9,8 +9,8 @@ lands upstream:
     patch "$P" \
         < patches/oas-1.6.0-anthropic-tool-messages.diff
 
-Cut against 1.6.0, which is what this repository targets. The version in the
-name is load-bearing: the 1.5.1 diff this replaces applied to 1.6.0 only
+Cut against 1.6.0; applies unchanged to the 1.6.2 CLI this repository targets.
+The version in the name is load-bearing: the 1.5.1 diff this replaces applied to 1.6.0 only
 because GNU patch tolerates two lines of fuzz, since 1.6.0 moved `temperature`
 out of the payload literal its hunk was anchored on. It landed in the right
 method by luck rather than by matching, `git apply` refused it, and `patch -F0`

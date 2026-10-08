@@ -60,8 +60,9 @@ Needs PyYAML. Neither an API key nor the `patches/` provider patch is required
 by either script in retrieval mode: both drive the mock surface directly and
 never call a model. That is the point of splitting the modes, and it is what
 makes iterating on the dataset affordable. Judgement mode needs both, plus the
-`behavioural-contracts` extra, which it checks for rather than measuring a
-harness with contract validation silently switched off.
+`behavioural-contracts` extra, which it checks for before spending anything.
+From CLI 1.6.1 a missing extra stops each run with `CONTRACTS_UNAVAILABLE`, so
+checking first fails a sweep at its start rather than one paid case at a time.
 
 **Which judge, and why it is the metered one.** Published figures come from
 `claude-opus-4-6` through the Messages API. That transport has no file tools,
