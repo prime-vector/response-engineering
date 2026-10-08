@@ -594,6 +594,20 @@ both that each violation is rejected and that its legitimate neighbour is
 accepted, and CI runs it. They were previously exercised only when a live board
 happened to try one.
 
+
+### M7: Agent traces
+
+**Done when:** each demo can be run with runner-side traces collected locally, and a check reads them and fails when a stage did something it should not, as a second verdict independent of the driver's.
+
+- [x] CLI moved to OA 1.6.2 (PR #38). Of the four fail-open behaviours this repo documented, 1.6.1 fixed one, a missing contracts extra, which now stops the run with `CONTRACTS_UNAVAILABLE`. The other three remain and their sentences say so. The three provider patches apply unchanged
+- [x] Local collection with no vendor in the path (PR #39): `demos/agent_traces_sink.py` receives OTLP over HTTP and keeps span names, status codes and attributes, never events or status messages; `demos/retry.sh` adds `--telemetry` only when a collector is configured
+- [x] `checks/agent_traces.py`, a check per stage: no unvalidated output, no undeclared sandbox, a blocked call recorded as prevented, a claimed Scribe write backed by a successful tool span, per-mode expectations counted per verdict, and no pass on an empty file. Self-tested and mutation-tested in CI
+- [x] `demos/traced.sh` runs either driver with agent traces on and checks them after
+- [x] Accepted on a live run, 8 Oct 2026, on OA 1.6.2. `traced.sh all` passed on both verdicts: seven stages, each with the verdict expected of it. The first attempt failed on a rejected API key and showed that 1.6.2 records a provider failure differently from what a reading of the runner suggested; the signature the check now uses is taken from that trace (PR #40), and it tells a failed model call apart from an adapter that was down
+- [ ] **The Scribe's reply can differ from the timeline it filed.** Found by the same acceptance run: `traced.sh investigate` passed the trace check and failed the driver, because `checks/timeline_filed.py` found the reply's entries and gaps hashing differently from the payload the sink accepted. Two replays from the same board both passed, so it is occasional, one in three runs seen, and the failing run had the longest payload. A task that files with a tool call generates its payload twice, and nothing makes the copies equal. Proposed: the reply carries the record reference and the payload digest instead of a second copy. Changes the Scribe's output contract, act three's display and the filing check
+- [ ] A CI probe for `demos/traced.sh`, so its routing, sink lifecycle and exit statuses are exercised without a live run, and a decision on whether the sink should allowlist attributes rather than keep what OA sends
+- [ ] One trace per pipeline rather than per stage, waiting on OA issue #116 (TRACEPARENT)
+
 ---
 
 ## Definition of done for the demo
