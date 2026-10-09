@@ -29,7 +29,10 @@ case "$MODE" in
           --expect precedent-analyst:recall:none=conformant)
     ACT2=(--expect change-correlator:correlate:none=conformant
           --expect incident-commander:assess:none=conformant)
-    ACT3=(--expect scribe:timeline:none=conformant --expect-write scribe:timeline)
+    # Act three's write is the driver's, outside any trace, so no write span
+    # is expected. agent_traces.py --expect-write stays a feature with no
+    # current caller.
+    ACT3=(--expect scribe:timeline:none=conformant)
     case "${1:-all}" in
       act1) EXPECT+=("${ACT1[@]}") ;;
       act2) EXPECT+=("${ACT2[@]}") ;;

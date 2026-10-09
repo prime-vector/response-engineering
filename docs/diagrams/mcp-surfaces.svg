@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 400" width="960" height="400" role="img" aria-label="Evidence surfaces reached over MCP, each owned by exactly one agent. The Telemetry Analyst, Change Correlator and Precedent Analyst each read one surface, and the correlator's correlation and the analyst's precedent reach the Incident Commander as typed input while the Telemetry Analyst's findings are marked as the handoff the pipeline does not compose, whose live board goes to the Scribe, which writes to the incident record sink through a tool call. A crossed arc shows that raw registry rows never reach the commander.">
-  <title>Evidence surfaces reached over MCP, each owned by exactly one agent. The Telemetry Analyst, Change Correlator and Precedent Analyst each read one surface, and the correlator's correlation and the analyst's precedent reach the Incident Commander as typed input while the Telemetry Analyst's findings are marked as the handoff the pipeline does not compose, whose live board goes to the Scribe, which writes to the incident record sink through a tool call. A crossed arc shows that raw registry rows never reach the commander.</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 400" width="960" height="400" role="img" aria-label="Evidence surfaces reached over MCP, each owned by exactly one agent. The Telemetry Analyst, Change Correlator and Precedent Analyst each read one surface, and the correlator's correlation and the analyst's precedent reach the Incident Commander as typed input while the Telemetry Analyst's findings are marked as the handoff the pipeline does not compose, whose live board goes to the Scribe, whose timeline the driver files on the incident record sink, verified in the adapter log. A crossed arc shows that raw registry rows never reach the commander.">
+  <title>Evidence surfaces reached over MCP, each owned by exactly one agent. The Telemetry Analyst, Change Correlator and Precedent Analyst each read one surface, and the correlator's correlation and the analyst's precedent reach the Incident Commander as typed input while the Telemetry Analyst's findings are marked as the handoff the pipeline does not compose, whose live board goes to the Scribe, whose timeline the driver files on the incident record sink, verified in the adapter log. A crossed arc shows that raw registry rows never reach the commander.</title>
   <style>
     text{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;fill:#131A1C}
     .t{font-size:11px}
@@ -93,8 +93,8 @@
         <text class="t-s" x="766" y="180">timeline, change record</text>
 
         <line class="ln" x1="844" y1="196" x2="844" y2="296" marker-end="url(#ar)"/>
-        <text class="t-s" x="752" y="230">tools/call, verified</text>
-        <text class="t-s" x="752" y="242">in the adapter log</text>
+        <text class="t-s" x="752" y="230">filed by the driver,</text>
+        <text class="t-s" x="752" y="242">verified in the adapter log</text>
 
         <rect class="box" x="752" y="300" width="184" height="56" rx="3"/>
         <text class="t-b" x="766" y="324">incident_record sink</text>

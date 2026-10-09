@@ -214,7 +214,8 @@ tasks:
             argued against. A hypothesis omitted here has no typed route
             downstream: the briefing renders one entry per hypothesis and
             `checks/briefing_grounded.py` holds it to that count, and the
-            Scribe files from this board. What that does not close is prose.
+            Scribe writes its timeline from this board. What that does not
+            close is prose.
             A briefing sentence, or a timeline entry, can assert something no
             hypothesis here holds, which is the same limit the briefing's own
             contract states about itself.
@@ -555,7 +556,7 @@ tasks:
             input, so a board arriving any other way reaches the model as the
             literal text {{ board }}, which is exactly how this task came to
             have been never run. The caller passes it, the same way the
-            Scribe's timeline is passed the board it files.
+            Scribe's timeline is passed the board it is written from.
       # No default. The runner does not apply input schema defaults, so one
       # here is a comment that reads as behaviour, and the fields are required
       # in any case.

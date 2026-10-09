@@ -173,15 +173,13 @@ check "the second failure reaches the caller intact" 1 \
   "$(grep -c '^{"code": "PROVIDER_ERROR"' "$WORK/err")"
 
 echo
-echo "a stage that writes is not retried at all:"
-# The retry is safe only where the stage's one effect is its output. The
-# Scribe files to the incident sink with a tool call, so a generation lost
-# after the write would be filed twice by a second attempt, and the log
-# re-marking would hide the first call from the check that verifies what was
-# filed. Same transport failure as the first case above, opposite behaviour.
+echo "a stage that writes is not retried at all: oa_run_once --task mitigate:"
+# The commander's mitigate changes state, so a transport failure after its
+# write must not trigger a second attempt. The Scribe's timeline is filed by
+# the driver after the run and retries like any read-only stage.
 scenario "transport
 ok"
-out=$(oa_run_once --task timeline 2>"$WORK/err"); status=$?
+out=$(oa_run_once --task mitigate 2>"$WORK/err"); status=$?
 check "the run fails rather than filing twice" 1 "$status"
 check "only one attempt was made" 1 "$(cat "$WORK/attempts")"
 check "it says why it did not retry" 1 \
