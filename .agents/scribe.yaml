@@ -3,10 +3,12 @@
 # Writes the record that in the source pattern was never written. Two jobs:
 # the incident timeline, assembled live from typed inputs rather than from
 # memory afterwards, and the draft change record for any directed production
-# change. It is the only agent bound to the incident_record sink, and the
-# sink is the point: change_draft produces a draft, record_update appends to
-# the record, and no tool on that surface submits anything. Submission is a
-# human action, always.
+# change. It is the only agent bound to the incident_record sink, through
+# draft_change_record alone: the timeline task binds nothing, because its
+# reply is filed by the pipeline driver, so there is one generated copy and
+# nothing for a second copy to drift from. change_draft produces a draft,
+# record_update appends to the record, and no tool on that surface submits
+# anything. Submission is a human action, always.
 #
 #   oa validate --spec .agents/scribe.yaml
 #
@@ -16,8 +18,8 @@ agent:
   name: scribe
   description: >
     Maintains the incident record. Assembles the timeline from the evidence
-    and board state it is given, files it on the incident record, and drafts
-    the change record for directed production changes. Drafts only: nothing
+    and board state it is given, which the driver files on the incident
+    record, and drafts the change record for directed production changes. Drafts only: nothing
     this agent produces is submitted, approved or closed by it.
   # OAS role enum is fixed: analyst, reviewer, chat, retriever, planner,
   # executor. "executor" is the closest fit: this is the only agent that
@@ -33,11 +35,13 @@ intelligence:
   model: claude-sonnet-4-6
   config:
     temperature: 0.2
-    # The timeline is generated twice in one response budget: once as the
-    # record_update tool call's arguments and once as the final JSON reply,
-    # and a live board grows both. At 8000 a composed run truncated inside
-    # the tool call and the runner failed open to an empty, exit-zero
-    # output. Headroom is a correctness setting here.
+    # Agent-wide, so it is sized for the task that needs the most. The
+    # timeline is one generation now that the driver files it, but
+    # draft_change_record still generates its draft twice in one response,
+    # once as change_draft's arguments and once as the reply, and at 8000 a
+    # composed run once truncated inside the tool call and the runner failed
+    # open to an empty, exit-zero output. Headroom is a correctness setting
+    # here and this value is the one that passed before the timeline changed.
     max_tokens: 16000
     # Provider HTTP read timeout, matching the other specs.
     timeout: 300
@@ -68,8 +72,7 @@ tasks:
       description: >
         Enforces that the timeline is a record, not a narrative. Every entry
         cites its source and carries its confidence, evidence never
-        collected appears as gaps rather than disappearing, and the result
-        is filed on the incident record rather than left in the chat.
+        collected appears as gaps rather than disappearing.
       role: "Incident scribe"
       behavioural_flags:
         conservatism: "high"
@@ -82,25 +85,19 @@ tasks:
           required_fields:
             - entries
             - gaps
-            - record_updated
     description: >
-      Assemble the incident timeline from the view and board state provided,
-      then file it on the incident record with record_update. Entries come
-      only from the input; what was never collected is recorded as a gap.
-    # Generous for the same reason as max_tokens: a composed run carries the
-    # live board and the reply is timeline-sized twice over.
+      Assemble the incident timeline from the view and board state provided.
+      The driver files the reply. Entries come only from the input; what was
+      never collected is recorded as a gap.
+    # A live board makes the reply timeline-sized; one generation now.
     timeout: 300
-    # Tool binding is per task. Without this list the runner attaches nothing.
-    tools: [incident_record]
-    # Task-level rather than root-level: the runner merges a root sandbox into
-    # every task, each of tools, http and file replacing the root key of the
-    # same name wholesale, so a root boundary is one a future task inherits
-    # without declaring it. Duplicated onto draft_change_record rather than
-    # rooted, for that reason. Sink tools only: every one produces a draft or
-    # an append, none submits.
+    # This task binds nothing. The driver files the validated output, so
+    # there is exactly one generated copy and no second copy to drift from.
+    # Absence is allow-all; allow: [] denies every tool by name. All three
+    # sandbox keys travel together so a partial boundary cannot fail open.
     sandbox:
       tools:
-        allow: [record_create, record_update, change_draft]
+        allow: []
       http:
         # From CLI 1.6.1, allow_domains gates generic http.* tools and
         # preflights statically configured MCP endpoints; MCP tool calls
@@ -119,10 +116,6 @@ tasks:
             The moment this record represents. Nothing after this timestamp
             exists yet, however obtainable it may appear.
           minLength: 1
-        incident_id:
-          type: string
-          description: >
-            Opaque incident reference, used as the record_ref for filing.
         symptom:
           type: string
           description: What was reported, in the words it was reported in
@@ -172,7 +165,7 @@ tasks:
       # passes missing ones through as literal text, which degrades the run
       # silently. An absent-but-empty input is passed as {} or [], never
       # omitted.
-      required: [as_of, incident_id, symptom, entity, signals, evidence,
+      required: [as_of, symptom, entity, signals, evidence,
                  missing_evidence, changes, board, mitigation_attempts]
     output:
       type: object
@@ -238,17 +231,7 @@ tasks:
               still_outstanding:
                 type: boolean
             required: [description, how_to_obtain]
-        record_ref:
-          type: string
-          description: >
-            The reference returned by the sink when the timeline was filed.
-            Use an empty string when filing fails; never invent a reference.
-        record_updated:
-          type: boolean
-          description: >
-            True only if record_update succeeded. A timeline that was not
-            filed is a chat message, not a record; say so honestly.
-      required: [entries, gaps, record_ref, record_updated]
+      required: [entries, gaps]
 
   draft_change_record:
     # Act three's closer: the change record that in the source pattern was
@@ -555,17 +538,9 @@ prompts:
        its falsifying test is the source record showing otherwise. If you
        cannot name a source, see rule 2.
 
-    7. File it. When the timeline is assembled, write it to the incident
-       record with record_update, using the incident reference as
-       record_ref; if there is no incident reference, create the record
-       with record_create, then append with record_update. The update payload
-       must be exactly {entries: [...], gaps: [...]} matching your final
-       output, and record_ref must match the accepted call.
-       Do not report until you have filed the timeline
-       with a tool call: record_updated true without a successful
-       record_update call is itself a false record, and if the call fails
-       you report record_updated false and record_ref an empty string rather
-       than pretending. Never invent a reference on a failed filing. Closing,
+    7. Your reply is the record. You do not file it: the driver files
+       {entries, gaps} exactly as you return them, so the reply is complete
+       and final, with nothing held back for a later step. Closing,
        submitting or approving the record is a human action, not yours.
 
     You are working only from what you are given. Nothing after the as_of
@@ -573,8 +548,8 @@ prompts:
     absent, it belongs in gaps, not on the timeline.
 
     Your entire reply must be a single JSON object with exactly these
-    top-level keys: entries, gaps, record_ref, record_updated. No markdown
-    fences, no preamble, no text after the closing brace. Bare JSON numbers
+    top-level keys: entries, gaps. No markdown fences, no preamble, no
+    text after the closing brace. Bare JSON numbers
     never contain digit grouping (34359738368, not 34,359,738,368);
     formatted figures belong inside strings.
 
@@ -584,15 +559,13 @@ prompts:
     - gaps[]: description, how_to_obtain, obtainable_since,
       still_outstanding
     entries are chronological. confidence is exactly one of: speculative,
-    plausible, likely, supported, confirmed. record_ref is a plain string
-    and record_updated a boolean. Never emit null, [] or {} for a string
-    or boolean field: omit optional fields you cannot fill
+    plausible, likely, supported, confirmed. Never emit null, [] or {} for a
+    string or boolean field: omit optional fields you cannot fill
     (consumed_by_human only appears on entries that are detections or
     reports).
 
   user: |
     Record as of: {{ as_of }}
-    Incident reference: {{ incident_id }}
 
     Reported symptom:
     {{ symptom }}
@@ -618,9 +591,8 @@ prompts:
     Mitigation attempts:
     {{ mitigation_attempts }}
 
-    Assemble the timeline, file it on the incident record, then reply with
-    the JSON object only: the first character of your reply is the opening
-    brace. Do your assembly silently.
+    Assemble the timeline, then reply with the JSON object only: the first
+    character of your reply is the opening brace. Do your assembly silently.
 
 logging:
   level: INFO

@@ -667,7 +667,7 @@ def demo_novel():
 
 # --- prior incident records, the archive side ---------------------------------
 #
-# Written in the shape the Scribe files, so the archive holds the artefacts
+# Written in the shape the Scribe writes, so the archive holds the artefacts
 # this system itself produces: the fifth agent reads what the fourth writes.
 # Every host, reference and date here is invented, same rules as the views.
 #

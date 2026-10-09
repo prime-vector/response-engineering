@@ -24,30 +24,35 @@ class EvidenceControls(unittest.TestCase):
         adapter.INDEX = copy.deepcopy(self.index)
         adapter.FIXTURE = json.loads((ROOT / 'fixtures/composite-incident.json').read_text())
         adapter.SURFACE = 'incident_record'
-        self.output = {'entries': [{'event': 'synthetic event'}], 'gaps': [],
-                       'record_ref': 'synthetic-record', 'record_updated': True}
+        self.record_ref = 'synthetic-record'
+        self.output = {'entries': [{'event': 'synthetic event'}], 'gaps': []}
 
     def receipt(self):
         log = io.StringIO()
         with contextlib.redirect_stdout(log):
             adapter._tools_call({'name': 'record_update', 'arguments': {
-                'record_ref': self.output['record_ref'],
+                'record_ref': self.record_ref,
                 'update': {k: self.output[k] for k in ('entries', 'gaps')}}})
         return log.getvalue()
 
     def test_receipt_matches_content_and_reference_without_logging_text(self):
         log = self.receipt()
-        verify(self.output, log)
+        verify(self.output, self.record_ref, log)
         self.assertNotIn('synthetic event', log)
-        for key, value in [('record_ref', 'other'), ('entries', []), ('gaps', ['missing'])]:
-            with self.subTest(key=key), self.assertRaisesRegex(ValueError, 'matches record_ref' if key == 'record_ref' else 'payload differs'):
-                verify({**self.output, key: value}, log)
-        with self.assertRaisesRegex(ValueError, 'successful filing and record_ref'):
-            verify({**self.output, 'record_updated': False}, log)
-        with self.assertRaisesRegex(ValueError, 'successful filing and record_ref'):
-            verify({**self.output, 'record_ref': ''}, log)
+        with self.assertRaisesRegex(ValueError, 'matches record_ref'):
+            verify(self.output, 'other', log)
+        for key, value in [('entries', []), ('gaps', ['missing'])]:
+            with self.subTest(key=key), self.assertRaisesRegex(ValueError, 'payload differs'):
+                verify({**self.output, key: value}, self.record_ref, log)
+        for key in ('entries', 'gaps'):
+            for value in (None, {}, 'text'):
+                with self.subTest(key=key, value=value), self.assertRaisesRegex(ValueError, f'{key} must be present and a list'):
+                    verify({**self.output, key: value}, self.record_ref, log)
+            missing = {k: v for k, v in self.output.items() if k != key}
+            with self.assertRaisesRegex(ValueError, f'{key} must be present and a list'):
+                verify(missing, self.record_ref, log)
         with self.assertRaisesRegex(ValueError, 'No successful record_update receipt'):
-            verify(self.output, log.replace('"record_update"', '"record_create"'))
+            verify(self.output, self.record_ref, log.replace('"record_update"', '"record_create"'))
 
     def test_refused_write_or_call_attempt_does_not_prove_filing(self):
         log = io.StringIO()
@@ -56,7 +61,7 @@ class EvidenceControls(unittest.TestCase):
                 'record_ref': 'synthetic-record', 'update': {}, 'submit': True}})
         self.assertNotIn('receipt ', log.getvalue())
         with self.assertRaisesRegex(ValueError, 'No successful record_update receipt'):
-            verify(self.output, '[mock-incident_record] tools/call record_update\n' + log.getvalue())
+            verify(self.output, self.record_ref, '[mock-incident_record] tools/call record_update\n' + log.getvalue())
 
     def test_nonaccepted_result_emits_no_receipt(self):
         fn, description, schema = adapter.TOOLS['incident_record']['record_update']
@@ -71,21 +76,21 @@ class EvidenceControls(unittest.TestCase):
             log.write_text(receipt)
             env = {**os.environ, 'OA_MARKS': str(Path(directory) / 'marks'),
                    'OA_LOG_GLOB': str(log)}
-            # These are the same window functions used around oa_run_once in act3.
+            # These are the same window functions used around oa_run in act3.
             command = '. demos/retry.sh; mark_logs; attempt_log "$1"'
             old = subprocess.check_output(['bash', '-c', command, 'test', str(log)],
                                           cwd=ROOT, env=env, text=True)
             with self.assertRaisesRegex(ValueError, 'No successful record_update receipt'):
-                verify(self.output, old)
+                verify(self.output, self.record_ref, old)
             with log.open('a') as handle:
                 handle.write(receipt)
             current = subprocess.check_output(
                 ['bash', '-c', '. demos/retry.sh; attempt_log "$1"', 'test', str(log)],
                 cwd=ROOT, env=env, text=True)
-            verify(self.output, current)
+            verify(self.output, self.record_ref, current)
 
     def test_verifier_cli_reports_missing_input_without_traceback(self):
-        for args in ([], ['does-not-exist.json', 'does-not-exist.log']):
+        for args in ([], ['does-not-exist.json', 'synthetic-record', 'does-not-exist.log']):
             result = subprocess.run([sys.executable, 'checks/timeline_filed.py', *args],
                                     cwd=ROOT, capture_output=True, text=True)
             self.assertNotEqual(result.returncode, 0)
@@ -165,7 +170,7 @@ class EvidenceControls(unittest.TestCase):
                         log.write_text('' if target == 'timeline' else
                                        '[mock-incident_record] receipt ' + json.dumps(value))
                         result = subprocess.run([sys.executable, 'checks/timeline_filed.py',
-                                                 str(output), str(log)], cwd=ROOT,
+                                                 str(output), self.record_ref, str(log)], cwd=ROOT,
                                                 capture_output=True, text=True)
                         self.assertNotEqual(result.returncode, 0)
                         self.assertIn('must be a JSON object', result.stderr)
@@ -179,22 +184,23 @@ class EvidenceControls(unittest.TestCase):
         expected = hashlib.sha256(json.dumps({'entries': [], 'gaps': []}, sort_keys=True).encode()).hexdigest()
         accepted = json.loads(log.split(' receipt ', 1)[1])['payload_sha256']
         with self.assertRaisesRegex(ValueError, 'payload differs') as raised:
-            verify(changed, log)
+            verify(changed, self.record_ref, log)
         self.assertIn(expected, str(raised.exception))
         self.assertIn(accepted, str(raised.exception))
         # An earlier mismatching receipt must not hide a later exact match.
-        verify(self.output, log.replace(accepted, 'wrong') + log)
+        verify(self.output, self.record_ref, log.replace(accepted, 'wrong') + log)
 
-    def test_failed_filing_is_valid_output_but_not_verified_success(self):
+    def test_timeline_output_is_valid_before_driver_filing(self):
         import yaml
         import jsonschema
         spec = yaml.safe_load((ROOT / '.agents/scribe.yaml').read_text())
-        output = {'entries': [], 'gaps': [], 'record_ref': '', 'record_updated': False}
+        output = {'entries': [], 'gaps': []}
         jsonschema.validate(output, spec['tasks']['timeline']['output'])
-        self.assertIn('empty string', spec['tasks']['timeline']['output']['properties']['record_ref']['description'])
-        self.assertIn('record_ref an empty string', spec['prompts']['system'])
-        with self.assertRaisesRegex(ValueError, 'successful filing and record_ref'):
-            verify(output, '')
+        self.assertEqual(set(spec['tasks']['timeline']['output']['properties']), {'entries', 'gaps'})
+        self.assertNotIn('tools', spec['tasks']['timeline'])
+        self.assertEqual(spec['tasks']['timeline']['sandbox']['tools']['allow'], [])
+        with self.assertRaisesRegex(ValueError, 'No successful record_update receipt'):
+            verify(output, self.record_ref, '')
 
     def test_local_packages_win_over_installed_namesakes(self):
         with tempfile.TemporaryDirectory() as directory:

@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 624" width="560" height="624" role="img" aria-label="Three evidence surfaces, each read by exactly one agent. The Telemetry Analyst, Change Correlator and Precedent Analyst hand typed correlation and precedent to the Incident Commander, with the Telemetry Analyst's findings marked as the one handoff the pipeline does not compose today, whose live board goes to the Scribe, which writes to the incident record sink through a tool call.">
-  <title>Three evidence surfaces, each read by exactly one agent, handing typed output to the Incident Commander, whose board goes to the Scribe and then to the incident record sink.</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 624" width="560" height="624" role="img" aria-label="Three evidence surfaces, each read by exactly one agent. The Telemetry Analyst, Change Correlator and Precedent Analyst hand typed correlation and precedent to the Incident Commander, with the Telemetry Analyst's findings marked as the one handoff the pipeline does not compose today, whose live board goes to the Scribe, whose timeline the driver files on the incident record sink, verified in the adapter log.">
+  <title>Three evidence surfaces, each read by exactly one agent, handing typed output to the Incident Commander, whose board goes to the Scribe, whose timeline the driver files on the incident record sink.</title>
   <style>
     text{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;fill:#131A1C}
     .t{font-size:12px;font-weight:600}
@@ -70,7 +70,7 @@
   <text class="s" x="118" y="436">timeline, change record</text>
 
   <line class="ln" x1="280" y1="458" x2="280" y2="494" marker-end="url(#ar)"/>
-  <text class="s" x="290" y="474">tool call, verified in the adapter log</text>
+  <text class="s" x="290" y="474">filed by the driver, verified in the log</text>
 
   <rect class="box" x="100" y="500" width="360" height="60" rx="3"/>
   <text class="t" x="118" y="524">incident_record sink</text>
