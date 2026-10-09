@@ -17,6 +17,8 @@ import math
 import re
 import sys
 import tempfile
+
+import yaml
 from contextlib import redirect_stdout
 from pathlib import Path
 
@@ -230,7 +232,7 @@ def percentile(values, p):
     return ordered[max(0, math.ceil(p / 100 * len(ordered)) - 1)]
 
 
-def aggregate(runs):
+def aggregate(runs, slo=None, slo_path=None):
     """A baseline across runs: latency and verdicts per stage, pass rates per run."""
     stages, windows = {}, []
     for run in runs:
@@ -253,6 +255,79 @@ def aggregate(runs):
         known = [run["indicators"][name]["value"] for run in runs if run["indicators"][name]["value"] is not None]
         out[name] = {"source": name if name == "driver" else "check", **ratio(sum(known), len(known)),
                      "note": "Runs that passed, over runs whose status was recorded."}
+    # One row per run, in start order, so a page can show the sequence
+    # without re-reading every sli.json.
+    out["per_run"] = [{
+        "spans": r["spans"], "start_unix_nano": r["window"]["start_unix_nano"],
+        "duration_ms": r["window"]["duration_ms"], "driver_status": r["driver_status"],
+        "check_status": r["check_status"], "attempts": len(r["attempts"]),
+        "validation_skipped": r["indicators"]["validation_skipped"]["value"],
+        "ended_before_verdict": PER_RUN_DERIVED["attempts_ended_before_verdict"](r["indicators"]),
+        "stages": {a["stage"]: a["duration_ms"] for a in r["attempts"] if a["attempt"] == "completed"},
+    } for r in sorted(runs, key=lambda r: (r["window"]["start_unix_nano"], r["spans"]))]
+    if slo is not None:
+        out["slo"] = {"source": str(slo_path), **evaluate_slo(runs, slo, out)}
+    return out
+
+
+PER_RUN_DERIVED = {
+    # Targets name indicators; this one is a difference of two counts on one.
+    "attempts_ended_before_verdict": lambda i: i["attempts_with_verdict"]["denominator"] - i["attempts_with_verdict"]["numerator"],
+}
+
+
+def per_run_value(indicators, name):
+    """What a per-run target is held to. None means the run is not counted."""
+    if name in PER_RUN_DERIVED:
+        return PER_RUN_DERIVED[name](indicators)
+    if name not in indicators:  # guard slo_unknown_indicator
+        raise ValueError(f"target names an indicator no run carries: {name}")
+    return indicators.get(name, {"value": None})["value"]
+
+
+def evaluate_slo(runs, targets, agg):
+    """Hold the runs to the targets file. Unmeasurable is never met."""
+    ordered = sorted(runs, key=lambda r: (r["window"]["start_unix_nano"], r["spans"]))
+    out = {"runs": len(ordered), "per_run": {}, "rolling": {}, "latency_p95_ms": {"stages": {}}}
+    for name, target in (targets.get("per_run") or {}).items():
+        wanted = target["equals"]
+        counted, met, missed = 0, 0, []
+        for r in ordered:
+            value = per_run_value(r["indicators"], name)
+            if value is None:
+                continue
+            counted += 1
+            if value == wanted:
+                met += 1
+            else:
+                missed.append(r["spans"])
+        out["per_run"][name] = {"target": wanted, "runs_counted": counted, "runs_met": met,
+                                "met": (met == counted) if counted else None, "missed": missed,
+                                "note": target.get("note", "")}
+    for name, target in (targets.get("rolling") or {}).items():
+        window = ordered[-target["window"]:]
+        known = [per_run_value(r["indicators"], name) for r in window]
+        known = [v for v in known if v is not None]
+        value = (sum(1 for v in known if v) / len(known)) if known else None
+        out["rolling"][name] = {"target": target["at_least"], "window": target["window"],
+                                "runs_in_window": len(known), "value": value,
+                                "met": (value >= target["at_least"]) if value is not None else None,
+                                "note": target.get("note", "")}
+    latency = targets.get("latency_p95_ms") or {}
+    for key, target in (latency.get("stages") or {}).items():
+        stage = agg["stages"].get(key)
+        p95 = stage["duration_ms"]["p95"] if stage and stage["duration_ms"] else None
+        out["latency_p95_ms"]["stages"][key] = {"target": target, "p95": p95,
+                                                "met": (p95 <= target) if p95 is not None else None}
+    if "end_to_end" in latency:
+        p95 = agg["window_ms"]["p95"]
+        out["latency_p95_ms"]["end_to_end"] = {"target": latency["end_to_end"], "p95": p95,
+                                               "met": p95 <= latency["end_to_end"]}
+    verdicts = ([v["met"] for v in out["per_run"].values()] + [v["met"] for v in out["rolling"].values()]
+                + [v["met"] for v in out["latency_p95_ms"]["stages"].values()]
+                + ([out["latency_p95_ms"]["end_to_end"]["met"]] if "end_to_end" in out["latency_p95_ms"] else []))
+    out["unmeasured"] = sum(1 for v in verdicts if v is None)
+    out["met"] = all(v is True for v in verdicts)
     return out
 
 
@@ -415,7 +490,14 @@ def self_test():
                  ("status_key", lambda: rejects(lambda: status_of("report=0\n"), "expected a driver= or check= line")),
                  ("status_nosep", lambda: rejects(lambda: status_of("driver\n"), "expected a driver= or check= line")),
                  ("percentile", lambda: (percentile([30, 10, 20], 50), percentile([30, 10, 20], 95), percentile([7], 95)) == (20, 30, 7)),
-                 ("aggregate", lambda: aggregate_case())]
+                 ("aggregate", lambda: aggregate_case()),
+                 ("slo_per_run", lambda: slo_case("per_run")),
+                 ("slo_rolling", lambda: slo_case("rolling")),
+                 ("slo_latency", lambda: slo_case("latency")),
+                 ("slo_end_to_end", lambda: slo_case("end_to_end")),
+                 ("slo_overall", lambda: slo_case("overall")),
+                 ("slo_unknown_indicator", lambda: slo_case("unknown")),
+                 ("slo_file", lambda: slo_case("file"))]
         for name, probe in extra:
             try:
                 good = bool(probe())
@@ -455,6 +537,66 @@ def aggregate_case():
             and out["driver"]["source"] == "driver" and out["stage_check"]["source"] == "check")
 
 
+def slo_runs():
+    """Three runs: a clean one, one with a failed driver and a transport
+    failure, and a slow one, so every target has a run that meets it and a
+    run that does not."""
+    gone = dict(verdict="indeterminate", reason="execution_failed", root_status=2,
+                error_type="PROVIDER_ERROR", chat_status=2)
+    runs = []
+    # Driver statuses 1, 0, 0 in start order: a rolling window of two sees
+    # two passes, the whole sequence sees two of three, and the reversed
+    # sequence sees one of two, so the window and its direction both show.
+    specs = [((1, 0), canned(), 1_000_000), ((0, 0), canned(**gone) + canned(trace="02"), 2_000_000),
+             ((0, 0), canned(), 400_000_000)]
+    for (driver, check), data, length in specs:
+        for span in data:
+            span["start_time_unix_nano"] = 10 + len(runs) * 10_000_000_000
+            span["end_time_unix_nano"] = span["start_time_unix_nano"] + length
+        runs.append(compute(data, f"run{len(runs)}", driver, check)[0])
+    return runs
+
+
+def slo_case(which):
+    runs = slo_runs()
+    # blocked_recorded_as_prevented is None on every run here (no blocked
+    # call), so it must be counted on none of them rather than missed on all.
+    targets = {"per_run": {"stage_check": {"equals": True}, "attempts_ended_before_verdict": {"equals": 0},
+                           "blocked_recorded_as_prevented": {"equals": 1.0}},
+               "rolling": {"driver": {"at_least": 0.9, "window": 2}},
+               "latency_p95_ms": {"stages": {"scribe:timeline:none": 300, "other:task:none": 1}, "end_to_end": 350}}
+    if which == "unknown":
+        bad = {"per_run": {"no_such_indicator": {"equals": 0}}}
+        return rejects(lambda: aggregate(runs, bad, "x"), "no run carries")
+    if which == "file":
+        targets = yaml.safe_load(Path(__file__).with_name("agent_traces_slo.yaml").read_text(encoding="utf-8"))
+        s = aggregate(runs, targets, "x")["slo"]
+        return (set(s["per_run"]) == set(targets["per_run"]) and set(s["rolling"]) == set(targets["rolling"])
+                and set(s["latency_p95_ms"]["stages"]) == set(targets["latency_p95_ms"]["stages"]))
+    s = aggregate(runs, targets, "x")["slo"]
+    if which == "per_run":
+        return (s["per_run"]["stage_check"] == {"target": True, "runs_counted": 3, "runs_met": 3, "met": True, "missed": [], "note": ""}
+                and s["per_run"]["attempts_ended_before_verdict"]["runs_met"] == 2
+                and s["per_run"]["attempts_ended_before_verdict"]["missed"] == ["run1"]
+                and s["per_run"]["attempts_ended_before_verdict"]["met"] is False
+                and s["per_run"]["blocked_recorded_as_prevented"]["runs_counted"] == 0
+                and s["per_run"]["blocked_recorded_as_prevented"]["met"] is None)
+    if which == "rolling":
+        # Window of two is the last two runs by start, both passing.
+        return s["rolling"]["driver"] == {"target": 0.9, "window": 2, "runs_in_window": 2, "value": 1.0, "met": True, "note": ""}
+    if which == "latency":
+        st = s["latency_p95_ms"]["stages"]
+        return st["scribe:timeline:none"] == {"target": 300, "p95": 400, "met": False} and st["other:task:none"] == {"target": 1, "p95": None, "met": None}
+    if which == "end_to_end":
+        return s["latency_p95_ms"]["end_to_end"] == {"target": 350, "p95": 400, "met": False}
+    if which == "overall":
+        easy = {"per_run": {"stage_check": {"equals": True}}, "latency_p95_ms": {"end_to_end": 500}}
+        ok = aggregate(runs, easy, "x")["slo"]
+        unmeasured = aggregate(runs, {"latency_p95_ms": {"stages": {"other:task:none": 1}}}, "x")["slo"]
+        return s["met"] is False and s["unmeasured"] == 2 and ok["met"] is True and ok["unmeasured"] == 0 and unmeasured["met"] is False and unmeasured["unmeasured"] == 1
+    raise ValueError(which)
+
+
 def mutation_test():
     source = Path(__file__).read_text()
     mutations = []
@@ -473,13 +615,13 @@ def mutation_test():
         ("usage_bool", "type(value) is not int", "not isinstance(value, int)"),
         ("cost_bool", "isinstance(cost, bool) or", ""),
         ("model_call_error", '"status": "error" if span["status_code"] == 2 else "ok"', '"status": "ok"'),
-        (("ended_before_verdict", "recall_abandoned_excluded", "aggregate"),
+        (("ended_before_verdict", "recall_abandoned_excluded", "aggregate", "slo_per_run"),
          'if provider_failure(root, verdict, reason, members) else "completed"', 'if False else "completed"'),
         ("reason_sandbox_not_declared", 'r["reason"] == "validation_skipped"', 'r["reason"] in ("validation_skipped", "sandbox_not_declared")'),
         ("reason_validation_skipped", 'r["reason"] == "sandbox_not_declared"', 'r["reason"] in ("validation_skipped", "sandbox_not_declared")'),
         ("nonconformant_without_override", 'and r["prompt_override"] == "none"', ''),
-        ("blocked_none", 'blocked = [r for r in attempts if r["sandbox_decisions"]["blocked"]]', 'blocked = list(attempts)'),
-        ("blocked_none", '"value": (numerator / denominator) if denominator else None', '"value": (numerator / denominator) if denominator else 1.0'),
+        (("blocked_none", "slo_per_run", "slo_overall"), 'blocked = [r for r in attempts if r["sandbox_decisions"]["blocked"]]', 'blocked = list(attempts)'),
+        (("blocked_none", "slo_per_run", "slo_overall"), '"value": (numerator / denominator) if denominator else None', '"value": (numerator / denominator) if denominator else 1.0'),
         ("tool_outcomes", '"blocked" if attrs.get("oa.tool.result") == "blocked" else (', '"error" if attrs.get("oa.tool.result") == "blocked" else ('),
         ("recall_abandoned_excluded", "recalls = [r for r in completed if", "recalls = [r for r in attempts if"),
         ("recall_coverage_first", "    if SEARCH_TOOL not in names:\n        return True", "    if SEARCH_TOOL not in names:\n        return False"),
@@ -488,7 +630,7 @@ def mutation_test():
         (("statuses", "aggregate"), '"value": None if driver_status is None else driver_status == 0', '"value": None if driver_status is None else True'),
         ("statuses_unknown", '"value": None if check_status is None else check_status == 0', '"value": check_status == 0'),
         ("window_and_order", 'attempts.sort(key=lambda r: (r["start_unix_nano"], r["trace_id"]))', 'attempts.sort(key=lambda r: r["trace_id"], reverse=True)'),
-        (("window_and_order", "window_sub_millisecond", "aggregate"), '"duration_ms": ms(max(ends) - min(starts))', '"duration_ms": ms(max(starts) - min(starts))'),
+        (("window_and_order", "window_sub_millisecond", "aggregate", "slo_end_to_end"), '"duration_ms": ms(max(ends) - min(starts))', '"duration_ms": ms(max(starts) - min(starts))'),
         ("window_sub_millisecond", 'ends = [r["end_unix_nano"] for r in attempts]', 'ends = [r["start_unix_nano"] + r["duration_ms"] * 1_000_000 for r in attempts]'),
         ("status_partial", 'return values.get("driver"), values.get("check")', 'return values.get("driver", 0), values.get("check")'),
         ("status_partial_check", 'return values.get("driver"), values.get("check")', 'return values.get("driver"), values.get("check", 0)'),
@@ -499,6 +641,16 @@ def mutation_test():
         ("status_line", 'if not re.fullmatch(r"[0-9]+", value):', 'if not re.fullmatch(r"[0-9a-z]+", value):'),
         (("percentile", "aggregate"), "ordered[max(0, math.ceil(p / 100 * len(ordered)) - 1)]", "ordered[min(len(ordered) - 1, math.ceil(p / 100 * len(ordered)))]"),
         ("aggregate", 'if r["attempt"] == "completed":\n                entry["durations_ms"].append', 'if True:\n                entry["durations_ms"].append'),
+        (("slo_per_run", "slo_overall"), "if value is None:\n                continue", "if False:\n                continue"),
+        ("slo_rolling", 'window = ordered[-target["window"]:]', 'window = ordered'),
+        ("slo_rolling", 'ordered = sorted(runs, key=lambda r: (r["window"]["start_unix_nano"], r["spans"]))', 'ordered = sorted(runs, key=lambda r: (r["window"]["start_unix_nano"], r["spans"]), reverse=True)'),
+        ("slo_latency", 'p95 = stage["duration_ms"]["p95"] if stage and stage["duration_ms"] else None', 'p95 = stage["duration_ms"]["p50"] if stage and stage["duration_ms"] else None'),
+        ("slo_overall", 'out["unmeasured"] = sum(1 for v in verdicts if v is None)', 'out["unmeasured"] = 0'),
+        ("slo_overall", 'out["met"] = all(v is True for v in verdicts)', 'out["met"] = all(v is not False for v in verdicts)'),
+        ("slo_per_run", "if value == wanted:\n                met += 1", "if True:\n                met += 1"),
+        ("slo_rolling", '"met": (value >= target["at_least"]) if value is not None else None,', '"met": False if value is not None else None,'),
+        ("slo_latency", '"met": (p95 <= target) if p95 is not None else None}', '"met": True if p95 is not None else None}'),
+        ("slo_end_to_end", '"met": p95 <= latency["end_to_end"]}', '"met": True}'),
     ])
     production, tests = source.split("def self_test(", 1)
     failures = 0
@@ -531,6 +683,7 @@ def main():
     parser.add_argument("--status-file", help="driver=N and check=N, as demos/traced.sh writes it")
     parser.add_argument("--check-output", help="what checks/agent_traces.py printed for this run")
     parser.add_argument("--aggregate", action="store_true", help="baseline across sli.json files")
+    parser.add_argument("--slo", help="with --aggregate: hold the runs to this targets file")
     parser.add_argument("-o", "--output", help="write here instead of stdout")
     parser.add_argument("--self-test", action="store_true")
     parser.add_argument("--mutation-test", action="store_true")
@@ -548,7 +701,8 @@ def main():
             if run.get("schema") != SCHEMA:
                 sys.exit(f"FAIL: {path} is not {SCHEMA}")
             runs.append(run)
-        result = aggregate(runs)
+        slo = yaml.safe_load(Path(args.slo).read_text(encoding="utf-8")) if args.slo else None
+        result = aggregate(runs, slo, args.slo)
     else:
         if len(args.spans) != 1:
             parser.error("one spans.jsonl is required")

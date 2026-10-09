@@ -17,8 +17,12 @@ conformant, and a driver that failed anyway.
 | `sli.json` | the stage attempts and indicators `checks/agent_traces_sli.py` computed | generated from the three files above |
 | `report.html` | the page `demos/agent_traces_report.py` rendered from `sli.json` | generated |
 
-`baseline.json` is `--aggregate` over both `sli.json` files: a baseline of two
-runs, which is enough to show the shape and not enough to set a target from.
+`baseline.json` is `--aggregate` over both `sli.json` files, held to
+`checks/agent_traces_slo.yaml`, and `baseline.html` is the page rendered from
+it. Two runs is enough to show the shape and not enough to set a target from;
+the targets were set on the eight-run baseline of 9 Oct 2026, and this sample
+shows one of them missed, the rolling driver pass rate at one run in two,
+which is what a page over a failing run should show.
 
 ## Why the investigate run is committed with a failing driver
 
@@ -52,5 +56,8 @@ for run in governance-all investigate; do
 done
 python3 checks/agent_traces_sli.py --aggregate \
   docs/samples/agent-traces-2026-10-08/*/sli.json \
+  --slo checks/agent_traces_slo.yaml \
   -o docs/samples/agent-traces-2026-10-08/baseline.json
+python3 demos/agent_traces_report.py --baseline \
+  docs/samples/agent-traces-2026-10-08/baseline.json
 ```

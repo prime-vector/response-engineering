@@ -148,8 +148,10 @@ jobs:
             cmp /tmp/sli.json "$d/sli.json"
             python3 demos/agent_traces_report.py "$d/sli.json" --check
           done
-          python3 checks/agent_traces_sli.py --aggregate docs/samples/agent-traces-2026-10-08/*/sli.json -o /tmp/baseline.json
+          python3 checks/agent_traces_sli.py --aggregate docs/samples/agent-traces-2026-10-08/*/sli.json \
+            --slo checks/agent_traces_slo.yaml -o /tmp/baseline.json
           cmp /tmp/baseline.json docs/samples/agent-traces-2026-10-08/baseline.json
+          python3 demos/agent_traces_report.py --baseline docs/samples/agent-traces-2026-10-08/baseline.json --check
 
       - name: Validate every spec
         run: |
