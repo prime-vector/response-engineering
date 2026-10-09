@@ -26,8 +26,8 @@ intelligence:
   # Explicit because the runner's fallback endpoint is OpenAI's even for the
   # anthropic engine, which turns into a bodyless 404 at run time.
   endpoint: https://api.anthropic.com/v1
-  # Stays on Sonnet 4.6 while the other five specs moved to Sonnet 5.5 on
-  # 9 Oct 2026: 5.5's safety classifier refuses the mitigate directive
+  # Stays on Sonnet 4.6, with the Precedent Analyst and the Scribe, while
+  # three specs moved to Sonnet 5.5 on 9 Oct 2026: 5.5's safety classifier refuses the mitigate directive
   # outright (stop_reason refusal, category cyber, no content), so the
   # sandbox demo never reaches the runner's fence, which is the control the
   # demo exists to show. The board ran fine on 5.5; this is the one task.

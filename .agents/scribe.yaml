@@ -32,12 +32,15 @@ intelligence:
   # Explicit because the runner's fallback endpoint is OpenAI's even for the
   # anthropic engine, which turns into a bodyless 404 at run time.
   endpoint: https://api.anthropic.com/v1
-  model: claude-sonnet-5-5
+  # Stays on Sonnet 4.6, with the commander and the Precedent Analyst, while
+  # three specs moved to Sonnet 5.5 on 9 Oct 2026. The timeline ran well on
+  # 5.5; draft_change_record did not run at all: it documents the same
+  # mitigation directive the commander's mitigate task is handed, and 5.5's
+  # safety classifier refuses that input before any tool call. A spec runs
+  # one model, so the task that is refused decides it.
+  model: claude-sonnet-4-6
   config:
     temperature: 0.2
-    # Sonnet 5.5 rejects a temperature and runs adaptive thinking by default;
-    # naming an effort makes the provider send that and drop the temperature.
-    reasoning_effort: medium
     # Agent-wide, so it is sized for the task that needs the most. The
     # timeline is one generation now that the driver files it, but
     # draft_change_record still generates its draft twice in one response,

@@ -32,8 +32,9 @@ intelligence:
     # naming an effort makes the provider send that and drop the temperature.
     reasoning_effort: medium
     max_tokens: 8000
-    # Provider HTTP read timeout. The bridge view is large; the default 60s
-    # is not enough for a full board at 4000 output tokens.
+    # Provider HTTP read timeout. The D+1 view is small but the default 60s
+    # is not enough for a detection report with thinking in front of it: the
+    # first Sonnet 5.5 run spent 26s and 3,700 output tokens on it.
     timeout: 300
 
 # Telemetry only. Change correlation belongs to the Change Correlator, and the
