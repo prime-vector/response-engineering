@@ -510,7 +510,8 @@ def self_test():
                  ("slo_unknown_indicator", lambda: slo_case("unknown")),
                  ("slo_file", lambda: slo_case("file")),
                  ("slo_rolling_none", lambda: slo_case("rolling_none")),
-                 ("slo_stage_series", lambda: slo_case("stage_series"))]
+                 ("slo_stage_series", lambda: slo_case("stage_series")),
+                 ("slo_per_run_order", lambda: slo_case("per_run_order"))]
         for name, probe in extra:
             try:
                 good = bool(probe())
@@ -611,11 +612,22 @@ def slo_case(which):
         s = aggregate(blank, {"rolling": {"driver": {"at_least": 0.9, "window": 2}}}, "x")["slo"]
         return s["rolling"]["driver"]["value"] is None and s["rolling"]["driver"]["met"] is None and s["met"] is False and s["unmeasured"] == 1
     if which == "stage_series":
-        twice = canned() + canned(trace="02")
-        twice[0]["end_time_unix_nano"] = 10 + 50_000_000; twice[1]["start_time_unix_nano"] = 20; twice[1]["end_time_unix_nano"] = 20 + 20_000_000
+        # Two completed attempts of one stage, and an abandoned one between
+        # them: the series keeps both completed durations in start order and
+        # never the abandoned one, which the p95 did not count either.
+        gone = dict(verdict="indeterminate", reason="execution_failed", root_status=2,
+                    error_type="PROVIDER_ERROR", chat_status=2)
+        twice = canned() + canned(trace="02", **gone) + canned(trace="03")
+        twice[0]["end_time_unix_nano"] = 10 + 50_000_000
+        for span in twice[1:-1]:
+            span["start_time_unix_nano"] = 15; span["end_time_unix_nano"] = 15 + 99_000_000
+        twice[-1]["start_time_unix_nano"] = 20; twice[-1]["end_time_unix_nano"] = 20 + 20_000_000
         run = compute(twice, "x", None, None)[0]
         row = aggregate([run])["per_run"][0]
         return row["stages"] == {"scribe:timeline:none": [50, 20]}
+    if which == "per_run_order":
+        rows = aggregate(slo_runs())["per_run"]
+        return [r["spans"] for r in rows] == ["zz-last-by-name", "mm-middle", "aa-first-by-name"]
     if which == "overall":
         easy = {"per_run": {"stage_check": {"equals": True}}, "latency_p95_ms": {"end_to_end": 500}}
         ok = aggregate(runs, easy, "x")["slo"]
@@ -682,6 +694,8 @@ def mutation_test():
         ("slo_rolling", 'ordered = sorted(runs, key=lambda r: (r["window"]["start_unix_nano"], r["spans"]))', 'ordered = sorted(runs, key=lambda r: r["spans"])'),
         ("slo_rolling", 'ordered = sorted(runs, key=lambda r: (r["window"]["start_unix_nano"], r["spans"]))', 'ordered = list(runs)'),
         ("slo_stage_series", 'series.setdefault(a["stage"], []).append(a["duration_ms"])', 'series[a["stage"]] = [a["duration_ms"]]'),
+        ("slo_stage_series", 'if a["attempt"] == "completed":\n            series.setdefault', 'if True:\n            series.setdefault'),
+        ("slo_per_run_order", '    } for r in sorted(runs, key=lambda r: (r["window"]["start_unix_nano"], r["spans"]))]', '    } for r in runs]'),
         (("slo_file", "slo_end_to_end"), '"met": p95 <= latency["end_to_end"]}', '"met": p95 <= latency["end_to_end"]}\n        out["latency_p95_ms"]["end_to_end"]["target"] = 0'),
     ])
     production, tests = source.split("def self_test(", 1)
