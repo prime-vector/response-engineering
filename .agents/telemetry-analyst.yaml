@@ -25,10 +25,13 @@ intelligence:
   # Explicit because the runner's fallback endpoint is OpenAI's even for the
   # anthropic engine, which turns into a bodyless 404 at run time.
   endpoint: https://api.anthropic.com/v1
-  model: claude-sonnet-4-6
+  model: claude-sonnet-5-5
   config:
     temperature: 0.2
-    max_tokens: 4000
+    # Sonnet 5.5 rejects a temperature and runs adaptive thinking by default;
+    # naming an effort makes the provider send that and drop the temperature.
+    reasoning_effort: medium
+    max_tokens: 8000
     # Provider HTTP read timeout. The bridge view is large; the default 60s
     # is not enough for a full board at 4000 output tokens.
     timeout: 300
@@ -198,6 +201,10 @@ tasks:
                   and what remains for anything new.
               alerting:
                 type: boolean
+                description: >
+                  Whether anything alerts on this condition today. A boolean
+                  and never a sentence: the reasoning goes in description.
+                  Pinned after a live run wrote the explanation here.
               owner:
                 type: ["string", "null"]
             required: [description, headroom_assessment]
@@ -291,6 +298,7 @@ prompts:
       alerting, owner
     - next_actions[]: action, owner_role, intent, authorisation_required
     supporting_evidence is always an array of strings, even for one item.
+    alerting is a boolean, true or false, never a sentence.
     Every standing_conditions_implicated entry carries both description and
     headroom_assessment: the headroom arithmetic goes in headroom_assessment,
     never folded into description, and an entry without it is rejected.

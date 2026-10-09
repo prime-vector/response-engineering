@@ -78,6 +78,11 @@ FIRST_TURN = "Incident view placeholder. " * 1500
 # mapping, margin or constant that code happens to hold.
 PROMISED_FLOORS = {
     "claude-sonnet-4-6": 4710,
+    # The patch keys its floor on the model family, so Sonnet 5.5 gets the
+    # same 4,710 characters although its documented minimum is 512 tokens:
+    # conservative, so a prompt between the two is not cached when it could
+    # be, and never the other way round.
+    "claude-sonnet-5-5": 4710,
     "claude-opus-4-8": 4710,
     "claude-haiku-4-5-20251001": 9420,
 }

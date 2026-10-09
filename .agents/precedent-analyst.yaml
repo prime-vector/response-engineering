@@ -35,6 +35,12 @@ intelligence:
   # Explicit because the runner's fallback endpoint is OpenAI's even for the
   # anthropic engine, which turns into a bodyless 404 at run time.
   endpoint: https://api.anthropic.com/v1
+  # Stays on Sonnet 4.6 while four specs moved to Sonnet 5.5 on 9 Oct 2026.
+  # Recall is a reach job, and on the bridge view 5.5 never surfaced the near
+  # miss INC-2411 that the grounding demo turns on, at medium or high effort,
+  # three runs of three; on the 38-case arm it reached 85% of the expected
+  # precedents against 4.6's 90%. The citations it did make were better
+  # grounded, which is the other half of the trade and is recorded there.
   model: claude-sonnet-4-6
   config:
     temperature: 0.2
