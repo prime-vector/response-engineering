@@ -100,6 +100,8 @@ demos/governance.sh                the five governance demos, on demand
 demos/traced.sh                    runs a demo with local agent traces and a stage check
 demos/agent_traces_sink.py          local OTLP/HTTP receiver, writes span metadata to JSONL
 checks/agent_traces.py             checks stage verdicts and tool-call outcomes
+checks/agent_traces_sli.py         per-run indicators from the spans, each tagged with its source
+demos/agent_traces_report.py       renders one run's indicators as a self-contained page
 demos/retry.sh                     one retry, on transport failures and nothing else
 demos/caveats-stripped-system-prompt.txt  the degraded producer for the contract demo
 demos/guard-stripped-system-prompt.txt  the guard-off producer for the attribution reject path
@@ -303,6 +305,35 @@ metadata in span attributes, with content capture off, and puts exception text
 in span events. The sink keeps span names, status codes and attributes as the
 exporter sends them and drops events and status messages. It does not filter
 attributes itself.
+
+### Indicators and the per-run page
+
+After the check, the wrapper writes `sli.json` and `report.html` beside the
+spans: one record per stage attempt, and a set of indicators each tagged with
+its source. `agent traces` indicators are computed from the spans: attempts
+that reached a verdict, `validation_skipped` and `sandbox_not_declared` counts,
+nonconformant stages that ran without a prompt override, blocked sandbox
+decisions recorded as `violation_prevented`, tool calls by outcome, recall
+stages that described coverage before searching, per-stage duration and the
+first-to-last window, and token and cost figures as the runner recorded them.
+The page formats those, rounding cost to cents and ratios to percent and
+placing bars by start and duration, and computes no indicator of its own. The `check`
+indicator is the stage check's exit status, which is where handoff integrity
+lives: the expectations stay in `demos/traced.sh` and the page shows what the
+check reported rather than reading them again. The `driver` indicator is the
+driver's exit status, and everything about content is inside it: outputs
+parsed, citations verified against the adapter log, the filed timeline matching
+its receipt. Filing integrity is not a separate indicator on the page because
+nothing outside the driver can compute it. `checks/agent_traces_sli.py
+--aggregate` folds several runs into a baseline with p50 and p95 per stage,
+nearest rank, so a quoted figure is one that occurred.
+
+`docs/samples/agent-traces-2026-10-08/` holds the two live runs from the
+acceptance day, their indicators and their pages. The investigate run is
+committed with its driver failing and its stage check passing, because that is
+the pairing the split above predicts and the one a page must be able to show.
+CI regenerates both samples from their spans and recorded statuses and fails
+if any generated file differs.
 
 ## Known limits
 

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en-AU"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agent traces report</title><style>
+:root{color-scheme:light;--bg:#fcfcfb;--panel:#f3f2ee;--line:#d9d8d2;--ink:#0b0b0b;--ink2:#52514e;--ink3:#7a7975;
+--ok:#0ca30c;--prevented:#2a78d6;--non:#ec835a;--ind:#d03b3b;--none:#9c9b95}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){color-scheme:dark;--bg:#1a1a19;--panel:#242422;--line:#3a3936;--ink:#fff;--ink2:#c3c2b7;--ink3:#8f8e88;--prevented:#3987e5}}
+:root[data-theme=dark]{color-scheme:dark;--bg:#1a1a19;--panel:#242422;--line:#3a3936;--ink:#fff;--ink2:#c3c2b7;--ink3:#8f8e88;--prevented:#3987e5}
+*{box-sizing:border-box}body{margin:0;padding:24px 16px;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,sans-serif}
+main{max-width:1100px;margin:0 auto}h1{font-size:22px;margin:0 0 4px}h2{font-size:17px;margin:32px 0 10px}
+.sub{color:var(--ink2);margin:0 0 16px}.mono{font-family:ui-monospace,monospace;font-size:13px}
+.badges span{display:inline-block;border:1px solid var(--line);border-radius:4px;padding:2px 8px;margin:0 6px 6px 0;font-size:13px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px}
+.tile{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 12px}
+.tile .k{font-size:12px;color:var(--ink2);text-transform:uppercase;letter-spacing:.03em}
+.tile .v{font-size:26px;font-weight:600;margin:2px 0}.tile .t{font-size:12px;color:var(--ink3)}.tile .n{font-size:12px;color:var(--ink2);margin-top:6px}
+.src{font-size:11px;border-radius:3px;padding:1px 6px;background:var(--line);color:var(--ink);margin-left:6px;vertical-align:middle}
+.gantt{display:grid;grid-template-columns:minmax(180px,auto) 1fr;gap:6px 12px;align-items:center}
+.gantt .lane{position:relative;height:22px;background:var(--panel);border-radius:4px}
+.gantt .bar{position:absolute;top:3px;height:16px;border-radius:4px;min-width:3px}
+.gantt .lab{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.v-ok{background:var(--ok)}.v-prevented{background:var(--prevented)}.v-non{background:var(--non)}.v-ind{background:var(--ind)}
+.ended{background:repeating-linear-gradient(135deg,var(--none) 0 4px,transparent 4px 8px)}
+.chip{display:inline-block;border-radius:3px;padding:0 6px;font-size:12px;color:#fff}.chip.v-prevented{color:#fff}
+.key span{display:inline-block;margin:0 14px 6px 0;font-size:13px}.key i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:4px}
+table{border-collapse:collapse;width:100%;font-size:13px}th,td{text-align:left;vertical-align:top;padding:6px 8px;border-bottom:1px solid var(--line)}th{color:var(--ink2);font-weight:600}
+pre{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px;overflow-x:auto;font-size:12px}
+dl{display:grid;grid-template-columns:max-content 1fr;gap:4px 12px}dt{font-weight:600}dd{margin:0;color:var(--ink2)}
+@media (max-width:600px){.gantt{grid-template-columns:1fr}.gantt .lab{order:-1}dl{grid-template-columns:1fr}}
+</style></head>
+<body><main>
+<h1>Agent traces: investigate</h1>
+<p class="sub">57 spans, 5 stage attempts, 432.4s first stage start to last stage end<span class="src">agent traces</span>. <span class="mono">docs/samples/agent-traces-2026-10-08/investigate/spans.jsonl</span></p>
+<div class="badges"><span>driver: exit 1 (fail)</span><span>stage check: exit 0 (pass)</span></div>
+<h2>Indicators</h2>
+<div class="tiles">
+<div class="tile"><div class="k">stage check<span class="src">check</span></div><div class="v">pass</div><div class="t">exit 0</div><div class="n">Handoff integrity: every stage the mode expects present, with its expected verdict, each listing matched once. Not computed here; reported by the check.</div></div>
+<div class="tile"><div class="k">driver<span class="src">driver</span></div><div class="v">fail</div><div class="t">exit 1</div><div class="n">The driver&#x27;s verdict on content. Filing integrity, grounding and output parsing are in here and are not separable from this file.</div></div>
+<div class="tile"><div class="k">attempts with verdict<span class="src">agent traces</span></div><div class="v">100%</div><div class="t">5 of 5</div><div class="n">Attempts that reached a verdict. The remainder ended on a failed model call, which is how OA 1.6.2 records a transport failure and equally a rejected key; the drivers retry a transport failure once, and only on a stage that does not write.</div></div>
+<div class="tile"><div class="k">validation skipped<span class="src">agent traces</span></div><div class="v">0</div><div class="t">target 0</div><div class="n">Stages whose output never reached schema or contract validation: the truncated-JSON fail-open.</div></div>
+<div class="tile"><div class="k">sandbox not declared<span class="src">agent traces</span></div><div class="v">0</div><div class="t">target 0</div><div class="n">Stages that ran a task with no sandbox, which is allow-all.</div></div>
+<div class="tile"><div class="k">nonconformant without override<span class="src">agent traces</span></div><div class="v">0</div><div class="t"></div><div class="n">Nonconformant stages that ran the spec&#x27;s own prompt. The governance reject paths run under a system override, so these are outside them. Whether one was expected is the check&#x27;s call.</div></div>
+<div class="tile"><div class="k">blocked recorded as prevented<span class="src">agent traces</span></div><div class="v">n/a</div><div class="t">0 of 0 · target 100%</div><div class="n">Stages with a blocked sandbox decision that ended violation_prevented.</div></div>
+<div class="tile"><div class="k">tool calls<span class="src">agent traces</span></div><div class="v">13 / 0 / 0</div><div class="t">success / error / blocked</div><div class="n">Tool spans by outcome. Success means the call did not raise; what it returned is in the adapter log.</div></div>
+<div class="tile"><div class="k">recall coverage first<span class="src">agent traces</span></div><div class="v">100%</div><div class="t">1 of 1</div><div class="n">Completed recall stages that called coverage_describe before any precedent_search, by span start order. Whether the search was bounded is an argument, and arguments are not in spans.</div></div>
+<div class="tile"><div class="k">model usage<span class="src">agent traces</span></div><div class="v">$0.54</div><div class="t">11 calls, 49,880 in, 25,985 out tokens</div><div class="n">As the runner recorded them. The CLI&#x27;s usage mapper keeps input and output tokens and drops the cache fields, so cached input is absent from the count and from the runner&#x27;s estimate.</div></div>
+</div>
+<h2>Stages</h2>
+<div class="key"><span><i class="v-ok"></i>conformant</span><span><i class="v-prevented"></i>violation prevented</span><span><i class="v-non"></i>nonconformant</span><span><i class="v-ind"></i>indeterminate</span><span><i class="ended"></i>ended before verdict</span></div>
+<div class="gantt">
+<div class="lab">telemetry-analyst:detect:none <span class="chip v-ok">conformant</span></div><div class="lane"><div class="bar v-ok" style="left:0.00%;width:10.51%" title="telemetry-analyst:detect:none: conformant, 45.5s"></div></div>
+<div class="lab">precedent-analyst:recall:none <span class="chip v-ok">conformant</span></div><div class="lane"><div class="bar v-ok" style="left:10.73%;width:11.26%" title="precedent-analyst:recall:none: conformant, 48.7s"></div></div>
+<div class="lab">change-correlator:correlate:none <span class="chip v-ok">conformant</span></div><div class="lane"><div class="bar v-ok" style="left:22.18%;width:8.47%" title="change-correlator:correlate:none: conformant, 36.6s"></div></div>
+<div class="lab">incident-commander:assess:none <span class="chip v-ok">conformant</span></div><div class="lane"><div class="bar v-ok" style="left:30.79%;width:18.35%" title="incident-commander:assess:none: conformant, 79.3s"></div></div>
+<div class="lab">scribe:timeline:none <span class="chip v-ok">conformant</span></div><div class="lane"><div class="bar v-ok" style="left:49.33%;width:50.67%" title="scribe:timeline:none: conformant, 219.1s"></div></div>
+</div>
+<p class="sub">First root span start to last root span end, so it includes the driver&#x27;s own work between stages and nothing before the first stage or after the last. One trace per <span class="mono">oa run</span> until OA issue #116 lands, so stages are grouped by this run directory and ordered by start time.</p>
+<h2>Stage detail</h2>
+<table><thead><tr><th>stage</th><th>verdict</th><th>reason</th><th>attempt</th><th>duration</th><th>model calls</th><th>tokens in / out</th><th>est. cost</th><th>tool calls</th><th>sandbox</th><th>validation</th><th>contract</th><th>spec hash</th></tr></thead><tbody><tr><td>telemetry-analyst:detect:none</td><td>conformant</td><td></td><td>completed</td><td>45.5s</td><td>1</td><td>2 / 2,225</td><td>$0.033</td><td>none</td><td>0 allowed, 0 blocked</td><td>output_schema=passed</td><td>passed</td><td>sha256:4b7a4c1465d3</td></tr><tr><td>precedent-analyst:recall:none</td><td>conformant</td><td></td><td>completed</td><td>48.7s</td><td>5</td><td>20,879 / 2,317</td><td>$0.097</td><td>coverage_describe=success, precedent_search=success, precedent_search=success, precedent_search=success, precedent_search=success, precedent_search=success, precedent_search=success, passage_get=success, passage_get=success</td><td>9 allowed, 0 blocked</td><td>output_schema=passed</td><td>passed</td><td>sha256:db5c3128ab96</td></tr><tr><td>change-correlator:correlate:none</td><td>conformant</td><td></td><td>completed</td><td>36.6s</td><td>2</td><td>712 / 1,701</td><td>$0.028</td><td>changes_list=success, packages_installed=success, deployments_list=success</td><td>3 allowed, 0 blocked</td><td>output_schema=passed</td><td>passed</td><td>sha256:4e4587e002e6</td></tr><tr><td>incident-commander:assess:none</td><td>conformant</td><td></td><td>completed</td><td>79.3s</td><td>1</td><td>19,939 / 4,200</td><td>$0.123</td><td>none</td><td>0 allowed, 0 blocked</td><td>output_schema=passed</td><td>passed</td><td>sha256:54263f1de62e</td></tr><tr><td>scribe:timeline:none</td><td>conformant</td><td></td><td>completed</td><td>219.1s</td><td>2</td><td>8,348 / 15,542</td><td>$0.258</td><td>record_update=success</td><td>1 allowed, 0 blocked</td><td>output_schema=passed</td><td>passed</td><td>sha256:304bfe95a9e7</td></tr></tbody></table>
+<h2>What the stage check reported</h2>
+<pre>telemetry-analyst:detect:none [trace 5c7ec96235d774dcc9b477006f5b4823] spec=telemetry-analyst task=detect prompt_override=none verdict=conformant reason=- tools=- attempt=completed
+precedent-analyst:recall:none [trace 64606016cad7b4414cf24962cb42773a] spec=precedent-analyst task=recall prompt_override=none verdict=conformant reason=- tools=coverage_describe=success,precedent_search=success,precedent_search=success,precedent_search=success,precedent_search=success,precedent_search=success,precedent_search=success,passage_get=success,passage_get=success attempt=completed
+change-correlator:correlate:none [trace 2735c53733fd5635d3b4e3d773bb9cf1] spec=change-correlator task=correlate prompt_override=none verdict=conformant reason=- tools=changes_list=success,packages_installed=success,deployments_list=success attempt=completed
+incident-commander:assess:none [trace 1f6c66ff5042a09a4fd49dded18f686e] spec=incident-commander task=assess prompt_override=none verdict=conformant reason=- tools=- attempt=completed
+scribe:timeline:none [trace d4b6203f8d2a6a6147232d3ce9fd05e3] spec=scribe task=timeline prompt_override=none verdict=conformant reason=- tools=record_update=success attempt=completed</pre>
+
+<h2>What each source can say</h2>
+<dl><dt>agent traces</dt><dd>computed from span metadata: that a call was made and how it ended, never what it carried</dd><dt>check</dt><dd>what checks/agent_traces.py reported for this run against the expectations the driver mode set</dd><dt>driver</dt><dd>the driver&#x27;s own exit status, which folds in every check about content: outputs parsed, citations verified against the adapter log, and the filed timeline matching its receipt</dd></dl>
+<p class="sub">A span shows that a tool was called and whether the call raised. It does not show what was filed, which passages were cited, or what the model wrote. What the surface accepted and which passages left it are in the adapter log; what the model wrote, citations included, is its output; the driver holds the one against the other.</p>
+</main></body></html>
