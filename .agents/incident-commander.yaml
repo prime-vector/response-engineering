@@ -26,6 +26,12 @@ intelligence:
   # Explicit because the runner's fallback endpoint is OpenAI's even for the
   # anthropic engine, which turns into a bodyless 404 at run time.
   endpoint: https://api.anthropic.com/v1
+  # Stays on Sonnet 4.6, with the Precedent Analyst and the Scribe, while
+  # three specs moved to Sonnet 5.5 on 9 Oct 2026: on every recorded run,
+  # 5.5's safety classifier returned the mitigate directive as a refusal
+  # (stop_reason refusal, category cyber, no content), so the sandbox demo
+  # never reached the runner's fence, which is the control the demo exists
+  # to show. The board ran fine on 5.5; this is the one task.
   model: claude-sonnet-4-6
   config:
     temperature: 0.2
@@ -33,7 +39,7 @@ intelligence:
     # runner does not surface truncation: a board cut mid-JSON is returned
     # as a raw string with schema and contract validation silently skipped.
     # Headroom here is therefore a correctness setting, not a cost one.
-    max_tokens: 8000
+    max_tokens: 16000
     # Provider HTTP read timeout. The bridge view is large; the default 60s
     # is not enough for a full board at this output size.
     timeout: 300
@@ -252,10 +258,15 @@ tasks:
                   falsifying test is an opinion and must be labelled as one.
               rules_in:
                 type: string
-                description: What a positive result would establish
+                description: >-
+                  What a positive result would establish. One string, never a
+                  list: a live run on a newer model wrote a one-item list here
+                  and lost the whole board to the schema.
               rules_out:
                 type: string
-                description: What a positive result would eliminate
+                description: >-
+                  What a positive result would eliminate. One string, never a
+                  list.
               third_party_named:
                 type: boolean
                 description: >
@@ -1001,7 +1012,8 @@ prompts:
     Field names must match the contract exactly:
     - hypotheses[]: statement, confidence, supporting_evidence,
       contradicting_evidence, falsifying_test, rules_in, rules_out,
-      third_party_named, precedent_cited
+      third_party_named, precedent_cited. rules_in and rules_out are each
+      one string, never a list.
     - blocking_evidence[]: description, how_to_obtain, requested_from,
       requested_at_elapsed_minutes, still_outstanding. Those five and no
       others: an item carrying any further field is rejected. Every item
