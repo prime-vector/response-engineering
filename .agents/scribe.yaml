@@ -35,9 +35,10 @@ intelligence:
   # Stays on Sonnet 4.6, with the commander and the Precedent Analyst, while
   # three specs moved to Sonnet 5.5 on 9 Oct 2026. The timeline ran well on
   # 5.5; draft_change_record did not run at all: it documents the same
-  # mitigation directive the commander's mitigate task is handed, and 5.5's
-  # safety classifier refuses that input before any tool call. A spec runs
-  # one model, so the task that is refused decides it.
+  # mitigation directive the commander's mitigate task is handed, and on the
+  # one run recorded 5.5's safety classifier returned it as a refusal before
+  # any tool call, as it did the commander's on every run. A spec runs one
+  # model, so the task that was refused decides it.
   model: claude-sonnet-4-6
   config:
     temperature: 0.2
