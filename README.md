@@ -102,7 +102,9 @@ demos/traced.sh                    runs a demo with local agent traces and a sta
 demos/agent_traces_sink.py          local OTLP/HTTP receiver, writes span metadata to JSONL
 checks/agent_traces.py             checks stage verdicts and tool-call outcomes
 checks/agent_traces_sli.py         per-run indicators from the spans, each tagged with its source
-demos/agent_traces_report.py       renders one run's indicators as a self-contained page
+demos/agent_traces_report.py       renders one run's indicators, or the baseline, as a self-contained page
+demos/agent_traces_baseline.sh     aggregates traced runs against the objectives and renders runs/baseline.html
+checks/agent_traces_slo.yaml       the objectives: per-run contracts, one rolling budget, latency p95 ceilings
 demos/retry.sh                     one retry, on transport failures and nothing else
 demos/caveats-stripped-system-prompt.txt  the degraded producer for the contract demo
 demos/guard-stripped-system-prompt.txt  the guard-off producer for the attribution reject path
@@ -336,7 +338,15 @@ parsed, citations verified against the adapter log, the filed timeline matching
 its receipt. Filing integrity is not a separate indicator on the page because
 nothing outside the driver can compute it. `checks/agent_traces_sli.py
 --aggregate` folds several runs into a baseline with p50 and p95 per stage,
-nearest rank, so a quoted figure is one that occurred.
+nearest rank, so a quoted figure is one that occurred, and with `--slo` holds
+them to the objectives in `checks/agent_traces_slo.yaml`, the only place a
+target lives. `demos/agent_traces_baseline.sh` does both over the runs it is
+given and renders `runs/baseline.html`: each objective with its target,
+measured value and met or missed, one row per run, and a sparkline per stage
+against its latency target. The objectives were set on 9 Oct 2026 from an
+eight-run baseline: the contract indicators hold on every run, the driver's
+content checks carry the one error budget, and latency is a p95 ceiling with
+headroom over what was observed.
 
 `docs/samples/agent-traces-2026-10-08/` holds the two live runs from the
 acceptance day, their indicators and their pages. The investigate run is

@@ -120,6 +120,16 @@ split is the reason the committed investigate sample under
 and its driver failing: the spans said every call succeeded, and the content
 check said the filed payload was not the reported one. Both were right.
 
+## Objectives
+
+`checks/agent_traces_slo.yaml` holds the service level objectives over
+these indicators, and `checks/agent_traces_sli.py --aggregate --slo` holds a
+set of runs to them. Per-run objectives are the contract indicators and must
+hold on every run they can be measured on; the driver's pass rate is a rolling
+rate over a window, the one objective with an error budget; latency objectives
+are p95 ceilings per stage and end to end. `demos/agent_traces_baseline.sh`
+renders the result as `runs/baseline.html`.
+
 ## Cost
 
 `oa.usage.estimated_cost_usd` is the runner's estimate from its own per-model

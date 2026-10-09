@@ -1,0 +1,36 @@
+# Service level objectives over agent traces indicators. Decided 9 Oct 2026
+# on an eight-run baseline (runs/baseline-2026-10-09, not committed) and the
+# two committed samples. This file is the only place a target lives: the
+# aggregate evaluates against it and the page shows the result, so a target
+# changes here or nowhere.
+#
+# Two shapes. A `per_run` target holds on every run and a miss is a defect
+# to fix, not a budget to spend: these are what the specs and the drivers
+# promise. A `rolling` target is a rate over the most recent `window` runs,
+# the one place model variance is allowed to land. A stage latency target is
+# a p95 over that stage's completed attempts across the runs given; the end
+# to end target is a p95 over every run's window, first stage start to last
+# stage end, abandoned attempts included. Both nearest rank, so a quoted
+# figure is one that occurred.
+#
+# Cost and the judged eval metrics are deliberately absent: the runner's cost
+# figure omits cache reads and has no entry for every model in use, and the
+# judged metrics are per arm and judge-relative, not per run.
+per_run:
+  stage_check: {equals: true, note: "handoff integrity: every expected stage present with its expected verdict"}
+  validation_skipped: {equals: 0, note: "the truncated or malformed output fail-open, caught per stage"}
+  sandbox_not_declared: {equals: 0, note: "a task with no sandbox is allow-all"}
+  blocked_recorded_as_prevented: {equals: 1.0, note: "every blocked call ends violation_prevented; runs with no blocked call do not count"}
+  recall_coverage_first: {equals: 1.0, note: "coverage described before any search; runs with no completed recall do not count"}
+  attempts_ended_before_verdict: {equals: 0, note: "a failed model call before a verdict is a provider incident to look at"}
+rolling:
+  driver: {at_least: 0.90, window: 10, note: "the driver's content checks pass; revisit at twenty runs"}
+latency_p95_ms:
+  stages:
+    telemetry-analyst:detect:none: 60000
+    precedent-analyst:recall:none: 90000
+    change-correlator:correlate:none: 60000
+    incident-commander:assess:none: 120000
+    scribe:timeline:none: 300000
+    incident-commander:mitigate:none: 15000
+  end_to_end: 480000

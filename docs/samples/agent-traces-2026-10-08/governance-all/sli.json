@@ -455,13 +455,11 @@
     "validation_skipped": {
       "source": "agent traces",
       "value": 0,
-      "target": 0,
       "note": "Stages whose output never reached schema or contract validation: the truncated-JSON fail-open."
     },
     "sandbox_not_declared": {
       "source": "agent traces",
       "value": 0,
-      "target": 0,
       "note": "Stages that ran a task with no sandbox, which is allow-all."
     },
     "nonconformant_without_override": {
@@ -474,7 +472,6 @@
       "value": 1.0,
       "numerator": 1,
       "denominator": 1,
-      "target": 1.0,
       "note": "Stages with a blocked sandbox decision that ended violation_prevented."
     },
     "tool_calls": {
