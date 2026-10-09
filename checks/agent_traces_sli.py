@@ -654,7 +654,7 @@ def mutation_test():
         ("usage_bool", "type(value) is not int", "not isinstance(value, int)"),
         ("cost_bool", "isinstance(cost, bool) or", ""),
         ("model_call_error", '"status": "error" if span["status_code"] == 2 else "ok"', '"status": "ok"'),
-        (("ended_before_verdict", "recall_abandoned_excluded", "aggregate", "slo_per_run"),
+        (("ended_before_verdict", "recall_abandoned_excluded", "aggregate", "slo_per_run", "slo_stage_series"),
          'if provider_failure(root, verdict, reason, members) else "completed"', 'if False else "completed"'),
         ("reason_sandbox_not_declared", 'r["reason"] == "validation_skipped"', 'r["reason"] in ("validation_skipped", "sandbox_not_declared")'),
         ("reason_validation_skipped", 'r["reason"] == "sandbox_not_declared"', 'r["reason"] in ("validation_skipped", "sandbox_not_declared")'),
