@@ -83,9 +83,6 @@ def tiles(indicators):
     out = []
     for name, ind in indicators.items():
         shown, detail = fmt_value(name, ind)
-        target = ind.get("target")
-        if target is not None:
-            detail = (detail + " · " if detail else "") + "target " + (f"{target * 100:.0f}%" if isinstance(target, float) else str(target))
         out.append(f'<div class="tile"><div class="k">{esc(name.replace("_", " "))}'
                    f'<span class="src">{esc(ind["source"])}</span></div><div class="v">{esc(shown)}</div>'
                    f'<div class="t">{esc(detail)}</div><div class="n">{esc(ind["note"])}</div></div>')
@@ -196,13 +193,15 @@ def baseline_page(agg):
                          f"<td>{esc(shown)} over {v['runs_in_window']} runs</td><td>{verdict(v['met'])}</td><td>{esc(v['note'])}</td></tr>")
         lat = slo["latency_p95_ms"]
         for key, v in lat["stages"].items():
-            series = [r["stages"][key] for r in runs if key in r["stages"]]
+            series = [d for r in runs for d in r["stages"].get(key, [])]
             items.append(f"<tr><td>{esc(key)}<span class=\"src\">p95</span></td><td>&le; {esc(seconds(v['target']))}</td>"
                          f"<td>{'n/a' if v['p95'] is None else esc(seconds(v['p95']))} {sparkline(series, v['target'])}</td><td>{verdict(v['met'])}</td><td></td></tr>")
         if "end_to_end" in lat:
             v = lat["end_to_end"]
             items.append(f"<tr><td>end to end<span class=\"src\">p95</span></td><td>&le; {esc(seconds(v['target']))}</td>"
                          f"<td>{esc(seconds(v['p95']))} {sparkline([r['duration_ms'] for r in runs], v['target'])}</td><td>{verdict(v['met'])}</td><td></td></tr>")
+        # Every objective row is read from the aggregate; the page holds no
+        # target of its own, and the per-run page shows none at all.
         head = "".join(f"<th>{h}</th>" for h in ("objective", "target", "measured", "status", "note"))
         slo_html = (f"<h2>Objectives: {'all met' if slo['met'] else 'not all met'}"
                     f"{', ' + str(slo['unmeasured']) + ' not measurable' if slo['unmeasured'] else ''}</h2>"
@@ -290,7 +289,7 @@ def self_test():
     for needle in ("driver: exit 1 (fail)", "stage check: exit 0 (pass)", "line &lt;one&gt;", "x/&lt;spans&gt;.jsonl",
                    "ended before verdict", "validation skipped", "Baseline across 2 runs", "read=blocked",
                    'class="bar v-prevented"', 'class="bar ended"', 'class="bar v-non"', 'class="bar v-ind"',
-                   "target 100%", "target 0", "success / error / blocked"):
+                   "success / error / blocked"):
         assert needle in page, needle
     assert all("source" in run["indicators"][k] for k in run["indicators"]) and run["window"]["source"] == "agent traces"
     for forbidden in ("<script", "http", "//", "href=", "src=", "url(", "@import", "@font-face", "<link", "<iframe", "<object", "<embed"):

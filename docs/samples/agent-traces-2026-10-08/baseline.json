@@ -130,11 +130,23 @@
       "validation_skipped": 0,
       "ended_before_verdict": 0,
       "stages": {
-        "incident-commander:mitigate:none": 7094,
-        "incident-commander:assess:none": 51996,
-        "incident-commander:assess:system": 35549,
-        "precedent-analyst:recall:none": 19538,
-        "precedent-analyst:recall:system": 24118
+        "incident-commander:mitigate:none": [
+          7094
+        ],
+        "incident-commander:assess:none": [
+          51996
+        ],
+        "incident-commander:assess:system": [
+          40142,
+          35549
+        ],
+        "precedent-analyst:recall:none": [
+          49546,
+          19538
+        ],
+        "precedent-analyst:recall:system": [
+          24118
+        ]
       }
     },
     {
@@ -147,11 +159,21 @@
       "validation_skipped": 0,
       "ended_before_verdict": 0,
       "stages": {
-        "telemetry-analyst:detect:none": 45453,
-        "precedent-analyst:recall:none": 48705,
-        "change-correlator:correlate:none": 36631,
-        "incident-commander:assess:none": 79340,
-        "scribe:timeline:none": 219097
+        "telemetry-analyst:detect:none": [
+          45453
+        ],
+        "precedent-analyst:recall:none": [
+          48705
+        ],
+        "change-correlator:correlate:none": [
+          36631
+        ],
+        "incident-commander:assess:none": [
+          79340
+        ],
+        "scribe:timeline:none": [
+          219097
+        ]
       }
     }
   ],

@@ -169,16 +169,16 @@ def indicators(attempts, driver_status, check_status):
             "note": "Attempts that reached a verdict. The remainder ended on a failed model call, which is how OA 1.6.2 records a transport failure and equally a rejected key; the drivers retry a transport failure once, and only on a stage that does not write."},
         "validation_skipped": {
             "source": "agent traces", "value": sum(1 for r in attempts if r["verdict"] == "indeterminate" and r["reason"] == "validation_skipped"),
-            "target": 0, "note": "Stages whose output never reached schema or contract validation: the truncated-JSON fail-open."},
+            "note": "Stages whose output never reached schema or contract validation: the truncated-JSON fail-open."},
         "sandbox_not_declared": {
             "source": "agent traces", "value": sum(1 for r in attempts if r["verdict"] == "indeterminate" and r["reason"] == "sandbox_not_declared"),
-            "target": 0, "note": "Stages that ran a task with no sandbox, which is allow-all."},
+            "note": "Stages that ran a task with no sandbox, which is allow-all."},
         "nonconformant_without_override": {
             "source": "agent traces", "value": sum(1 for r in completed if r["verdict"] == "nonconformant" and r["prompt_override"] == "none"),
             "note": "Nonconformant stages that ran the spec's own prompt. The governance reject paths run under a system override, so these are outside them. Whether one was expected is the check's call."},
         "blocked_recorded_as_prevented": {
             "source": "agent traces", **ratio(sum(1 for r in blocked if r["verdict"] == "violation_prevented"), len(blocked)),
-            "target": 1.0, "note": "Stages with a blocked sandbox decision that ended violation_prevented."},
+            "note": "Stages with a blocked sandbox decision that ended violation_prevented."},
         "tool_calls": {
             "source": "agent traces", **outcomes,
             "note": "Tool spans by outcome. Success means the call did not raise; what it returned is in the adapter log."},
@@ -263,7 +263,10 @@ def aggregate(runs, slo=None, slo_path=None):
         "check_status": r["check_status"], "attempts": len(r["attempts"]),
         "validation_skipped": r["indicators"]["validation_skipped"]["value"],
         "ended_before_verdict": PER_RUN_DERIVED["attempts_ended_before_verdict"](r["indicators"]),
-        "stages": {a["stage"]: a["duration_ms"] for a in r["attempts"] if a["attempt"] == "completed"},
+        # Every completed attempt, in start order: a run may hold a stage
+        # twice (governance all runs assess:system in two modes), and the p95
+        # walked all of them, so the series drawn against it must too.
+        "stages": stage_series(r),
     } for r in sorted(runs, key=lambda r: (r["window"]["start_unix_nano"], r["spans"]))]
     if slo is not None:
         out["slo"] = {"source": str(slo_path), **evaluate_slo(runs, slo, out)}
@@ -283,6 +286,14 @@ def per_run_value(indicators, name):
     if name not in indicators:  # guard slo_unknown_indicator
         raise ValueError(f"target names an indicator no run carries: {name}")
     return indicators.get(name, {"value": None})["value"]
+
+
+def stage_series(run):
+    series = {}
+    for a in run["attempts"]:
+        if a["attempt"] == "completed":
+            series.setdefault(a["stage"], []).append(a["duration_ms"])
+    return series
 
 
 def evaluate_slo(runs, targets, agg):
@@ -497,7 +508,9 @@ def self_test():
                  ("slo_end_to_end", lambda: slo_case("end_to_end")),
                  ("slo_overall", lambda: slo_case("overall")),
                  ("slo_unknown_indicator", lambda: slo_case("unknown")),
-                 ("slo_file", lambda: slo_case("file"))]
+                 ("slo_file", lambda: slo_case("file")),
+                 ("slo_rolling_none", lambda: slo_case("rolling_none")),
+                 ("slo_stage_series", lambda: slo_case("stage_series"))]
         for name, probe in extra:
             try:
                 good = bool(probe())
@@ -546,15 +559,17 @@ def slo_runs():
     runs = []
     # Driver statuses 1, 0, 0 in start order: a rolling window of two sees
     # two passes, the whole sequence sees two of three, and the reversed
-    # sequence sees one of two, so the window and its direction both show.
-    specs = [((1, 0), canned(), 1_000_000), ((0, 0), canned(**gone) + canned(trace="02"), 2_000_000),
-             ((0, 0), canned(), 400_000_000)]
-    for (driver, check), data, length in specs:
+    # sequence sees one of two. Names run counter to start order and the
+    # list is returned out of order, so a window taken by file name or by
+    # argument order sees a different pair than one taken by start time.
+    specs = [((1, 0), canned(), 1_000_000, "zz-last-by-name"), ((0, 0), canned(**gone) + canned(trace="02"), 2_000_000, "mm-middle"),
+             ((0, 0), canned(), 400_000_000, "aa-first-by-name")]
+    for index, ((driver, check), data, length, name) in enumerate(specs):
         for span in data:
-            span["start_time_unix_nano"] = 10 + len(runs) * 10_000_000_000
+            span["start_time_unix_nano"] = 10 + index * 10_000_000_000
             span["end_time_unix_nano"] = span["start_time_unix_nano"] + length
-        runs.append(compute(data, f"run{len(runs)}", driver, check)[0])
-    return runs
+        runs.append(compute(data, name, driver, check)[0])
+    return [runs[1], runs[2], runs[0]]
 
 
 def slo_case(which):
@@ -571,13 +586,15 @@ def slo_case(which):
     if which == "file":
         targets = yaml.safe_load(Path(__file__).with_name("agent_traces_slo.yaml").read_text(encoding="utf-8"))
         s = aggregate(runs, targets, "x")["slo"]
-        return (set(s["per_run"]) == set(targets["per_run"]) and set(s["rolling"]) == set(targets["rolling"])
-                and set(s["latency_p95_ms"]["stages"]) == set(targets["latency_p95_ms"]["stages"]))
+        return ({k: v["target"] for k, v in s["per_run"].items()} == {k: v["equals"] for k, v in targets["per_run"].items()}
+                and {k: (v["target"], v["window"]) for k, v in s["rolling"].items()} == {k: (v["at_least"], v["window"]) for k, v in targets["rolling"].items()}
+                and {k: v["target"] for k, v in s["latency_p95_ms"]["stages"].items()} == targets["latency_p95_ms"]["stages"]
+                and s["latency_p95_ms"]["end_to_end"]["target"] == targets["latency_p95_ms"]["end_to_end"])
     s = aggregate(runs, targets, "x")["slo"]
     if which == "per_run":
         return (s["per_run"]["stage_check"] == {"target": True, "runs_counted": 3, "runs_met": 3, "met": True, "missed": [], "note": ""}
                 and s["per_run"]["attempts_ended_before_verdict"]["runs_met"] == 2
-                and s["per_run"]["attempts_ended_before_verdict"]["missed"] == ["run1"]
+                and s["per_run"]["attempts_ended_before_verdict"]["missed"] == ["mm-middle"]
                 and s["per_run"]["attempts_ended_before_verdict"]["met"] is False
                 and s["per_run"]["blocked_recorded_as_prevented"]["runs_counted"] == 0
                 and s["per_run"]["blocked_recorded_as_prevented"]["met"] is None)
@@ -589,6 +606,16 @@ def slo_case(which):
         return st["scribe:timeline:none"] == {"target": 300, "p95": 400, "met": False} and st["other:task:none"] == {"target": 1, "p95": None, "met": None}
     if which == "end_to_end":
         return s["latency_p95_ms"]["end_to_end"] == {"target": 350, "p95": 400, "met": False}
+    if which == "rolling_none":
+        blank = [compute(canned(trace=f"0{i}"), f"n{i}", None, None)[0] for i in range(2)]
+        s = aggregate(blank, {"rolling": {"driver": {"at_least": 0.9, "window": 2}}}, "x")["slo"]
+        return s["rolling"]["driver"]["value"] is None and s["rolling"]["driver"]["met"] is None and s["met"] is False and s["unmeasured"] == 1
+    if which == "stage_series":
+        twice = canned() + canned(trace="02")
+        twice[0]["end_time_unix_nano"] = 10 + 50_000_000; twice[1]["start_time_unix_nano"] = 20; twice[1]["end_time_unix_nano"] = 20 + 20_000_000
+        run = compute(twice, "x", None, None)[0]
+        row = aggregate([run])["per_run"][0]
+        return row["stages"] == {"scribe:timeline:none": [50, 20]}
     if which == "overall":
         easy = {"per_run": {"stage_check": {"equals": True}}, "latency_p95_ms": {"end_to_end": 500}}
         ok = aggregate(runs, easy, "x")["slo"]
@@ -629,7 +656,7 @@ def mutation_test():
         ("recall_order_by_start", 'key=lambda s: (s["start_time_unix_nano"], s["span_id"])', 'key=lambda s: s["span_id"]'),
         (("statuses", "aggregate"), '"value": None if driver_status is None else driver_status == 0', '"value": None if driver_status is None else True'),
         ("statuses_unknown", '"value": None if check_status is None else check_status == 0', '"value": check_status == 0'),
-        ("window_and_order", 'attempts.sort(key=lambda r: (r["start_unix_nano"], r["trace_id"]))', 'attempts.sort(key=lambda r: r["trace_id"], reverse=True)'),
+        (("window_and_order", "slo_stage_series"), 'attempts.sort(key=lambda r: (r["start_unix_nano"], r["trace_id"]))', 'attempts.sort(key=lambda r: r["trace_id"], reverse=True)'),
         (("window_and_order", "window_sub_millisecond", "aggregate", "slo_end_to_end"), '"duration_ms": ms(max(ends) - min(starts))', '"duration_ms": ms(max(starts) - min(starts))'),
         ("window_sub_millisecond", 'ends = [r["end_unix_nano"] for r in attempts]', 'ends = [r["start_unix_nano"] + r["duration_ms"] * 1_000_000 for r in attempts]'),
         ("status_partial", 'return values.get("driver"), values.get("check")', 'return values.get("driver", 0), values.get("check")'),
@@ -645,12 +672,17 @@ def mutation_test():
         ("slo_rolling", 'window = ordered[-target["window"]:]', 'window = ordered'),
         ("slo_rolling", 'ordered = sorted(runs, key=lambda r: (r["window"]["start_unix_nano"], r["spans"]))', 'ordered = sorted(runs, key=lambda r: (r["window"]["start_unix_nano"], r["spans"]), reverse=True)'),
         ("slo_latency", 'p95 = stage["duration_ms"]["p95"] if stage and stage["duration_ms"] else None', 'p95 = stage["duration_ms"]["p50"] if stage and stage["duration_ms"] else None'),
-        ("slo_overall", 'out["unmeasured"] = sum(1 for v in verdicts if v is None)', 'out["unmeasured"] = 0'),
-        ("slo_overall", 'out["met"] = all(v is True for v in verdicts)', 'out["met"] = all(v is not False for v in verdicts)'),
+        (("slo_overall", "slo_rolling_none"), 'out["unmeasured"] = sum(1 for v in verdicts if v is None)', 'out["unmeasured"] = 0'),
+        (("slo_overall", "slo_rolling_none"), 'out["met"] = all(v is True for v in verdicts)', 'out["met"] = all(v is not False for v in verdicts)'),
         ("slo_per_run", "if value == wanted:\n                met += 1", "if True:\n                met += 1"),
         ("slo_rolling", '"met": (value >= target["at_least"]) if value is not None else None,', '"met": False if value is not None else None,'),
         ("slo_latency", '"met": (p95 <= target) if p95 is not None else None}', '"met": True if p95 is not None else None}'),
         ("slo_end_to_end", '"met": p95 <= latency["end_to_end"]}', '"met": True}'),
+        ("slo_rolling_none", '"met": (value >= target["at_least"]) if value is not None else None,', '"met": (value >= target["at_least"]) if value is not None else True,'),
+        ("slo_rolling", 'ordered = sorted(runs, key=lambda r: (r["window"]["start_unix_nano"], r["spans"]))', 'ordered = sorted(runs, key=lambda r: r["spans"])'),
+        ("slo_rolling", 'ordered = sorted(runs, key=lambda r: (r["window"]["start_unix_nano"], r["spans"]))', 'ordered = list(runs)'),
+        ("slo_stage_series", 'series.setdefault(a["stage"], []).append(a["duration_ms"])', 'series[a["stage"]] = [a["duration_ms"]]'),
+        (("slo_file", "slo_end_to_end"), '"met": p95 <= latency["end_to_end"]}', '"met": p95 <= latency["end_to_end"]}\n        out["latency_p95_ms"]["end_to_end"]["target"] = 0'),
     ])
     production, tests = source.split("def self_test(", 1)
     failures = 0
