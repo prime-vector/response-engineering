@@ -7,8 +7,10 @@
 # Two shapes. A `per_run` target holds on every run and a miss is a defect
 # to fix, not a budget to spend: these are what the specs and the drivers
 # promise. A `rolling` target is a rate over the most recent `window` runs,
-# the one place model variance is allowed to land. Latency targets are a p95
-# over completed attempts across the runs given, nearest rank, so a quoted
+# the one place model variance is allowed to land. A stage latency target is
+# a p95 over that stage's completed attempts across the runs given; the end
+# to end target is a p95 over every run's window, first stage start to last
+# stage end, abandoned attempts included. Both nearest rank, so a quoted
 # figure is one that occurred.
 #
 # Cost and the judged eval metrics are deliberately absent: the runner's cost

@@ -164,7 +164,7 @@ def sparkline(values, target=None, width=120, height=22):
     if target:
         y = height - 2 - target / top * (height - 4)
         line = f'<line x1="2" x2="{width - 2}" y1="{y:.1f}" y2="{y:.1f}" stroke="var(--ink3)" stroke-dasharray="3 2" stroke-width="1"/>'
-    return (f'<svg class="spark" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-label="durations across {n} runs">'
+    return (f'<svg class="spark" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-label="{n} durations in start order">'
             f'{line}<polyline fill="none" stroke="var(--prevented)" stroke-width="2" points="{pts}"/></svg>')
 
 
@@ -207,7 +207,7 @@ def baseline_page(agg):
                     f"{', ' + str(slo['unmeasured']) + ' not measurable' if slo['unmeasured'] else ''}</h2>"
                     f"<p class=\"sub\">Targets from <span class=\"mono\">{esc(slo['source'])}</span>, the only place a target lives. "
                     "A per-run objective counts the runs it can be measured on; a rolling one is a rate over the most recent runs in its window; "
-                    "latency is a nearest-rank p95 over completed attempts across every run here.</p>"
+                    "a stage latency objective is a p95 over that stage's completed attempts across every run here, and the end-to-end one is a p95 over every run's window, abandoned attempts included; both nearest rank.</p>"
                     f"<table><thead><tr>{head}</tr></thead><tbody>{''.join(items)}</tbody></table>")
     sources = ("<dl><dt>agent traces</dt><dd>computed from span metadata: that a call was made and how it ended, never what it carried</dd>"
                "<dt>check</dt><dd>what checks/agent_traces.py reported for each run against the expectations its driver mode set</dd>"
