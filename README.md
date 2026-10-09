@@ -83,6 +83,7 @@ interfaces/TELEMETRY.md            platform-agnostic tool surface
 interfaces/PRECEDENT.md            the precedent_archive surface
 docs/precedent-analyst.md          build spec for the fifth agent
 docs/investigation-layer.md        the walkthrough: what each control is and why
+docs/agent-traces.md               the OpenTelemetry span model, the verdicts, and what the checks read
 docs/diagrams/                     hand-authored SVG, for the walkthrough and this README
 corpus/ingest.py                   chunks the corpus into the archive index
 corpus/documents/                  synthetic prior incident records and runbooks
@@ -264,6 +265,15 @@ Run a driver with agent traces collected locally, with no hosted collector:
 ./demos/traced.sh attribution       # also contract, grounding, refusal or all
 ./demos/traced.sh investigate       # full pipeline; accepts act1, act2 or act3
 ```
+
+Agent traces are OpenTelemetry spans: the CLI's exporter speaks OTLP, the
+model and tool spans carry the OpenTelemetry GenAI attributes, and the
+verdicts ride on the runner's own `oa.*` attributes. Point the standard
+`OTEL_EXPORTER_OTLP_ENDPOINT` at any collector or tracing backend you already
+run and the drivers export there with no change here; the local sink is one
+destination among any, kept because the checks and the page read its JSONL.
+The span model, the verdict vocabulary and what each check reads are in
+[docs/agent-traces.md](docs/agent-traces.md).
 
 Install the `otel` extra shown above. The wrapper starts a loopback OTLP/HTTP
 sink under the interpreter that runs `oa`, enables the CLI's `--telemetry`
