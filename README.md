@@ -316,7 +316,10 @@ What reaches the file is what the runner chose to record. OA 1.6.2 puts only
 metadata in span attributes, with content capture off, and puts exception text
 in span events. The sink keeps span names, status codes and attributes as the
 exporter sends them and drops events and status messages. It does not filter
-attributes itself.
+attributes itself, and that is a decision rather than a gap: a list of
+permitted attributes would go stale the day the runner adds one and would
+then drop it silently, so the metadata-only property stays the runner's and
+is stated as such.
 
 ### Indicators and the per-run page
 
