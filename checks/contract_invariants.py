@@ -336,12 +336,15 @@ def board_scale(spec):
     Returns (enum-or-None, whether the field is declared at all, elsewhere):
     a board that declares no confidence and a board that declares it as a bare
     string are different defects, and reporting either as the other sends the
-    fix to the wrong file. `elsewhere` lists the paths of every confidence the
-    walker finds under `assess` when the reference path is absent, so that a
-    board whose hypotheses object is wrapped in `allOf`, or renamed, is
-    reported as a declaration this reads by path and did not find, and not as
-    a declaration that does not exist. Right verdict either way; the message
-    is what sends a reader to the right fix.
+    fix to the wrong file. `elsewhere` is read only when the reference path is
+    absent and lists two kinds of path separately: the confidences the walker
+    actually read under `assess`, so a hypotheses object wrapped in `allOf`,
+    or renamed, is reported as a declaration this reads by path and did not
+    find rather than as one that does not exist; and the forms it refuses to
+    read, which may hold the board's confidence or nothing, and which
+    establish neither presence nor absence. A sentinel is not a sighting.
+    Right verdict either way; the message is what sends a reader to the
+    right fix.
     """
     node = spec
     for key in ("tasks", "assess", "output", "properties", "hypotheses",
@@ -349,9 +352,10 @@ def board_scale(spec):
         if not isinstance(node, dict) or key not in node:
             assess = ((spec.get("tasks") or {}).get("assess") or {}) \
                 if isinstance(spec, dict) else {}
-            elsewhere = [path for _, _, path, _, _ in declared_scales(
-                {"assess-only": {"tasks": {"assess": assess}}})] \
+            found = list(declared_scales({"assess-only": {"tasks": {"assess": assess}}})) \
                 if isinstance(assess, dict) and "output" in assess else []
+            elsewhere = {"declared": [path for _, _, path, _, readable in found if readable],
+                         "unreadable": [path for _, _, path, _, readable in found if not readable]}
             return None, False, elsewhere
         node = node[key]
     if not isinstance(node, dict):
@@ -359,8 +363,8 @@ def board_scale(spec):
         # `.get` off it raises, and a check that dies prints no verdicts for
         # anyone to read: the exact failure a mutation harness exists to
         # catch, left in the one path every other case depends on.
-        return None, True, []
-    return node.get("enum"), True, []
+        return None, True, {"declared": [], "unreadable": []}
+    return node.get("enum"), True, {"declared": [], "unreadable": []}
 
 
 def confidence_scales_hold(specs):
@@ -394,17 +398,25 @@ def confidence_scales_hold(specs):
     declarations = [d for d in found if d[4]]
     board, declared, elsewhere = board_scale(specs.get(SPEC.name) or {})
     if not declared:
-        # Two different fixes. With nothing anywhere under assess the
-        # declaration is missing; with one somewhere else the reference is
-        # read by path and the path has moved, most likely a container such
-        # as allOf ahead of the field, and adding a second declaration is the
-        # wrong first move.
-        if elsewhere:
+        # Three different fixes. With a confidence read somewhere else the
+        # reference is read by path and the path has moved, most likely a
+        # container such as allOf ahead of the field, and adding a second
+        # declaration is the wrong first move. With only a form this check
+        # refuses to read, nothing is established either way: the board's
+        # confidence may be behind it, and the form is what to fix first.
+        # With nothing at all, the declaration is missing.
+        if elsewhere["declared"]:
             print(f"  FAIL {SPEC.name} declares no confidence at the reference "
                   f"path assess/hypotheses/items/confidence, which this check "
                   f"reads by path and not by search; a confidence exists "
-                  f"elsewhere under assess at {', '.join(elsewhere)}, so the "
-                  f"path has moved rather than the declaration gone missing")
+                  f"elsewhere under assess at {', '.join(elsewhere['declared'])}, "
+                  f"so the path has moved rather than the declaration gone missing")
+        elif elsewhere["unreadable"]:
+            print(f"  FAIL {SPEC.name} declares no confidence at the reference "
+                  f"path assess/hypotheses/items/confidence, and the only thing "
+                  f"under assess that could hold one is a form this check cannot "
+                  f"read, at {', '.join(elsewhere['unreadable'])}: neither present "
+                  f"nor absent until that form is replaced")
         else:
             print(f"  FAIL {SPEC.name} declares no confidence on assess/hypotheses "
                   f"and none anywhere under assess, so there is no scale for "
@@ -522,6 +534,26 @@ def scale_self_test():
         items = base["tasks"]["assess"]["output"]["properties"]["hypotheses"]["items"]
         base["tasks"]["assess"]["output"]["properties"]["hypotheses"]["items"] = {
             "allOf": [items]}
+        return base
+
+    def unreadable_board(base):
+        """The hypotheses object behind a `$ref`, with no confidence the walker
+        can read anywhere under assess. A sentinel is not a sighting: the
+        board's confidence may be behind it or nothing may be, and a message
+        saying one exists elsewhere sends the reader after a declaration the
+        check never saw. The gate on PR #50 found the first version doing
+        exactly that for every one of the eight sentinel keywords."""
+        base["tasks"]["assess"]["output"]["properties"]["hypotheses"]["items"] = {
+            "$ref": "#/$defs/hypothesis"}
+        return base
+
+    def sentinel_beside_declaration(base):
+        """A sentinel beside a readable declaration elsewhere: the read one is
+        the path-moved message's evidence, and the sentinel must not be
+        promoted to a sighting beside it."""
+        base = wrapped_in_allof(base)
+        base["tasks"]["assess"]["output"]["properties"]["notes"] = {
+            "const": {"status": "ok"}}
         return base
 
     def no_confidence_anywhere(base):
@@ -676,6 +708,15 @@ def scale_self_test():
           "other.yaml": spec(scale, "detect", "findings")},
          1, "elsewhere under assess at assess/properties/hypotheses/items/"
             "allOf[0]/confidence", 2),
+        ("the board's hypotheses object is an unreadable form and nothing else declares one",
+         {SPEC.name: unreadable_board(spec(scale)),
+          "other.yaml": spec(scale, "detect", "findings")},
+         1, "neither present nor absent until that form is replaced", 1),
+        ("a sentinel beside a read declaration is not a second sighting",
+         {SPEC.name: sentinel_beside_declaration(spec(scale)),
+          "other.yaml": spec(scale, "detect", "findings")},
+         1, "elsewhere under assess at assess/properties/hypotheses/items/"
+            "allOf[0]/confidence, so", 2),
         ("the board declares no confidence anywhere under assess",
          {SPEC.name: no_confidence_anywhere(spec(scale)),
           "other.yaml": spec(scale, "detect", "findings")},
