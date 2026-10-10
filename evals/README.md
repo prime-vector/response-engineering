@@ -592,8 +592,9 @@ from every other family. A split between two rounds of one family is not a
 family disagreement and is not on the sheet, and `--check` fails on an entry
 the families agree on as well as on a dispute the sheet lacks.
 `python3 evals/anchor.py --extract` writes it; `--show N` prints one claim,
-every field of it, with the cited passages whole from the index the record was
-scored on; the reader fills `label` (supported or unsupported, against the
+every field of it, with the cited passages in the representation `passage_get`
+returned them to the judge, rendered by the mock adapter's own function, so the
+labeller reads the evidence the judge read and not the raw index entry; the reader fills `label` (supported or unsupported, against the
 passages and nothing else) and `asserts_absence` (does the claim say the prior
 record lacks something). The sheet carries no judge's verdict and no claim
 text, on purpose: a labeller shown who said what inherits a conclusion

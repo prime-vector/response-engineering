@@ -256,32 +256,48 @@ def load_sheet(sheet=SHEET):
     return yaml.safe_load(sheet.read_text()) or []
 
 
-def passages_for(entry, cited, indexes=INDEXES, chunker_of=None):
-    """The cited passages, whole, from the index the record was scored on."""
-    chunker = chunker_of(entry["record"]) if chunker_of else "heading"
-    index = json.loads(indexes[chunker].read_text())
+def as_the_judge_saw_it(passage):
+    """A passage in the representation `passage_get` returns.
+
+    The judge was handed the adapter's response, not the index entry: the
+    document-level fields renamed for their scope (`document_cause_claimed`,
+    `document_superseded_by`), `claim_scope` added, the signature dropped.
+    A labeller reading the raw index entry would be labelling against
+    evidence the judge never saw, and a key built that way measures the
+    judges against a different surface. So the adapter's own function
+    renders it, imported rather than copied.
+    """
+    sys.path.insert(0, str(ROOT / "mock"))
+    from adapter import _cite  # noqa: E402
+    return _cite(passage)
+
+
+def passages_for(record, cited, indexes=INDEXES):
+    """The cited passages, as the archive returned them, from the index the
+    record was scored on."""
+    index = json.loads(indexes[record.get("chunker", "heading")].read_text())
     by_id = {p["passage_id"]: p for p in index.get("passages", [])}
-    return [by_id.get(pid, {"passage_id": pid, "error": "not in the current index"})
+    return [as_the_judge_saw_it(by_id[pid]) if pid in by_id
+            else {"passage_id": pid, "error": "not in the current index"}
             for pid in cited]
 
 
-def show(number, sheet=SHEET, results=RESULTS):
+def show(number, sheet=SHEET, results=RESULTS, indexes=INDEXES):
     entries = load_sheet(sheet)
-    if not 1 <= number <= len(entries):
+    if not 1 <= number <= len(entries):  # guard show_range
         sys.exit(f"the sheet has {len(entries)} entries")
     entry = entries[number - 1]
     by_name = dict(records(results))
-    chunkers = {name: record.get("chunker", "heading") for name, record in by_name.items()}
-    claim = claims(by_name[entry["record"]]).get((entry["case"], entry["document"], entry.get("ordinal", 0)))
-    if claim is None:
+    record = by_name.get(entry["record"])
+    claim = claims(record).get((entry["case"], entry["document"], entry.get("ordinal", 0))) if record else None
+    if claim is None:  # guard show_claim
         sys.exit(f"{entry['id']}: no such claim in {entry['record']}; run --check")
     print(f"[{number}] {entry['id']}   offered: {claim.get('offered')}   label: {entry['label']}")
     print("\nCLAIM (every field is the agent's; the prior-record half is what the passages must support)")
     for key, value in (claim.get("offered_claim") or {}).items():
         print(f"  {key}: {value}")
-    print("\nCITED PASSAGES, whole, as the archive holds them")
-    for passage in passages_for(entry, claim.get("grounded_in") or [],
-                                chunker_of=lambda name: chunkers.get(name, "heading")):
+    print("\nCITED PASSAGES, as the archive returned them to the judge")
+    for passage in passages_for(record, claim.get("grounded_in") or [], indexes):
         print(f"\n  --- {passage.get('passage_id')}  {passage.get('source_uri', '')}  {passage.get('heading_path', '')}")
         for key, value in passage.items():
             if key not in ("passage_id", "source_uri", "heading_path", "text"):
@@ -388,14 +404,21 @@ def score(sheet=SHEET, results=RESULTS):
 
 
 def self_test():
-    """Drive every branch on a synthetic record, since the real sheet starts unlabelled."""
+    """Drive every branch on a synthetic record, since the real sheet starts unlabelled.
+
+    Every case runs through `guarded`: a raise, a stop included, is that
+    case's failure line and the suite goes on. A guard removed must print a
+    FAIL and never a traceback, because a traceback has no line for anything
+    reading the output to count.
+    """
     def verdict(case, doc, supported):
         return {"case": case, "document": doc, "verdict": {"supported": supported}}
 
     def record(label, **over):
         # The shape the records actually have: `scorer` is a fingerprint of
         # the scoring code with no model in it, `judged` is the current
-        # verdict set, and `rejudged_at` names the round that produced it.
+        # verdict set and names its model, and the rejudge that produced it
+        # is not among the listed rounds.
         base = {
             "label": label, "chunker": "heading",
             "scorer": {"fingerprint": "abc", "path": "evals/judgement.py"},
@@ -426,18 +449,21 @@ def self_test():
                  "grounded_in": ["p-6"]},
                 {"source_uri": "corpus://runbooks/RB-1", "offered": "partial",
                  "offered_claim": {"divergence": "second heading"},
-                 "grounded_in": ["p-7"]}]}}],
+                 "grounded_in": ["p-7"]}]}},
+             # A case the run failed on: the judge builder skips it whole, so
+             # its claims take no ordinal and expect no verdict.
+             {"case": "a02", "failure": "timed out", "surface": {"hits": {"p-1": "x"}},
+              "score": {"claims": [{"source_uri": "corpus://incidents/INC-1", "offered": "applies",
+                                    "offered_claim": {"divergence": "never judged"},
+                                    "grounded_in": ["p-1"]}]}}],
             # INC-1: the published verdict and the other family disagree.
             # INC-2: they agree. INC-3: only a stale round of the current
             # family disagrees with `judged`, which supersedes it. INC-4: the
             # published verdict disagrees with the other family while an
             # earlier round of its own family agreed with them; what is
-            # published is what counts. The sheet must carry INC-1 and INC-4.
-            # The rejudge that produced `judged` is not among the rounds,
-            # which is the shape the real records have. RB-1 carries two
-            # claims, two headings of one runbook, and the families disagree
-            # on the first only: keyed by document alone the second's
-            # agreement would overwrite it.
+            # published is what counts. RB-1 carries two judged claims and
+            # the families disagree on the first only. The sheet must carry
+            # INC-1, INC-4 and RB-1 at ordinal 0.
             "judged": {"model": "claude-opus-4-6", "groundedness_judge": {"verdicts": [
                 verdict("a01", "corpus://incidents/INC-1", True),
                 verdict("a01", "corpus://incidents/INC-2", True),
@@ -448,6 +474,17 @@ def self_test():
             "judgings": [
                 {"at": "2026-08-20T00:00:00Z", "model": "cursor-grok-4.6-high",
                  "groundedness_judge": {"value": 0.5}},
+                # An earlier other-family round that agrees with `judged` on
+                # INC-1: taking the first round with verdicts instead of the
+                # latest would drop INC-1 from the sheet.
+                {"at": "2026-08-20T12:00:00Z", "model": "cursor-grok-4.6-high",
+                 "groundedness_judge": {"verdicts": [
+                     verdict("a01", "corpus://incidents/INC-1", True),
+                     verdict("a01", "corpus://incidents/INC-2", True),
+                     verdict("a01", "corpus://incidents/INC-3", False),
+                     verdict("a01", "corpus://incidents/INC-4", True),
+                     verdict("a01", "corpus://runbooks/RB-1", True),
+                     verdict("a01", "corpus://runbooks/RB-1", False)]}},
                 {"at": "2026-08-21T00:00:00Z", "model": "cursor-grok-4.6-high",
                  "groundedness_judge": {"verdicts": [
                      verdict("a01", "corpus://incidents/INC-1", False),
@@ -472,107 +509,108 @@ def self_test():
         return base
 
     failures = 0
-    def case(name, ok, detail=""):
+    out = io.StringIO()
+
+    def guarded(name, thunk, reason=None):
+        """Run one case. The thunk returns (ok, detail); when `reason` is
+        given the case expects a stop carrying that text and anything else,
+        a return included, is its failure."""
         nonlocal failures
+        try:
+            with redirect_stdout(out):
+                result = thunk()
+        except SystemExit as exc:
+            ok, detail = (reason is not None and reason in str(exc)), str(exc)
+        except Exception as exc:  # noqa: BLE001
+            ok, detail = False, f"raised {exc!r}"
+        else:
+            if reason is not None:
+                ok, detail = False, "returned instead of stopping"
+            else:
+                ok, detail = result if isinstance(result, tuple) else (bool(result), "")
         failures += not ok
         print(f"  {'ok  ' if ok else 'FAIL'} {name}" + (f": {detail}" if not ok and detail else ""))
-
-    def checked(sheet, results):
-        """`check()` with a crash reported as its own failure line, so a guard
-        removed cannot take the suite down and print no verdict."""
-        try:
-            return check(sheet, results)
-        except Exception as exc:  # noqa: BLE001
-            return [f"check raised {exc!r}"]
-
-    def expect_exit(name, call, reason):
-        """A guard that stops the run is a case too, and a crash is a FAIL
-        line rather than the end of the suite."""
-        try:
-            call()
-        except SystemExit as exc:
-            case(name, reason in str(exc), str(exc))
-        except Exception as exc:  # noqa: BLE001
-            case(name, False, f"raised {exc!r}")
-        else:
-            case(name, False, "returned instead of stopping")
 
     with tempfile.TemporaryDirectory() as tmp:
         results = Path(tmp) / "results"; results.mkdir()
         sheet = Path(tmp) / "anchor.yaml"
         (results / "judgement-one-20260820T000000Z.json").write_text(json.dumps(record("judgement-one")))
+        state = {}
 
-        out = io.StringIO()
-        try:
-            with redirect_stdout(out):
-                entries = extract(results, sheet)
-        except (Exception, SystemExit) as exc:  # noqa: BLE001
-            # The first extraction is what every later case reads, so a
-            # guard removed here would otherwise end the suite with a
-            # traceback and no verdict line to count.
-            case("extract runs on the synthetic record", False, f"raised {exc!r}")
+        def first_extract():
+            state["entries"] = extract(results, sheet)
+            ids = [e["id"] for e in state["entries"]]
+            return ids == ["judgement-one/a01/INC-1", "judgement-one/a01/INC-4", "judgement-one/a01/RB-1"], str(ids)
+        guarded("extract selects the published verdicts against the other family's latest round, "
+                "not a stale round of either family", first_extract)
+        if "entries" not in state:
             print(f"Anchor self-test: {failures} failure(s).")
             return failures
-        case("extract selects the published verdicts against the other family, and not a "
-             "stale round of the publishing family",
-             [e["id"] for e in entries] == ["judgement-one/a01/INC-1", "judgement-one/a01/INC-4",
-                                            "judgement-one/a01/RB-1"],
-             str([e["id"] for e in entries]))
-        rb_entries = [e for e in entries if e["document"].endswith("RB-1")]
-        case("two judged claims on one document are two keys, and the disputed first one is selected alone",
-             [e.get("ordinal") for e in rb_entries] == [0]
-             and not [e for e in entries if e["id"].endswith("#2")], str(rb_entries))
-        case("an unjudged claim takes no ordinal, so ordinal 0 is the first claim the judge saw",
-             claims(record("judgement-one"))[("a01", "corpus://runbooks/RB-1", 0)]["offered_claim"]["divergence"] == "first heading")
-        skewed = record("judgement-skewed")
-        skewed["judged"]["groundedness_judge"]["verdicts"].pop()
-        expect_exit("published verdicts that do not number the judged claims stop the run",
-                    lambda: disagreements(skewed), "cannot name a claim")
-        second = record("judgement-one")
-        rb = second["judged"]["groundedness_judge"]["verdicts"]
-        rb[-2]["verdict"]["supported"], rb[-1]["verdict"]["supported"] = False, True
-        case("a disagreement on the second claim alone is selected with its ordinal",
-             [c for c in disagreements(second) if c[1].endswith("RB-1")] == [("a01", "corpus://runbooks/RB-1", 1)]
-             and entry_id("x", "a01", "corpus://runbooks/RB-1", 1) == "x/a01/RB-1#2",
-             str(disagreements(second)))
-        try:
+        entries = state["entries"]
+
+        guarded("two judged claims on one document are two keys, and the disputed first one is selected alone",
+                lambda: ([e.get("ordinal") for e in entries if e["document"].endswith("RB-1")] == [0]
+                         and not [e for e in entries if e["id"].endswith("#2")], str(entries)))
+        guarded("an unjudged claim takes no ordinal, so ordinal 0 is the first claim the judge saw",
+                lambda: (claims(record("judgement-one"))[("a01", "corpus://runbooks/RB-1", 0)]["offered_claim"]["divergence"] == "first heading", ""))
+        guarded("a failed case's claims take no ordinal",
+                lambda: (("a02", "corpus://incidents/INC-1", 0) not in claims(record("judgement-one")), ""))
+
+        def skewed():
+            r = record("judgement-skewed"); r["judged"]["groundedness_judge"]["verdicts"].pop()
+            disagreements(r)
+        guarded("published verdicts that do not number the judged claims stop the run", skewed, "cannot name a claim")
+
+        def second():
+            r = record("judgement-one"); rb = r["judged"]["groundedness_judge"]["verdicts"]
+            rb[-2]["verdict"]["supported"], rb[-1]["verdict"]["supported"] = False, True
+            found = [c for c in disagreements(r) if c[1].endswith("RB-1")]
+            return (found == [("a01", "corpus://runbooks/RB-1", 1)]
+                    and entry_id("x", "a01", "corpus://runbooks/RB-1", 1) == "x/a01/RB-1#2", str(found))
+        guarded("a disagreement on the second claim alone is selected with its ordinal", second)
+
+        def parties_case():
             parties = rounds_with_verdicts(record("judgement-one"))
-            case("the current family is judged.model with the published verdicts and rejudged_at",
-                 set(parties) == {"claude", "cursor"} and parties["claude"]["at"] == "2026-08-22T00:30:00Z"
-                 and parties["claude"]["verdicts"][("a01", "corpus://incidents/INC-3", 0)] is False, str(parties))
-        except Exception as exc:  # noqa: BLE001
-            case("the current family is judged.model with the published verdicts and rejudged_at", False, f"raised {exc!r}")
-        orphan = record("judgement-orphan"); del orphan["judged"]["model"]
-        expect_exit("a record whose published verdicts name no model stops the run",
-                    lambda: disagreements(orphan), "names no model")
-        stray = record("judgement-stray")
-        stray["judgings"][1]["groundedness_judge"]["verdicts"].append(verdict("a01", "corpus://incidents/INC-9", False))
-        stray["judged"]["groundedness_judge"]["verdicts"].append(verdict("a01", "corpus://incidents/INC-9", True))
-        (results / "judgement-stray-20260820T000001Z.json").write_text(json.dumps(stray))
-        def quiet_extract():
-            # Only extract's own output is swallowed; the verdict line below
-            # has to reach the reader, or a mutation here prints nothing.
-            with redirect_stdout(out):
+            return (set(parties) == {"claude", "cursor"} and parties["claude"]["at"] == "2026-08-22T00:30:00Z"
+                    and parties["cursor"]["at"] == "2026-08-21T00:00:00Z"
+                    and parties["claude"]["verdicts"][("a01", "corpus://incidents/INC-3", 0)] is False, str(parties))
+        guarded("the current family is judged.model with the published verdicts, and the other party "
+                "is its latest round with verdicts", parties_case)
+
+        def orphan():
+            r = record("judgement-orphan"); del r["judged"]["model"]; disagreements(r)
+        guarded("a record whose published verdicts name no model stops the run", orphan, "names no model")
+
+        def stray():
+            r = record("judgement-stray")
+            r["judgings"][2]["groundedness_judge"]["verdicts"].append(verdict("a01", "corpus://incidents/INC-9", False))
+            r["judged"]["groundedness_judge"]["verdicts"].append(verdict("a01", "corpus://incidents/INC-9", True))
+            path = results / "judgement-stray-20260820T000001Z.json"
+            path.write_text(json.dumps(r))
+            try:
                 extract(results, sheet)
-        expect_exit("a verdict with no claim behind it stops extraction",
-                    quiet_extract, "has 0 judged claim(s) and 1 published verdict(s)")
-        (results / "judgement-stray-20260820T000001Z.json").unlink()
-        keys = {k for e in yaml.safe_load(sheet.read_text()) for k in e}
-        case("extract writes no verdict and no claim text into the sheet",
-             not keys & {"verdict", "verdicts", "judge", "supported", "claim", "cited"}, str(keys))
-        case("extract leaves label and absence unset", entries[0]["label"] is None and entries[0]["asserts_absence"] is None)
+            finally:
+                path.unlink()
+        guarded("a verdict with no claim behind it stops extraction", stray,
+                "has 0 judged claim(s) and 1 published verdict(s)")
 
-        rows = yaml.safe_load(sheet.read_text())
-        rows[0]["label"] = "supported"; rows[0]["asserts_absence"] = True; rows[0]["note"] = "mine"
-        sheet.write_text(yaml.safe_dump(rows, sort_keys=False))
-        with redirect_stdout(out):
-            entries = extract(results, sheet)
-        case("extract keeps a label already given", entries[0]["label"] == "supported" and entries[0]["note"] == "mine")
+        guarded("extract writes no verdict and no claim text into the sheet",
+                lambda: (not {k for e in yaml.safe_load(sheet.read_text()) for k in e}
+                         & {"verdict", "verdicts", "judge", "supported", "claim", "cited"}, ""))
+        guarded("extract leaves label and absence unset",
+                lambda: (entries[0]["label"] is None and entries[0]["asserts_absence"] is None, ""))
 
-        with redirect_stdout(out):
-            case("check passes a sheet that matches its record", not checked(sheet, results))
+        def keeps_label():
+            rows = yaml.safe_load(sheet.read_text())
+            rows[0]["label"] = "supported"; rows[0]["asserts_absence"] = True; rows[0]["note"] = "mine"
+            rows[1]["label"] = "unsupported"; rows[1]["asserts_absence"] = False
+            sheet.write_text(yaml.safe_dump(rows, sort_keys=False))
+            kept = extract(results, sheet)
+            return kept[0]["label"] == "supported" and kept[0]["note"] == "mine" and kept[1]["asserts_absence"] is False, str(kept[:2])
+        guarded("extract keeps a label already given", keeps_label)
 
-        # One drift per guard, each asserting its own reason.
+        guarded("check passes a sheet that matches its record", lambda: (not check(sheet, results), ""))
+
         base_rows = yaml.safe_load(sheet.read_text())
         for name, mutate, reason in [
             ("an id naming another claim", lambda r: r[0].__setitem__("id", "judgement-one/a01/INC-2"), "does not name its case"),
@@ -588,57 +626,104 @@ def self_test():
              "do not disagree on it"),
             ("a dispute missing from the sheet", lambda r: r.clear(), "not on the sheet"),
         ]:
-            rows = copy.deepcopy(base_rows); mutate(rows)
-            sheet.write_text(yaml.safe_dump(rows, sort_keys=False))
-            with redirect_stdout(out):
-                found = checked(sheet, results)
-            case(f"check rejects {name}", any(reason in f for f in found), str(found))
-        sheet.write_text(yaml.safe_dump(base_rows, sort_keys=False))
+            def drift(mutate=mutate, reason=reason):
+                rows = copy.deepcopy(base_rows); mutate(rows)
+                sheet.write_text(yaml.safe_dump(rows, sort_keys=False))
+                try:
+                    found = check(sheet, results)
+                finally:
+                    sheet.write_text(yaml.safe_dump(base_rows, sort_keys=False))
+                return any(reason in f for f in found), str(found)
+            guarded(f"check rejects {name}", drift)
 
-        with redirect_stdout(out):
-            rows = score(sheet, results)
-        by_judge = {(r["judge"], r["asserts_absence"]): r for r in rows}
-        grok = by_judge.get(("cursor-grok-4.6-high", True)); opus = by_judge.get(("claude-opus-4-6", True))
-        case("score counts the over-flag against the key", grok is not None and grok["over_flagged"] == 1 and grok["agree"] == 0, str(grok))
-        case("score counts the agreement", opus is not None and opus["agree"] == 1 and opus["over_flagged"] == 0, str(opus))
-        case("score uses the latest round with verdicts, not the rate-only one", grok is not None and grok["round"] == "2026-08-21T00:00:00Z")
-
-        # A record with one family cannot disagree with itself.
-        lone = record("judgement-lone"); lone["judgings"] = lone["judgings"][2:]  # the publishing family only
-        case("one family yields no disagreement", disagreements(lone) == [])
-
-        # The order the single-query record actually has: a rate-only round
-        # of the other family after the one that kept verdicts. Last-wins
-        # over rounds would take the rate-only one and crash or empty the
-        # party; the skip has to be on verdicts, not on position.
-        late = record("judgement-late")
-        late["judgings"].append({"at": "2026-08-23T00:00:00Z", "model": "cursor-grok-4.6-high",
-                                 "groundedness_judge": {"value": 0.4}})
-        try:
-            late_parties = rounds_with_verdicts(late)
-            case("a rate-only round after the verdict-bearing one is not the party",
-                 late_parties["cursor"]["at"] == "2026-08-21T00:00:00Z", str(late_parties.get("cursor")))
-        except Exception as exc:  # noqa: BLE001
-            case("a rate-only round after the verdict-bearing one is not the party", False, f"raised {exc!r}")
-
-        # Both words of the vocabulary pass the check, not only the one the
-        # scoring cases happen to use.
         for word in LABELS:
-            rows = copy.deepcopy(base_rows); rows[0]["label"] = word
-            sheet.write_text(yaml.safe_dump(rows, sort_keys=False))
-            with redirect_stdout(out):
-                case(f"check accepts the label {word}", not checked(sheet, results))
-        sheet.write_text(yaml.safe_dump(base_rows, sort_keys=False))
+            def accepts(word=word):
+                rows = copy.deepcopy(base_rows); rows[0]["label"] = word
+                sheet.write_text(yaml.safe_dump(rows, sort_keys=False))
+                try:
+                    return not check(sheet, results), ""
+                finally:
+                    sheet.write_text(yaml.safe_dump(base_rows, sort_keys=False))
+            guarded(f"check accepts the label {word}", accepts)
 
-        # The label is unsupported and the judge agrees: no flag either way.
-        base_rows[0]["label"] = "unsupported"
-        sheet.write_text(yaml.safe_dump(base_rows, sort_keys=False))
-        with redirect_stdout(out):
+        def scored():
             rows = score(sheet, results)
-        grok = {(r["judge"], r["asserts_absence"]): r for r in rows}[("cursor-grok-4.6-high", True)]
-        case("score counts under-flagging the other way", grok["agree"] == 1 and grok["under_flagged"] == 0)
-        opus = {(r["judge"], r["asserts_absence"]): r for r in rows}[("claude-opus-4-6", True)]
-        case("score marks a supported verdict on an unsupported label as under-flagged", opus["under_flagged"] == 1)
+            by = {(r["judge"], r["asserts_absence"]): r for r in rows}
+            state["by"] = by
+            return set(by) == {("cursor-grok-4.6-high", True), ("claude-opus-4-6", True),
+                               ("cursor-grok-4.6-high", False), ("claude-opus-4-6", False)}, str(sorted(by))
+        guarded("score reports both parties, split by whether the claim asserts an absence", scored)
+        by = state.get("by", {})
+        guarded("score counts the over-flag against the key on an absence claim",
+                lambda: ((by[("cursor-grok-4.6-high", True)]["over_flagged"], by[("cursor-grok-4.6-high", True)]["agree"]) == (1, 0), str(by)))
+        guarded("score counts the agreement on an absence claim",
+                lambda: ((by[("claude-opus-4-6", True)]["agree"], by[("claude-opus-4-6", True)]["over_flagged"]) == (1, 0), str(by)))
+        guarded("score counts a non-absence claim on its own row: the key says unsupported, the other party agreed",
+                lambda: ((by[("cursor-grok-4.6-high", False)]["agree"], by[("claude-opus-4-6", False)]["under_flagged"]) == (1, 1), str(by)))
+        guarded("score names the latest round with verdicts, not the rate-only one and not the first",
+                lambda: (by[("cursor-grok-4.6-high", True)]["round"] == "2026-08-21T00:00:00Z", str(by)))
+
+        def unlabelled():
+            rows = copy.deepcopy(base_rows)
+            for r in rows:
+                r["label"] = None; r["asserts_absence"] = None
+            sheet.write_text(yaml.safe_dump(rows, sort_keys=False))
+            buf = io.StringIO()
+            try:
+                with redirect_stdout(buf):
+                    rows_out = score(sheet, results)
+            finally:
+                sheet.write_text(yaml.safe_dump(base_rows, sort_keys=False))
+            return rows_out == [] and "nothing labelled" in buf.getvalue(), buf.getvalue()
+        guarded("score with no labels says there is no key and measures nothing", unlabelled)
+
+        def lone():
+            r = record("judgement-lone"); r["judgings"] = r["judgings"][3:]  # the publishing family only
+            return disagreements(r) == [], str(disagreements(r))
+        guarded("one family yields no disagreement", lone)
+
+        def late():
+            r = record("judgement-late")
+            r["judgings"].append({"at": "2026-08-23T00:00:00Z", "model": "cursor-grok-4.6-high",
+                                  "groundedness_judge": {"value": 0.4}})
+            parties = rounds_with_verdicts(r)
+            return parties["cursor"]["at"] == "2026-08-21T00:00:00Z", str(parties.get("cursor"))
+        guarded("a rate-only round after the verdict-bearing one is not the party", late)
+
+        # --show, against a synthetic index, in the adapter's representation.
+        index = Path(tmp) / "index.json"
+        index.write_text(json.dumps({"passages": [
+            {"passage_id": "p-1", "source_uri": "corpus://incidents/INC-1", "heading_path": "INC-1 > Summary",
+             "ordinal": 0, "text": "No daemon was running.", "signature": "host.x", "cause_claimed": "heap",
+             "superseded_by": None, "record_status": "filed", "recorded_at": "2025-01-01"},
+            {"passage_id": "p-2", "source_uri": "corpus://incidents/INC-1", "heading_path": "INC-1 > Gaps",
+             "ordinal": 1, "text": "Attribution was never produced.", "signature": "host.x"}]}))
+        indexes = {"heading": index, "fixed": index}
+
+        def shown():
+            buf = io.StringIO()
+            with redirect_stdout(buf):
+                show(1, sheet, results, indexes)
+            text = buf.getvalue()
+            wanted = ["the record shows no daemon", "No daemon was running.", "Attribution was never produced.",
+                      "document_cause_claimed: heap", "claim_scope: document"]
+            return all(w in text for w in wanted) and "signature" not in text, text
+        guarded("show prints the claim and its passages as passage_get returns them, signature dropped", shown)
+        guarded("show refuses a number off the sheet", lambda: show(99, sheet, results, indexes), "the sheet has")
+
+        def show_missing():
+            rows = copy.deepcopy(base_rows); rows[0]["document"] = "corpus://incidents/INC-9"
+            sheet.write_text(yaml.safe_dump(rows, sort_keys=False))
+            try:
+                show(1, sheet, results, indexes)
+            finally:
+                sheet.write_text(yaml.safe_dump(base_rows, sort_keys=False))
+        guarded("show stops on an entry whose claim is not in its record", show_missing, "no such claim")
+
+        empty = Path(tmp) / "empty"; empty.mkdir()
+        guarded("no judgement records is a stop, not an empty sheet", lambda: records(empty), "no judgement records")
+        guarded("a missing sheet is a stop that says how to make one",
+                lambda: load_sheet(Path(tmp) / "nowhere.yaml"), "run --extract first")
 
     print(f"Anchor self-test: {failures} failure(s).")
     return failures
