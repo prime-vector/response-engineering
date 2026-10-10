@@ -557,8 +557,9 @@ tasks:
           enum: [bridge, incident_manager, executive_sponsor]
         board:
           type: object
-          # The briefing carries this vocabulary from typed input, so its
-          # prompt need not instruct the model to choose a confidence word.
+          # The board's scale, declared on the input so the typed handoff
+          # carries it. It exempts nothing: the prompt names the five words
+          # itself, because an empty board carries none of them.
           properties:
             hypotheses:
               type: array

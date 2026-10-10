@@ -229,8 +229,8 @@ NAME_MAPPINGS = ("$defs", "properties", "patternProperties", "dependentSchemas")
 def schema_enums(schema, property_name=None, path="$"):
     """Inline enums with their enclosing property name and schema path.
 
-    References are not resolved. Names belong to properties, not definitions
-    or patterns: copying a definition name is not copying a property.
+    References are not resolved. The property name is carried for the
+    message and nothing else: no arm reads it to exempt an enum.
     """
     if not isinstance(schema, dict):
         return
