@@ -706,8 +706,9 @@ tasks:
 
         2. Carry the caveats as fields. Each entry in suspected has a
            statement, the confidence copied from the hypothesis it renders,
-           that hypothesis's falsifying test, and precedent only where the
-           board attached one. A suspicion that reads as a fact once it
+           one of speculative, plausible, likely, supported or confirmed and
+           the word the board used, that hypothesis's falsifying test, and
+           precedent only where the board attached one. A suspicion that reads as a fact once it
            changes format is the exact failure this task exists to prevent,
            and fields are how it cannot: there is nowhere to put a hypothesis
            without saying how strongly it is held.

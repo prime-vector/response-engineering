@@ -55,17 +55,20 @@ from the list at the end. The converse, a key the schema does not allow, is not
 checked: these prompts qualify their lists in prose and no parse separates a
 key from a qualifier reliably enough to accuse a correct spec.
 
-ENUM VOCABULARY. Every inline output enum made of strings is checked against
-this same resolved pair, at any schema depth. Each literal value must occur
-case-sensitively as a whole word in either prompt. A declaration of the same
-property name and identical enum, including order, on the task's input instead
-counts as copied: its vocabulary arrives through typed input. Other enums are
-counted as skipped. The walk descends only where the 2020-12 vocabulary puts
-a schema, by the structure of a keyword's value; instance data, unknown
-annotations and the keys of a name mapping are never read as schemas, the
-same split checks/contract_invariants.py walks by. This checks presence, never
-whether the model reads a value, or whether an input scale agrees with the
-board. References are not resolved.
+ENUM VOCABULARY. Every string value of every inline output enum is checked
+against this same resolved pair, at any schema depth: each must occur
+case-sensitively as a whole word in either prompt. There is no exemption. A
+first version exempted an enum the task's input declared under the same
+property name, on the argument that the vocabulary then arrived through typed
+input; a schema cannot promise that, since the instance may carry none of the
+words (an empty board carries no confidence), so that arm was an exemption
+keyed on a walk coincidence and it is gone. An enum with no string value is
+skipped and counted as such. The walk descends only where the 2020-12
+vocabulary puts a schema, by the structure of a keyword's value, the split
+checks/contract_invariants.py moves to in PR #50; instance data, unknown
+annotations and the keys of a name mapping are never read as schemas. This
+checks presence, never whether the model reads a value. References are not
+resolved.
 
 WHAT THIS CANNOT SEE. `--system-prompt` and `--user-prompt` replace a prompt
 wholesale at the command line, and a spec cannot know what they will carry.
@@ -211,15 +214,16 @@ def resolve(spec_data, task_name):
 # through these and nothing else, so `const`, `default`, `required`, an
 # unknown annotation and the compatibility `dependencies` are never read
 # into however schema-shaped their values look, and under a name mapping
-# every key is the author's. The same split as checks/contract_invariants.py,
-# for the same reason: a list of exceptions to "descend everywhere" grows by
-# one member per review round, and the vocabulary's answer does not.
+# every key is the author's. `definitions` is not in this dialect: the
+# validator treats it as an unknown annotation, so an enum under it is not
+# applied and is not read. The split checks/contract_invariants.py moves to
+# in PR #50, for the same reason: a list of exceptions to "descend everywhere"
+# grows by one member per review round, and the vocabulary's answer does not.
 ONE_SCHEMA = ("additionalProperties", "unevaluatedProperties", "propertyNames",
               "items", "contains", "unevaluatedItems", "not", "if", "then",
               "else", "contentSchema")
 SCHEMA_LIST = ("allOf", "anyOf", "oneOf", "prefixItems")
-NAME_MAPPINGS = ("$defs", "definitions", "properties", "patternProperties",
-                 "dependentSchemas")
+NAME_MAPPINGS = ("$defs", "properties", "patternProperties", "dependentSchemas")
 
 
 def schema_enums(schema, property_name=None, path="$"):
@@ -252,28 +256,25 @@ def enum_named(text, value):
 
 
 def check_enums(task, system, user, label):
-    """A chosen string vocabulary must reach the model through its prompts."""
-    inputs = list(schema_enums(task.get("input") or {}))
-    chosen = copied = skipped = failures = 0
-    for property_name, values, path in schema_enums(task.get("output") or {}):
-        if not isinstance(values, list) or not all(isinstance(v, str) for v in values):
+    """Every string value an output enum pins must reach the model through
+    its prompts. A mixed enum is checked on its strings: they are words the
+    model must choose like any other, and a number beside them exempts
+    nothing."""
+    named = skipped = failures = 0
+    for _, values, path in schema_enums(task.get("output") or {}):
+        words = [v for v in values if isinstance(v, str)] if isinstance(values, list) else []
+        if not words:
             skipped += 1
             continue
-        if property_name is not None and any(
-                property_name == owner and values == vocabulary
-                for owner, vocabulary, _ in inputs):
-            copied += 1
-            continue
-        chosen += 1
-        missing = [v for v in values if not (enum_named(system, v) or enum_named(user, v))]
+        named += 1
+        missing = [v for v in words if not (enum_named(system, v) or enum_named(user, v))]
         if missing:
             failures += 1
-            print(f"  FAIL {label} output {path} chosen enum missing values: "
+            print(f"  FAIL {label} output {path} enum missing values: "
                   f"{missing!r}. Each value must occur as a case-sensitive "
                   f"whole word in the resolved system or user prompt.")
     if not failures:
-        print(f"  ok   {label} enums: {chosen} chosen, {copied} copied, "
-              f"{skipped} skipped")
+        print(f"  ok   {label} enums: {named} named in the prompts, {skipped} with no string value")
     return failures
 
 
@@ -684,13 +685,13 @@ def enum_self_test():
     cases = []
 
     def case(label, out=output, inp=None, system="", user="reply", missing=(),
-             chosen=1, copied=0, skipped=0):
+             named=1, skipped=0):
         cases.append((label, {"input": inp or {}, "output": out}, system, user,
-                      list(missing), (chosen, copied, skipped)))
+                      list(missing), (named, skipped)))
 
-    case("chosen fully named", system=", ".join(values))
-    case("chosen named in user", user=", ".join(values))
-    case("chosen one value missing", system=values[0], missing=[(path, values[1:])])
+    case("named in the system prompt", system=", ".join(values))
+    case("named in the user prompt", user=", ".join(values))
+    case("one value missing", system=values[0], missing=[(path, values[1:])])
     case("near misses unlikely and unsupported", system=" ".join("un" + v for v in values),
          missing=[(path, values)])
     case("suffix near misses", system=" ".join(v + "ness" for v in values),
@@ -698,23 +699,23 @@ def enum_self_test():
     one = {"properties": {"confidence": {"enum": values[:1]}}}
     case("case must match", out=one, system=values[0].capitalize(),
          missing=[(path, values[:1])])
-    case("copied identical", inp=output, chosen=0, copied=1)
-    for label, vocabulary in (("order", list(reversed(values))), ("length", values[:-1])):
-        case("copied different " + label,
-             inp={"properties": {"confidence": {"enum": vocabulary}}},
-             missing=[(path, values)])
-    case("same enum different property", inp={"properties": {"other": scale}},
+    # No exemption: the same enum on the input, under the same name, changes
+    # nothing. A schema cannot promise the words reach the model.
+    case("the same enum on the input is not an exemption", inp=output,
          missing=[(path, values)])
-    case("root enums have no property to copy", out=scale, inp=scale,
-         missing=[("$.enum", values)])
+    case("the same enum on the input and the words in the prompt pass as named",
+         inp=output, system=" ".join(values))
     case("boolean schema is not an enum",
-         out={"properties": {"confidence": False, "other": True}}, chosen=0)
-    case("malformed enum is skipped", out={"enum": 1}, chosen=0, skipped=1)
-    for label, vocabulary in (("numeric", [1, 2]), ("boolean", [True, False]),
-                              ("mixed", [values[0], 1])):
-        case(label + " enum skipped", out={"properties": {"confidence": {"enum": vocabulary}}},
-             chosen=0, skipped=1)
-    case("empty enum has no values to name", out={"enum": []})
+         out={"properties": {"confidence": False, "other": True}}, named=0)
+    case("malformed enum is skipped", out={"enum": 1}, named=0, skipped=1)
+    for label, vocabulary in (("numeric", [1, 2]), ("boolean", [True, False])):
+        case(label + " enum has no string to name", out={"properties": {"confidence": {"enum": vocabulary}}},
+             named=0, skipped=1)
+    case("a mixed enum is checked on its strings",
+         out={"properties": {"confidence": {"enum": [values[0], 1]}}}, missing=[(path, values[:1])])
+    case("a mixed enum passes when its strings are named",
+         out={"properties": {"confidence": {"enum": [values[0], 1]}}}, system=values[0])
+    case("empty enum has no values to name", out={"enum": []}, named=0, skipped=1)
     case("escaped regex metacharacters", out={"enum": ["a.b", "c+d"]},
          system="axb cccd", missing=[("$.enum", ["a.b", "c+d"])])
     case("nonword edge values named literally", out={"enum": ["+ok", "ok+"]},
@@ -722,8 +723,6 @@ def enum_self_test():
     case("multiword value cannot straddle prompts", out={"enum": ["not established"]},
          system="not", user="established", missing=[("$.enum", ["not established"])])
 
-    # Each carrying keyword gets its own reason and path, so losing one
-    # descent cannot hide behind another branch finding the same enum.
     # Written out rather than read from the tuples under test: a case taken
     # from the collection it checks disappears with the member it would have
     # caught, and every mutation reads as covered.
@@ -737,36 +736,32 @@ def enum_self_test():
         enum_path = "$.properties['confidence']." + keyword
         enum_path += "[0].enum" if keyword in lists else ".enum"
         case("enum under " + keyword, out=out, missing=[(enum_path, values)])
-        case("copied under " + keyword, out=out, inp=out, chosen=0, copied=1)
-    # Not schemas in 2020-12, however schema-shaped: an unknown annotation,
-    # a name mapping whose values are name lists, and the compatibility
-    # `dependencies` the validator no longer applies.
-    case("unknown keyword value is not a schema", out={"x-note": output}, chosen=0)
-    case("dependentRequired values are names, not schemas",
-         out={"dependentRequired": {"confidence": ["other"]}}, chosen=0)
-    case("dependencies is syntax the dialect does not apply",
-         out={"dependencies": {"other": output}}, chosen=0)
     case("oneOf branch property", out={"oneOf": [{}, output]},
          missing=[("$.oneOf[1].properties['confidence'].enum", values)])
-    for keyword in ("properties", "patternProperties", "$defs", "definitions", "dependentSchemas"):
+    for keyword in ("properties", "patternProperties", "$defs", "dependentSchemas"):
         # A name spelling an instance keyword is still a name. Skip the
-        # container level and the declaration disappears or gets misowned.
+        # container level and the declaration disappears.
         out = {keyword: {"examples": output}}
         enum_path = f"$.{keyword}['examples'].properties['confidence'].enum"
         case("names under " + keyword, out=out, missing=[(enum_path, values)])
-        case("copied names under " + keyword, out=out, inp=out, chosen=0, copied=1)
+    # Not schemas in 2020-12, however schema-shaped: an unknown annotation,
+    # a name mapping whose values are name lists, the compatibility
+    # `dependencies` and the pre-2019 `definitions`, which the validator
+    # does not apply.
+    case("unknown keyword value is not a schema", out={"x-note": output}, named=0)
+    case("dependentRequired values are names, not schemas",
+         out={"dependentRequired": {"confidence": ["other"]}}, named=0)
+    case("dependencies is syntax the dialect does not apply",
+         out={"dependencies": {"other": output}}, named=0)
+    case("definitions is not applied in this dialect and is not read",
+         out={"definitions": {"scale": scale}}, named=0)
     for keyword in ("const", "enum", "default", "examples"):
         literal = {"enum": list(values)}
         out = {keyword: [literal] if keyword in ("examples", "enum") else literal}
         # Object-valued enum is itself skipped; the enum inside that object
         # is instance data, just as it is inside defaults and examples.
-        case("instance data stop " + keyword, out=out, chosen=0,
+        case("instance data stop " + keyword, out=out, named=0,
              skipped=int(keyword == "enum"))
-    case("definition name is not a property", out={"$defs": {"confidence": scale}},
-         inp=output, missing=[("$.$defs['confidence'].enum", values)])
-    case("definition does not replace enclosing property",
-         out={"properties": {"confidence": {"$defs": {"other": scale}}}},
-         inp=output, chosen=0, copied=1)
 
     failures = 0
     for label, task, system, user, missing, counts in cases:
@@ -785,12 +780,12 @@ def enum_self_test():
                     print(f"exception {type(exc).__name__}: {exc}")
         text = buf.getvalue()
         if missing:
-            reasons = [f"output {p} chosen enum missing values: {v!r}." for p, v in missing]
+            reasons = [f"output {p} enum missing values: {v!r}." for p, v in missing]
             ok = count == len(missing) and all(reason in text for reason in reasons)
             detail = "; ".join(reasons)
         else:
-            chosen, copied, skipped = counts
-            reason = f"enums: {chosen} chosen, {copied} copied, {skipped} skipped"
+            named, skipped = counts
+            reason = f"enums: {named} named in the prompts, {skipped} with no string value"
             ok = count == 0 and reason in text
             detail = reason
         failures += not ok
@@ -816,8 +811,8 @@ def enum_self_test():
             buf = io.StringIO()
             with contextlib.redirect_stdout(buf):
                 count = check_overrides([override], driver)
-        reason = (f"output {path} chosen enum missing values: {missing!r}." if missing
-                  else "enums: 1 chosen, 0 copied, 0 skipped")
+        reason = (f"output {path} enum missing values: {missing!r}." if missing
+                  else "enums: 1 named in the prompts, 0 with no string value")
         ok = count == bool(missing) and reason in buf.getvalue()
         failures += not ok
         print(f"  {'ok  ' if ok else 'FAIL'} enum {label}: {reason}")
