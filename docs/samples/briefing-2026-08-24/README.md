@@ -143,3 +143,13 @@ render against `board.json`, through `checks/briefing_grounded.py`: it validates
 against the task's output schema and checks the typed relationships. It does not
 compare the prose, which is the part that keeps failing. They are dated because they are a record of one run. If they
 disagree with the current specs, the specs are right and these are history.
+
+## The prompt moved after these renders
+
+On 10 Oct 2026 rule 2 of the `brief` system prompt gained the five confidence
+words, speculative, plausible, likely, supported and confirmed, because
+`checks/prompt_inputs.py` now holds every output enum's values to the prompt
+with no exemption. The four renders here were made under the prompt as it was
+before that sentence and are kept as that record; they are not re-rolled, for
+the reason CLAUDE.md gives, and nothing in the sentence changes what a render
+may contain.

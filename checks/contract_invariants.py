@@ -309,6 +309,14 @@ def declared_scales(specs):
         """
         if not isinstance(node, dict):
             return
+        # The dialect is pinned. `jsonschema.validate` honours an explicit
+        # `$schema` at any location, and under draft-07 `dependencies`,
+        # tuple `items` and `additionalItems` would pin a confidence this
+        # walk does not read. A `$schema` naming any other dialect is a form
+        # the check refuses, wherever it sits.
+        declared = node.get("$schema")
+        if declared is not None and str(declared).rstrip("#") != DIALECT:  # guard dialect
+            yield f"{path}/$schema", None, False
         for key in HIDES_A_PROPERTY:
             if key in node:
                 yield f"{path}/{key}", None, False
@@ -358,6 +366,7 @@ def declared_scales(specs):
 
 
 _ABSENT = object()
+DIALECT = "https://json-schema.org/draft/2020-12/schema"
 
 # Where the JSON Schema 2020-12 vocabularies put a schema, by the structure of
 # the keyword's value. The CLI validates with `jsonschema.validate` and no
@@ -691,6 +700,17 @@ def scale_self_test():
          ["properties"]["confidence"]) = {"not": body}
         return base
 
+    def dialect(base, uri, nested=False):
+        """A `$schema` naming a dialect, at the output root or inside the
+        items subschema. Draft-07 would apply keywords this walk does not
+        read, so any dialect but the pinned one is refused on sight."""
+        task, = base["tasks"]
+        container, = base["tasks"][task]["output"]["properties"]
+        target = (base["tasks"][task]["output"]["properties"][container]["items"]
+                  if nested else base["tasks"][task]["output"])
+        target["$schema"] = uri
+        return base
+
     def double_not(base):
         """`not: {not: {enum: [high]}}` accepts exactly `high`: a scale pinned
         by double negation, which the bare-`not` exemption read as a
@@ -966,6 +986,15 @@ def scale_self_test():
         ("a confidence under definitions is not applied in this dialect and is not read",
          {SPEC.name: spec(scale),
           "other.yaml": under_keyword(spec(scale, "detect", "findings"), "definitions", scale[:-1], "map")},
+         0, "in the same order", 2),
+        ("a draft-07 $schema at the output root is a form this check cannot read",
+         {SPEC.name: spec(scale), "other.yaml": dialect(spec(scale, "detect", "findings"), "http://json-schema.org/draft-07/schema#")},
+         1, "form this check cannot read", 2),
+        ("a draft-07 $schema in a subschema is a form this check cannot read",
+         {SPEC.name: spec(scale), "other.yaml": dialect(spec(scale, "detect", "findings"), "http://json-schema.org/draft-07/schema#", nested=True)},
+         1, "form this check cannot read", 2),
+        ("the pinned dialect declared explicitly is not a hiding place",
+         {SPEC.name: spec(scale), "other.yaml": dialect(spec(scale, "detect", "findings"), "https://json-schema.org/draft/2020-12/schema")},
          0, "in the same order", 2),
         ("a double not pins a scale and is a form this check cannot read",
          {SPEC.name: spec(scale), "other.yaml": double_not(spec(scale, "detect", "findings"))},
