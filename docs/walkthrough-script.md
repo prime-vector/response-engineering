@@ -118,6 +118,14 @@ Use an analyst rather than the commander. The commander's contract is 1,078
 lines and the interesting part is buried; the analyst makes the same point in a
 screenful.
 
+The still in the published recording (7 Oct 2026) predates PR #42 by three
+days: its arrow from the Scribe to the sink reads "tool call, verified in the
+adapter log", and the diagram in the tree now reads "filed by the driver,
+verified in the log", because the timeline is filed by the pipeline driver
+rather than by the agent. The narration never says how the timeline is filed,
+so nothing spoken became false; the re-rendered still is on disk for the next
+cut, and the recording is not re-made for a nine-word label.
+
 **Voice**
 > Operations is a software problem. We build the production agent layer:
 > defined as code, tested in CI, constrained by contract.
