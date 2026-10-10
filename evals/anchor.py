@@ -551,10 +551,18 @@ def self_test():
         print(f"  {'ok  ' if ok else 'FAIL'} {name}" + (f": {detail}" if not ok and detail else ""))
 
     with tempfile.TemporaryDirectory() as tmp:
-        results = Path(tmp) / "results"; results.mkdir()
+        results = Path(tmp) / "results"
         sheet = Path(tmp) / "anchor.yaml"
-        (results / "judgement-one-20260820T000000Z.json").write_text(json.dumps(record("judgement-one")))
         state = {}
+
+        def prepare():
+            # The first fixture, through the guard like every other: a write
+            # that fails here is one failure line, and every case below runs
+            # and reports against whatever is there.
+            results.mkdir()
+            (results / "judgement-one-20260820T000000Z.json").write_text(json.dumps(record("judgement-one")))
+            return True, ""
+        guarded("the synthetic record is written", prepare)
 
         def first_extract():
             state["entries"] = extract(results, sheet)
