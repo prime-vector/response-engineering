@@ -274,7 +274,17 @@ def declared_scales(specs):
     declaration shares one scale, and a live field drifted under a green check.
     A form this cannot read is not a form to skip: it is the claim failing.
     """
-    def walk(node, path):
+    def walk(node, path, names=False):
+        # Inside a mapping whose keys are names rather than keywords, the
+        # `properties` block above all, every key is a field and every value
+        # a schema: a field called `default`, `const` or `$ref` is a field,
+        # and neither the sentinels nor the instance-data stop apply to it.
+        # The gate on PR #50 found a field named `default` whose confidence
+        # had drifted pass green under the keyword reading.
+        if names and isinstance(node, dict):
+            for field, value in node.items():
+                yield from walk(value, f"{path}/{field}")
+            return
         if isinstance(node, dict):
             for key in HIDES_A_PROPERTY:
                 if key in node:
@@ -313,7 +323,7 @@ def declared_scales(specs):
                             # beside anything else is a node doing something
                             # this does not model.
                             yield f"{path}/{field}", None, False
-                yield from walk(value, f"{path}/{key}")
+                yield from walk(value, f"{path}/{key}", names=key in NAME_MAPPINGS)
         elif isinstance(node, list):
             for index, value in enumerate(node):
                 yield from walk(value, f"{path}[{index}]")
@@ -330,6 +340,12 @@ def declared_scales(specs):
 # never a schema applied to it. The walker yields `const` and `enum` as
 # sentinels when they hold a mapping, and descends into none of these.
 INSTANCE_DATA = ("const", "enum", "default", "examples")
+
+# Keywords whose value is a mapping from names to schemas. Under these the
+# keys are the author's and mean nothing to the walker; under everything else
+# a key is a keyword.
+NAME_MAPPINGS = ("properties", "patternProperties", "$defs", "definitions",
+                 "dependentSchemas")
 
 
 def board_scale(spec):
@@ -594,6 +610,26 @@ def scale_self_test():
          ["default"]) = {"properties": {"confidence": {"enum": ["high", "low"]}}}
         return base
 
+    def field_named(base, name, drift):
+        """A field called `name` under properties in another spec, declaring
+        a confidence of its own. It is a field, whatever it is called, and
+        a walker that read the key as a keyword would skip the declaration
+        beneath it, which with a drifted scale is a green check over a live
+        drift."""
+        task, = base["tasks"]
+        container, = base["tasks"][task]["output"]["properties"]
+        (base["tasks"][task]["output"]["properties"][container]["items"]
+         ["properties"][name]) = {"type": "object", "properties": {
+             "confidence": {"type": "string", "enum": list(drift)}}}
+        return base
+
+    def board_named(base, name):
+        """The board's container renamed to an instance keyword: still a
+        field, so still a declaration the path-moved message has to name."""
+        props = base["tasks"]["assess"]["output"]["properties"]
+        props[name] = props.pop("hypotheses")
+        return base
+
     def no_confidence_anywhere(base):
         """A board with no confidence under assess at all, which is the other
         reading of the same absent path and needs the other message."""
@@ -767,6 +803,15 @@ def scale_self_test():
          {SPEC.name: schema_shaped_instance(spec(scale), "examples", lambda v: [v]),
           "other.yaml": spec(scale, "detect", "findings")},
          1, "and none anywhere under assess", 1),
+        *[(f"a field named {name} is a field, and its drifted confidence is read",
+           {SPEC.name: spec(scale),
+            "other.yaml": field_named(spec(scale, "detect", "findings"), name, scale[:-1])},
+           1, f"findings/items/properties/{name}/confidence declares", 3)
+          for name in INSTANCE_DATA],
+        ("the board's container named default is still where the path moved to",
+         {SPEC.name: board_named(spec(scale), "default"),
+          "other.yaml": spec(scale, "detect", "findings")},
+         1, "elsewhere under assess at assess/properties/default/items/confidence", 2),
         ("a schema-shaped default beside a real declaration adds no declaration",
          {SPEC.name: spec(scale),
           "other.yaml": annotated_declaration(spec(scale, "detect", "findings"))},
