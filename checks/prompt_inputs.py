@@ -64,8 +64,8 @@ input; a schema cannot promise that, since the instance may carry none of the
 words (an empty board carries no confidence), so that arm was an exemption
 keyed on a walk coincidence and it is gone. An enum with no string value is
 skipped and counted as such. The walk descends only where the 2020-12
-vocabulary puts a schema, by the structure of a keyword's value, the split
-checks/contract_invariants.py moves to in PR #50; instance data, unknown
+vocabulary puts a schema, by the structure of a keyword's value, the same
+split checks/contract_invariants.py walks by; instance data, unknown
 annotations and the keys of a name mapping are never read as schemas. This
 checks presence, never whether the model reads a value. References are not
 resolved.
@@ -216,8 +216,8 @@ def resolve(spec_data, task_name):
 # into however schema-shaped their values look, and under a name mapping
 # every key is the author's. `definitions` is not in this dialect: the
 # validator treats it as an unknown annotation, so an enum under it is not
-# applied and is not read. The split checks/contract_invariants.py moves to
-# in PR #50, for the same reason: a list of exceptions to "descend everywhere"
+# applied and is not read. The same split as checks/contract_invariants.py,
+# for the same reason: a list of exceptions to "descend everywhere"
 # grows by one member per review round, and the vocabulary's answer does not.
 ONE_SCHEMA = ("additionalProperties", "unevaluatedProperties", "propertyNames",
               "items", "contains", "unevaluatedItems", "not", "if", "then",
