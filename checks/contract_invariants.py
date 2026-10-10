@@ -952,7 +952,15 @@ def scale_self_test():
                               ("an enum of arrays", {"enum": [["confirmed"]]}),
                               ("an enum of mappings", {"enum": [{"confidence": "high"}]}),
                               ("an empty enum", {"enum": []}),
-                              ("an enum that is not a list", {"enum": "confirmed"})]],
+                              ("an enum that is not a list", {"enum": "confirmed"}),
+                              # Not mappings at all. `true` and `false` are
+                              # valid schemas; the other two are not, and all
+                              # four have to be refused rather than crash a
+                              # check that then prints no verdicts.
+                              ("a boolean true body", True),
+                              ("a boolean false body", False),
+                              ("a number", 1),
+                              ("a list", ["const"])]],
         ("a confidence under definitions is not applied in this dialect and is not read",
          {SPEC.name: spec(scale),
           "other.yaml": under_keyword(spec(scale, "detect", "findings"), "definitions", scale[:-1], "map")},

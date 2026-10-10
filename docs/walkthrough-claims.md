@@ -70,7 +70,7 @@ mechanism and the committed case that proves the guarantee can fail.
 | A blocking item has no field a passage id can be filed in | `blocking_evidence` is a closed object | `precedent attached to blocking evidence` |
 | Naming a third party below confirmed forces an attribution guard onto the board | `if`/`then` over `third_party_named` and `confidence` | `a third party named below confirmed, guard silent` |
 | Every hypothesis carries a confidence word and a falsifying test | both are required fields on the hypothesis | required in the schema; the contract demo shows the falsifying half |
-| Confidence is one enum, in one order, in every spec that declares one | `checks/contract_invariants.py` holds all six declarations, across five specs, to the board's scale | the scale check, plus 82 self-tests |
+| Confidence is one enum, in one order, in every spec that declares one | `checks/contract_invariants.py` holds all six declarations, across five specs, to the board's scale | the scale check, plus 86 self-tests |
 | The task that would change production state binds no tools at all | an empty allow list on `mitigate`, which denies every tool by name | `demos/governance.sh sandbox` |
 
 **The guard row is presence only.** `attribution_guard` has no required
