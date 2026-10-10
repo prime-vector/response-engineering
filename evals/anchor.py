@@ -133,17 +133,52 @@ def rounds_with_verdicts(record):
     return parties
 
 
+def judged_claim(per_case, claim):
+    """Whether the judge was given this claim at all.
+
+    The judge builder in `evals/judgement.py` skips a claim none of whose
+    cited ids the archive returned, so the verdict list is a subsequence of
+    the claim list. Ordinals have to be counted over the claims the judge
+    saw, or a skipped first claim on a document leaves the second claim's
+    verdict at ordinal 0 against the first claim's text. The rule is the
+    builder's, restated here because the record does not carry it.
+    """
+    hits = (per_case.get("surface") or {}).get("hits") or {}
+    return any(pid in hits for pid in claim.get("grounded_in") or [])
+
+
 def claims(record):
-    """Every claim the agent offered in this record, keyed by case, document
-    and ordinal among claims on that pair."""
+    """Every claim the judge was given, keyed by case, document and ordinal
+    among judged claims on that pair; the same numbering as the verdicts."""
     flat = [(per_case["case"], claim) for per_case in record.get("per_case", [])
-            for claim in (per_case.get("score") or {}).get("claims", [])]
+            if not per_case.get("failure")
+            for claim in (per_case.get("score") or {}).get("claims", [])
+            if judged_claim(per_case, claim)]  # guard judged_only
     return {key: claim for key, (case, claim) in
             keyed(flat, lambda t: t[0], lambda t: t[1]["source_uri"]).items()}
 
 
+def aligned(record):
+    """Stop if the published verdicts do not number the judged claims pair for
+    pair: then the ordinal is two list positions and not one claim, and no
+    sheet drawn from it names anything."""
+    counts = {}
+    for case, document, _ in claims(record):
+        counts[(case, document)] = counts.get((case, document), 0) + 1
+    seen = {}
+    for case, document, _ in current(record)["verdicts"]:
+        seen[(case, document)] = seen.get((case, document), 0) + 1
+    for pair in sorted(set(counts) | set(seen)):
+        if counts.get(pair, 0) != seen.get(pair, 0):  # guard aligned
+            sys.exit(f"{record.get('label')}: {pair[0]} {pair[1]} has "
+                     f"{counts.get(pair, 0)} judged claim(s) and "
+                     f"{seen.get(pair, 0)} published verdict(s); the ordinal "
+                     f"cannot name a claim")
+
+
 def disagreements(record):
     """Keys on which two families with verdicts reached different answers."""
+    aligned(record)
     families = rounds_with_verdicts(record)
     keys = set()
     for fam in families.values():
@@ -365,7 +400,9 @@ def self_test():
             "label": label, "chunker": "heading",
             "scorer": {"fingerprint": "abc", "path": "evals/judgement.py"},
             "rejudged_at": "2026-08-22T00:30:00Z",
-            "per_case": [{"case": "a01", "score": {"claims": [
+            "per_case": [{"case": "a01", "surface": {"hits": {
+                "p-1": "x", "p-2": "x", "p-3": "x", "p-4": "x", "p-5": "x", "p-6": "x", "p-7": "x"}},
+              "score": {"claims": [
                 {"source_uri": "corpus://incidents/INC-1", "offered": "partial",
                  "offered_claim": {"divergence": "the record shows no daemon"},
                  "grounded_in": ["p-1", "p-2"]},
@@ -378,6 +415,12 @@ def self_test():
                 {"source_uri": "corpus://incidents/INC-4", "offered": "applies",
                  "offered_claim": {"divergence": "same tier"},
                  "grounded_in": ["p-5"]},
+                # Cited nothing the archive returned, so the judge never saw
+                # it and there is no verdict for it: the verdicts on RB-1
+                # start at the next claim.
+                {"source_uri": "corpus://runbooks/RB-1", "offered": "partial",
+                 "offered_claim": {"divergence": "ungrounded heading"},
+                 "grounded_in": ["p-nowhere"]},
                 {"source_uri": "corpus://runbooks/RB-1", "offered": "partial",
                  "offered_claim": {"divergence": "first heading"},
                  "grounded_in": ["p-6"]},
@@ -476,9 +519,15 @@ def self_test():
                                             "judgement-one/a01/RB-1"],
              str([e["id"] for e in entries]))
         rb_entries = [e for e in entries if e["document"].endswith("RB-1")]
-        case("two claims on one document are two keys, and the disputed first one is selected alone",
+        case("two judged claims on one document are two keys, and the disputed first one is selected alone",
              [e.get("ordinal") for e in rb_entries] == [0]
              and not [e for e in entries if e["id"].endswith("#2")], str(rb_entries))
+        case("an unjudged claim takes no ordinal, so ordinal 0 is the first claim the judge saw",
+             claims(record("judgement-one"))[("a01", "corpus://runbooks/RB-1", 0)]["offered_claim"]["divergence"] == "first heading")
+        skewed = record("judgement-skewed")
+        skewed["judged"]["groundedness_judge"]["verdicts"].pop()
+        expect_exit("published verdicts that do not number the judged claims stop the run",
+                    lambda: disagreements(skewed), "cannot name a claim")
         second = record("judgement-one")
         rb = second["judged"]["groundedness_judge"]["verdicts"]
         rb[-2]["verdict"]["supported"], rb[-1]["verdict"]["supported"] = False, True
