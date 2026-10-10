@@ -140,6 +140,9 @@ jobs:
       - name: Local agent traces sink accepts protobuf exports
         run: python3 demos/agent_traces_sink.py --self-test
 
+      - name: Traced wrapper routes modes and manages the local sink without a key
+        run: bash checks/traced_probe.sh
+
       # The indicators and the page are generated from committed spans, so a
       # stale sample would show numbers the current code no longer computes.
       - name: Agent traces indicators and report, self-tested and current
