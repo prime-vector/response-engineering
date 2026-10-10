@@ -291,6 +291,15 @@ def declared_scales(specs):
                 if key in node and holds_a_mapping(node[key]):
                     yield f"{path}/{key}", None, False
             for key, value in node.items():
+                # Instance data, never schema: an object under `const` or
+                # `enum` is a value the output must equal, and `default` and
+                # `examples` are annotations. A `properties.confidence`
+                # shaped thing inside one declares nothing, and a walker that
+                # read it would report a declaration that exists nowhere.
+                # The mapping forms of `const` and `enum` were already
+                # yielded above as sentinels; what stops here is the descent.
+                if key in INSTANCE_DATA:  # guard instance_data
+                    continue
                 if isinstance(value, dict) and key == "properties":
                     for field, decl in value.items():
                         if field != "confidence":
@@ -315,6 +324,12 @@ def declared_scales(specs):
                 continue
             for path, enum, readable in walk(definition["output"], task):
                 yield name, task, path, enum, readable
+
+
+# Keywords whose value is data the output is compared with or annotated by,
+# never a schema applied to it. The walker yields `const` and `enum` as
+# sentinels when they hold a mapping, and descends into none of these.
+INSTANCE_DATA = ("const", "enum", "default", "examples")
 
 
 def board_scale(spec):
@@ -556,6 +571,29 @@ def scale_self_test():
             "const": {"status": "ok"}}
         return base
 
+    def schema_shaped_instance(base, keyword, wrap=lambda v: v):
+        """A schema-shaped object as instance data under `keyword` on the
+        hypotheses items, with the real confidence gone. It has a
+        `properties.confidence` with an enum in it and declares nothing: a
+        walker that descends into it reports a declaration that exists
+        nowhere, which the gate on PR #50 found for const, enum, default and
+        examples alike."""
+        items = base["tasks"]["assess"]["output"]["properties"]["hypotheses"]["items"]
+        decoy = {"properties": {"confidence": {"enum": ["high", "low"]}}}
+        base["tasks"]["assess"]["output"]["properties"]["hypotheses"]["items"] = {
+            "type": "object", keyword: wrap(decoy)}
+        return base
+
+    def annotated_declaration(base):
+        """A real declaration with a schema-shaped `default` beside it in
+        another spec: the default is annotation and must add no declaration
+        to the count."""
+        task, = base["tasks"]
+        container, = base["tasks"][task]["output"]["properties"]
+        (base["tasks"][task]["output"]["properties"][container]["items"]
+         ["default"]) = {"properties": {"confidence": {"enum": ["high", "low"]}}}
+        return base
+
     def no_confidence_anywhere(base):
         """A board with no confidence under assess at all, which is the other
         reading of the same absent path and needs the other message."""
@@ -711,7 +749,28 @@ def scale_self_test():
         ("the board's hypotheses object is an unreadable form and nothing else declares one",
          {SPEC.name: unreadable_board(spec(scale)),
           "other.yaml": spec(scale, "detect", "findings")},
-         1, "neither present nor absent until that form is replaced", 1),
+         1, "at assess/properties/hypotheses/items/$ref: neither present nor "
+            "absent until that form is replaced", 1),
+        ("a schema-shaped const is instance data, not a declaration elsewhere",
+         {SPEC.name: schema_shaped_instance(spec(scale), "const"),
+          "other.yaml": spec(scale, "detect", "findings")},
+         1, "at assess/properties/hypotheses/items/const: neither present", 1),
+        ("a schema-shaped object inside an enum of arrays is instance data",
+         {SPEC.name: schema_shaped_instance(spec(scale), "enum", lambda v: [[v]]),
+          "other.yaml": spec(scale, "detect", "findings")},
+         1, "at assess/properties/hypotheses/items/enum: neither present", 1),
+        ("a schema-shaped default declares nothing and is not a sentinel either",
+         {SPEC.name: schema_shaped_instance(spec(scale), "default"),
+          "other.yaml": spec(scale, "detect", "findings")},
+         1, "and none anywhere under assess", 1),
+        ("a schema-shaped examples entry declares nothing",
+         {SPEC.name: schema_shaped_instance(spec(scale), "examples", lambda v: [v]),
+          "other.yaml": spec(scale, "detect", "findings")},
+         1, "and none anywhere under assess", 1),
+        ("a schema-shaped default beside a real declaration adds no declaration",
+         {SPEC.name: spec(scale),
+          "other.yaml": annotated_declaration(spec(scale, "detect", "findings"))},
+         0, "in the same order", 2),
         ("a sentinel beside a read declaration is not a second sighting",
          {SPEC.name: sentinel_beside_declaration(spec(scale)),
           "other.yaml": spec(scale, "detect", "findings")},
