@@ -56,6 +56,9 @@ case "$(sed -n "${attempt}p" "$WORK/script")" in
   nokey)
     echo '{"code": "PROVIDER_ERROR", "error": "Anthropic API key not set - export ANTHROPIC_API_KEY"}' >&2
     exit 1 ;;
+  refusal)
+    echo '{"code": "PROVIDER_ERROR", "error": "Anthropic refusal: the model declined this request (category cyber). A complete response with no content, not a transport failure, and not retried"}' >&2
+    exit 1 ;;
   adaptertimeout)
     echo '{"code": "TOOL_ERROR", "error": "precedent_search timed out after 30s"}' >&2
     exit 1 ;;
@@ -152,6 +155,26 @@ ok"
 out=$(oa_run --task assess 2>"$WORK/err"); status=$?
 check "the run fails" 1 "$status"
 check "only one attempt was made" 1 "$(cat "$WORK/attempts")"
+
+echo
+echo "a model refusal is a PROVIDER_ERROR and is not retried:"
+# The provider names it with its own prefix, which is none of the transport
+# signatures. The message is the one checks/stream_probe.py holds the live
+# provider to, and that probe also reads OA_RETRY_RE out of demos/retry.sh and
+# requires the two not to match, so the pairing is checked from both sides.
+scenario "refusal
+ok"
+out=$(oa_run --task assess 2>"$WORK/err"); status=$?
+check "the run fails" 1 "$status"
+check "only one attempt was made" 1 "$(cat "$WORK/attempts")"
+check "the refusal reaches the caller intact and unprefixed" 1 \
+  "$(grep -c '^{"code": "PROVIDER_ERROR", "error": "Anthropic refusal:' "$WORK/err")"
+scenario "refusal
+ok"
+out=$(oa_run_once --task mitigate 2>"$WORK/err"); status=$?
+check "a stage that writes fails on it too" 1 "$status"
+check "and does not call it a transport failure" 0 \
+  "$(grep -c 'transport failure on a stage that writes' "$WORK/err")"
 
 echo
 echo "the word timeout somewhere else on stderr is not the transport:"

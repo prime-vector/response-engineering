@@ -11,6 +11,11 @@ non-streaming path would have returned for the same message.
 
     python3 checks/stream_probe.py
 
+It also drives the refusal path: a complete stream with no content and
+`stop_reason: refusal` reassembles whole, is named as a refusal by the shared
+post helper on both transports, and does not match the retry signature in
+`demos/retry.sh`.
+
 Costs nothing and needs no key. Not a CI check even so: it tests the installed
 provider, and CI installs the unpatched wheel.
 """
@@ -170,6 +175,62 @@ BOARD_EVENTS = [
 ]
 
 
+# A refusal, as recorded live on 10 Oct 2026 from Sonnet 5.5 on the commander's
+# mitigate prompt and the mitigation directive, both ways. It is the one
+# complete, well-formed response that carries no content: `message_delta`
+# brings `stop_reason: refusal` with its `stop_details`, `message_stop`
+# follows, and no block was ever opened. Reassembly has to return it whole,
+# because the no-content guard reads it as a cut stream otherwise, and a cut
+# stream is what the demo drivers retry and pay for twice. The named failure
+# then comes from `_refused`, on both transports, not from here.
+REFUSAL_EXPECTED = {
+    "model": "claude-fixture",
+    "id": "msg_refusal",
+    "type": "message",
+    "role": "assistant",
+    "content": [],
+    "container": None,
+    "stop_reason": "refusal",
+    "stop_sequence": None,
+    "stop_details": {
+        "type": "refusal",
+        "category": "cyber",
+        "explanation": "This request triggered restrictions on violative "
+                       "cyber content and was blocked under the usage policy.",
+    },
+    "usage": {
+        "input_tokens": 698,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {"ephemeral_5m_input_tokens": 0,
+                           "ephemeral_1h_input_tokens": 0},
+        "output_tokens": 0,
+        "service_tier": "standard",
+    },
+    "diagnostics": None,
+}
+
+REFUSAL_EVENTS = [
+    {"type": "message_start", "message": {
+        "model": "claude-fixture", "id": "msg_refusal", "type": "message",
+        "role": "assistant", "content": [], "container": None,
+        "stop_reason": None, "stop_sequence": None, "stop_details": None,
+        "usage": {"input_tokens": 698, "cache_creation_input_tokens": 0,
+                  "cache_read_input_tokens": 0,
+                  "cache_creation": {"ephemeral_5m_input_tokens": 0,
+                                     "ephemeral_1h_input_tokens": 0},
+                  "output_tokens": 0, "service_tier": "standard"},
+        "diagnostics": None}},
+    {"type": "message_delta",
+     "delta": {"stop_reason": "refusal", "stop_sequence": None,
+               "stop_details": REFUSAL_EXPECTED["stop_details"],
+               "container": None},
+     "usage": {"input_tokens": 698, "cache_creation_input_tokens": 0,
+               "cache_read_input_tokens": 0, "output_tokens": 0}},
+    {"type": "message_stop"},
+]
+
+
 def sse(events):
     """The events as the wire carries them: one `data:` line each, plus noise.
 
@@ -191,8 +252,19 @@ def check_reassembly(collect):
         ("a tool-calling message", EVENTS, EXPECTED),
         ("a text-only end_turn reply, the assess shape", BOARD_EVENTS,
          BOARD_EXPECTED),
+        ("a refusal, complete and carrying no content", REFUSAL_EVENTS,
+         REFUSAL_EXPECTED),
     ):
-        got = collect(sse(events))
+        # A raise here is a failure of this case, not of the probe: a guard
+        # that rejects a complete message is the defect the refusal case
+        # exists to catch, and a traceback has no FAIL line for anything
+        # reading the output to count.
+        try:
+            got = collect(sse(events))
+        except Exception as exc:  # noqa: BLE001
+            print(f"  FAIL {name} raised instead of reassembling: {exc}")
+            failures += 1
+            continue
         if got == expected:
             print(f"  ok   {name} reassembles to the non-streaming shape")
             continue
@@ -273,6 +345,12 @@ def check_failures(collect, provider_error):
         # invoke_with_tools would read a cut generation as a final answer.
         ("a stream cut after its content but before message_stop",
          EVENTS[:-2], "message_stop"),
+        # The refusal exemption above is on the no-content guard only. A
+        # refusal whose message_stop never arrived is still a cut stream,
+        # and an exemption written as an early return on stop_reason would
+        # pass the case above while letting this one through.
+        ("a refusal cut before message_stop", REFUSAL_EVENTS[:-1],
+         "message_stop"),
         ("an error event in an otherwise complete stream",
          fault_in_the_middle({"type": "error",
                               "error": {"type": "overloaded_error",
@@ -354,6 +432,122 @@ def check_failures(collect, provider_error):
     return failures
 
 
+def check_refusal(module, provider_error):
+    """A refusal is named as one, on both transports, and is never retried.
+
+    `_refused` is where the name comes from, and `_post` is where it has to
+    be called: after reassembly on the streamed path and after the body
+    parse on the other, so the same request declined either way fails the
+    same way. Both are driven here through a stand-in for `urlopen`, since
+    the whole point is what reaches the caller and not what one helper
+    returns. The last check reads the retry wrapper's own signature out of
+    `demos/retry.sh`: the message must not match it, or `oa_run` would pay
+    for a refusal twice, and the signature must still match a cut stream, or
+    the non-match proves nothing about the pattern that was read.
+    """
+    import contextlib
+    import re
+
+    failures = 0
+
+    def expect_refusal(label, call):
+        nonlocal failures
+        try:
+            call()
+        except provider_error as exc:
+            text = str(exc)
+            if "Anthropic refusal:" in text and "category cyber" in text:
+                print(f"  ok   {label} fails naming the refusal: {exc}")
+                return text
+            print(f"  FAIL {label} raised without naming the refusal: {exc}")
+        except Exception as exc:  # noqa: BLE001
+            print(f"  FAIL {label} raised {type(exc).__name__}, not ProviderError")
+        else:
+            print(f"  FAIL {label} returned instead of raising")
+        failures += 1
+        return None
+
+    message = expect_refusal("_refused on the refusal body",
+                             lambda: module._refused(REFUSAL_EXPECTED))
+    for label, body in (("a tool-calling message", EXPECTED),
+                        ("an end_turn board", BOARD_EXPECTED)):
+        try:
+            module._refused(body)
+            print(f"  ok   _refused lets {label} through")
+        except Exception as exc:  # noqa: BLE001
+            print(f"  FAIL _refused raised on {label}: {exc}")
+            failures += 1
+
+    class FakeResponse:
+        """What urlopen yields: iterable for the streamed path, readable
+        for the other, and a context manager for both."""
+        def __init__(self, events, body):
+            self.lines, self.body = sse(events), json.dumps(body).encode()
+        def __iter__(self):
+            return iter(self.lines)
+        def read(self):
+            return self.body
+        def __enter__(self):
+            return self
+        def __exit__(self, *exc):
+            return False
+
+    @contextlib.contextmanager
+    def serving(events, body):
+        real = module.urllib.request.urlopen
+        module.urllib.request.urlopen = lambda req, timeout: FakeResponse(events, body)
+        try:
+            yield
+        finally:
+            module.urllib.request.urlopen = real
+
+    def post(stream):
+        return module._post("https://fixture.invalid/v1/messages", {}, {},
+                            1, stream)
+
+    with serving(REFUSAL_EVENTS, REFUSAL_EXPECTED):
+        for stream, label in ((True, "the streamed path"),
+                              (False, "the non-streaming path")):
+            expect_refusal(f"_post on {label}", lambda s=stream: post(s))
+    with serving(BOARD_EVENTS, BOARD_EXPECTED):
+        for stream, label in ((True, "the streamed path"),
+                              (False, "the non-streaming path")):
+            try:
+                got = post(stream)
+            except Exception as exc:  # noqa: BLE001
+                print(f"  FAIL _post on {label} raised on a board: {exc}")
+                failures += 1
+                continue
+            ok = got == BOARD_EXPECTED
+            failures += not ok
+            print(f"  {'ok  ' if ok else 'FAIL'} _post on {label} returns a "
+                  "board untouched")
+
+    if message is None:
+        return failures
+    with open(os.path.join(os.path.dirname(__file__), "..", "demos",
+                           "retry.sh")) as handle:
+        found = re.search(r"^OA_RETRY_RE='([^']*)'", handle.read(), re.M)
+    if not found:
+        print("  FAIL cannot read OA_RETRY_RE out of demos/retry.sh")
+        return failures + 1
+    signature = re.compile(found.group(1))
+    cut = "Anthropic stream ended without message_stop after 0 content block(s)"
+    if not signature.search(cut):
+        print("  FAIL the retry signature read from demos/retry.sh does not "
+              f"match a cut stream, so the next check would be vacuous: "
+              f"{found.group(1)!r}")
+        return failures + 1
+    if signature.search(message):
+        print(f"  FAIL demos/retry.sh would retry the refusal: {message!r} "
+              f"matches {found.group(1)!r}")
+        failures += 1
+    else:
+        print("  ok   the refusal does not match the retry signature in "
+              "demos/retry.sh, which does match a cut stream")
+    return failures
+
+
 def check_call_sites(module):
     """Both call sites must stream, and both must honour the off switch.
 
@@ -400,6 +594,8 @@ def main():
     failures += check_usage_maps(_collect_stream)
     print("\nfailing loudly:")
     failures += check_failures(_collect_stream, ProviderError)
+    print("\na refusal:")
+    failures += check_refusal(provider, ProviderError)
 
     print()
     if failures:
