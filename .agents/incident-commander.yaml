@@ -557,6 +557,17 @@ tasks:
           enum: [bridge, incident_manager, executive_sponsor]
         board:
           type: object
+          # The briefing carries this vocabulary from typed input, so its
+          # prompt need not instruct the model to choose a confidence word.
+          properties:
+            hypotheses:
+              type: array
+              items:
+                type: object
+                properties:
+                  confidence:
+                    type: string
+                    enum: [speculative, plausible, likely, supported, confirmed]
           description: >
             The board this renders, as assess produced it: hypotheses with
             their confidence and falsifying tests, blocking evidence,
