@@ -82,6 +82,7 @@ The fifth agent. Owns a retrieval surface over prior incident records and runboo
       per case, the deterministic rates read off the typed output and the
       adapter log, and `groundedness_judge` and `divergence_quality` judged at
       the prompts committed in `evals/judges/`
+- [ ] Anchor set for the judged metrics. The tool and the sheet landed 10 Oct 2026: `evals/anchor.py` extracts the 65 claims the judge families disagreed on into `evals/anchor.yaml` with no verdict and no claim text in it, shows each with its cited passages, checks the sheet against the records in CI, and scores every judging round against the labels once they exist. Open: thirty or more labels by a person, both judges scored against them, and the absence rule argued in `docs/precedent-analyst.md` from what the key shows. See `evals/README.md`, The anchor set
 - [x] Measured improvement documented with before and after. Three arms
       recorded, both comparisons run, and the README states what was kept,
       what was rejected and the latency accepted for it
