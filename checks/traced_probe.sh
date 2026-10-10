@@ -267,10 +267,21 @@ for driver_status, passing in ((3, True), (3, False), (0, False)):
     check(label + ' exit', result.returncode == (driver_status or expected_check))
     check(label + ' summary', f'driver={driver_status}, check={expected_check}, report=0' in result.stdout)
     contains(label + ' check evidence', output / 'check.log', 'verdict=violation_prevented' if passing else 'incident-commander:mitigate:none: expected stage missing')
-case, tree, output, result = run(['sandbox'], [sandbox], replacement=('checks/agent_traces_sli.py', 'raise SystemExit(7)\n'))
+report_broken = ('checks/agent_traces_sli.py', 'raise SystemExit(7)\n')
+case, tree, output, result = run(['sandbox'], [sandbox], replacement=report_broken)
 check('report failure exit', result.returncode == 7)
 check('report failure summary', 'driver=0, check=0, report=7' in result.stdout)
 contains('report failure preserves check', output / 'check.log', 'verdict=violation_prevented')
+# Report last, held pairwise. With the report the only non-zero status, the
+# cases above pass whichever order the wrapper tests in; the order is only
+# pinned when two statuses are non-zero at once and the assertion names
+# which one wins.
+case, tree, output, result = run(['sandbox'], ['fixture:unrelated:none=conformant'], replacement=report_broken)
+check('check beats report exit', result.returncode == 1, result.stdout + result.stderr)
+check('check beats report summary', 'driver=0, check=1, report=7' in result.stdout)
+case, tree, output, result = run(['sandbox'], [sandbox], 3, replacement=report_broken)
+check('driver beats report exit', result.returncode == 3, result.stdout + result.stderr)
+check('driver beats report summary', 'driver=3, check=0, report=7' in result.stdout)
 for args in (['unknown'], ['investigate', 'bogus']):
     case, tree, output, result = run(args, [])
     check('usage ' + ' '.join(args) + ' exit', result.returncode == 2)
