@@ -67,8 +67,11 @@ skipped and counted as such. The walk descends only where the 2020-12
 vocabulary puts a schema, by the structure of a keyword's value, the same
 split checks/contract_invariants.py walks by; instance data, unknown
 annotations and the keys of a name mapping are never read as schemas. This
-checks presence, never whether the model reads a value. References are not
-resolved.
+checks presence, never whether the model reads a value. The user text is read
+with every placeholder the runner would substitute blanked, since a value that
+appears only as its own placeholder is replaced before the model sees it. The
+dialect is pinned to 2020-12: a `$schema` naming another, anywhere on either
+side, is refused rather than walked. References are not resolved.
 
 WHAT THIS CANNOT SEE. `--system-prompt` and `--user-prompt` replace a prompt
 wholesale at the command line, and a spec cannot know what they will carry.
@@ -226,6 +229,41 @@ SCHEMA_LIST = ("allOf", "anyOf", "oneOf", "prefixItems")
 NAME_MAPPINGS = ("$defs", "properties", "patternProperties", "dependentSchemas")
 
 
+# The one dialect the walk is written for. `jsonschema.validate` honours an
+# explicit `$schema`, at the root or in a subschema, so a draft-07 declaration
+# would make the validator apply `dependencies`, tuple `items` and
+# `additionalItems`, which this walk does not read. Rather than walk every
+# dialect, a `$schema` naming any other is refused wherever it appears.
+DIALECT = "https://json-schema.org/draft/2020-12/schema"
+
+
+def foreign_dialects(schema, path="$"):
+    """Every `$schema` in the tree that is not the pinned dialect, at any
+    depth, data included: a conservative read, since a `$schema` inside
+    instance data applies nothing, and refusing it costs an author one
+    key they had no reason to write."""
+    if isinstance(schema, dict):
+        declared = schema.get("$schema")
+        if declared is not None and declared.rstrip("#") != DIALECT:  # guard dialect
+            yield path, declared
+        for key, value in schema.items():
+            yield from foreign_dialects(value, f"{path}.{key}")
+    elif isinstance(schema, list):
+        for index, value in enumerate(schema):
+            yield from foreign_dialects(value, f"{path}[{index}]")
+
+
+def without_placeholders(text, keys):
+    """The user template with every placeholder the runner would substitute
+    blanked. A value named `likely` whose only appearance is `{{ likely }}`
+    is not in front of the model: the runner replaces that text with the
+    input, which can be anything."""
+    for key in keys:
+        for form in substitutions(key):
+            text = text.replace(form, " ")
+    return text
+
+
 def schema_enums(schema, path="$"):
     """Inline enums with their schema path. References are not resolved."""
     if not isinstance(schema, dict):
@@ -254,8 +292,18 @@ def check_enums(task, system, user, label):
     """Every string value an output enum pins must reach the model through
     its prompts. A mixed enum is checked on its strings: they are words the
     model must choose like any other, and a number beside them exempts
-    nothing."""
+    nothing. The user text is read with its placeholders blanked, because
+    the runner substitutes those before the model sees anything, and the
+    schemas are held to the one dialect the walk reads."""
     named = skipped = failures = 0
+    for side in ("input", "output"):
+        for where, declared in foreign_dialects(task.get(side) or {}, side):
+            failures += 1
+            print(f"  FAIL {label} {where} declares dialect {declared!r}; the "
+                  f"enum walk reads {DIALECT} only, and another dialect applies "
+                  f"keywords it does not read")
+    keys = set(((task.get("input") or {}).get("properties")) or {}) | set(((task.get("input") or {}).get("required")) or [])
+    user = without_placeholders(user, keys)  # guard placeholders
     for values, path in schema_enums(task.get("output") or {}):
         words = [v for v in values if isinstance(v, str)] if isinstance(values, list) else []
         if not words:
@@ -717,6 +765,31 @@ def enum_self_test():
          system="+ok ok+")
     case("multiword value cannot straddle prompts", out={"enum": ["not established"]},
          system="not", user="established", missing=[("$.enum", ["not established"])])
+    # A placeholder is replaced before the model sees the prompt, so an enum
+    # value that is also an input key must appear as text, not as the
+    # substitution the runner performs. All three spellings.
+    one_word = {"properties": {"confidence": {"enum": ["likely"]}}}
+    key_input = {"type": "object", "properties": {"likely": {"type": "string"}}, "required": ["likely"]}
+    for form in ("{likely}", "{{ likely }}", "{{ input.likely }}"):
+        case(f"a value present only as the placeholder {form} is not named",
+             out=one_word, inp=key_input, user=f"Evidence: {form}",
+             missing=[("$.properties['confidence'].enum", ["likely"])])
+    case("a value present as text beside its placeholder is named",
+         out=one_word, inp=key_input, user="likely: {{ likely }}")
+    # The dialect is pinned: a $schema naming another, at the root or in a
+    # subschema, on either side, is refused, since the validator would then
+    # apply keywords this walk does not read.
+    case("a draft-07 $schema on the output is refused",
+         out={"$schema": "http://json-schema.org/draft-07/schema#", **output},
+         system=" ".join(values), missing=[("dialect", None)])
+    case("a draft-07 $schema in a subschema is refused",
+         out={"properties": {"confidence": {"$schema": "http://json-schema.org/draft-07/schema#", **scale}}},
+         system=" ".join(values), missing=[("dialect", None)])
+    case("a draft-07 $schema on the input is refused",
+         inp={"$schema": "http://json-schema.org/draft-07/schema#"}, system=" ".join(values),
+         missing=[("dialect", None)])
+    case("the pinned dialect declared explicitly passes",
+         out={"$schema": "https://json-schema.org/draft/2020-12/schema", **output}, system=" ".join(values))
 
     # Written out rather than read from the tuples under test: a case taken
     # from the collection it checks disappears with the member it would have
@@ -775,7 +848,8 @@ def enum_self_test():
                     print(f"exception {type(exc).__name__}: {exc}")
         text = buf.getvalue()
         if missing:
-            reasons = [f"output {p} enum missing values: {v!r}." for p, v in missing]
+            reasons = [("declares dialect" if p == "dialect" else f"output {p} enum missing values: {v!r}.")
+                       for p, v in missing]
             ok = count == len(missing) and all(reason in text for reason in reasons)
             detail = "; ".join(reasons)
         else:
