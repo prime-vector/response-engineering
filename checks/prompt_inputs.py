@@ -834,6 +834,11 @@ def enum_self_test():
     case("nested braces are removed whole",
          out=one_word, user='{"a": {"confidence": "likely"}}',
          missing=[("$.properties['confidence'].enum", ["likely"])])
+    # The word in the outer span beside a nested one: a single innermost
+    # pass removes the inner span and leaves the outer, and the word with it.
+    case("a word in an outer span beside a nested span is not named",
+         out=one_word, user='{"confidence": "likely", "x": {"y": 1}}',
+         missing=[("$.properties['confidence'].enum", ["likely"])])
     case("a word beside a span, separated, is still named",
          out=one_word, inp={"properties": {"x": {"type": "string"}, "y": {"type": "string"}}, "required": ["x", "y"]},
          user="likely {{ x }} and {y}")
