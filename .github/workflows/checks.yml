@@ -92,6 +92,16 @@ jobs:
       - name: Derived judgement prompts are current
         run: python3 evals/judgement.py --check-prompts
 
+      # The anchor sheet is a key, hand-labelled; what can be checked is that
+      # it still names claims the records hold and that its labels are words
+      # the scorer reads. A label on a claim that no longer exists would be
+      # a verdict about nothing, counted.
+      - name: Anchor set matches the judgement records
+        run: |
+          pip install pyyaml
+          python3 evals/anchor.py --self-test
+          python3 evals/anchor.py --check
+
       # The Phase 5 grid is published in two documents and was typed into
       # both by hand, which is how a repo that generates every other number
       # ends up with an unrelated-claims figure of 6/22 where the record says

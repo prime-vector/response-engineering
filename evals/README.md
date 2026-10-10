@@ -23,6 +23,7 @@ a refusal issued when the archive held something.
 | `judges/` | The judge prompts, committed. A judged number whose prompt is not readable is an assertion. |
 | `prompts/` | System prompts derived from the spec for an arm that replaces one paragraph. Generated, checked in CI. |
 | `results/` | Timestamped run records, `latest.md` (the baseline table), `chunker-comparison.md` and the judgement tables. |
+| `anchor.py`, `anchor.yaml` | The anchor set: a hand-labelled key for `groundedness_judge`, and the tool that extracts it from the records, shows each claim with its passages, scores every judge against it and checks it in CI. See **The anchor set** below. |
 
 Both halves are written. Retrieval measures the surface with no model in the
 loop and re-runs for free; judgement measures the agent and costs one live
@@ -567,6 +568,42 @@ and every delta after that would be unattributable.
   would not support much of a significance test, and nothing here attempts
   one.
 
+### The anchor set
+
+`groundedness_judge` is readable as a comparison and not as a score: the same
+claims scored 38 of 52 under one model family and 17 of 52 under the other,
+and nothing in the repository could say which was right. The remedy is not a
+panel, a consensus or a tiebreak judge. A council stabilises the number and
+leaves the cause, an underspecified rubric each family fills in differently,
+and produces a figure whose provenance cannot be inspected. The remedy is a
+key.
+
+`evals/anchor.yaml` lists the claims on which the judge families disagreed,
+65 across the three records, because that is where the rubric is ambiguous.
+`python3 evals/anchor.py --extract` writes it; `--show N` prints one claim,
+every field of it, with the cited passages whole from the index the record was
+scored on; the reader fills `label` (supported or unsupported, against the
+passages and nothing else) and `asserts_absence` (does the claim say the prior
+record lacks something). The sheet carries no judge's verdict and no claim
+text, on purpose: a labeller shown who said what inherits a conclusion
+instead of reaching one, and the claim is model output that belongs in
+`results/` byte for byte rather than copied under a style rule. `--check`
+holds every entry to its record and every label to its vocabulary, in CI.
+`--score` then measures each judging round that kept its verdicts against the
+labels, split by whether the claim asserts an absence: agreement,
+over-flagged (the judge said unsupported where the key says supported) and
+under-flagged.
+
+What this does and does not buy. The labels are a person's reading, and the
+code cannot tell a person's label from a copied verdict; the sheet is honest
+against the records, not against the labeller. Until labels exist `--score`
+reports that there is no key. Once about thirty exist, the report becomes
+"this judge over-flags absence claims by N" rather than "the judges
+disagree", and the absence rule itself, whether an agent may say the prior
+record shows no such thing from passages that do not mention it, becomes a
+decision the spec can argue from evidence rather than from taste. That
+decision belongs in `docs/precedent-analyst.md` and is still open.
+
 ## Status
 
 Phase 4 and Phase 5 are done.
@@ -585,6 +622,10 @@ Phase 4 and Phase 5 are done.
 - [x] `judgement-heading` recorded, the shipped configuration
 - [x] `judgement-fixed` and `judgement-single-query` recorded, both
       comparisons run, and the result written up in the top-level README
+- [x] Anchor set extracted and checked, 10 Oct 2026: 65 disagreed claims on
+      the sheet, none labelled yet
+- [ ] Thirty or more labelled by a person, both judges scored against them,
+      and the absence rule argued in `docs/precedent-analyst.md`
 
 **What these three records do not pin, and what the runs themselves show.**
 They were made before the CLI and provider were recorded, so which runtime
