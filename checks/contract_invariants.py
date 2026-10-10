@@ -247,10 +247,13 @@ def declared_scales(specs):
     `confidence` under `properties`, as a bare `not: {const: confirmed}` with
     no type of its own: those constrain a field declared elsewhere rather than
     declaring one, and counting them would report a scale drift for every rule
-    that narrows the scale on purpose. The exemption is any node whose *only*
-    key is `not`, which is broader than that one shape and deliberately so: it
-    is the absence of anything else, rather than the presence of a `const`,
-    that makes a node a constraint rather than a declaration.
+    that narrows the scale on purpose. The exemption is a node whose only key
+    is `not` and whose `not` body only excludes values: a string `const`, a
+    non-empty `enum` of strings, or both, and nothing else. A first version
+    exempted any node whose only key was `not`, on the argument that the
+    absence of anything else made it a constraint; `not: {not: {enum: [high]}}`
+    accepts exactly `high` and is a declaration wearing that shape, and
+    `not: {type: string}` rejects every word, so the body is read.
 
     Anything else is reported rather than skipped, with `readable` false, and
     this walker reads exactly one form: `properties.confidence` written inline.
@@ -274,40 +277,77 @@ def declared_scales(specs):
     declaration shares one scale, and a live field drifted under a green check.
     A form this cannot read is not a form to skip: it is the claim failing.
     """
+    def narrowing(body):
+        """A `not` whose body only excludes values: a string `const`, a
+        non-empty `enum` of strings, or both, and no other key. Anything
+        else under `not` is a form this does not read: a nested `not` pins
+        a scale (`not: {not: {enum: [high]}}` accepts exactly `high`), a
+        `type` rejects every word, a mapping or a number under `const` or
+        `enum` is not a value on any scale."""
+        if not isinstance(body, dict) or not body or not set(body) <= {"const", "enum"}:
+            return False
+        if "const" in body and not isinstance(body["const"], str):  # guard const_string
+            return False
+        if "enum" in body and not (isinstance(body["enum"], list) and body["enum"]
+                                   and all(isinstance(v, str) for v in body["enum"])):  # guard enum_strings
+            return False
+        return True
+
     def walk(node, path):
-        if isinstance(node, dict):
-            for key in HIDES_A_PROPERTY:
-                if key in node:
-                    yield f"{path}/{key}", None, False
-            for key in APPLIES_TO_UNNAMED:
-                # `false` forbids properties that were not named, which is the
-                # opposite of constraining one out of sight.
-                if key in node and node[key] is not False:
-                    yield f"{path}/{key}", None, False
-            for key in ASSERTS_AN_OBJECT:
-                # Only when the literal is a mapping. A list of strings under
-                # `enum` is a scale being declared, which is the thing this
-                # check exists to read rather than a place to hide one.
-                if key in node and holds_a_mapping(node[key]):
-                    yield f"{path}/{key}", None, False
-            for key, value in node.items():
-                if isinstance(value, dict) and key == "properties":
-                    for field, decl in value.items():
-                        if field != "confidence":
-                            continue
-                        if not isinstance(decl, dict):
-                            yield f"{path}/{field}", None, False
-                        elif "type" in decl or "enum" in decl:
-                            yield f"{path}/{field}", decl.get("enum"), True
-                        elif set(decl) != {"not"}:
-                            # Only a bare narrowing rule is exempt. `not`
-                            # beside anything else is a node doing something
-                            # this does not model.
-                            yield f"{path}/{field}", None, False
-                yield from walk(value, f"{path}/{key}")
-        elif isinstance(node, list):
-            for index, value in enumerate(node):
-                yield from walk(value, f"{path}[{index}]")
+        """Descend only where the 2020-12 vocabulary says a schema is.
+
+        The question with a closed answer is not "which keywords could hide a
+        confidence" but "at a schema location, which keywords' values are
+        themselves schemas", and the vocabulary defines that by value
+        structure: one schema, a list of schemas, or a mapping from names to
+        schemas. Everything else at a schema location is data the keyword
+        carries, `const`, `default`, `required`, an unknown annotation such
+        as `x-note`, and the walker reads no object out of any of it
+        however schema-shaped it looks. A boolean schema is terminal. The
+        earlier version descended into every value and then kept a list of
+        exceptions, and each review round found the next member of the list.
+        """
+        if not isinstance(node, dict):
+            return
+        for key in HIDES_A_PROPERTY:
+            if key in node:
+                yield f"{path}/{key}", None, False
+        for key in APPLIES_TO_UNNAMED:
+            # `false` forbids properties that were not named, which is the
+            # opposite of constraining one out of sight.
+            if key in node and node[key] is not False:
+                yield f"{path}/{key}", None, False
+        for key in ASSERTS_AN_OBJECT:
+            # Only when the literal is a mapping. A list of strings under
+            # `enum` is a scale being declared, which is the thing this
+            # check exists to read rather than a place to hide one.
+            if key in node and holds_a_mapping(node[key]):
+                yield f"{path}/{key}", None, False
+        if isinstance(node.get("properties"), dict):
+            decl = node["properties"].get("confidence", _ABSENT)
+            if decl is _ABSENT:
+                pass
+            elif not isinstance(decl, dict):
+                yield f"{path}/confidence", None, False
+            elif "type" in decl or "enum" in decl:
+                yield f"{path}/confidence", decl.get("enum"), True
+            elif set(decl) == {"not"} and narrowing(decl["not"]):
+                # The one exempt form: a bare rule excluding values from a
+                # scale declared above it.
+                pass
+            else:
+                yield f"{path}/confidence", None, False
+        for key in ONE_SCHEMA:  # guard one_schema
+            if key in node:
+                yield from walk(node[key], f"{path}/{key}")
+        for key in SCHEMA_LIST:  # guard schema_list
+            if isinstance(node.get(key), list):
+                for index, value in enumerate(node[key]):
+                    yield from walk(value, f"{path}/{key}[{index}]")
+        for key in NAME_MAPPINGS:  # guard name_mappings
+            if isinstance(node.get(key), dict):
+                for name, value in node[key].items():
+                    yield from walk(value, f"{path}/{key}/{name}")
 
     for name in sorted(specs):
         for task, definition in sorted((specs[name].get("tasks") or {}).items()):
@@ -315,6 +355,29 @@ def declared_scales(specs):
                 continue
             for path, enum, readable in walk(definition["output"], task):
                 yield name, task, path, enum, readable
+
+
+_ABSENT = object()
+
+# Where the JSON Schema 2020-12 vocabularies put a schema, by the structure of
+# the keyword's value. The CLI validates with `jsonschema.validate` and no
+# explicit class, which is this dialect. The walker descends through these
+# and nothing else: not `const`, `enum`, `default` or `examples`, which carry
+# instance data; not `required`, `dependentRequired` or `$vocabulary`, whose
+# keys are names and whose values are not schemas; not `dependencies`, which
+# 2020-12 keeps as syntax and no longer applies; and not an unknown keyword,
+# whose value is an annotation whatever its shape. `definitions`, the
+# pre-2019 spelling of `$defs`, is not in this dialect either: the validator
+# applies nothing under it, and a reference pointing into it is a `$ref`,
+# which is a sentinel already.
+ONE_SCHEMA = ("additionalProperties", "unevaluatedProperties", "propertyNames",
+              "items", "contains", "unevaluatedItems", "not", "if", "then",
+              "else", "contentSchema")
+SCHEMA_LIST = ("allOf", "anyOf", "oneOf", "prefixItems")
+NAME_MAPPINGS = ("$defs", "properties", "patternProperties", "dependentSchemas")
+# Instance-data keywords, named for the self-test that places a declaration
+# shaped object under each and requires that nothing is read out of it.
+INSTANCE_DATA = ("const", "enum", "default", "examples")
 
 
 def board_scale(spec):
@@ -333,24 +396,38 @@ def board_scale(spec):
     A scan would follow the rename and carry on; this stops finding anything
     and says so. Losing the reference is not a thing to survive quietly.
 
-    Returns (enum-or-None, whether the field is declared at all): a board that
-    declares no confidence and a board that declares it as a bare string are
-    different defects, and reporting either as the other sends the fix to the
-    wrong file.
+    Returns (enum-or-None, whether the field is declared at all, elsewhere):
+    a board that declares no confidence and a board that declares it as a bare
+    string are different defects, and reporting either as the other sends the
+    fix to the wrong file. `elsewhere` is read only when the reference path is
+    absent and lists two kinds of path separately: the confidences the walker
+    actually read under `assess`, so a hypotheses object wrapped in `allOf`,
+    or renamed, is reported as a declaration this reads by path and did not
+    find rather than as one that does not exist; and the forms it refuses to
+    read, which may hold the board's confidence or nothing, and which
+    establish neither presence nor absence. A sentinel is not a sighting.
+    Right verdict either way; the message is what sends a reader to the
+    right fix.
     """
     node = spec
     for key in ("tasks", "assess", "output", "properties", "hypotheses",
                 "items", "properties", "confidence"):
         if not isinstance(node, dict) or key not in node:
-            return None, False
+            assess = ((spec.get("tasks") or {}).get("assess") or {}) \
+                if isinstance(spec, dict) else {}
+            found = list(declared_scales({"assess-only": {"tasks": {"assess": assess}}})) \
+                if isinstance(assess, dict) and "output" in assess else []
+            elsewhere = {"declared": [path for _, _, path, _, readable in found if readable],
+                         "unreadable": [path for _, _, path, _, readable in found if not readable]}
+            return None, False, elsewhere
         node = node[key]
     if not isinstance(node, dict):
         # `confidence: true` is a valid schema meaning anything. Reading
         # `.get` off it raises, and a check that dies prints no verdicts for
         # anyone to read: the exact failure a mutation harness exists to
         # catch, left in the one path every other case depends on.
-        return None, True
-    return node.get("enum"), True
+        return None, True, {"declared": [], "unreadable": []}
+    return node.get("enum"), True, {"declared": [], "unreadable": []}
 
 
 def confidence_scales_hold(specs):
@@ -382,10 +459,31 @@ def confidence_scales_hold(specs):
     """
     found = list(declared_scales(specs))
     declarations = [d for d in found if d[4]]
-    board, declared = board_scale(specs.get(SPEC.name) or {})
+    board, declared, elsewhere = board_scale(specs.get(SPEC.name) or {})
     if not declared:
-        print(f"  FAIL {SPEC.name} declares no confidence on assess/hypotheses, "
-              f"so there is no scale for anything else to be held to")
+        # Three different fixes. With a confidence read somewhere else the
+        # reference is read by path and the path has moved, most likely a
+        # container such as allOf ahead of the field, and adding a second
+        # declaration is the wrong first move. With only a form this check
+        # refuses to read, nothing is established either way: the board's
+        # confidence may be behind it, and the form is what to fix first.
+        # With nothing at all, the declaration is missing.
+        if elsewhere["declared"]:
+            print(f"  FAIL {SPEC.name} declares no confidence at the reference "
+                  f"path assess/hypotheses/items/confidence, which this check "
+                  f"reads by path and not by search; a confidence exists "
+                  f"elsewhere under assess at {', '.join(elsewhere['declared'])}, "
+                  f"so the path has moved rather than the declaration gone missing")
+        elif elsewhere["unreadable"]:
+            print(f"  FAIL {SPEC.name} declares no confidence at the reference "
+                  f"path assess/hypotheses/items/confidence, and the only thing "
+                  f"under assess that could hold one is a form this check cannot "
+                  f"read, at {', '.join(elsewhere['unreadable'])}: neither present "
+                  f"nor absent until that form is replaced")
+        else:
+            print(f"  FAIL {SPEC.name} declares no confidence on assess/hypotheses "
+                  f"and none anywhere under assess, so there is no scale for "
+                  f"anything else to be held to")
         return 1, len(declarations)
     if board is None:
         print("  FAIL the board's confidence is not an enum, so any string is "
@@ -490,6 +588,166 @@ def scale_self_test():
          ["properties"]["confidence"]) = True
         return base
 
+    def wrapped_in_allof(base):
+        """The hypotheses object under `allOf`, so `items` carries no literal
+        `properties` key and the reference path stops before the confidence
+        that is right there. Fail-closed before this case existed, with a
+        message saying the declaration was missing: right verdict, wrong
+        reason, and the fix a reader would try first is to add a second one."""
+        items = base["tasks"]["assess"]["output"]["properties"]["hypotheses"]["items"]
+        base["tasks"]["assess"]["output"]["properties"]["hypotheses"]["items"] = {
+            "allOf": [items]}
+        return base
+
+    def unreadable_board(base):
+        """The hypotheses object behind a `$ref`, with no confidence the walker
+        can read anywhere under assess. A sentinel is not a sighting: the
+        board's confidence may be behind it or nothing may be, and a message
+        saying one exists elsewhere sends the reader after a declaration the
+        check never saw. The gate on PR #50 found the first version doing
+        exactly that for every one of the eight sentinel keywords."""
+        base["tasks"]["assess"]["output"]["properties"]["hypotheses"]["items"] = {
+            "$ref": "#/$defs/hypothesis"}
+        return base
+
+    def sentinel_beside_declaration(base):
+        """A sentinel beside a readable declaration elsewhere: the read one is
+        the path-moved message's evidence, and the sentinel must not be
+        promoted to a sighting beside it."""
+        base = wrapped_in_allof(base)
+        base["tasks"]["assess"]["output"]["properties"]["notes"] = {
+            "const": {"status": "ok"}}
+        return base
+
+    def schema_shaped_instance(base, keyword, wrap=lambda v: v):
+        """A schema-shaped object as instance data under `keyword` on the
+        hypotheses items, with the real confidence gone. It has a
+        `properties.confidence` with an enum in it and declares nothing: a
+        walker that descends into it reports a declaration that exists
+        nowhere, which the gate on PR #50 found for const, enum, default and
+        examples alike."""
+        items = base["tasks"]["assess"]["output"]["properties"]["hypotheses"]["items"]
+        decoy = {"properties": {"confidence": {"enum": ["high", "low"]}}}
+        base["tasks"]["assess"]["output"]["properties"]["hypotheses"]["items"] = {
+            "type": "object", keyword: wrap(decoy)}
+        return base
+
+    def annotated_declaration(base):
+        """A real declaration with a schema-shaped `default` beside it in
+        another spec: the default is annotation and must add no declaration
+        to the count."""
+        task, = base["tasks"]
+        container, = base["tasks"][task]["output"]["properties"]
+        (base["tasks"][task]["output"]["properties"][container]["items"]
+         ["default"]) = {"properties": {"confidence": {"enum": ["high", "low"]}}}
+        return base
+
+    def field_named(base, name, drift):
+        """A field called `name` under properties in another spec, declaring
+        a confidence of its own. It is a field, whatever it is called, and
+        a walker that read the key as a keyword would skip the declaration
+        beneath it, which with a drifted scale is a green check over a live
+        drift."""
+        task, = base["tasks"]
+        container, = base["tasks"][task]["output"]["properties"]
+        (base["tasks"][task]["output"]["properties"][container]["items"]
+         ["properties"][name]) = {"type": "object", "properties": {
+             "confidence": {"type": "string", "enum": list(drift)}}}
+        return base
+
+    def board_named(base, name):
+        """The board's container renamed to an instance keyword: still a
+        field, so still a declaration the path-moved message has to name."""
+        props = base["tasks"]["assess"]["output"]["properties"]
+        props[name] = props.pop("hypotheses")
+        return base
+
+    def under_keyword(base, keyword, drift, shape):
+        """A drifted confidence placed where `keyword` puts a schema, in
+        another spec: one schema, a list of schemas, or a name mapping. Every
+        location the vocabulary defines must be reached, or a declaration
+        there drifts under a green check."""
+        task, = base["tasks"]
+        container, = base["tasks"][task]["output"]["properties"]
+        inner = {"type": "object", "properties": {
+            "confidence": {"type": "string", "enum": list(drift)}}}
+        items = base["tasks"][task]["output"]["properties"][container]["items"]
+        if shape == "map":
+            # Added beside what the mapping already holds: replacing
+            # `properties` would remove the real declaration this case
+            # counts alongside the planted one.
+            items[keyword] = {**items.get(keyword, {}), "entry": inner}
+        else:
+            items[keyword] = inner if shape == "one" else [inner]
+        return base
+
+    def not_body(base, body):
+        """A confidence that is a bare `not` with the given body, in another
+        spec beside a real declaration: the body decides whether this is the
+        exempt narrowing rule or a form the check cannot read."""
+        task, = base["tasks"]
+        container, = base["tasks"][task]["output"]["properties"]
+        (base["tasks"][task]["output"]["properties"][container]["items"]
+         ["properties"]["confidence"]) = {"not": body}
+        return base
+
+    def double_not(base):
+        """`not: {not: {enum: [high]}}` accepts exactly `high`: a scale pinned
+        by double negation, which the bare-`not` exemption read as a
+        narrowing rule. Astra's first finding on PR #50."""
+        task, = base["tasks"]
+        container, = base["tasks"][task]["output"]["properties"]
+        (base["tasks"][task]["output"]["properties"][container]["items"]
+         ["properties"]["confidence"]) = {"not": {"not": {"enum": ["high"]}}}
+        return base
+
+    def unknown_keyword(base, task_name="detect", container="findings"):
+        """A schema-shaped object under a keyword the vocabulary does not
+        define, `x-note`. Its value is an annotation, whatever it looks like,
+        and nothing is read out of it."""
+        base["tasks"][task_name]["output"]["properties"][container]["items"]["x-note"] = {
+            "properties": {"confidence": {"enum": ["high"]}}}
+        return base
+
+    def names_not_schemas(base, keyword):
+        """`dependentRequired` and the compatibility `dependencies` map names
+        to things that are not schemas; a name `$ref` under them is a field
+        name and not a reference."""
+        task, = base["tasks"]
+        container, = base["tasks"][task]["output"]["properties"]
+        base["tasks"][task]["output"]["properties"][container]["items"][keyword] = {
+            "$ref": ["confidence"]}
+        return base
+
+    def dependencies_default(base):
+        """Grok's case: a drifted confidence under `dependencies`, which
+        2020-12 keeps as syntax and does not apply, so the field it names is
+        not pinned by it and nothing drifts."""
+        task, = base["tasks"]
+        container, = base["tasks"][task]["output"]["properties"]
+        base["tasks"][task]["output"]["properties"][container]["items"]["dependencies"] = {
+            "default": {"properties": {"confidence": {"type": "string", "enum": ["high", "low"]}}}}
+        return base
+
+    def no_confidence_anywhere(base):
+        """A board with no confidence under assess at all, which is the other
+        reading of the same absent path and needs the other message."""
+        items = base["tasks"]["assess"]["output"]["properties"]["hypotheses"]["items"]
+        del items["properties"]["confidence"]
+        return base
+
+    def bare_wrapper(base):
+        """A confidence declared as a `oneOf` wrapper and nothing else: no type,
+        no enum, no narrowing rule and no reference keyword. Only the
+        `set(decl) != {"not"}` branch can report it, so this is the case that
+        branch owns; `by_ref` and `rule_plus` trip it and a `$ref` sentinel
+        together, and a count asserted on them cannot say which fired."""
+        task, = base["tasks"]
+        container, = base["tasks"][task]["output"]["properties"]
+        (base["tasks"][task]["output"]["properties"][container]["items"]
+         ["properties"]["confidence"]) = {"oneOf": [{"enum": ["high", "low"]}]}
+        return base
+
     def rule_plus(base):
         """A narrowing rule with something else beside it. Exempting any node
         carrying a `not` would wave this through whatever the something is."""
@@ -590,7 +848,7 @@ def scale_self_test():
     # Derived from the spec rather than typed out, so a change to the scale
     # cannot quietly change what these cases measure, and read by path rather
     # than through the scanner these cases are testing.
-    scale, declared = board_scale(real)
+    scale, declared, _ = board_scale(real)
     if not declared or scale is None:
         # Loudly, because a self-test that cannot find the scale it derives
         # from otherwise dies on a TypeError inside a case, and a mutation
@@ -613,10 +871,136 @@ def scale_self_test():
         ("the board itself is a bare string",
          {SPEC.name: spec(None), "other.yaml": spec(scale, "detect", "findings")},
          1, "the board's confidence is not an enum", 2),
-        ("the board declares no confidence at all",
+        ("the board declares its confidence somewhere other than the path",
          {SPEC.name: spec(scale, container="suspected"),
           "other.yaml": spec(scale, "detect", "findings")},
-         1, "declares no confidence on assess/hypotheses", 2),
+         1, "elsewhere under assess at assess/properties/suspected/items/"
+            "confidence", 2),
+        ("the board's hypotheses object is wrapped in allOf",
+         {SPEC.name: wrapped_in_allof(spec(scale)),
+          "other.yaml": spec(scale, "detect", "findings")},
+         1, "elsewhere under assess at assess/properties/hypotheses/items/"
+            "allOf[0]/confidence", 2),
+        ("the board's hypotheses object is an unreadable form and nothing else declares one",
+         {SPEC.name: unreadable_board(spec(scale)),
+          "other.yaml": spec(scale, "detect", "findings")},
+         1, "at assess/properties/hypotheses/items/$ref: neither present nor "
+            "absent until that form is replaced", 1),
+        ("a schema-shaped const is instance data, not a declaration elsewhere",
+         {SPEC.name: schema_shaped_instance(spec(scale), "const"),
+          "other.yaml": spec(scale, "detect", "findings")},
+         1, "at assess/properties/hypotheses/items/const: neither present", 1),
+        ("a schema-shaped object inside an enum of arrays is instance data",
+         {SPEC.name: schema_shaped_instance(spec(scale), "enum", lambda v: [[v]]),
+          "other.yaml": spec(scale, "detect", "findings")},
+         1, "at assess/properties/hypotheses/items/enum: neither present", 1),
+        ("a schema-shaped default declares nothing and is not a sentinel either",
+         {SPEC.name: schema_shaped_instance(spec(scale), "default"),
+          "other.yaml": spec(scale, "detect", "findings")},
+         1, "and none anywhere under assess", 1),
+        ("a schema-shaped examples entry declares nothing",
+         {SPEC.name: schema_shaped_instance(spec(scale), "examples", lambda v: [v]),
+          "other.yaml": spec(scale, "detect", "findings")},
+         1, "and none anywhere under assess", 1),
+        *[(f"a field named {name} is a field, and its drifted confidence is read",
+           {SPEC.name: spec(scale),
+            "other.yaml": field_named(spec(scale, "detect", "findings"), name, scale[:-1])},
+           1, f"findings/items/properties/{name}/confidence declares", 3)
+          for name in INSTANCE_DATA],
+        ("the board's container named default is still where the path moved to",
+         {SPEC.name: board_named(spec(scale), "default"),
+          "other.yaml": spec(scale, "detect", "findings")},
+         1, "elsewhere under assess at assess/properties/default/items/confidence", 2),
+        # The three that are also sentinels fire twice: once as a form that
+        # may hide a confidence, once for the drift beneath. Both are true.
+        *[(f"a drifted confidence under {keyword} is reached",
+           {SPEC.name: spec(scale),
+            "other.yaml": under_keyword(spec(scale, "detect", "findings"), keyword, scale[:-1], shape)},
+           2 if keyword in (*HIDES_A_PROPERTY, *APPLIES_TO_UNNAMED) else 1,
+           f"findings/items/{keyword}", 3)
+          # Written out rather than read from the tuples under test: a case
+          # derived from the collection it checks disappears with the member
+          # it would have caught, and every mutation reads as covered.
+          for keyword, shape in [
+              ("additionalProperties", "one"), ("unevaluatedProperties", "one"),
+              ("propertyNames", "one"), ("items", "one"), ("contains", "one"),
+              ("unevaluatedItems", "one"), ("not", "one"), ("if", "one"),
+              ("then", "one"), ("else", "one"), ("contentSchema", "one"),
+              ("allOf", "list"), ("anyOf", "list"), ("oneOf", "list"),
+              ("prefixItems", "list"),
+              ("$defs", "map"), ("properties", "map"),
+              ("patternProperties", "map"), ("dependentSchemas", "map")]],
+        *[(f"a bare not excluding {label} is the narrowing rule and declares nothing",
+           {SPEC.name: spec(scale), "other.yaml": not_body(spec(scale, "detect", "findings"), body)},
+           0, "in the same order", 1)
+          for label, body in [("a string const", {"const": "confirmed"}),
+                              ("an enum of strings", {"enum": ["confirmed", "supported"]}),
+                              ("both a const and an enum", {"const": "confirmed", "enum": ["likely"]})]],
+        # A mapping under const or enum fires twice: once as the body the
+        # narrowing rule refuses, once as the sentinel the walker yields when
+        # it descends into `not`. Both lines are true of that node.
+        *[(f"a bare not over {label} is a form this check cannot read",
+           {SPEC.name: spec(scale), "other.yaml": not_body(spec(scale, "detect", "findings"), body)},
+           2 if isinstance(body, dict) and (holds_a_mapping(body.get("const")) or holds_a_mapping(body.get("enum"))) else 1,
+           "form this check cannot read", 1)
+          for label, body in [("a type", {"type": "string"}),
+                              ("an empty body", {}),
+                              ("a const beside a type", {"const": "confirmed", "type": "string"}),
+                              ("a mapping const", {"const": {"confidence": "high"}}),
+                              ("a numeric const", {"const": 1}),
+                              ("a numeric enum", {"enum": [1]}),
+                              ("an enum of arrays", {"enum": [["confirmed"]]}),
+                              ("an enum of mappings", {"enum": [{"confidence": "high"}]}),
+                              ("an empty enum", {"enum": []}),
+                              ("an enum that is not a list", {"enum": "confirmed"}),
+                              # Not mappings at all. `true` and `false` are
+                              # valid schemas; the other two are not. `false`
+                              # is refused by the emptiness test and locks
+                              # nothing else; the other three are what the
+                              # mapping test exists for, and without it each
+                              # crashes a check that then prints no verdicts.
+                              ("a boolean true body", True),
+                              ("a boolean false body", False),
+                              ("a number", 1),
+                              ("a list", ["const"])]],
+        ("a confidence under definitions is not applied in this dialect and is not read",
+         {SPEC.name: spec(scale),
+          "other.yaml": under_keyword(spec(scale, "detect", "findings"), "definitions", scale[:-1], "map")},
+         0, "in the same order", 2),
+        ("a double not pins a scale and is a form this check cannot read",
+         {SPEC.name: spec(scale), "other.yaml": double_not(spec(scale, "detect", "findings"))},
+         1, "form this check cannot read", 1),
+        ("a schema-shaped object under an unknown keyword declares nothing",
+         {SPEC.name: spec(scale), "other.yaml": unknown_keyword(spec(scale, "detect", "findings"))},
+         0, "in the same order", 2),
+        ("a schema-shaped object under an unknown keyword on the board is not a sighting",
+         {SPEC.name: unknown_keyword(no_confidence_anywhere(spec(scale)), "assess", "hypotheses"),
+          "other.yaml": spec(scale, "detect", "findings")},
+         1, "and none anywhere under assess", 1),
+        *[(f"a name $ref under {keyword} is a name, not a reference",
+           {SPEC.name: spec(scale), "other.yaml": names_not_schemas(spec(scale, "detect", "findings"), keyword)},
+           0, "in the same order", 2)
+          for keyword in ("dependentRequired", "dependencies")],
+        ("a confidence under dependencies pins nothing in 2020-12 and is not read",
+         {SPEC.name: spec(scale), "other.yaml": dependencies_default(spec(scale, "detect", "findings"))},
+         0, "in the same order", 2),
+        ("a schema-shaped default beside a real declaration adds no declaration",
+         {SPEC.name: spec(scale),
+          "other.yaml": annotated_declaration(spec(scale, "detect", "findings"))},
+         0, "in the same order", 2),
+        ("a sentinel beside a read declaration is not a second sighting",
+         {SPEC.name: sentinel_beside_declaration(spec(scale)),
+          "other.yaml": spec(scale, "detect", "findings")},
+         1, "elsewhere under assess at assess/properties/hypotheses/items/"
+            "allOf[0]/confidence, so", 2),
+        ("the board declares no confidence anywhere under assess",
+         {SPEC.name: no_confidence_anywhere(spec(scale)),
+          "other.yaml": spec(scale, "detect", "findings")},
+         1, "and none anywhere under assess", 1),
+        ("a confidence that is only a oneOf wrapper",
+         {SPEC.name: spec(scale),
+          "other.yaml": bare_wrapper(spec(scale, "detect", "findings"))},
+         1, "form this check cannot read", 1),
         ("a second task in the same spec drifts",
          {SPEC.name: {"tasks": {
              "assess": spec(scale)["tasks"]["assess"],
