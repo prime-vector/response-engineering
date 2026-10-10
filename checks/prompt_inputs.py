@@ -226,28 +226,23 @@ SCHEMA_LIST = ("allOf", "anyOf", "oneOf", "prefixItems")
 NAME_MAPPINGS = ("$defs", "properties", "patternProperties", "dependentSchemas")
 
 
-def schema_enums(schema, property_name=None, path="$"):
-    """Inline enums with their enclosing property name and schema path.
-
-    References are not resolved. The property name is carried for the
-    message and nothing else: no arm reads it to exempt an enum.
-    """
+def schema_enums(schema, path="$"):
+    """Inline enums with their schema path. References are not resolved."""
     if not isinstance(schema, dict):
         return
     if "enum" in schema:
-        yield property_name, schema["enum"], path + ".enum"
+        yield schema["enum"], path + ".enum"
     for key in ONE_SCHEMA:
         if key in schema:
-            yield from schema_enums(schema[key], property_name, f"{path}.{key}")
+            yield from schema_enums(schema[key], f"{path}.{key}")
     for key in SCHEMA_LIST:
         if isinstance(schema.get(key), list):
             for index, child in enumerate(schema[key]):
-                yield from schema_enums(child, property_name, f"{path}.{key}[{index}]")
+                yield from schema_enums(child, f"{path}.{key}[{index}]")
     for key in NAME_MAPPINGS:
         if isinstance(schema.get(key), dict):
             for name, child in schema[key].items():
-                owner = name if key == "properties" else property_name
-                yield from schema_enums(child, owner, f"{path}.{key}[{name!r}]")
+                yield from schema_enums(child, f"{path}.{key}[{name!r}]")
 
 
 def enum_named(text, value):
@@ -261,7 +256,7 @@ def check_enums(task, system, user, label):
     model must choose like any other, and a number beside them exempts
     nothing."""
     named = skipped = failures = 0
-    for _, values, path in schema_enums(task.get("output") or {}):
+    for values, path in schema_enums(task.get("output") or {}):
         words = [v for v in values if isinstance(v, str)] if isinstance(values, list) else []
         if not words:
             skipped += 1
