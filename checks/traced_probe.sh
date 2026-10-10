@@ -180,6 +180,18 @@ def run(args, stages, status=0, remote=False, replacement=None):
         if ready:
             (case / 'sink-after-return').write_text(
                 'closed' if closed(int(ready[0].read_text())) else 'open')
+        # A sink that never became ready has no port to observe, so the
+        # stub records its pid instead and the wrapper is held to having
+        # killed it: the EXIT trap is the only thing that does on that path,
+        # and the process-group kill below would otherwise hide its absence.
+        pid_file = case / 'sink-pid'
+        if pid_file.exists():
+            try:
+                os.kill(int(pid_file.read_text()), 0)
+                alive = True
+            except ProcessLookupError:
+                alive = False
+            (case / 'sink-alive-after-return').write_text('alive' if alive else 'exited')
     finally:
         try:
             os.killpg(process.pid, signal.SIGTERM)
@@ -288,11 +300,17 @@ for args in (['unknown'], ['investigate', 'bogus']):
     check('usage ' + ' '.join(args) + ' reason', 'Usage: demos/traced.sh' in result.stderr)
     check('usage ' + ' '.join(args) + ' creates no runs', not (tree / 'runs').exists())
 for label, content, reason in [('sink crash', "import sys\nprint('boom', file=sys.stderr)\nraise SystemExit(1)\n", 'boom'),
-                               ('sink readiness timeout', 'import time\ntime.sleep(60)\n', 'did not become ready')]:
+                               ('sink readiness timeout',
+                                "import os, time\nfrom pathlib import Path\n"
+                                "Path(os.environ['PROBE_CASE'], 'sink-pid').write_text(str(os.getpid()))\n"
+                                "time.sleep(60)\n", 'did not become ready')]:
     case, tree, output, result = run(['sandbox'], [sandbox], replacement=('demos/agent_traces_sink.py', content))
     check(label + ' exit', result.returncode == 1)
     check(label + ' reason', reason in result.stderr, result.stderr)
     check(label + ' driver never started', not (case / 'driver.json').exists())
+    if (case / 'sink-pid').exists():
+        check(label + ' sink killed by the wrapper before it returned',
+              (case / 'sink-alive-after-return').read_text() == 'exited')
 print(f'Traced probe: {checks} checks, {failures} failures.')
 sys.exit(bool(failures))
 PY
