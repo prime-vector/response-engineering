@@ -475,9 +475,10 @@ def self_test():
              [e["id"] for e in entries] == ["judgement-one/a01/INC-1", "judgement-one/a01/INC-4",
                                             "judgement-one/a01/RB-1"],
              str([e["id"] for e in entries]))
+        rb_entries = [e for e in entries if e["document"].endswith("RB-1")]
         case("two claims on one document are two keys, and the disputed first one is selected alone",
-             [e for e in entries if e["document"].endswith("RB-1")][0]["ordinal"] == 0
-             and not [e for e in entries if e["id"].endswith("#2")])
+             [e.get("ordinal") for e in rb_entries] == [0]
+             and not [e for e in entries if e["id"].endswith("#2")], str(rb_entries))
         second = record("judgement-one")
         rb = second["judged"]["groundedness_judge"]["verdicts"]
         rb[-2]["verdict"]["supported"], rb[-1]["verdict"]["supported"] = False, True
