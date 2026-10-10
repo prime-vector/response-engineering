@@ -133,6 +133,16 @@ def rounds_with_verdicts(record):
     return parties
 
 
+def judged_ids(per_case, claim):
+    """The cited ids the judge was actually handed: those among the surface's
+    hits for the case. The builder drops the rest before calling passage_get,
+    so a claim citing one returned passage and one that was never returned
+    was judged against one, and showing both would put evidence in front of
+    the labeller that the judge never saw."""
+    hits = (per_case.get("surface") or {}).get("hits") or {}
+    return [pid for pid in claim.get("grounded_in") or [] if pid in hits]
+
+
 def judged_claim(per_case, claim):
     """Whether the judge was given this claim at all.
 
@@ -143,18 +153,19 @@ def judged_claim(per_case, claim):
     verdict at ordinal 0 against the first claim's text. The rule is the
     builder's, restated here because the record does not carry it.
     """
-    hits = (per_case.get("surface") or {}).get("hits") or {}
-    return any(pid in hits for pid in claim.get("grounded_in") or [])
+    return bool(judged_ids(per_case, claim))
 
 
-def claims(record):
+def claims(record, with_ids=False):
     """Every claim the judge was given, keyed by case, document and ordinal
-    among judged claims on that pair; the same numbering as the verdicts."""
-    flat = [(per_case["case"], claim) for per_case in record.get("per_case", [])
+    among judged claims on that pair; the same numbering as the verdicts.
+    With `with_ids`, each value is (claim, the cited ids the judge saw)."""
+    flat = [(per_case["case"], claim, judged_ids(per_case, claim))
+            for per_case in record.get("per_case", [])
             if not per_case.get("failure")
             for claim in (per_case.get("score") or {}).get("claims", [])
             if judged_claim(per_case, claim)]  # guard judged_only
-    return {key: claim for key, (case, claim) in
+    return {key: ((claim, ids) if with_ids else claim) for key, (case, claim, ids) in
             keyed(flat, lambda t: t[0], lambda t: t[1]["source_uri"]).items()}
 
 
@@ -289,15 +300,18 @@ def show(number, sheet=SHEET, results=RESULTS, indexes=INDEXES):
     entry = entries[number - 1]
     by_name = dict(records(results))
     record = by_name.get(entry["record"])
-    claim = claims(record).get((entry["case"], entry["document"], entry.get("ordinal", 0))) if record else None
-    if claim is None:  # guard show_claim
+    found = claims(record, with_ids=True).get((entry["case"], entry["document"], entry.get("ordinal", 0))) if record else None
+    if found is None:  # guard show_claim
         sys.exit(f"{entry['id']}: no such claim in {entry['record']}; run --check")
+    claim, cited = found
     print(f"[{number}] {entry['id']}   offered: {claim.get('offered')}   label: {entry['label']}")
     print("\nCLAIM (every field is the agent's; the prior-record half is what the passages must support)")
     for key, value in (claim.get("offered_claim") or {}).items():
         print(f"  {key}: {value}")
-    print("\nCITED PASSAGES, as the archive returned them to the judge")
-    for passage in passages_for(record, claim.get("grounded_in") or [], indexes):
+    unseen = [pid for pid in claim.get("grounded_in") or [] if pid not in cited]
+    print("\nCITED PASSAGES, as the archive returned them to the judge"
+          + (f" (the agent also cited {', '.join(unseen)}, which the archive never returned and the judge never saw)" if unseen else ""))
+    for passage in passages_for(record, cited, indexes):  # guard show_judged_ids
         print(f"\n  --- {passage.get('passage_id')}  {passage.get('source_uri', '')}  {passage.get('heading_path', '')}")
         for key, value in passage.items():
             if key not in ("passage_id", "source_uri", "heading_path", "text"):
@@ -426,9 +440,11 @@ def self_test():
             "per_case": [{"case": "a01", "surface": {"hits": {
                 "p-1": "x", "p-2": "x", "p-3": "x", "p-4": "x", "p-5": "x", "p-6": "x", "p-7": "x"}},
               "score": {"claims": [
+                # p-8 is in the index and was never returned for this case:
+                # the judge was handed p-1 and p-2 only, and so is the reader.
                 {"source_uri": "corpus://incidents/INC-1", "offered": "partial",
                  "offered_claim": {"divergence": "the record shows no daemon"},
-                 "grounded_in": ["p-1", "p-2"]},
+                 "grounded_in": ["p-1", "p-2", "p-8"]},
                 {"source_uri": "corpus://incidents/INC-2", "offered": "applies",
                  "offered_claim": {"divergence": "same host class"},
                  "grounded_in": ["p-3"]},
@@ -543,10 +559,10 @@ def self_test():
             return ids == ["judgement-one/a01/INC-1", "judgement-one/a01/INC-4", "judgement-one/a01/RB-1"], str(ids)
         guarded("extract selects the published verdicts against the other family's latest round, "
                 "not a stale round of either family", first_extract)
-        if "entries" not in state:
-            print(f"Anchor self-test: {failures} failure(s).")
-            return failures
-        entries = state["entries"]
+        # No early return: a case that needs the extraction and did not get it
+        # fails on its own line through `guarded`, and every case that does
+        # not need it still runs.
+        entries = state.get("entries", [])
 
         guarded("two judged claims on one document are two keys, and the disputed first one is selected alone",
                 lambda: ([e.get("ordinal") for e in entries if e["document"].endswith("RB-1")] == [0]
@@ -611,7 +627,9 @@ def self_test():
 
         guarded("check passes a sheet that matches its record", lambda: (not check(sheet, results), ""))
 
-        base_rows = yaml.safe_load(sheet.read_text())
+        # Read defensively: with no sheet written, every case below fails on
+        # its own line rather than this read ending the suite.
+        base_rows = (yaml.safe_load(sheet.read_text()) or []) if sheet.exists() else []
         for name, mutate, reason in [
             ("an id naming another claim", lambda r: r[0].__setitem__("id", "judgement-one/a01/INC-2"), "does not name its case"),
             ("an unknown label", lambda r: r[0].__setitem__("label", "maybe"), "is not one of"),
@@ -697,7 +715,9 @@ def self_test():
              "ordinal": 0, "text": "No daemon was running.", "signature": "host.x", "cause_claimed": "heap",
              "superseded_by": None, "record_status": "filed", "recorded_at": "2025-01-01"},
             {"passage_id": "p-2", "source_uri": "corpus://incidents/INC-1", "heading_path": "INC-1 > Gaps",
-             "ordinal": 1, "text": "Attribution was never produced.", "signature": "host.x"}]}))
+             "ordinal": 1, "text": "Attribution was never produced.", "signature": "host.x"},
+            {"passage_id": "p-8", "source_uri": "corpus://incidents/INC-1", "heading_path": "INC-1 > Resolution",
+             "ordinal": 2, "text": "NEVER RETURNED TO THE JUDGE", "signature": "host.x"}]}))
         indexes = {"heading": index, "fixed": index}
 
         def shown():
@@ -709,6 +729,14 @@ def self_test():
                       "document_cause_claimed: heap", "claim_scope: document"]
             return all(w in text for w in wanted) and "signature" not in text, text
         guarded("show prints the claim and its passages as passage_get returns them, signature dropped", shown)
+
+        def only_judged():
+            buf = io.StringIO()
+            with redirect_stdout(buf):
+                show(1, sheet, results, indexes)
+            text = buf.getvalue()
+            return "NEVER RETURNED TO THE JUDGE" not in text and "also cited p-8" in text, text
+        guarded("show omits a cited passage the archive never returned, and says so", only_judged)
         guarded("show refuses a number off the sheet", lambda: show(99, sheet, results, indexes), "the sheet has")
 
         def show_missing():
