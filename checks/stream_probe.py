@@ -441,9 +441,12 @@ def check_refusal(module, provider_error):
     same way. Both are driven here through a stand-in for `urlopen`, since
     the whole point is what reaches the caller and not what one helper
     returns. The last check reads the retry wrapper's own signature out of
-    `demos/retry.sh`: the message must not match it, or `oa_run` would pay
-    for a refusal twice, and the signature must still match a cut stream, or
-    the non-match proves nothing about the pattern that was read.
+    `demos/retry.sh` and holds the message `_post` raised on each transport
+    against it, not the helper's: `_post` wraps any other exception in the
+    transport prefix, so a refusal that lost its pass-through would be
+    retried while the helper's own message still read clean. The signature
+    must still match a cut stream, or the non-match proves nothing about the
+    pattern that was read.
     """
     import contextlib
     import re
@@ -505,10 +508,16 @@ def check_refusal(module, provider_error):
         return module._post("https://fixture.invalid/v1/messages", {}, {},
                             1, stream)
 
+    # What the caller sees is what `_post` raises, not what `_refused` raises
+    # inside it: `_post` wraps every other exception in the transport prefix,
+    # and a refusal re-wrapped that way would be retried. So the messages
+    # held against the retry signature below are these two, one per
+    # transport, and never the helper's own.
+    raised = []
     with serving(REFUSAL_EVENTS, REFUSAL_EXPECTED):
         for stream, label in ((True, "the streamed path"),
                               (False, "the non-streaming path")):
-            expect_refusal(f"_post on {label}", lambda s=stream: post(s))
+            raised.append(expect_refusal(f"_post on {label}", lambda s=stream: post(s)))
     with serving(BOARD_EVENTS, BOARD_EXPECTED):
         for stream, label in ((True, "the streamed path"),
                               (False, "the non-streaming path")):
@@ -523,7 +532,7 @@ def check_refusal(module, provider_error):
             print(f"  {'ok  ' if ok else 'FAIL'} _post on {label} returns a "
                   "board untouched")
 
-    if message is None:
+    if message is None or any(text is None for text in raised):
         return failures
     with open(os.path.join(os.path.dirname(__file__), "..", "demos",
                            "retry.sh")) as handle:
@@ -538,13 +547,14 @@ def check_refusal(module, provider_error):
               f"match a cut stream, so the next check would be vacuous: "
               f"{found.group(1)!r}")
         return failures + 1
-    if signature.search(message):
-        print(f"  FAIL demos/retry.sh would retry the refusal: {message!r} "
-              f"matches {found.group(1)!r}")
-        failures += 1
-    else:
-        print("  ok   the refusal does not match the retry signature in "
-              "demos/retry.sh, which does match a cut stream")
+    for text, label in zip(raised, ("the streamed path", "the non-streaming path")):
+        if signature.search(text):
+            print(f"  FAIL demos/retry.sh would retry the refusal _post raises on "
+                  f"{label}: {text!r} matches {found.group(1)!r}")
+            failures += 1
+        else:
+            print(f"  ok   the refusal _post raises on {label} does not match the "
+                  "retry signature in demos/retry.sh, which does match a cut stream")
     return failures
 
 

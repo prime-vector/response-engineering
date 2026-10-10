@@ -159,9 +159,10 @@ check "only one attempt was made" 1 "$(cat "$WORK/attempts")"
 echo
 echo "a model refusal is a PROVIDER_ERROR and is not retried:"
 # The provider names it with its own prefix, which is none of the transport
-# signatures. The message is the one checks/stream_probe.py holds the live
-# provider to, and that probe also reads OA_RETRY_RE out of demos/retry.sh and
-# requires the two not to match, so the pairing is checked from both sides.
+# signatures. This probe only shows that the wrapper leaves that literal
+# alone; whether the installed provider actually raises it, on both
+# transports and unwrapped, is checks/stream_probe.py's claim, which reads
+# OA_RETRY_RE out of demos/retry.sh and holds what _post raises against it.
 scenario "refusal
 ok"
 out=$(oa_run --task assess 2>"$WORK/err"); status=$?
