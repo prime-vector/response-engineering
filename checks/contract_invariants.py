@@ -247,10 +247,13 @@ def declared_scales(specs):
     `confidence` under `properties`, as a bare `not: {const: confirmed}` with
     no type of its own: those constrain a field declared elsewhere rather than
     declaring one, and counting them would report a scale drift for every rule
-    that narrows the scale on purpose. The exemption is any node whose *only*
-    key is `not`, which is broader than that one shape and deliberately so: it
-    is the absence of anything else, rather than the presence of a `const`,
-    that makes a node a constraint rather than a declaration.
+    that narrows the scale on purpose. The exemption is a node whose only key
+    is `not` and whose `not` body only excludes values: a string `const`, a
+    non-empty `enum` of strings, or both, and nothing else. A first version
+    exempted any node whose only key was `not`, on the argument that the
+    absence of anything else made it a constraint; `not: {not: {enum: [high]}}`
+    accepts exactly `high` and is a declaration wearing that shape, and
+    `not: {type: string}` rejects every word, so the body is read.
 
     Anything else is reported rather than skipped, with `readable` false, and
     this walker reads exactly one form: `properties.confidence` written inline.
@@ -275,12 +278,20 @@ def declared_scales(specs):
     A form this cannot read is not a form to skip: it is the claim failing.
     """
     def narrowing(body):
-        """A `not` whose body only excludes values: `{const: x}` or an `enum`
-        of strings. Anything else under `not`, a nested `not` above all,
-        can pin a scale (`not: {not: {enum: [high]}}` accepts exactly
-        `high`) and is a form this does not read."""
-        return (isinstance(body, dict) and body and set(body) <= {"const", "enum"}
-                and not holds_a_mapping(body.get("const")) and not holds_a_mapping(body.get("enum")))
+        """A `not` whose body only excludes values: a string `const`, a
+        non-empty `enum` of strings, or both, and no other key. Anything
+        else under `not` is a form this does not read: a nested `not` pins
+        a scale (`not: {not: {enum: [high]}}` accepts exactly `high`), a
+        `type` rejects every word, a mapping or a number under `const` or
+        `enum` is not a value on any scale."""
+        if not isinstance(body, dict) or not body or not set(body) <= {"const", "enum"}:
+            return False
+        if "const" in body and not isinstance(body["const"], str):  # guard const_string
+            return False
+        if "enum" in body and not (isinstance(body["enum"], list) and body["enum"]
+                                   and all(isinstance(v, str) for v in body["enum"])):  # guard enum_strings
+            return False
+        return True
 
     def walk(node, path):
         """Descend only where the 2020-12 vocabulary says a schema is.
@@ -670,6 +681,16 @@ def scale_self_test():
             items[keyword] = inner if shape == "one" else [inner]
         return base
 
+    def not_body(base, body):
+        """A confidence that is a bare `not` with the given body, in another
+        spec beside a real declaration: the body decides whether this is the
+        exempt narrowing rule or a form the check cannot read."""
+        task, = base["tasks"]
+        container, = base["tasks"][task]["output"]["properties"]
+        (base["tasks"][task]["output"]["properties"][container]["items"]
+         ["properties"]["confidence"]) = {"not": body}
+        return base
+
     def double_not(base):
         """`not: {not: {enum: [high]}}` accepts exactly `high`: a scale pinned
         by double negation, which the bare-`not` exemption read as a
@@ -909,6 +930,29 @@ def scale_self_test():
               ("prefixItems", "list"),
               ("$defs", "map"), ("definitions", "map"), ("properties", "map"),
               ("patternProperties", "map"), ("dependentSchemas", "map")]],
+        *[(f"a bare not excluding {label} is the narrowing rule and declares nothing",
+           {SPEC.name: spec(scale), "other.yaml": not_body(spec(scale, "detect", "findings"), body)},
+           0, "in the same order", 1)
+          for label, body in [("a string const", {"const": "confirmed"}),
+                              ("an enum of strings", {"enum": ["confirmed", "supported"]}),
+                              ("both a const and an enum", {"const": "confirmed", "enum": ["likely"]})]],
+        # A mapping under const or enum fires twice: once as the body the
+        # narrowing rule refuses, once as the sentinel the walker yields when
+        # it descends into `not`. Both lines are true of that node.
+        *[(f"a bare not over {label} is a form this check cannot read",
+           {SPEC.name: spec(scale), "other.yaml": not_body(spec(scale, "detect", "findings"), body)},
+           2 if holds_a_mapping(body.get("const")) or holds_a_mapping(body.get("enum")) else 1,
+           "form this check cannot read", 1)
+          for label, body in [("a type", {"type": "string"}),
+                              ("an empty body", {}),
+                              ("a const beside a type", {"const": "confirmed", "type": "string"}),
+                              ("a mapping const", {"const": {"confidence": "high"}}),
+                              ("a numeric const", {"const": 1}),
+                              ("a numeric enum", {"enum": [1]}),
+                              ("an enum of arrays", {"enum": [["confirmed"]]}),
+                              ("an enum of mappings", {"enum": [{"confidence": "high"}]}),
+                              ("an empty enum", {"enum": []}),
+                              ("an enum that is not a list", {"enum": "confirmed"})]],
         ("a double not pins a scale and is a form this check cannot read",
          {SPEC.name: spec(scale), "other.yaml": double_not(spec(scale, "detect", "findings"))},
          1, "form this check cannot read", 1),
