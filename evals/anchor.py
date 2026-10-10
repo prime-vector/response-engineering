@@ -421,9 +421,13 @@ def self_test():
         stray["judgings"][1]["groundedness_judge"]["verdicts"].append(verdict("a01", "corpus://incidents/INC-9", False))
         stray["judged"]["groundedness_judge"]["verdicts"].append(verdict("a01", "corpus://incidents/INC-9", True))
         (results / "judgement-stray-20260820T000001Z.json").write_text(json.dumps(stray))
-        with redirect_stdout(out):
-            expect_exit("a verdict with no claim behind it stops extraction",
-                        lambda: extract(results, sheet), "has no claim in per_case")
+        def quiet_extract():
+            # Only extract's own output is swallowed; the verdict line below
+            # has to reach the reader, or a mutation here prints nothing.
+            with redirect_stdout(out):
+                extract(results, sheet)
+        expect_exit("a verdict with no claim behind it stops extraction",
+                    quiet_extract, "has no claim in per_case")
         (results / "judgement-stray-20260820T000001Z.json").unlink()
         keys = {k for e in yaml.safe_load(sheet.read_text()) for k in e}
         case("extract writes no verdict and no claim text into the sheet",
