@@ -264,7 +264,10 @@ def extract(results=RESULTS, sheet=SHEET):
 def load_sheet(sheet=SHEET):
     if not sheet.exists():
         sys.exit(f"no sheet at {sheet}: run --extract first")
-    return yaml.safe_load(sheet.read_text()) or []
+    try:
+        return yaml.safe_load(sheet.read_text()) or []
+    except yaml.YAMLError as exc:  # guard sheet_parse
+        sys.exit(f"{sheet} is not valid YAML, a partial write perhaps: {exc}")
 
 
 def as_the_judge_saw_it(passage):
@@ -627,9 +630,14 @@ def self_test():
 
         guarded("check passes a sheet that matches its record", lambda: (not check(sheet, results), ""))
 
-        # Read defensively: with no sheet written, every case below fails on
-        # its own line rather than this read ending the suite.
-        base_rows = (yaml.safe_load(sheet.read_text()) or []) if sheet.exists() else []
+        # Shared fixtures are prepared through `guarded` too: a read or a
+        # write between cases that raises would end the suite with no line
+        # for it, which is the one thing this suite promises not to do.
+        def read_base():
+            state["base_rows"] = load_sheet(sheet)
+            return True, ""
+        guarded("the sheet the drift cases start from reads cleanly", read_base)
+        base_rows = state.get("base_rows", [])
         for name, mutate, reason in [
             ("an id naming another claim", lambda r: r[0].__setitem__("id", "judgement-one/a01/INC-2"), "does not name its case"),
             ("an unknown label", lambda r: r[0].__setitem__("label", "maybe"), "is not one of"),
@@ -710,7 +718,8 @@ def self_test():
 
         # --show, against a synthetic index, in the adapter's representation.
         index = Path(tmp) / "index.json"
-        index.write_text(json.dumps({"passages": [
+        def write_index():
+            index.write_text(json.dumps({"passages": [
             {"passage_id": "p-1", "source_uri": "corpus://incidents/INC-1", "heading_path": "INC-1 > Summary",
              "ordinal": 0, "text": "No daemon was running.", "signature": "host.x", "cause_claimed": "heap",
              "superseded_by": None, "record_status": "filed", "recorded_at": "2025-01-01"},
@@ -718,6 +727,8 @@ def self_test():
              "ordinal": 1, "text": "Attribution was never produced.", "signature": "host.x"},
             {"passage_id": "p-8", "source_uri": "corpus://incidents/INC-1", "heading_path": "INC-1 > Resolution",
              "ordinal": 2, "text": "NEVER RETURNED TO THE JUDGE", "signature": "host.x"}]}))
+            return True, ""
+        guarded("the synthetic index for show is written", write_index)
         indexes = {"heading": index, "fixed": index}
 
         def shown():
@@ -748,8 +759,17 @@ def self_test():
                 sheet.write_text(yaml.safe_dump(base_rows, sort_keys=False))
         guarded("show stops on an entry whose claim is not in its record", show_missing, "no such claim")
 
-        empty = Path(tmp) / "empty"; empty.mkdir()
-        guarded("no judgement records is a stop, not an empty sheet", lambda: records(empty), "no judgement records")
+        empty = Path(tmp) / "empty"
+        def no_records():
+            empty.mkdir(exist_ok=True)
+            records(empty)
+        guarded("no judgement records is a stop, not an empty sheet", no_records, "no judgement records")
+        garbled = Path(tmp) / "garbled.yaml"
+        def partial_sheet():
+            garbled.write_text("- id: x\n  label: [unterminated\n")
+            load_sheet(garbled)
+        guarded("a partially written sheet is a named stop for its reader, and nothing else",
+                partial_sheet, "not valid YAML")
         guarded("a missing sheet is a stop that says how to make one",
                 lambda: load_sheet(Path(tmp) / "nowhere.yaml"), "run --extract first")
 
