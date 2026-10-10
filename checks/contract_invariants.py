@@ -333,24 +333,34 @@ def board_scale(spec):
     A scan would follow the rename and carry on; this stops finding anything
     and says so. Losing the reference is not a thing to survive quietly.
 
-    Returns (enum-or-None, whether the field is declared at all): a board that
-    declares no confidence and a board that declares it as a bare string are
-    different defects, and reporting either as the other sends the fix to the
-    wrong file.
+    Returns (enum-or-None, whether the field is declared at all, elsewhere):
+    a board that declares no confidence and a board that declares it as a bare
+    string are different defects, and reporting either as the other sends the
+    fix to the wrong file. `elsewhere` lists the paths of every confidence the
+    walker finds under `assess` when the reference path is absent, so that a
+    board whose hypotheses object is wrapped in `allOf`, or renamed, is
+    reported as a declaration this reads by path and did not find, and not as
+    a declaration that does not exist. Right verdict either way; the message
+    is what sends a reader to the right fix.
     """
     node = spec
     for key in ("tasks", "assess", "output", "properties", "hypotheses",
                 "items", "properties", "confidence"):
         if not isinstance(node, dict) or key not in node:
-            return None, False
+            assess = ((spec.get("tasks") or {}).get("assess") or {}) \
+                if isinstance(spec, dict) else {}
+            elsewhere = [path for _, _, path, _, _ in declared_scales(
+                {"assess-only": {"tasks": {"assess": assess}}})] \
+                if isinstance(assess, dict) and "output" in assess else []
+            return None, False, elsewhere
         node = node[key]
     if not isinstance(node, dict):
         # `confidence: true` is a valid schema meaning anything. Reading
         # `.get` off it raises, and a check that dies prints no verdicts for
         # anyone to read: the exact failure a mutation harness exists to
         # catch, left in the one path every other case depends on.
-        return None, True
-    return node.get("enum"), True
+        return None, True, []
+    return node.get("enum"), True, []
 
 
 def confidence_scales_hold(specs):
@@ -382,10 +392,23 @@ def confidence_scales_hold(specs):
     """
     found = list(declared_scales(specs))
     declarations = [d for d in found if d[4]]
-    board, declared = board_scale(specs.get(SPEC.name) or {})
+    board, declared, elsewhere = board_scale(specs.get(SPEC.name) or {})
     if not declared:
-        print(f"  FAIL {SPEC.name} declares no confidence on assess/hypotheses, "
-              f"so there is no scale for anything else to be held to")
+        # Two different fixes. With nothing anywhere under assess the
+        # declaration is missing; with one somewhere else the reference is
+        # read by path and the path has moved, most likely a container such
+        # as allOf ahead of the field, and adding a second declaration is the
+        # wrong first move.
+        if elsewhere:
+            print(f"  FAIL {SPEC.name} declares no confidence at the reference "
+                  f"path assess/hypotheses/items/confidence, which this check "
+                  f"reads by path and not by search; a confidence exists "
+                  f"elsewhere under assess at {', '.join(elsewhere)}, so the "
+                  f"path has moved rather than the declaration gone missing")
+        else:
+            print(f"  FAIL {SPEC.name} declares no confidence on assess/hypotheses "
+                  f"and none anywhere under assess, so there is no scale for "
+                  f"anything else to be held to")
         return 1, len(declarations)
     if board is None:
         print("  FAIL the board's confidence is not an enum, so any string is "
@@ -490,6 +513,36 @@ def scale_self_test():
          ["properties"]["confidence"]) = True
         return base
 
+    def wrapped_in_allof(base):
+        """The hypotheses object under `allOf`, so `items` carries no literal
+        `properties` key and the reference path stops before the confidence
+        that is right there. Fail-closed before this case existed, with a
+        message saying the declaration was missing: right verdict, wrong
+        reason, and the fix a reader would try first is to add a second one."""
+        items = base["tasks"]["assess"]["output"]["properties"]["hypotheses"]["items"]
+        base["tasks"]["assess"]["output"]["properties"]["hypotheses"]["items"] = {
+            "allOf": [items]}
+        return base
+
+    def no_confidence_anywhere(base):
+        """A board with no confidence under assess at all, which is the other
+        reading of the same absent path and needs the other message."""
+        items = base["tasks"]["assess"]["output"]["properties"]["hypotheses"]["items"]
+        del items["properties"]["confidence"]
+        return base
+
+    def bare_wrapper(base):
+        """A confidence declared as a `oneOf` wrapper and nothing else: no type,
+        no enum, no narrowing rule and no reference keyword. Only the
+        `set(decl) != {"not"}` branch can report it, so this is the case that
+        branch owns; `by_ref` and `rule_plus` trip it and a `$ref` sentinel
+        together, and a count asserted on them cannot say which fired."""
+        task, = base["tasks"]
+        container, = base["tasks"][task]["output"]["properties"]
+        (base["tasks"][task]["output"]["properties"][container]["items"]
+         ["properties"]["confidence"]) = {"oneOf": [{"enum": ["high", "low"]}]}
+        return base
+
     def rule_plus(base):
         """A narrowing rule with something else beside it. Exempting any node
         carrying a `not` would wave this through whatever the something is."""
@@ -590,7 +643,7 @@ def scale_self_test():
     # Derived from the spec rather than typed out, so a change to the scale
     # cannot quietly change what these cases measure, and read by path rather
     # than through the scanner these cases are testing.
-    scale, declared = board_scale(real)
+    scale, declared, _ = board_scale(real)
     if not declared or scale is None:
         # Loudly, because a self-test that cannot find the scale it derives
         # from otherwise dies on a TypeError inside a case, and a mutation
@@ -613,10 +666,24 @@ def scale_self_test():
         ("the board itself is a bare string",
          {SPEC.name: spec(None), "other.yaml": spec(scale, "detect", "findings")},
          1, "the board's confidence is not an enum", 2),
-        ("the board declares no confidence at all",
+        ("the board declares its confidence somewhere other than the path",
          {SPEC.name: spec(scale, container="suspected"),
           "other.yaml": spec(scale, "detect", "findings")},
-         1, "declares no confidence on assess/hypotheses", 2),
+         1, "elsewhere under assess at assess/properties/suspected/items/"
+            "confidence", 2),
+        ("the board's hypotheses object is wrapped in allOf",
+         {SPEC.name: wrapped_in_allof(spec(scale)),
+          "other.yaml": spec(scale, "detect", "findings")},
+         1, "elsewhere under assess at assess/properties/hypotheses/items/"
+            "allOf[0]/confidence", 2),
+        ("the board declares no confidence anywhere under assess",
+         {SPEC.name: no_confidence_anywhere(spec(scale)),
+          "other.yaml": spec(scale, "detect", "findings")},
+         1, "and none anywhere under assess", 1),
+        ("a confidence that is only a oneOf wrapper",
+         {SPEC.name: spec(scale),
+          "other.yaml": bare_wrapper(spec(scale, "detect", "findings"))},
+         1, "form this check cannot read", 1),
         ("a second task in the same spec drifts",
          {SPEC.name: {"tasks": {
              "assess": spec(scale)["tasks"]["assess"],
