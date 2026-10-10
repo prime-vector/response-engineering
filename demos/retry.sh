@@ -27,7 +27,12 @@
 # wherever else it appears on stderr: an adapter that timed out, or a model
 # that wrote the word, is not the transport losing a generation. A key that is
 # not set raises a ProviderError without that prefix and stays fatal, which is
-# right, because retrying it would only spend the wait twice.
+# right, because retrying it would only spend the wait twice. So does a model
+# refusal: the patched provider names it `Anthropic refusal:` with the category
+# and that prefix is deliberately absent here, since a refusal is a complete
+# response and a second request gets the same answer for the same money.
+# checks/stream_probe.py reads this pattern and holds the provider's message
+# apart from it.
 OA_RETRY_RE='Anthropic request failed:|Anthropic HTTP 5[0-9][0-9]|Anthropic stream error:|Anthropic stream ended|Anthropic stream: unparseable event|Anthropic stream: undecodable bytes'
 
 # Where each adapter log stood before the attempt now running. Tool-use claims
