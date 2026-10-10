@@ -83,8 +83,29 @@ def current(record):
             "verdicts": verdict_map((judged.get("groundedness_judge") or {}).get("verdicts") or [])}
 
 
+def keyed(items, case_of, document_of):
+    """Key each item by (case, document, ordinal), the ordinal counting items
+    on the same case and document in list order.
+
+    A record can hold two claims on one document, two headings of the same
+    runbook, and the judge then records two verdicts for them in the same
+    order. Keyed by case and document alone the second overwrites the first
+    on both sides, a disagreement on the first claim is lost behind the
+    second's agreement, and `--show` would present the survivor. The heading
+    record already has that shape on b04.
+    """
+    out, seen = {}, {}
+    for item in items:
+        pair = (case_of(item), document_of(item))
+        n = seen.get(pair, 0)
+        seen[pair] = n + 1
+        out[(pair[0], pair[1], n)] = item
+    return out
+
+
 def verdict_map(verdicts):
-    return {(v["case"], v["document"]): bool(v["verdict"]["supported"]) for v in verdicts}
+    return {key: bool(v["verdict"]["supported"]) for key, v in
+            keyed(verdicts, lambda v: v["case"], lambda v: v["document"]).items()}
 
 
 def rounds_with_verdicts(record):
@@ -113,12 +134,12 @@ def rounds_with_verdicts(record):
 
 
 def claims(record):
-    """Every claim the agent offered in this record, keyed by case and document."""
-    out = {}
-    for per_case in record.get("per_case", []):
-        for claim in (per_case.get("score") or {}).get("claims", []):
-            out[(per_case["case"], claim["source_uri"])] = claim
-    return out
+    """Every claim the agent offered in this record, keyed by case, document
+    and ordinal among claims on that pair."""
+    flat = [(per_case["case"], claim) for per_case in record.get("per_case", [])
+            for claim in (per_case.get("score") or {}).get("claims", [])]
+    return {key: claim for key, (case, claim) in
+            keyed(flat, lambda t: t[0], lambda t: t[1]["source_uri"]).items()}
 
 
 def disagreements(record):
@@ -135,8 +156,12 @@ def disagreements(record):
     return found
 
 
-def entry_id(label, case, document):
-    return f"{label}/{case}/{document.rsplit('/', 1)[-1]}"
+def entry_id(label, case, document, ordinal=0):
+    # The first claim on a pair keeps the bare id, so the sheet's existing
+    # ids do not move; a second claim on the same document carries its
+    # ordinal.
+    suffix = f"#{ordinal + 1}" if ordinal else ""
+    return f"{label}/{case}/{document.rsplit('/', 1)[-1]}{suffix}"
 
 
 def extract(results=RESULTS, sheet=SHEET):
@@ -157,17 +182,18 @@ def extract(results=RESULTS, sheet=SHEET):
     for name, record in records(results):
         label = record.get("label") or name
         offered = claims(record)
-        for case, document in disagreements(record):
-            claim = offered.get((case, document))
+        for case, document, ordinal in disagreements(record):
+            claim = offered.get((case, document, ordinal))
             if claim is None:  # guard verdict_without_claim
                 sys.exit(f"{name}: a verdict on {case} {document} has no claim in per_case")
-            ident = entry_id(label, case, document)
+            ident = entry_id(label, case, document, ordinal)
             kept = existing.get(ident, {})
             entries.append({
                 "id": ident,
                 "record": name,
                 "case": case,
                 "document": document,
+                "ordinal": ordinal,
                 "label": kept.get("label"),
                 "asserts_absence": kept.get("asserts_absence"),
                 "unsupported_elements": kept.get("unsupported_elements") or [],
@@ -211,7 +237,7 @@ def show(number, sheet=SHEET, results=RESULTS):
     entry = entries[number - 1]
     by_name = dict(records(results))
     chunkers = {name: record.get("chunker", "heading") for name, record in by_name.items()}
-    claim = claims(by_name[entry["record"]]).get((entry["case"], entry["document"]))
+    claim = claims(by_name[entry["record"]]).get((entry["case"], entry["document"], entry.get("ordinal", 0)))
     if claim is None:
         sys.exit(f"{entry['id']}: no such claim in {entry['record']}; run --check")
     print(f"[{number}] {entry['id']}   offered: {claim.get('offered')}   label: {entry['label']}")
@@ -245,11 +271,12 @@ def check(sheet=SHEET, results=RESULTS):
         if record is None:  # guard record
             failures.append(f"{ident}: record {entry.get('record')} is not in evals/results/")
             continue
-        claim = claims(record).get((entry.get("case"), entry.get("document")))
+        ordinal = entry.get("ordinal", 0)
+        claim = claims(record).get((entry.get("case"), entry.get("document"), ordinal))
         if claim is None:  # guard claim
             failures.append(f"{ident}: no such claim in the record")
             continue
-        if ident != entry_id(record.get("label") or entry["record"], entry["case"], entry["document"]):  # guard id
+        if ident != entry_id(record.get("label") or entry["record"], entry["case"], entry["document"], ordinal):  # guard id
             failures.append(f"{ident}: id does not name its case and document")
         label = entry.get("label")
         if label is not None and label not in LABELS:  # guard label
@@ -265,7 +292,7 @@ def check(sheet=SHEET, results=RESULTS):
     wanted = set()
     for name, record in by_name.items():
         label = record.get("label") or name
-        wanted |= {entry_id(label, case, document) for case, document in disagreements(record)}
+        wanted |= {entry_id(label, case, document, ordinal) for case, document, ordinal in disagreements(record)}
     for ident in sorted(seen - wanted):  # guard not_disputed
         failures.append(f"{ident}: the judge families do not disagree on it")
     for ident in sorted(wanted - seen):  # guard missing_dispute
@@ -304,8 +331,8 @@ def score(sheet=SHEET, results=RESULTS):
         for fam, info in sorted(rounds_with_verdicts(record).items()):
             for absence in (True, False):
                 subset = [e for e in mine if e["asserts_absence"] is absence]
-                judged = [(e, info["verdicts"][(e["case"], e["document"])]) for e in subset
-                          if (e["case"], e["document"]) in info["verdicts"]]
+                judged = [(e, info["verdicts"][(e["case"], e["document"], e.get("ordinal", 0))]) for e in subset
+                          if (e["case"], e["document"], e.get("ordinal", 0)) in info["verdicts"]]
                 if not judged:
                     continue
                 agree = sum(1 for e, v in judged if v == (e["label"] == "supported"))
@@ -350,7 +377,13 @@ def self_test():
                  "grounded_in": ["p-4"]},
                 {"source_uri": "corpus://incidents/INC-4", "offered": "applies",
                  "offered_claim": {"divergence": "same tier"},
-                 "grounded_in": ["p-5"]}]}}],
+                 "grounded_in": ["p-5"]},
+                {"source_uri": "corpus://runbooks/RB-1", "offered": "partial",
+                 "offered_claim": {"divergence": "first heading"},
+                 "grounded_in": ["p-6"]},
+                {"source_uri": "corpus://runbooks/RB-1", "offered": "partial",
+                 "offered_claim": {"divergence": "second heading"},
+                 "grounded_in": ["p-7"]}]}}],
             # INC-1: the published verdict and the other family disagree.
             # INC-2: they agree. INC-3: only a stale round of the current
             # family disagrees with `judged`, which supersedes it. INC-4: the
@@ -358,12 +391,17 @@ def self_test():
             # earlier round of its own family agreed with them; what is
             # published is what counts. The sheet must carry INC-1 and INC-4.
             # The rejudge that produced `judged` is not among the rounds,
-            # which is the shape the real records have.
+            # which is the shape the real records have. RB-1 carries two
+            # claims, two headings of one runbook, and the families disagree
+            # on the first only: keyed by document alone the second's
+            # agreement would overwrite it.
             "judged": {"model": "claude-opus-4-6", "groundedness_judge": {"verdicts": [
                 verdict("a01", "corpus://incidents/INC-1", True),
                 verdict("a01", "corpus://incidents/INC-2", True),
                 verdict("a01", "corpus://incidents/INC-3", False),
-                verdict("a01", "corpus://incidents/INC-4", True)]}},
+                verdict("a01", "corpus://incidents/INC-4", True),
+                verdict("a01", "corpus://runbooks/RB-1", True),
+                verdict("a01", "corpus://runbooks/RB-1", False)]}},
             "judgings": [
                 {"at": "2026-08-20T00:00:00Z", "model": "cursor-grok-4.6-high",
                  "groundedness_judge": {"value": 0.5}},
@@ -372,7 +410,9 @@ def self_test():
                      verdict("a01", "corpus://incidents/INC-1", False),
                      verdict("a01", "corpus://incidents/INC-2", True),
                      verdict("a01", "corpus://incidents/INC-3", False),
-                     verdict("a01", "corpus://incidents/INC-4", False)]}},
+                     verdict("a01", "corpus://incidents/INC-4", False),
+                     verdict("a01", "corpus://runbooks/RB-1", False),
+                     verdict("a01", "corpus://runbooks/RB-1", False)]}},
                 {"at": "2026-08-21T12:00:00Z", "model": "claude-opus-4-6",
                  "groundedness_judge": {"verdicts": [
                      verdict("a01", "corpus://incidents/INC-1", True),
@@ -432,12 +472,26 @@ def self_test():
             return failures
         case("extract selects the published verdicts against the other family, and not a "
              "stale round of the publishing family",
-             [e["id"] for e in entries] == ["judgement-one/a01/INC-1", "judgement-one/a01/INC-4"],
+             [e["id"] for e in entries] == ["judgement-one/a01/INC-1", "judgement-one/a01/INC-4",
+                                            "judgement-one/a01/RB-1"],
              str([e["id"] for e in entries]))
-        parties = rounds_with_verdicts(record("judgement-one"))
-        case("the current family is judged.model with the published verdicts and rejudged_at",
-             set(parties) == {"claude", "cursor"} and parties["claude"]["at"] == "2026-08-22T00:30:00Z"
-             and parties["claude"]["verdicts"][("a01", "corpus://incidents/INC-3")] is False, str(parties))
+        case("two claims on one document are two keys, and the disputed first one is selected alone",
+             [e for e in entries if e["document"].endswith("RB-1")][0]["ordinal"] == 0
+             and not [e for e in entries if e["id"].endswith("#2")])
+        second = record("judgement-one")
+        rb = second["judged"]["groundedness_judge"]["verdicts"]
+        rb[-2]["verdict"]["supported"], rb[-1]["verdict"]["supported"] = False, True
+        case("a disagreement on the second claim alone is selected with its ordinal",
+             [c for c in disagreements(second) if c[1].endswith("RB-1")] == [("a01", "corpus://runbooks/RB-1", 1)]
+             and entry_id("x", "a01", "corpus://runbooks/RB-1", 1) == "x/a01/RB-1#2",
+             str(disagreements(second)))
+        try:
+            parties = rounds_with_verdicts(record("judgement-one"))
+            case("the current family is judged.model with the published verdicts and rejudged_at",
+                 set(parties) == {"claude", "cursor"} and parties["claude"]["at"] == "2026-08-22T00:30:00Z"
+                 and parties["claude"]["verdicts"][("a01", "corpus://incidents/INC-3", 0)] is False, str(parties))
+        except Exception as exc:  # noqa: BLE001
+            case("the current family is judged.model with the published verdicts and rejudged_at", False, f"raised {exc!r}")
         orphan = record("judgement-orphan"); del orphan["judged"]["model"]
         expect_exit("a record whose published verdicts name no model stops the run",
                     lambda: disagreements(orphan), "names no model")

@@ -12,6 +12,7 @@
   record: judgement-fixed-20260820T044153Z.json
   case: a01
   document: corpus://incidents/INC-2411
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -20,6 +21,7 @@
   record: judgement-fixed-20260820T044153Z.json
   case: a01
   document: corpus://incidents/INC-2419
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -28,6 +30,7 @@
   record: judgement-fixed-20260820T044153Z.json
   case: a02
   document: corpus://incidents/INC-2350
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -36,6 +39,7 @@
   record: judgement-fixed-20260820T044153Z.json
   case: a02
   document: corpus://incidents/INC-2411
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -44,6 +48,7 @@
   record: judgement-fixed-20260820T044153Z.json
   case: b01
   document: corpus://incidents/INC-2350
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -52,6 +57,7 @@
   record: judgement-fixed-20260820T044153Z.json
   case: b01
   document: corpus://incidents/INC-2419
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -60,6 +66,7 @@
   record: judgement-fixed-20260820T044153Z.json
   case: b02
   document: corpus://incidents/INC-2288
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -68,6 +75,7 @@
   record: judgement-fixed-20260820T044153Z.json
   case: b03
   document: corpus://incidents/INC-2350
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -76,6 +84,7 @@
   record: judgement-fixed-20260820T044153Z.json
   case: b03
   document: corpus://incidents/INC-2419
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -84,6 +93,7 @@
   record: judgement-fixed-20260820T044153Z.json
   case: b03
   document: corpus://incidents/INC-2489
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -92,6 +102,7 @@
   record: judgement-fixed-20260820T044153Z.json
   case: b04
   document: corpus://incidents/INC-2350
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -100,6 +111,7 @@
   record: judgement-fixed-20260820T044153Z.json
   case: b04
   document: corpus://incidents/INC-2411
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -108,6 +120,7 @@
   record: judgement-fixed-20260820T044153Z.json
   case: b04
   document: corpus://runbooks/container-resource-limits
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -116,6 +129,7 @@
   record: judgement-fixed-20260820T044153Z.json
   case: b04
   document: corpus://runbooks/memory-pressure
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -124,6 +138,7 @@
   record: judgement-fixed-20260820T044153Z.json
   case: b05
   document: corpus://incidents/INC-2411
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -132,6 +147,7 @@
   record: judgement-fixed-20260820T044153Z.json
   case: b05
   document: corpus://incidents/INC-2489
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -140,6 +156,7 @@
   record: judgement-fixed-20260820T044153Z.json
   case: b06
   document: corpus://incidents/INC-2350
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -148,6 +165,7 @@
   record: judgement-fixed-20260820T044153Z.json
   case: b06
   document: corpus://incidents/INC-2411
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -156,6 +174,7 @@
   record: judgement-fixed-20260820T044153Z.json
   case: b07
   document: corpus://incidents/INC-2288
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -164,6 +183,7 @@
   record: judgement-fixed-20260820T044153Z.json
   case: b07
   document: corpus://incidents/INC-2407
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -172,6 +192,7 @@
   record: judgement-fixed-20260820T044153Z.json
   case: c01
   document: corpus://incidents/INC-2350
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -180,6 +201,7 @@
   record: judgement-fixed-20260820T044153Z.json
   case: c03
   document: corpus://incidents/INC-2288
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -188,6 +210,7 @@
   record: judgement-fixed-20260820T044153Z.json
   case: c06
   document: corpus://incidents/INC-2419
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -196,6 +219,7 @@
   record: judgement-fixed-20260820T044153Z.json
   case: c06
   document: corpus://runbooks/recovery-point-selection
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -204,6 +228,7 @@
   record: judgement-fixed-20260820T044153Z.json
   case: c07
   document: corpus://runbooks/denial-log-collection
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -212,6 +237,7 @@
   record: judgement-fixed-20260820T044153Z.json
   case: c08
   document: corpus://incidents/INC-2489
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -220,6 +246,7 @@
   record: judgement-fixed-20260820T044153Z.json
   case: f04
   document: corpus://incidents/INC-2350
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -228,6 +255,7 @@
   record: judgement-fixed-20260820T044153Z.json
   case: g01
   document: corpus://incidents/INC-2350
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -236,6 +264,7 @@
   record: judgement-fixed-20260820T044153Z.json
   case: g01
   document: corpus://incidents/INC-2419
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -244,6 +273,7 @@
   record: judgement-heading-20260820T041555Z.json
   case: a02
   document: corpus://incidents/INC-2350
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -252,6 +282,7 @@
   record: judgement-heading-20260820T041555Z.json
   case: a02
   document: corpus://incidents/INC-2411
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -260,6 +291,7 @@
   record: judgement-heading-20260820T041555Z.json
   case: a03
   document: corpus://incidents/INC-2411
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -268,6 +300,7 @@
   record: judgement-heading-20260820T041555Z.json
   case: a04
   document: corpus://incidents/INC-2288
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -276,6 +309,7 @@
   record: judgement-heading-20260820T041555Z.json
   case: b01
   document: corpus://incidents/INC-2411
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -284,6 +318,7 @@
   record: judgement-heading-20260820T041555Z.json
   case: b04
   document: corpus://incidents/INC-2411
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -292,6 +327,7 @@
   record: judgement-heading-20260820T041555Z.json
   case: b06
   document: corpus://runbooks/memory-pressure
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -300,6 +336,7 @@
   record: judgement-heading-20260820T041555Z.json
   case: b07
   document: corpus://incidents/INC-2288
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -308,6 +345,7 @@
   record: judgement-heading-20260820T041555Z.json
   case: c03
   document: corpus://incidents/INC-2288
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -316,6 +354,7 @@
   record: judgement-heading-20260820T041555Z.json
   case: c05
   document: corpus://incidents/INC-2402
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -324,6 +363,7 @@
   record: judgement-heading-20260820T041555Z.json
   case: c06
   document: corpus://incidents/INC-2350
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -332,6 +372,7 @@
   record: judgement-heading-20260820T041555Z.json
   case: c06
   document: corpus://incidents/INC-2419
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -340,6 +381,7 @@
   record: judgement-heading-20260820T041555Z.json
   case: c06
   document: corpus://runbooks/recovery-point-selection
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -348,6 +390,7 @@
   record: judgement-heading-20260820T041555Z.json
   case: c07
   document: corpus://incidents/INC-2288
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -356,6 +399,7 @@
   record: judgement-heading-20260820T041555Z.json
   case: d01
   document: corpus://incidents/DRAFT-2508
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -364,6 +408,7 @@
   record: judgement-heading-20260820T041555Z.json
   case: d02
   document: corpus://incidents/INC-2288
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -372,6 +417,7 @@
   record: judgement-heading-20260820T041555Z.json
   case: d02
   document: corpus://incidents/INC-2411
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -380,6 +426,7 @@
   record: judgement-heading-20260820T041555Z.json
   case: d03
   document: corpus://incidents/INC-2350
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -388,6 +435,7 @@
   record: judgement-heading-20260820T041555Z.json
   case: f03
   document: corpus://incidents/INC-2350
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -396,6 +444,7 @@
   record: judgement-heading-20260820T041555Z.json
   case: g01
   document: corpus://incidents/DRAFT-2601
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -404,6 +453,7 @@
   record: judgement-heading-20260820T041555Z.json
   case: g01
   document: corpus://incidents/INC-2419
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -412,6 +462,7 @@
   record: judgement-single-query-20260820T050303Z.json
   case: b01
   document: corpus://incidents/INC-2411
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -420,6 +471,7 @@
   record: judgement-single-query-20260820T050303Z.json
   case: b02
   document: corpus://incidents/INC-2288
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -428,6 +480,7 @@
   record: judgement-single-query-20260820T050303Z.json
   case: b05
   document: corpus://incidents/INC-2489
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -436,6 +489,7 @@
   record: judgement-single-query-20260820T050303Z.json
   case: b06
   document: corpus://incidents/INC-2419
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -444,6 +498,7 @@
   record: judgement-single-query-20260820T050303Z.json
   case: c01
   document: corpus://incidents/INC-2350
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -452,6 +507,7 @@
   record: judgement-single-query-20260820T050303Z.json
   case: c02
   document: corpus://incidents/INC-2305
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -460,6 +516,7 @@
   record: judgement-single-query-20260820T050303Z.json
   case: c03
   document: corpus://incidents/INC-2407
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -468,6 +525,7 @@
   record: judgement-single-query-20260820T050303Z.json
   case: c04
   document: corpus://incidents/INC-2377
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -476,6 +534,7 @@
   record: judgement-single-query-20260820T050303Z.json
   case: d03
   document: corpus://incidents/INC-2350
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -484,6 +543,7 @@
   record: judgement-single-query-20260820T050303Z.json
   case: d03
   document: corpus://incidents/INC-2419
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -492,6 +552,7 @@
   record: judgement-single-query-20260820T050303Z.json
   case: f03
   document: corpus://incidents/INC-2350
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
@@ -500,6 +561,7 @@
   record: judgement-single-query-20260820T050303Z.json
   case: g01
   document: corpus://incidents/INC-2419
+  ordinal: 0
   label: null
   asserts_absence: null
   unsupported_elements: []
