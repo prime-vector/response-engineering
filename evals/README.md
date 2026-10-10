@@ -579,7 +579,12 @@ and produces a figure whose provenance cannot be inspected. The remedy is a
 key.
 
 `evals/anchor.yaml` lists the claims on which the judge families disagreed,
-65 across the three records, because that is where the rubric is ambiguous.
+62 across the three records, because that is where the rubric is ambiguous.
+The pairing is the one the tables above publish: each record's `judged`
+verdicts, which name their model, against the latest round with verdicts
+from every other family. A split between two rounds of one family is not a
+family disagreement and is not on the sheet, and `--check` fails on an entry
+the families agree on as well as on a dispute the sheet lacks.
 `python3 evals/anchor.py --extract` writes it; `--show N` prints one claim,
 every field of it, with the cited passages whole from the index the record was
 scored on; the reader fills `label` (supported or unsupported, against the
@@ -622,7 +627,7 @@ Phase 4 and Phase 5 are done.
 - [x] `judgement-heading` recorded, the shipped configuration
 - [x] `judgement-fixed` and `judgement-single-query` recorded, both
       comparisons run, and the result written up in the top-level README
-- [x] Anchor set extracted and checked, 10 Oct 2026: 65 disagreed claims on
+- [x] Anchor set extracted and checked, 10 Oct 2026: 62 disagreed claims on
       the sheet, none labelled yet
 - [ ] Thirty or more labelled by a person, both judges scored against them,
       and the absence rule argued in `docs/precedent-analyst.md`
