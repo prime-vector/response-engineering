@@ -594,8 +594,11 @@ text, on purpose: a labeller shown who said what inherits a conclusion
 instead of reaching one, and the claim is model output that belongs in
 `results/` byte for byte rather than copied under a style rule. `--check`
 holds every entry to its record and every label to its vocabulary, in CI.
-`--score` then measures each judging round that kept its verdicts against the
-labels, split by whether the claim asserts an absence: agreement,
+`--score` then measures the two parties the sheet was drawn from, the
+published verdicts and the latest other-family round with verdicts, against
+the labels, split by whether the claim asserts an absence; earlier rounds
+that kept verdicts are not scored, because the labels were asked for over a
+disagreement those rounds were not party to: agreement,
 over-flagged (the judge said unsupported where the key says supported) and
 under-flagged.
 

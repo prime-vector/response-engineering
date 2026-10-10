@@ -102,8 +102,10 @@ def rounds_with_verdicts(record):
     parties = {current_family: published}
     for judging in record.get("judgings", []):
         verdicts = (judging.get("groundedness_judge") or {}).get("verdicts")
+        if not verdicts:  # guard rate_only
+            continue
         fam = family(judging.get("model"))
-        if not verdicts or fam == current_family:  # guard other_family
+        if fam == current_family:  # guard other_family
             continue
         parties[fam] = {"at": judging.get("at", ""), "model": judging["model"],
                         "verdicts": verdict_map(verdicts)}
@@ -277,7 +279,13 @@ def check(sheet=SHEET, results=RESULTS):
 
 
 def score(sheet=SHEET, results=RESULTS):
-    """Each judging round with verdicts, against the labels.
+    """The parties to each disagreement, against the labels.
+
+    The published verdicts and the latest other-family round with verdicts,
+    the same two sets the sheet was selected from. Earlier rounds that kept
+    verdicts are not scored: a label was asked for because these two
+    disagreed, and measuring a round the sheet never consulted would be a
+    figure over a set it was not drawn for.
 
     Over-flagged: the judge said unsupported where the label says supported.
     Under-flagged: the reverse. Split by whether the claim asserts an absence,
@@ -386,6 +394,14 @@ def self_test():
         failures += not ok
         print(f"  {'ok  ' if ok else 'FAIL'} {name}" + (f": {detail}" if not ok and detail else ""))
 
+    def checked(sheet, results):
+        """`check()` with a crash reported as its own failure line, so a guard
+        removed cannot take the suite down and print no verdict."""
+        try:
+            return check(sheet, results)
+        except Exception as exc:  # noqa: BLE001
+            return [f"check raised {exc!r}"]
+
     def expect_exit(name, call, reason):
         """A guard that stops the run is a case too, and a crash is a FAIL
         line rather than the end of the suite."""
@@ -404,8 +420,16 @@ def self_test():
         (results / "judgement-one-20260820T000000Z.json").write_text(json.dumps(record("judgement-one")))
 
         out = io.StringIO()
-        with redirect_stdout(out):
-            entries = extract(results, sheet)
+        try:
+            with redirect_stdout(out):
+                entries = extract(results, sheet)
+        except Exception as exc:  # noqa: BLE001
+            # The first extraction is what every later case reads, so a
+            # guard removed here would otherwise end the suite with a
+            # traceback and no verdict line to count.
+            case("extract runs on the synthetic record", False, f"raised {exc!r}")
+            print(f"Anchor self-test: {failures} failure(s).")
+            return failures
         case("extract selects the published verdicts against the other family, and not a "
              "stale round of the publishing family",
              [e["id"] for e in entries] == ["judgement-one/a01/INC-1", "judgement-one/a01/INC-4"],
@@ -442,7 +466,7 @@ def self_test():
         case("extract keeps a label already given", entries[0]["label"] == "supported" and entries[0]["note"] == "mine")
 
         with redirect_stdout(out):
-            case("check passes a sheet that matches its record", not check(sheet, results))
+            case("check passes a sheet that matches its record", not checked(sheet, results))
 
         # One drift per guard, each asserting its own reason.
         base_rows = yaml.safe_load(sheet.read_text())
@@ -463,7 +487,7 @@ def self_test():
             rows = copy.deepcopy(base_rows); mutate(rows)
             sheet.write_text(yaml.safe_dump(rows, sort_keys=False))
             with redirect_stdout(out):
-                found = check(sheet, results)
+                found = checked(sheet, results)
             case(f"check rejects {name}", any(reason in f for f in found), str(found))
         sheet.write_text(yaml.safe_dump(base_rows, sort_keys=False))
 
@@ -479,13 +503,27 @@ def self_test():
         lone = record("judgement-lone"); lone["judgings"] = lone["judgings"][2:]  # the publishing family only
         case("one family yields no disagreement", disagreements(lone) == [])
 
+        # The order the single-query record actually has: a rate-only round
+        # of the other family after the one that kept verdicts. Last-wins
+        # over rounds would take the rate-only one and crash or empty the
+        # party; the skip has to be on verdicts, not on position.
+        late = record("judgement-late")
+        late["judgings"].append({"at": "2026-08-23T00:00:00Z", "model": "cursor-grok-4.6-high",
+                                 "groundedness_judge": {"value": 0.4}})
+        try:
+            late_parties = rounds_with_verdicts(late)
+            case("a rate-only round after the verdict-bearing one is not the party",
+                 late_parties["cursor"]["at"] == "2026-08-21T00:00:00Z", str(late_parties.get("cursor")))
+        except Exception as exc:  # noqa: BLE001
+            case("a rate-only round after the verdict-bearing one is not the party", False, f"raised {exc!r}")
+
         # Both words of the vocabulary pass the check, not only the one the
         # scoring cases happen to use.
         for word in LABELS:
             rows = copy.deepcopy(base_rows); rows[0]["label"] = word
             sheet.write_text(yaml.safe_dump(rows, sort_keys=False))
             with redirect_stdout(out):
-                case(f"check accepts the label {word}", not check(sheet, results))
+                case(f"check accepts the label {word}", not checked(sheet, results))
         sheet.write_text(yaml.safe_dump(base_rows, sort_keys=False))
 
         # The label is unsupported and the judge agrees: no flag either way.
