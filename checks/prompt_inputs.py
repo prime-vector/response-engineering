@@ -56,8 +56,8 @@ checked: these prompts qualify their lists in prose and no parse separates a
 key from a qualifier reliably enough to accuse a correct spec.
 
 ENUM VOCABULARY. Every string value of every inline output enum is checked
-against this same resolved pair, at any schema depth: each must occur
-case-sensitively as a whole word in either prompt. There is no exemption. A
+against the resolved system prompt, at any schema depth: each must occur
+case-sensitively as a whole word there. There is no exemption. A
 first version exempted an enum the task's input declared under the same
 property name, on the argument that the vocabulary then arrived through typed
 input; a schema cannot promise that, since the instance may carry none of the
@@ -67,12 +67,11 @@ skipped and counted as such. The walk descends only where the 2020-12
 vocabulary puts a schema, by the structure of a keyword's value, the same
 split checks/contract_invariants.py walks by; instance data, unknown
 annotations and the keys of a name mapping are never read as schemas. This
-checks presence, never whether the model reads a value. The user text is read
-with every brace-delimited span stood in for by one word character, since the
-runner substitutes any such span for any key the instance carries and the
-substituted value can be anything: a word inside one, or formed across one, is
-not in front of the model. A word inside a JSON example in the prompt does not
-count either, which is the safe direction. The
+checks presence, never whether the model reads a value. The user template is
+not read for vocabulary: the runner substitutes it for any key the instance
+carries, sequentially, so no word in it is certainly in front of the model,
+and only the system prompt, which the runner returns raw, is. An empty string
+is refused, since no text can name it as a word. The
 dialect is pinned to 2020-12: a `$schema` naming another, anywhere on either
 side, is refused rather than walked. References are not resolved.
 
@@ -256,36 +255,6 @@ def foreign_dialects(schema, path="$"):
             yield from foreign_dialects(value, f"{path}[{index}]")
 
 
-# A word character the runner's own substitution cannot produce a match
-# from. Every brace-delimited span becomes this, so the span contributes no
-# vocabulary and, being a word character, forms no word boundary either.
-SUBSTITUTED = "\u0298"
-
-
-def without_placeholders(text):
-    """The user template with every span the runner could substitute removed
-    from the matching.
-
-    The runner replaces `{key}`, `{{ key }}` and `{{ input.key }}` for every
-    key the input instance carries, and an input schema that permits extra
-    properties permits any key, so the key list cannot bound this: every
-    brace-delimited span is text the model may never see. It is replaced by
-    one word character rather than a space, because the substituted value
-    can be anything, so the text on either side of it cannot be trusted to
-    form a word: `un{evidence}likely` with an empty input is `unlikely`, and
-    blanking to a space would read it as `likely`. Innermost spans first,
-    repeated, so a JSON example with nested braces is removed whole. The
-    cost is that a word inside a brace-delimited example in the prompt does
-    not count as naming it, which is the safe direction.
-    """
-    pattern = re.compile(r"\{[^{}]*\}")
-    while True:
-        replaced = pattern.sub(SUBSTITUTED, text)
-        if replaced == text:
-            return text
-        text = replaced
-
-
 def schema_enums(schema, path="$"):
     """Inline enums with their schema path. References are not resolved."""
     if not isinstance(schema, dict):
@@ -310,13 +279,23 @@ def enum_named(text, value):
     return re.search(rf"(?<!\w){re.escape(value)}(?!\w)", text) is not None
 
 
-def check_enums(task, system, user, label):
+def check_enums(task, system, label):
     """Every string value an output enum pins must reach the model through
-    its prompts. A mixed enum is checked on its strings: they are words the
-    model must choose like any other, and a number beside them exempts
-    nothing. The user text is read with its placeholders blanked, because
-    the runner substitutes those before the model sees anything, and the
-    schemas are held to the one dialect the walk reads."""
+    text the runner never substitutes: the resolved system prompt, or the
+    override that replaces it.
+
+    The user template is not read for vocabulary at all. The runner replaces
+    `{key}`, `{{ key }}` and `{{ input.key }}` for every key the input
+    instance carries, sequentially, and an input schema that permits extra
+    properties permits any key, including one spelled `} likely {`; so any
+    word in a user template that contains a brace anywhere can be removed by
+    an instance the schema accepts, and a rule that blanked spans grew a new
+    counterexample each round. The system prompt is returned raw, which is
+    why this check already refuses a placeholder in it, and raw text is the
+    only text whose words are certainly in front of the model. A mixed enum
+    is checked on its strings: a number beside them exempts nothing. An
+    empty string is a valid enum member that no text can name as a word, so
+    it is refused. The schemas are held to the one dialect the walk reads."""
     named = skipped = failures = 0
     for side in ("input", "output"):
         for where, declared in foreign_dialects(task.get(side) or {}, side):
@@ -324,25 +303,24 @@ def check_enums(task, system, user, label):
             print(f"  FAIL {label} {where} declares dialect {declared!r}; the "
                   f"enum walk reads {DIALECT} only, and another dialect applies "
                   f"keywords it does not read")
-    user = without_placeholders(user)  # guard placeholders
     for values, path in schema_enums(task.get("output") or {}):
         words = [v for v in values if isinstance(v, str)] if isinstance(values, list) else []
         if not words:
             skipped += 1
             continue
-        if any(SUBSTITUTED in w for w in words):  # guard sentinel
+        if "" in words:  # guard empty_value
             failures += 1
-            print(f"  FAIL {label} output {path} has a value containing the "
-                  f"character this check stands substituted text in for; "
-                  f"it cannot tell that value from a placeholder")
+            print(f"  FAIL {label} output {path} has an empty string as a value, "
+                  f"which no prompt can name as a word")
             continue
         named += 1
-        missing = [v for v in words if not (enum_named(system, v) or enum_named(user, v))]
+        missing = [v for v in words if not enum_named(system, v)]  # guard system_only
         if missing:
             failures += 1
             print(f"  FAIL {label} output {path} enum missing values: "
                   f"{missing!r}. Each value must occur as a case-sensitive "
-                  f"whole word in the resolved system or user prompt.")
+                  f"whole word in the resolved system prompt, the one text "
+                  f"the runner never substitutes.")
     if not failures:
         print(f"  ok   {label} enums: {named} named in the prompts, {skipped} with no string value")
     return failures
@@ -431,7 +409,7 @@ def check_spec(path):
             print(f"  ok   {label} system={system_layer}, user={user_layer}, "
                   f"{len(required)} input(s) all substituted, "
                   f"{len(out_required)} output field(s) all named")
-        failures += check_enums(task, system, user, label)
+        failures += check_enums(task, system, label)
     return failures
 
 
@@ -497,8 +475,7 @@ def check_overrides(overrides=None, driver=pathlib.Path("demos/governance.sh")):
         elif not found:
             print(f"  ok   {path.name} overrides {task_name}, no placeholders, "
                   f"names all {len(out_required)} required output field(s)")
-        system, user, _, _ = resolve(spec, task_name)
-        failures += check_enums(task, text, user, f"{path} overrides {spec_path}:{task_name}")
+        failures += check_enums(task, text, f"{path} overrides {spec_path}:{task_name}")
     return failures
 
 
@@ -760,7 +737,11 @@ def enum_self_test():
                       list(missing), (named, skipped)))
 
     case("named in the system prompt", system=", ".join(values))
-    case("named in the user prompt", user=", ".join(values))
+    # The user template is not read: the runner substitutes it for any key
+    # the instance carries, so a word there is not certainly in front of the
+    # model, and no span rule closed that.
+    case("named only in the user template is not named", user=", ".join(values),
+         missing=[(path, values)])
     case("one value missing", system=values[0], missing=[(path, values[1:])])
     case("near misses unlikely and unsupported", system=" ".join("un" + v for v in values),
          missing=[(path, values)])
@@ -773,7 +754,7 @@ def enum_self_test():
     # nothing. A schema cannot promise the words reach the model.
     case("the same enum on the input is not an exemption", inp=output,
          missing=[(path, values)])
-    case("the same enum on the input and the words in the prompt pass as named",
+    case("the same enum on the input and the words in the system prompt pass as named",
          inp=output, system=" ".join(values))
     case("boolean schema is not an enum",
          out={"properties": {"confidence": False, "other": True}}, named=0)
@@ -786,64 +767,19 @@ def enum_self_test():
     case("a mixed enum passes when its strings are named",
          out={"properties": {"confidence": {"enum": [values[0], 1]}}}, system=values[0])
     case("empty enum has no values to name", out={"enum": []}, named=0, skipped=1)
+    # An empty string is a valid member and no text names it as a word.
+    case("an empty string value is refused", out={"enum": [""]}, system="reply",
+         missing=[("empty", None)])
+    case("an empty string beside named values is still refused", out={"enum": ["", values[0]]},
+         system=values[0], missing=[("empty", None)])
     case("escaped regex metacharacters", out={"enum": ["a.b", "c+d"]},
          system="axb cccd", missing=[("$.enum", ["a.b", "c+d"])])
     case("nonword edge values named literally", out={"enum": ["+ok", "ok+"]},
          system="+ok ok+")
-    case("multiword value cannot straddle prompts", out={"enum": ["not established"]},
-         system="not", user="established", missing=[("$.enum", ["not established"])])
-    # A placeholder is replaced before the model sees the prompt, so an enum
-    # value that is also an input key must appear as text, not as the
-    # substitution the runner performs. All three spellings.
-    one_word = {"properties": {"confidence": {"enum": ["likely"]}}}
-    key_input = {"type": "object", "properties": {"likely": {"type": "string"}}, "required": ["likely"]}
-    for form in ("{likely}", "{{ likely }}", "{{ input.likely }}"):
-        case(f"a value present only as the placeholder {form} is not named",
-             out=one_word, inp=key_input, user=f"Evidence: {form}",
-             missing=[("$.properties['confidence'].enum", ["likely"])])
-    case("a value present as text beside its placeholder is named",
-         out=one_word, inp=key_input, user="likely: {{ likely }}")
-    # The substituted value can be anything, so text around a placeholder
-    # cannot be trusted to form the word: with an empty input these read
-    # `unlikely` and `notestablished`.
-    case("a placeholder inside a word forms no word boundary",
-         out=one_word, inp={"properties": {"evidence": {"type": "string"}}, "required": ["evidence"]},
-         user="un{evidence}likely", missing=[("$.properties['confidence'].enum", ["likely"])])
-    case("a placeholder inside a multiword value forms no boundary either",
-         out={"enum": ["not established"]},
-         inp={"properties": {"evidence": {"type": "string"}}, "required": ["evidence"]},
-         user="not{evidence}established", missing=[("$.enum", ["not established"])])
-    # Any key the instance carries is substituted, and a schema permitting
-    # extra properties permits any key, so the span is removed whatever it
-    # contains, in all three spellings.
-    case("a word inside the undeclared placeholder {foo likely bar} is not named",
-         out=one_word, inp={"type": "object", "additionalProperties": True}, user="{foo likely bar}",
-         missing=[("$.properties['confidence'].enum", ["likely"])])
-    # The double-brace spellings with a declared key: the placeholder rule
-    # above already refuses one the runner would not substitute, so these
-    # declare the key and show the span's content is not vocabulary even
-    # when the key is legitimate and the word sits at a boundary inside it.
-    hyphen_input = {"properties": {"foo-likely": {"type": "string"}}, "required": ["foo-likely"]}
-    for form in ("{{ foo-likely }}", "{{ input.foo-likely }}", "{foo-likely}"):
-        case(f"a word at a boundary inside the placeholder {form} is not named",
-             out=one_word, inp=hyphen_input, user=form,
-             missing=[("$.properties['confidence'].enum", ["likely"])])
-    case("a word inside a brace-delimited JSON example does not count",
-         out=one_word, user='reply like {"confidence": "likely"}',
-         missing=[("$.properties['confidence'].enum", ["likely"])])
-    case("nested braces are removed whole",
-         out=one_word, user='{"a": {"confidence": "likely"}}',
-         missing=[("$.properties['confidence'].enum", ["likely"])])
-    # The word in the outer span beside a nested one: a single innermost
-    # pass removes the inner span and leaves the outer, and the word with it.
-    case("a word in an outer span beside a nested span is not named",
-         out=one_word, user='{"confidence": "likely", "x": {"y": 1}}',
-         missing=[("$.properties['confidence'].enum", ["likely"])])
-    case("a word beside a span, separated, is still named",
-         out=one_word, inp={"properties": {"x": {"type": "string"}, "y": {"type": "string"}}, "required": ["x", "y"]},
-         user="likely {{ x }} and {y}")
-    case("a value containing the substitution sentinel is refused, not matched",
-         out={"enum": ["a\u0298b"]}, user="a\u0298b", missing=[("sentinel", None)])
+    case("multiword value is one token", out={"enum": ["not established"]},
+         system="not and established", missing=[("$.enum", ["not established"])])
+    case("multiword value named whole", out={"enum": ["not established"]},
+         system="cause: not established")
     # The dialect is pinned: a $schema naming another, at the root or in a
     # subschema, on either side, is refused, since the validator would then
     # apply keywords this walk does not read.
@@ -917,7 +853,7 @@ def enum_self_test():
         text = buf.getvalue()
         if missing:
             reasons = [("declares dialect" if p == "dialect" else
-                        "stands substituted text in for" if p == "sentinel" else
+                        "has an empty string as a value" if p == "empty" else
                         f"output {p} enum missing values: {v!r}.")
                        for p, v in missing]
             ok = count == len(missing) and all(reason in text for reason in reasons)
@@ -934,8 +870,10 @@ def enum_self_test():
 
     # The override replaces the system only; its task's resolved user still
     # reaches the model. Both halves must be tested through the driver pairing.
+    # The override replaces the system prompt and is raw text, so its words
+    # count; the task's user template never does, whatever it says.
     override_cases = (("override enum missing", "reply", values),
-                      ("override user supplies enum", " ".join(values), []))
+                      ("override user template does not supply the enum", " ".join(values), values))
     for label, user, missing in override_cases:
         with tempfile.TemporaryDirectory() as tmp:
             root = pathlib.Path(tmp)
@@ -950,8 +888,7 @@ def enum_self_test():
             buf = io.StringIO()
             with contextlib.redirect_stdout(buf):
                 count = check_overrides([override], driver)
-        reason = (f"output {path} enum missing values: {missing!r}." if missing
-                  else "enums: 1 named in the prompts, 0 with no string value")
+        reason = f"output {path} enum missing values: {missing!r}."
         ok = count == bool(missing) and reason in buf.getvalue()
         failures += not ok
         print(f"  {'ok  ' if ok else 'FAIL'} enum {label}: {reason}")
