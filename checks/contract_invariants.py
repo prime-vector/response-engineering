@@ -941,7 +941,7 @@ def scale_self_test():
         # it descends into `not`. Both lines are true of that node.
         *[(f"a bare not over {label} is a form this check cannot read",
            {SPEC.name: spec(scale), "other.yaml": not_body(spec(scale, "detect", "findings"), body)},
-           2 if holds_a_mapping(body.get("const")) or holds_a_mapping(body.get("enum")) else 1,
+           2 if isinstance(body, dict) and (holds_a_mapping(body.get("const")) or holds_a_mapping(body.get("enum"))) else 1,
            "form this check cannot read", 1)
           for label, body in [("a type", {"type": "string"}),
                               ("an empty body", {}),
