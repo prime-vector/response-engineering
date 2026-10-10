@@ -366,15 +366,15 @@ _ABSENT = object()
 # instance data; not `required`, `dependentRequired` or `$vocabulary`, whose
 # keys are names and whose values are not schemas; not `dependencies`, which
 # 2020-12 keeps as syntax and no longer applies; and not an unknown keyword,
-# whose value is an annotation whatever its shape. `definitions` is the
-# pre-2019 spelling of `$defs` and is kept as a name mapping because the
-# meta-schema still allows it and a reference can still point into it.
+# whose value is an annotation whatever its shape. `definitions`, the
+# pre-2019 spelling of `$defs`, is not in this dialect either: the validator
+# applies nothing under it, and a reference pointing into it is a `$ref`,
+# which is a sentinel already.
 ONE_SCHEMA = ("additionalProperties", "unevaluatedProperties", "propertyNames",
               "items", "contains", "unevaluatedItems", "not", "if", "then",
               "else", "contentSchema")
 SCHEMA_LIST = ("allOf", "anyOf", "oneOf", "prefixItems")
-NAME_MAPPINGS = ("$defs", "definitions", "properties", "patternProperties",
-                 "dependentSchemas")
+NAME_MAPPINGS = ("$defs", "properties", "patternProperties", "dependentSchemas")
 # Instance-data keywords, named for the self-test that places a declaration
 # shaped object under each and requires that nothing is read out of it.
 INSTANCE_DATA = ("const", "enum", "default", "examples")
@@ -928,7 +928,7 @@ def scale_self_test():
               ("then", "one"), ("else", "one"), ("contentSchema", "one"),
               ("allOf", "list"), ("anyOf", "list"), ("oneOf", "list"),
               ("prefixItems", "list"),
-              ("$defs", "map"), ("definitions", "map"), ("properties", "map"),
+              ("$defs", "map"), ("properties", "map"),
               ("patternProperties", "map"), ("dependentSchemas", "map")]],
         *[(f"a bare not excluding {label} is the narrowing rule and declares nothing",
            {SPEC.name: spec(scale), "other.yaml": not_body(spec(scale, "detect", "findings"), body)},
@@ -953,6 +953,10 @@ def scale_self_test():
                               ("an enum of mappings", {"enum": [{"confidence": "high"}]}),
                               ("an empty enum", {"enum": []}),
                               ("an enum that is not a list", {"enum": "confirmed"})]],
+        ("a confidence under definitions is not applied in this dialect and is not read",
+         {SPEC.name: spec(scale),
+          "other.yaml": under_keyword(spec(scale, "detect", "findings"), "definitions", scale[:-1], "map")},
+         0, "in the same order", 2),
         ("a double not pins a scale and is a form this check cannot read",
          {SPEC.name: spec(scale), "other.yaml": double_not(spec(scale, "detect", "findings"))},
          1, "form this check cannot read", 1),
