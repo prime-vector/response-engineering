@@ -322,7 +322,7 @@ def check_enums(task, system, label):
                   f"whole word in the resolved system prompt, the one text "
                   f"the runner never substitutes.")
     if not failures:
-        print(f"  ok   {label} enums: {named} named in the prompts, {skipped} with no string value")
+        print(f"  ok   {label} enums: {named} named in the system prompt, {skipped} with no string value")
     return failures
 
 
@@ -860,7 +860,7 @@ def enum_self_test():
             detail = "; ".join(reasons)
         else:
             named, skipped = counts
-            reason = f"enums: {named} named in the prompts, {skipped} with no string value"
+            reason = f"enums: {named} named in the system prompt, {skipped} with no string value"
             ok = count == 0 and reason in text
             detail = reason
         failures += not ok
