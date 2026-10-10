@@ -68,8 +68,11 @@ vocabulary puts a schema, by the structure of a keyword's value, the same
 split checks/contract_invariants.py walks by; instance data, unknown
 annotations and the keys of a name mapping are never read as schemas. This
 checks presence, never whether the model reads a value. The user text is read
-with every placeholder the runner would substitute blanked, since a value that
-appears only as its own placeholder is replaced before the model sees it. The
+with every brace-delimited span stood in for by one word character, since the
+runner substitutes any such span for any key the instance carries and the
+substituted value can be anything: a word inside one, or formed across one, is
+not in front of the model. A word inside a JSON example in the prompt does not
+count either, which is the safe direction. The
 dialect is pinned to 2020-12: a `$schema` naming another, anywhere on either
 side, is refused rather than walked. References are not resolved.
 
@@ -253,15 +256,34 @@ def foreign_dialects(schema, path="$"):
             yield from foreign_dialects(value, f"{path}[{index}]")
 
 
-def without_placeholders(text, keys):
-    """The user template with every placeholder the runner would substitute
-    blanked. A value named `likely` whose only appearance is `{{ likely }}`
-    is not in front of the model: the runner replaces that text with the
-    input, which can be anything."""
-    for key in keys:
-        for form in substitutions(key):
-            text = text.replace(form, " ")
-    return text
+# A word character the runner's own substitution cannot produce a match
+# from. Every brace-delimited span becomes this, so the span contributes no
+# vocabulary and, being a word character, forms no word boundary either.
+SUBSTITUTED = "\u0298"
+
+
+def without_placeholders(text):
+    """The user template with every span the runner could substitute removed
+    from the matching.
+
+    The runner replaces `{key}`, `{{ key }}` and `{{ input.key }}` for every
+    key the input instance carries, and an input schema that permits extra
+    properties permits any key, so the key list cannot bound this: every
+    brace-delimited span is text the model may never see. It is replaced by
+    one word character rather than a space, because the substituted value
+    can be anything, so the text on either side of it cannot be trusted to
+    form a word: `un{evidence}likely` with an empty input is `unlikely`, and
+    blanking to a space would read it as `likely`. Innermost spans first,
+    repeated, so a JSON example with nested braces is removed whole. The
+    cost is that a word inside a brace-delimited example in the prompt does
+    not count as naming it, which is the safe direction.
+    """
+    pattern = re.compile(r"\{[^{}]*\}")
+    while True:
+        replaced = pattern.sub(SUBSTITUTED, text)
+        if replaced == text:
+            return text
+        text = replaced
 
 
 def schema_enums(schema, path="$"):
@@ -302,12 +324,17 @@ def check_enums(task, system, user, label):
             print(f"  FAIL {label} {where} declares dialect {declared!r}; the "
                   f"enum walk reads {DIALECT} only, and another dialect applies "
                   f"keywords it does not read")
-    keys = set(((task.get("input") or {}).get("properties")) or {}) | set(((task.get("input") or {}).get("required")) or [])
-    user = without_placeholders(user, keys)  # guard placeholders
+    user = without_placeholders(user)  # guard placeholders
     for values, path in schema_enums(task.get("output") or {}):
         words = [v for v in values if isinstance(v, str)] if isinstance(values, list) else []
         if not words:
             skipped += 1
+            continue
+        if any(SUBSTITUTED in w for w in words):  # guard sentinel
+            failures += 1
+            print(f"  FAIL {label} output {path} has a value containing the "
+                  f"character this check stands substituted text in for; "
+                  f"it cannot tell that value from a placeholder")
             continue
         named += 1
         missing = [v for v in words if not (enum_named(system, v) or enum_named(user, v))]
@@ -776,6 +803,42 @@ def enum_self_test():
              missing=[("$.properties['confidence'].enum", ["likely"])])
     case("a value present as text beside its placeholder is named",
          out=one_word, inp=key_input, user="likely: {{ likely }}")
+    # The substituted value can be anything, so text around a placeholder
+    # cannot be trusted to form the word: with an empty input these read
+    # `unlikely` and `notestablished`.
+    case("a placeholder inside a word forms no word boundary",
+         out=one_word, inp={"properties": {"evidence": {"type": "string"}}, "required": ["evidence"]},
+         user="un{evidence}likely", missing=[("$.properties['confidence'].enum", ["likely"])])
+    case("a placeholder inside a multiword value forms no boundary either",
+         out={"enum": ["not established"]},
+         inp={"properties": {"evidence": {"type": "string"}}, "required": ["evidence"]},
+         user="not{evidence}established", missing=[("$.enum", ["not established"])])
+    # Any key the instance carries is substituted, and a schema permitting
+    # extra properties permits any key, so the span is removed whatever it
+    # contains, in all three spellings.
+    case("a word inside the undeclared placeholder {foo likely bar} is not named",
+         out=one_word, inp={"type": "object", "additionalProperties": True}, user="{foo likely bar}",
+         missing=[("$.properties['confidence'].enum", ["likely"])])
+    # The double-brace spellings with a declared key: the placeholder rule
+    # above already refuses one the runner would not substitute, so these
+    # declare the key and show the span's content is not vocabulary even
+    # when the key is legitimate and the word sits at a boundary inside it.
+    hyphen_input = {"properties": {"foo-likely": {"type": "string"}}, "required": ["foo-likely"]}
+    for form in ("{{ foo-likely }}", "{{ input.foo-likely }}", "{foo-likely}"):
+        case(f"a word at a boundary inside the placeholder {form} is not named",
+             out=one_word, inp=hyphen_input, user=form,
+             missing=[("$.properties['confidence'].enum", ["likely"])])
+    case("a word inside a brace-delimited JSON example does not count",
+         out=one_word, user='reply like {"confidence": "likely"}',
+         missing=[("$.properties['confidence'].enum", ["likely"])])
+    case("nested braces are removed whole",
+         out=one_word, user='{"a": {"confidence": "likely"}}',
+         missing=[("$.properties['confidence'].enum", ["likely"])])
+    case("a word beside a span, separated, is still named",
+         out=one_word, inp={"properties": {"x": {"type": "string"}, "y": {"type": "string"}}, "required": ["x", "y"]},
+         user="likely {{ x }} and {y}")
+    case("a value containing the substitution sentinel is refused, not matched",
+         out={"enum": ["a\u0298b"]}, user="a\u0298b", missing=[("sentinel", None)])
     # The dialect is pinned: a $schema naming another, at the root or in a
     # subschema, on either side, is refused, since the validator would then
     # apply keywords this walk does not read.
@@ -848,7 +911,9 @@ def enum_self_test():
                     print(f"exception {type(exc).__name__}: {exc}")
         text = buf.getvalue()
         if missing:
-            reasons = [("declares dialect" if p == "dialect" else f"output {p} enum missing values: {v!r}.")
+            reasons = [("declares dialect" if p == "dialect" else
+                        "stands substituted text in for" if p == "sentinel" else
+                        f"output {p} enum missing values: {v!r}.")
                        for p, v in missing]
             ok = count == len(missing) and all(reason in text for reason in reasons)
             detail = "; ".join(reasons)
