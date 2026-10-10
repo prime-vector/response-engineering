@@ -91,10 +91,11 @@ sight, which is the second verdict agent traces were built to give.
 
 A transport failure leaves a particular signature: root status error,
 `indeterminate`, `execution_failed`, `error.type` `PROVIDER_ERROR`, and a
-failed `chat` span in the same trace. A model refusal currently leaves the same
-signature, because the streaming patch reports a response with no content
-blocks as a cut stream; that is an open task, and until it closes a refusal
-is indistinguishable from a dropped connection in the trace.
+failed `chat` span in the same trace. A model refusal leaves the same
+signature: the provider patch names it on stderr, `Anthropic refusal:` with
+the category, and the drivers do not retry it, but the sink keeps no status
+messages, so in the trace a refusal is indistinguishable from a dropped
+connection. Telling them apart is the driver's stderr, not a span.
 
 ## What the checks read
 

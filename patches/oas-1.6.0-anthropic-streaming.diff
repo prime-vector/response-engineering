@@ -77,6 +77,27 @@ the non-streaming path would have returned, which is the only claim this patch
 makes. An unknown *block* type is a different matter and passes through whole,
 exactly as it would unstreamed.
 
+A REFUSAL IS NOT A CUT STREAM. Found 9 Oct 2026 when Sonnet 5.5 was tried as
+the commander's model: the mitigate directive came back as `stop_reason:
+refusal` with `stop_details` naming the category, no content block and zero
+output tokens, on every run. On the wire that is `message_start`, one
+`message_delta` carrying the stop reason and its details, then `message_stop`:
+a complete, well-formed response that happens to carry nothing, which the
+no-content guard above read as a stream that ended early. So the refusal was
+reported as a transport failure, and `demos/retry.sh` matches transport
+failures by prefix and would have paid for it twice. The guard now exempts a
+message whose stop reason is `refusal`, and nothing else: a refusal whose
+`message_stop` never arrived is still a cut stream. The name then comes from
+`_refused`, called by `_post` on both transports, which raises `Anthropic
+refusal: ...` with the category. Named there rather than left to the call
+sites, because unstreamed the two did something worse than mislabel it:
+`invoke_verbose` reported an unexpected response shape and `invoke_with_tools`
+returned the empty text as a final answer, which the runner exits zero on.
+That prefix is none of the retry wrapper's signatures, and
+`checks/stream_probe.py` reads the signature out of `demos/retry.sh` and holds
+the two apart. Recorded live on 10 Oct 2026, both transports, and the events
+in the probe are that recording.
+
 WHAT IT DELIBERATELY DOES NOT DO. It does not surface tokens as they arrive.
 The runner consumes a whole response, and a progressive display would be a
 change to the CLI rather than to the provider. It does not retry: a stream
@@ -98,8 +119,8 @@ argument-free one, and compares the result against the non-streaming shape;
 both call sites reach `_post`. Live: see the note added to README's Known
 limits for what was run.
 
---- a/oas_cli/providers/anthropic_http.py	2026-08-24 10:43:37.907410174 +1000
-+++ b/oas_cli/providers/anthropic_http.py	2026-08-24 10:43:37.907410174 +1000
+--- a/oas_cli/providers/anthropic_http.py	2026-10-10 14:00:00.000000000 +1100
++++ b/oas_cli/providers/anthropic_http.py	2026-10-10 14:00:00.000000000 +1100
 @@ -6,6 +6,7 @@
  import os
  import urllib.error
@@ -108,7 +129,7 @@ limits for what was run.
  from typing import Any
  
  from oas_cli.reasoning import normalise_effort
-@@ -194,6 +195,189 @@
+@@ -194,6 +195,223 @@
      payload.pop("temperature", None)
  
  
@@ -253,9 +274,40 @@ limits for what was run.
 +            f"{len(blocks)} content block(s): the generation was cut in "
 +            f"transit and what arrived is partial"
 +        )
-+    if not message["content"]:
++    # A refusal is the one complete, well-formed response that carries no
++    # content: `message_delta` brings `stop_reason: refusal` with its
++    # `stop_details`, `message_stop` follows, and nothing was generated. That
++    # is the model declining, not the transport dropping the generation, so
++    # it is returned whole and named by `_refused` on both transports rather
++    # than reported here as a cut stream, which a caller would retry and pay
++    # for twice.
++    if not message["content"] and message.get("stop_reason") != "refusal":
 +        raise ProviderError("Anthropic stream ended with no content blocks")
 +    return message
++
++
++def _refused(data: dict[str, Any]) -> None:
++    """Fail, naming the refusal, when the model declined the request.
++
++    `stop_reason: refusal` arrives with an empty content list and
++    `stop_details` saying which category the policy classifier applied. Left
++    alone, the two call sites turn that into something worse than an error:
++    `invoke_verbose` reports an unexpected response shape, and
++    `invoke_with_tools` returns the empty text as a final answer, which the
++    runner exits zero on. Neither names what happened. Raised here, on both
++    transports, so a refusal reads as a refusal at the exit status and never
++    as the transport losing a generation: `demos/retry.sh` retries only the
++    latter, by prefix, and this prefix is not one it matches.
++    """
++    if data.get("stop_reason") != "refusal":
++        return
++    details = data.get("stop_details") or {}
++    category = details.get("category") or "unspecified"
++    raise ProviderError(
++        f"Anthropic refusal: the model declined this request (category "
++        f"{category}). A complete response with no content, not a transport "
++        "failure, and not retried"
++    )
 +
 +
 +def _post(
@@ -280,8 +332,11 @@ limits for what was run.
 +    try:
 +        with urllib.request.urlopen(req, timeout=timeout) as resp:
 +            if stream:
-+                return _collect_stream(resp)
-+            return json.loads(resp.read().decode())
++                data = _collect_stream(resp)
++            else:
++                data = json.loads(resp.read().decode())
++        _refused(data)
++        return data
 +    except urllib.error.HTTPError as exc:
 +        detail = exc.read().decode(errors="replace")
 +        raise ProviderError(f"Anthropic HTTP {exc.code}: {detail}") from exc
@@ -298,7 +353,7 @@ limits for what was run.
  def _extract_text_blocks(data: dict[str, Any]) -> str:
      """Join the text block(s) from an Anthropic message response.
  
-@@ -331,21 +515,9 @@
+@@ -331,21 +549,9 @@
              "content-type": "application/json",
          }
  
@@ -322,7 +377,7 @@ limits for what was run.
  
          try:
              text = _extract_text_blocks(data)
-@@ -423,21 +595,9 @@
+@@ -423,21 +629,9 @@
              "content-type": "application/json",
          }
  
