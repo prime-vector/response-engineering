@@ -218,9 +218,9 @@ def extract(results=RESULTS, sheet=SHEET):
         label = record.get("label") or name
         offered = claims(record)
         for case, document, ordinal in disagreements(record):
-            claim = offered.get((case, document, ordinal))
-            if claim is None:  # guard verdict_without_claim
-                sys.exit(f"{name}: a verdict on {case} {document} has no claim in per_case")
+            claim = offered[(case, document, ordinal)]
+            # `aligned` has already held every pair's verdict count to its
+            # judged claim count, so a missing claim here is impossible.
             ident = entry_id(label, case, document, ordinal)
             kept = existing.get(ident, {})
             entries.append({
@@ -506,7 +506,7 @@ def self_test():
         try:
             with redirect_stdout(out):
                 entries = extract(results, sheet)
-        except Exception as exc:  # noqa: BLE001
+        except (Exception, SystemExit) as exc:  # noqa: BLE001
             # The first extraction is what every later case reads, so a
             # guard removed here would otherwise end the suite with a
             # traceback and no verdict line to count.
@@ -555,7 +555,7 @@ def self_test():
             with redirect_stdout(out):
                 extract(results, sheet)
         expect_exit("a verdict with no claim behind it stops extraction",
-                    quiet_extract, "has no claim in per_case")
+                    quiet_extract, "has 0 judged claim(s) and 1 published verdict(s)")
         (results / "judgement-stray-20260820T000001Z.json").unlink()
         keys = {k for e in yaml.safe_load(sheet.read_text()) for k in e}
         case("extract writes no verdict and no claim text into the sheet",

@@ -580,9 +580,12 @@ key.
 
 `evals/anchor.yaml` lists the claims on which the judge families disagreed,
 62 across the three records, because that is where the rubric is ambiguous.
-A claim is one entry in a record's claim list, keyed by case, document and
-its ordinal among claims on that document, since a record can hold two
-claims on one runbook and the judge records two verdicts for them.
+A claim is one entry in a record's claim list that the judge was given,
+keyed by case, document and its ordinal among such claims on that document:
+a record can hold two claims on one runbook, and the judge skips a claim
+that cited nothing the archive returned, so the ordinal counts the claims
+the judge saw, in the order it saw them, and `--extract` stops on a record
+whose published verdicts do not number them pair for pair.
 The pairing is the one the tables above publish: each record's `judged`
 verdicts, which name their model, against the latest round with verdicts
 from every other family. A split between two rounds of one family is not a
