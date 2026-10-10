@@ -954,9 +954,11 @@ def scale_self_test():
                               ("an empty enum", {"enum": []}),
                               ("an enum that is not a list", {"enum": "confirmed"}),
                               # Not mappings at all. `true` and `false` are
-                              # valid schemas; the other two are not, and all
-                              # four have to be refused rather than crash a
-                              # check that then prints no verdicts.
+                              # valid schemas; the other two are not. `false`
+                              # is refused by the emptiness test and locks
+                              # nothing else; the other three are what the
+                              # mapping test exists for, and without it each
+                              # crashes a check that then prints no verdicts.
                               ("a boolean true body", True),
                               ("a boolean false body", False),
                               ("a number", 1),
