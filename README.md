@@ -31,6 +31,7 @@ Every arrow between agents is a typed output whose claims carry `confidence` and
 - **Surface**: a tool endpoint an agent reads (telemetry, change registry, precedent archive) or writes (incident record, host). Each is owned by exactly one agent.
 - **Contract**: the output schema a task's result must satisfy. The runner refuses output that breaks it, with the gaps listed under Known limits.
 - **Sandbox**: a task's allow list of tools. A call outside it is blocked before it is sent.
+- **Grok, Sol, Astra**: the models that reviewed this repository's changes, named in PLAN.md and the evals notes where one of them found something. Grok reviews each push; Sol is the pre-merge gate, reading only the brief; Astra was asked once for a design question. None of them is part of what the repository builds.
 
 ### Try it without an API key
 
