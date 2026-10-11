@@ -695,13 +695,21 @@ August records they replace are kept beside them. Those did not pin the
 runtime; the one thing they evidenced was that the tool-messages patch was
 applied, since an unpatched install fails the first tool call. The narrative
 below quotes the August sweep unless a figure is dated, with the 11 Oct value
-beside it where the two differ. What the re-run moved: the shipped arm's
-false refusal from 0 of 25 to 1 of 25, single-query omission from 3 of 9 to 4
-of 10, heading divergence quality from 6 of 6 to 6 of 7 and fixed from 6 of 7
-to 7 of 7, p95 from 52.8s to 41.6s, `d01` from offering a draft to refusing,
-and the draft citations to other cases; the false precedent, no-precedent,
-log-groundedness and judged-groundedness rates held within two points. The
-current grid is the one published above.
+beside it where the two differ. What the re-run moved, every rate on every
+arm read against its August record. Held exactly on all three arms: the false
+precedent rate at 0, no-precedent accuracy at 13 of 13, log groundedness at
+every citation returned. Held on two: false refusal (fixed 1 of 25,
+single-query 8 of 25) and judged groundedness (fixed 48 of 56, single-query 21
+of 22). Held on one: divergence quality (single-query 6 of 7). Everything else
+moved: the shipped arm's false refusal from 0 of 25 to 1 of 25 and its judged
+groundedness from 38 of 52 to 38 of 54; omission from 14 of 23 to 14 of 22 on
+heading, 13 of 23 to 14 of 24 on fixed and 3 of 9 to 4 of 10 on single-query;
+reach from 54 to 53, 54 to 55 and 22 to 23 of 60; divergence quality from 6 of
+6 to 6 of 7 on heading and 6 of 7 to 7 of 7 on fixed; p95 down on all three,
+52.8s to 41.6s, 55.3s to 48.0s and 27.1s to 24.5s, with p50 down on fixed and
+single-query and level on heading. In the particulars, `d01` went from
+offering a draft to refusing and the draft citations landed on other cases.
+The current grid is the one published above.
 
 ### The two Phase 5 comparisons
 

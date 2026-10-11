@@ -421,7 +421,7 @@ runtime pinned in it; the retrieval records are the August ones. What the live s
 - **The newer models trade reach for grounding.** Sonnet 5.5 and Haiku 5.5 at
   medium effort, judged beside the shipped Sonnet 4.6 on 11 Oct 2026: fewer
   claims (31 and 29 against 54), two more answerable cases refused, reach of
-  52 of 60 and 47 of 59 against 53 of 60, and 26 of 31 and 26 of 28 citations judged
+  52 of 60 and 47 of 59 against 53 of 60, and 26 of 31 and 26 of 28 claims judged
   grounded against 38 of 54, at well under half the latency. Haiku lost one run
   of 38 to output the runner could not parse. The analyst stays on 4.6 for
   reach; the records and the variant specs are committed.
