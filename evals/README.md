@@ -568,10 +568,42 @@ and every delta after that would be unattributable.
   would not support much of a significance test, and nothing here attempts
   one.
 
+### The model arms
+
+Two records beside the grid, not in it: `trial-sonnet55-medium` and
+`trial-haiku55-medium`, the shipped configuration with only the model and
+`reasoning_effort: medium` changed, recorded and judged on 11 Oct 2026 beside
+a fresh run of the shipped arm. The variant specs are committed under
+`evals/specs/` and each record's `agent.spec_fingerprint` is that file's
+hash; the record names the scratch path it ran from, which is what it ran
+from. They stay out of the comparison grid because the grid pins the agent
+spec and the model, and that is right: a column there credits a prompt or an
+index, and these change the producer.
+
+| | Sonnet 4.6, shipped | Sonnet 5.5 medium | Haiku 5.5 medium |
+| --- | --- | --- | --- |
+| claims offered | 54 | 31 | 29 |
+| `false_precedent_rate` | 0/54 | 0/31 | 0/29 |
+| `applies_omission_rate` | 14/22 | 13/23 | 14/21 |
+| `false_refusal_rate` | 1/25 | 3/25 | 3/24 |
+| `agent_reach` | 53/60 | 52/60 | 47/59 |
+| `groundedness_judge` | 38/54 | 26/31 | 26/28 |
+| `divergence_quality` | 6/7 | 4/4 | 4/4 |
+| p50 / p95 per recall | 26.3s / 41.6s | 10.3s / 15.1s | 10.5s / 16.0s |
+| runs lost | 0/38 | 0/38 | 1/38 |
+
+Read it as the October trial read, now with the judge: the newer models
+offer fewer claims, refuse more answerable cases, reach a little less, and
+what they do cite is better supported, at well under half the latency. Haiku
+lost case `f03` to output the runner could not parse, the fail-open CLAUDE.md
+records, which is why its denominators are 24 and 59. The commander's and the
+analyst's own model choice is argued in CLAUDE.md and did not change here.
+
 ### The anchor set
 
 `groundedness_judge` is readable as a comparison and not as a score: the same
-claims scored 38 of 52 under one model family and 17 of 52 under the other,
+claims scored 38 of 52 under one model family and 17 of 52 under the other in
+the August rounds,
 and nothing in the repository could say which was right. The remedy is not a
 panel, a consensus or a tiebreak judge. A council stabilises the number and
 leaves the cause, an underspecified rubric each family fills in differently,
@@ -648,15 +680,14 @@ Phase 4 and Phase 5 are done.
 - [ ] Thirty or more labelled by a person, both judges scored against them,
       and the absence rule argued in `docs/precedent-analyst.md`
 
-**What these three records do not pin, and what the runs themselves show.**
-They were made before the CLI and provider were recorded, so which runtime
-produced them is an assertion by the author, one session on one install, rather
-than a property of the artefact. `--check-records` says so per arm and calls
-for a fresh sweep, which is the only thing that closes it. One part of it is
-evidenced rather than asserted: 182, 163 and 43 tool calls came back
-successfully across the three arms, and an unpatched install fails the first
-one, so the `patches/` provider patch was applied. The CLI version is not
-evidenced that way. Arms recorded from here carry both.
+**Pinned since 11 Oct 2026.** All three arms were re-run that day on CLI 1.6.2
+with the patched provider, and each record carries the CLI version and the
+provider module's fingerprint, so `--check-records` reports them current. The
+August records they replace are kept beside them. Those did not pin the
+runtime; the one thing they evidenced was that the tool-messages patch was
+applied, since an unpatched install fails the first tool call. The narrative
+below quotes the August sweep unless a figure is dated; the re-run reproduced
+each within noise, and the current grid is the one published above.
 
 ### The two Phase 5 comparisons
 
@@ -667,27 +698,25 @@ The grid is generated from the three records and diffed in CI:
 
 | measured by code | unit | judgement-heading | judgement-fixed | judgement-single-query |
 | --- | --- | --- | --- | --- |
-| `false_precedent_rate` | claims offered | 0/52 | 0/56 | 0/22 |
-| `applies_omission_rate` | applies documents returned to the agent | 14/23 | 13/23 | 3/9 |
+| `false_precedent_rate` | claims offered | 0/54 | 0/56 | 0/22 |
+| `applies_omission_rate` | applies documents returned to the agent | 14/22 | 14/24 | 4/10 |
 | `no_precedent_accuracy` | cases with no precedent | 13/13 | 13/13 | 13/13 |
-| `false_refusal_rate` | answerable cases | 0/25 | 1/25 | 8/25 |
-| `groundedness_log` | cited passage ids | 138/138 | 88/88 | 32/32 |
-| `agent_reach` | (case, relevant document) pairs | 54/60 | 54/60 | 22/60 |
-| claims understated | claims offered | 10/52 | 10/56 | 6/22 |
-| claims on documents not called relevant | claims offered | 18/52 | 18/56 | 3/22 |
-| searches issued | calls on the surface | 182, median 5.0 | 163, median 4.0 | 43, median 1.0 |
-| p50 / p95 | one recall | 26.9s / 52.8s | 26.4s / 55.3s | 13.1s / 27.1s |
+| `false_refusal_rate` | answerable cases | 1/25 | 1/25 | 8/25 |
+| `groundedness_log` | cited passage ids | 143/143 | 94/94 | 37/37 |
+| `agent_reach` | (case, relevant document) pairs | 53/60 | 55/60 | 23/60 |
+| claims understated | claims offered | 8/54 | 10/56 | 5/22 |
+| claims on documents not called relevant | claims offered | 19/54 | 17/56 | 3/22 |
+| searches issued | calls on the surface | 178, median 5.0 | 166, median 4.0 | 47, median 1.0 |
+| p50 / p95 | one recall | 26.3s / 41.6s | 22.7s / 48.0s | 9.9s / 24.5s |
 
-Applicability offered: judgement-heading `partial` 44, `superseded` 8; judgement-fixed `partial` 48, `superseded` 8; judgement-single-query `partial` 21, `superseded` 1. `false_precedent_rate` fires only on `applies`.
+Applicability offered: judgement-heading `partial` 46, `superseded` 8; judgement-fixed `partial` 49, `superseded` 7; judgement-single-query `partial` 19, `superseded` 2, `applies` 1. `false_precedent_rate` fires only on `applies`.
 
 | judged by claude-opus-4-6 via anthropic, no file tools, temperature 0 | judgement-heading | judgement-fixed | judgement-single-query |
 | --- | --- | --- | --- |
-| `groundedness_judge` | 38/52 | 48/56 | 21/22 |
-| `divergence_quality` | 6/6 | 6/7 | 6/7 |
+| `groundedness_judge` | 38/54 | 48/56 | 21/22 |
+| `divergence_quality` | 6/7 | 7/7 | 6/7 |
 
-Both judged rates are scored over what each run offered, so offering less can raise them: judgement-heading never offered the diverging record on `b04`.
-
-Generated by `python3 evals/judgement.py --comparison` from 3 records: `judgement-heading` recorded 2026-08-20T04:15:55Z, `judgement-fixed` recorded 2026-08-20T04:41:53Z, `judgement-single-query` recorded 2026-08-20T05:03:03Z. Do not hand-edit either copy: `--comparison --check` diffs this block in every file that publishes it.
+Generated by `python3 evals/judgement.py --comparison` from 3 records: `judgement-heading` recorded 2026-10-11T03:20:52Z, `judgement-fixed` recorded 2026-10-11T03:54:21Z, `judgement-single-query` recorded 2026-10-11T04:11:22Z. Do not hand-edit either copy: `--comparison --check` diffs this block in every file that publishes it.
 <!-- judgement-comparison:end -->
 
 **The headline rate is zero over a word the agent never used.** `applies`
@@ -701,7 +730,7 @@ this cannot be read as calibration again.
 **The rule 4 paragraph is worth its words, and the arm measures the
 paragraph.** Replacing it refuses 8 of 25 answerable cases and reaches 22 of 60
 pairs instead of 54, with all four composite cases refusing, at half the
-latency. The paragraph carries two instructions and the replacement drops both:
+latency (11 Oct 2026: 8 of 25 again, 23 of 60 against 53). The paragraph carries two instructions and the replacement drops both:
 query more than once, and ask for breadth because the surface caps passages per
 document. The shipped arm passed `limit: 8` on 157 of 182 searches; the
 alternative passed no limit on 41 of 43 and took the default of five. So the
@@ -709,7 +738,8 @@ delta is the paragraph, not query count in isolation, and `--compare` cannot
 see the difference because a system prompt is one knob to it.
 
 **The chunker is not choosable off one sweep each.** Same reach, 54 of 60, and
-14 against 13 omissions. The judged half parts by 38/52 against 48/56, and
+14 against 13 omissions (11 Oct 2026: 53 against 55, 14 against 14, judged
+38 of 54 against 48 of 56). The judged half parts by 38/52 against 48/56, and
 heading came out below fixed in every judging, so the gap is repeatable
 even though its size moves by several points between rounds. That is a real
 difference nobody should choose a chunker on: one sweep each, a judge scoring a
@@ -733,7 +763,9 @@ That is not explained here.
 `results/judgement-heading.md` has the table: 38 cases, no run rejected or
 unparseable, `false_precedent_rate` 0 of 52 claims, `no_precedent_accuracy` 13
 of 13, `false_refusal_rate` 0 of 25, `groundedness_log` 138 of 138,
-`agent_reach` 54 of 60 pairs, p50 26.9s and p95 52.8s.
+`agent_reach` 54 of 60 pairs, p50 26.9s and p95 52.8s. Re-run on 11 Oct 2026
+with the runtime pinned: 0 of 54, 13 of 13, 1 of 25, 143 of 143, 53 of 60,
+p50 26.3s and p95 41.6s.
 
 Three things in it are worth more than the headline rates.
 
@@ -834,7 +866,8 @@ an incident, and putting it in the path would be a design error rather than a
 tuning problem.
 
 What an operator waits for is one recall. Measured across the shipped arm's 38
-runs, p50 26.9s and p95 52.8s, provider time included. The retrieval surface
+runs, p50 26.3s and p95 41.6s on 11 Oct 2026 (26.9s and 52.8s in August),
+provider time included. The retrieval surface
 itself answers in about two milliseconds, so essentially all of that is the
 model. The baseline this project is built against is a change correlation that
 was available for fifteen days and got run two hours and twenty-one minutes
@@ -864,8 +897,8 @@ same blocked board. What is measured is the latency above. The degradation is a
 property of the contract, and one composed run is one run.
 
 If latency ever does bind, the levers are measured rather than guessed. One
-query instead of several halves it, p95 27.1s against 52.8s, and reaches 22 of
-60 relevant documents instead of 54: half the latency for a third of the reach,
+query instead of several halves it, p95 24.5s against 41.6s on 11 Oct 2026,
+and reaches 23 of 60 relevant documents instead of 53: half the latency for a third of the reach,
 which argues for tiering by severity rather than choosing once. Retrieval with
 no agent at all is two milliseconds and gives up applicability, divergence and
 refusal, which is most of the point. A cheaper model is untested here.

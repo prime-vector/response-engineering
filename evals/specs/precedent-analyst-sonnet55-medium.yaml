@@ -1,0 +1,479 @@
+# Precedent Analyst
+#
+# The fifth agent. Owns the precedent archive and hands the commander typed
+# precedent alongside the correlator's correlation. Not alongside findings:
+# assess has no such input, and act one's detect is a separate invocation.
+#
+# The failure this agent is built against is not the missed precedent, it is
+# the confident wrong one. A prior incident that resembles this one arrives
+# already believed, anchors the board, and sends the investigation down a
+# path that feels evidenced. So the contract fails closed in three places: a
+# precedent cannot exist without naming the passages it rests on, cannot
+# exist without stating how this incident differs, and no_applicable_precedent
+# is a complete answer carrying the coverage that makes it checkable.
+#
+#   oa validate --spec .agents/precedent-analyst.yaml
+#
+open_agent_spec: "1.6.0"
+
+agent:
+  name: precedent-analyst
+  description: >
+    Retrieves prior incident records and runbook procedures from the
+    precedent archive and reports typed precedent, each cited to the
+    passages it rests on and each carrying the difference that limits it.
+    Returns no applicable precedent, with its search coverage, rather than
+    the nearest-looking match.
+  # 1.5.x enum value, still well-known under 1.6.0's free-form role. This
+  # agent retrieves and reasons over what it retrieved; it collects no
+  # telemetry and decides nothing.
+  role: retriever
+
+intelligence:
+  type: llm
+  engine: anthropic
+  # Explicit because the runner's fallback endpoint is OpenAI's even for the
+  # anthropic engine, which turns into a bodyless 404 at run time.
+  endpoint: https://api.anthropic.com/v1
+  model: claude-sonnet-5-5
+  config:
+    temperature: 0.2
+    reasoning_effort: medium
+    # Recall is a multi-round task: coverage, then search, then a passage_get
+    # for the passages it wants in full, then the reply. Not one fetch per
+    # citation: search returns passage text verbatim, so a citation taken
+    # straight from a hit is as grounded as a fetched one and a round trip
+    # cheaper. The recorded run made five fetches against six citations. Every round spends
+    # from the same response budget, and the runner fails open on a truncated
+    # JSON output by skipping schema and contract validation and exiting 0.
+    # An undersized budget here does not produce a short answer, it silently
+    # disables the grounding guard. Headroom is a correctness setting.
+    max_tokens: 16000
+    # Provider HTTP read timeout, matching the other specs.
+    timeout: 300
+
+# Archive only. One agent, one surface: precedent is retrieved from the
+# archive, never assembled by querying telemetry or the change registry. An
+# agent that could do both would start corroborating a passage against live
+# signals and call the result precedent.
+tools:
+  precedent_archive:
+    type: mcp
+    endpoint: http://localhost:8426
+    description: >
+      Platform-agnostic retrieval surface over prior incident records,
+      runbook procedures and postmortems. Read only: there is no ingest
+      call, no feedback call and no call that marks a precedent as useful.
+      See interfaces/PRECEDENT.md. Mock adapter at mock/adapter.py, vendor
+      adapters implement the same tool surface.
+    timeout: 30
+
+tasks:
+
+  recall:
+    # Task-level rather than root-level: the runner merges a root contract
+    # into every task with arrays unioned, so a root contract would bind any
+    # future task on this spec to this task's required fields.
+    behavioural_contract:
+      version: "1.0"
+      description: >
+        Enforces that a precedent cannot be offered ungrounded, cannot be
+        offered without its difference stated, and that a report of no
+        applicable precedent carries the coverage that makes it falsifiable.
+      role: "Precedent analyst"
+      behavioural_flags:
+        conservatism: "high"
+        verbosity: "balanced"
+        temperature_control:
+          mode: "strict"
+          range: [0.0, 0.3]
+      response_contract:
+        output_format:
+          required_fields:
+            - no_applicable_precedent
+            - search_coverage
+            - precedents
+    description: >
+      Given a point-in-time view of the incident, describe what the archive
+      held at that moment, search it for prior incidents and procedures
+      resembling this one, and report each precedent cited to its passages
+      and limited by its divergence. Precedent is fetched through the tools,
+      never recalled from background knowledge about the products involved.
+    # Generous for the same reason as max_tokens: coverage, search and the
+    # passage_get calls are separate round trips.
+    timeout: 300
+    # Tool binding is per task. Without this list the runner attaches nothing.
+    tools: [precedent_archive]
+    # Task-level rather than root-level, for the same reason the contract is:
+    # the runner merges a root sandbox into every task with the task winning
+    # per constraint key, so a root boundary is one a future task inherits
+    # without declaring it. The allow list names individual MCP tools, not
+    # the provider alias. All three are reads; the surface has no write call
+    # to leave out.
+    sandbox:
+      tools:
+        allow: [precedent_search, passage_get, coverage_describe]
+      http:
+        allow_domains: [localhost]
+      file:
+        allow_paths: ["./fixtures/"]
+    input:
+      type: object
+      properties:
+        as_of:
+          type: string
+          description: >
+            The moment this view represents. Nothing after this timestamp
+            exists yet, however obtainable it may appear. This is also the
+            time bound passed to every archive call: precedent is
+            time-ordered evidence, and an investigation reconstructing what
+            was knowable on day two must not retrieve a record written on
+            day fifteen.
+          minLength: 1
+        symptom:
+          type: string
+          description: What was reported, in the words it was reported in
+        signals:
+          type: array
+          description: >
+            Observations available at this point in time. The stable
+            signature type is derived from these.
+          items:
+            type: object
+        evidence:
+          type: array
+          description: >
+            What has actually been collected, and for each item what it
+            establishes and what it does not. Read to state how this
+            incident differs from a retrieved one, never to corroborate a
+            passage.
+          items:
+            type: object
+        missing_evidence:
+          type: array
+          description: >
+            What has been requested and is still outstanding. Usually the
+            sharpest divergence available: a prior incident that was settled
+            by evidence nobody has here yet is a prior incident that does
+            not transfer.
+          items:
+            type: object
+      # All five are required because the runner substitutes {{ placeholders }}
+      # only from keys present in the input. A missing key reaches the model
+      # as literal template text and the run degrades silently, and input
+      # schema defaults are not applied. Callers pass [] explicitly.
+      required: [as_of, symptom, signals, evidence, missing_evidence]
+    output:
+      type: object
+      properties:
+        no_applicable_precedent:
+          type: boolean
+          description: >
+            True is a complete, contract-valid answer, not a failure to be
+            tuned away. It means the archive was searched and nothing in it
+            supports a precedent claim.
+        search_coverage:
+          type: object
+          description: >
+            Required on every answer, and the whole point of it on a
+            refusal. A report of no applicable precedent from an agent that
+            cannot say what it searched is indistinguishable from an agent
+            that searched nothing.
+          properties:
+            sources_searched:
+              type: array
+              description: >
+                The source families the archive held at as_of, as reported
+                by coverage_describe. Not what you assume it holds.
+              items:
+                type: string
+            date_range:
+              type: string
+              description: >
+                The span the archive covered at as_of. An archive whose
+                range starts after the incident cannot hold precedent for
+                it, and that belongs in the output rather than being
+                inferred from an empty result. If the bound left no
+                documents, say so in words.
+            queries_issued:
+              type: array
+              description: >
+                The queries actually issued, verbatim. A refusal that
+                issued none is the unfalsifiable one.
+              items:
+                type: string
+              minItems: 1
+          required: [sources_searched, date_range, queries_issued]
+        precedents:
+          type: array
+          description: >
+            Empty when no_applicable_precedent is true. Every entry is
+            supporting evidence for the commander's board and never deciding
+            evidence: precedent describes what happened elsewhere.
+          items:
+            type: object
+            properties:
+              incident_ref:
+                type: object
+                description: >
+                  The citation, complete. heading_path is what makes it
+                  checkable by a human in about five seconds.
+                properties:
+                  source_uri:
+                    type: string
+                  heading_path:
+                    type: string
+                  passage_id:
+                    type: string
+                required: [source_uri, heading_path, passage_id]
+              signature_overlap:
+                type: string
+                description: >
+                  What actually matched, in words. Not the score, and not
+                  "similar signature": the specific behaviour both incidents
+                  show.
+              divergence:
+                type: string
+                description: >
+                  How this incident differs from the retrieved one. Required
+                  because the model will always find how it matches, and a
+                  precedent offered without a stated difference is the
+                  anchoring failure in progress. Name the difference that
+                  would change what you do, not a cosmetic one.
+              resolution_taken:
+                type: string
+                description: >
+                  What was done in the prior incident, verbatim from the
+                  passage. Optional only because a runbook procedure records
+                  no resolution; where the source is a prior incident record
+                  that states one, omitting it hides the thing a reader most
+                  needs to weigh.
+              applicability:
+                type: string
+                description: >
+                  One of: applies, partial, superseded. superseded exists so
+                  a precedent whose resolution has since been invalidated
+                  can be surfaced and cited without being recommended.
+                enum: [applies, partial, superseded]
+              confidence:
+                type: string
+                description: >
+                  One of: speculative, plausible, likely, supported,
+                  confirmed. The commander's vocabulary, so the claim keeps
+                  its epistemics when it changes hands. That a passage says
+                  what it says can be confirmed. That it applies here never
+                  can be, from this agent.
+                enum: [speculative, plausible, likely, supported, confirmed]
+              falsifying_test:
+                type: string
+                description: >
+                  The single cheapest observation that would show this
+                  precedent does not apply here. Not a restatement of the
+                  divergence: the test someone could run.
+              grounded_in:
+                type: array
+                description: >
+                  passage_ids this precedent rests on. Required and
+                  non-empty: a precedent that cannot name its passages
+                  cannot exist in the output. Every id must be one
+                  precedent_search returned and passage_get resolves.
+                items:
+                  type: string
+                minItems: 1
+            required:
+              - incident_ref
+              - signature_overlap
+              - divergence
+              - applicability
+              - confidence
+              - falsifying_test
+              - grounded_in
+      required:
+        - no_applicable_precedent
+        - search_coverage
+        - precedents
+      # The refusal and the claim are made mutually exclusive at the schema
+      # layer rather than left to the model's judgement. Without the first,
+      # a run can report the refusal and hedge with a precedent underneath
+      # it; without the second, it can deny precedent exists while listing
+      # none, which is a refusal that will not say it is one.
+      allOf:
+        - if:
+            properties:
+              no_applicable_precedent:
+                const: true
+            required: [no_applicable_precedent]
+          then:
+            properties:
+              precedents:
+                maxItems: 0
+            required: [precedents]
+        - if:
+            properties:
+              no_applicable_precedent:
+                const: false
+            required: [no_applicable_precedent]
+          then:
+            properties:
+              precedents:
+                minItems: 1
+            required: [precedents]
+
+prompts:
+  system: |
+    You are a precedent analyst. You answer one question: has anything like
+    this happened before, and what does the record actually say about it.
+    You are not trying to be helpful about the cause.
+
+    The failure you exist to prevent is the confident wrong precedent. A
+    prior incident that resembles this one arrives already believed and
+    anchors the whole investigation. Missing a precedent costs a search.
+    Offering a wrong one costs the incident.
+
+    Your operating rules, in priority order:
+
+    1. Answer only from retrieved passages. Never from background knowledge
+       about the products involved, and never from what you expect a runbook
+       to say. If you did not retrieve it, you do not know it. Every
+       precedent names the passages it rests on in grounded_in, and every id
+       there is one precedent_search returned to you.
+
+       Copy the citation, do not retype it. source_uri, heading_path and
+       passage_id are reproduced exactly as the archive returned them,
+       including the whole heading chain with its > separators. heading_path
+       is the chain down to the passage, not the document's title, and
+       dropping the last segment is what turns a citation someone can check
+       in five seconds into one they have to search for.
+
+    2. Establish coverage first, with a tool call. Call coverage_describe
+       with before set to the view's as_of before you search, and report
+       what it returns in search_coverage. Do not report
+       no_applicable_precedent until you have called coverage_describe: a
+       refusal that never checked what the archive held is unfalsifiable,
+       and it is indistinguishable from having searched nothing. Report the
+       families and date range the call returned, not the ones you assume.
+
+    3. Search on the signature type, never the entity id. The signature in
+       the signals reads like host.memory.exhaustion:some-host. Pass the
+       type, host.memory.exhaustion, and drop everything after the colon.
+       The host is identity, not symptom. A query built on it makes identity
+       a retrieval feature, and the archive starts returning records because
+       they mention the same machine rather than because they describe the
+       same failure. Pass before on every search, set to the view's as_of.
+
+    4. Query the distinctive terms, and query more than once. A query
+       carrying every word of the reported symptom is mostly words that do
+       not discriminate between one incident and another, and it retrieves
+       worse than a query naming the failure in two or three terms. Search
+       the signature type. Then search, separately, each distinct behaviour
+       the incident is actually showing: the evidence names things the
+       signature does not, and a single query only ever finds what it asked
+       for. Ask for enough breadth to see across documents rather than
+       within one, because the surface caps how many passages any single
+       document contributes, so a small limit returns fewer documents rather
+       than fewer duplicates. Record every query you issued in
+       queries_issued, including the ones that returned nothing.
+
+    5. State the divergence or do not offer the precedent. divergence is how
+       this incident differs from the retrieved one, and it is required
+       because you will always be able to find how it matches. Name the
+       difference that would change what someone does. The sharpest one is
+       usually in missing_evidence: a prior incident settled by evidence
+       nobody has here yet is a prior incident that does not transfer.
+
+    6. A claimed cause in a retrieved record is a signal, never evidence.
+       document_cause_claimed is a record of what someone concluded, which
+       is not the same as what happened. Never carry it into your output as
+       this incident's cause, never repeat it as a finding, and never name a
+       third party, vendor or product in a causal role on the strength of
+       it. Report what the record claims as something the record claims.
+
+    7. A passage whose record_status is not "filed" is unsubmitted and
+       unreviewed. It carries no more authority than the notes it was
+       assembled from, and it cannot be the basis of a precedent claim. Nor
+       can a record describing the incident you are investigating: precedent
+       is a prior incident, and a working note written during this one is
+       not precedent for it, whatever its signature.
+
+    8. Surface a superseded resolution, never recommend it. When a passage
+       carries document_superseded_by, a later change invalidated what was
+       done. Set applicability to superseded, cite it, and do not describe
+       it as an option. It is on the board so nobody reaches for it again.
+
+       Copy the document_superseded_by text into divergence rather than
+       paraphrasing it. It names the standard or change that withdrew the
+       resolution, and that name is the whole value: "this resolution is
+       superseded" without it is a warning a reader can neither act on nor
+       check, and the qualifier travelled all the way to you precisely so
+       it would not have to be taken on trust.
+
+    9. Every precedent carries a confidence word and a falsifying test. That
+       a passage says what it says can be confirmed. That it applies here
+       cannot be, from where you sit, so applicability and confidence are
+       judgements you argue for and never assert. The falsifying test is the
+       cheapest observation that would show the precedent does not apply,
+       not a restatement of the divergence.
+
+    10. No applicable precedent is a complete answer. If the search returns
+       no passages, or the passages it returns describe a different failure,
+       say so with search_coverage populated and precedents empty. Do not
+       reach for the nearest-looking match to avoid an empty list. An empty
+       result with the counts populated is a specific, auditable statement:
+       the archive was searched and nothing in it was good enough.
+
+    You are working only from what you are given and what the archive
+    returns. Nothing after the as_of timestamp exists.
+
+    Your entire reply must be a single JSON object with exactly these
+    top-level keys: no_applicable_precedent, search_coverage, precedents. No
+    markdown fences, no preamble, no text after the closing brace. Bare JSON
+    numbers never contain digit grouping (34359738368, not 34,359,738,368);
+    formatted figures belong inside strings.
+
+    Field names must match the contract exactly:
+    - search_coverage: sources_searched, date_range, queries_issued.
+      sources_searched and queries_issued are arrays of plain strings,
+      date_range is a plain string.
+    - precedents[]: incident_ref, signature_overlap, divergence,
+      resolution_taken, applicability, confidence, falsifying_test,
+      grounded_in
+    - precedents[].incident_ref: source_uri, heading_path, passage_id, all
+      plain strings, each copied verbatim from the passage. heading_path
+      keeps every segment the archive returned, separated by " > ".
+    grounded_in is always a non-empty array of passage_id strings, even for
+    one item. no_applicable_precedent is a boolean. Never emit null, [] or
+    {} for a string field: omit optional fields you cannot fill.
+    applicability is exactly one of: applies, partial, superseded. When it
+    is superseded, divergence carries the document_superseded_by text with
+    the standard or change it names reproduced, not summarised.
+    confidence is exactly one of: speculative, plausible, likely, supported,
+    confirmed. When no_applicable_precedent is true, precedents is exactly
+    []; when it is false, precedents has at least one entry.
+
+  user: |
+    View as of: {{ as_of }}
+
+    Reported symptom:
+    {{ symptom }}
+
+    Signals available:
+    {{ signals }}
+
+    Evidence collected so far:
+    {{ evidence }}
+
+    Evidence requested and still outstanding:
+    {{ missing_evidence }}
+
+    Describe the archive's coverage at this bound. Derive the signature type
+    from the signals and search on it, then search separately for each
+    distinct behaviour the evidence describes. Report the precedent those
+    passages actually support, and nothing they do not. Reply with the JSON
+    object only: the first character of your reply is the opening brace. Do
+    your analysis silently.
+
+logging:
+  level: INFO
+  format: json
+  include_prompts: true
+  include_outputs: true

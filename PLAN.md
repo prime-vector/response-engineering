@@ -82,6 +82,7 @@ The fifth agent. Owns a retrieval surface over prior incident records and runboo
       per case, the deterministic rates read off the typed output and the
       adapter log, and `groundedness_judge` and `divergence_quality` judged at
       the prompts committed in `evals/judges/`
+- [x] Judgement records re-run 11 Oct 2026 with the runtime pinned, all three arms current under `--check-records`; Sonnet 5.5 and Haiku 5.5 at medium effort recorded and judged beside the shipped Sonnet 4.6, specs under `evals/specs/`, and the analyst stays on 4.6 for reach
 - [ ] Anchor set for the judged metrics. The tool and the sheet landed 10 Oct 2026: `evals/anchor.py` extracts the 62 claims on which each record's published verdicts and the other judge family's latest verdicts disagree into `evals/anchor.yaml` with no verdict and no claim text in it, shows each with its cited passages, checks the sheet against the records in CI, in both directions, and scores the two parties each disagreement was drawn from against the labels once they exist. Open: thirty or more labels by a person, both judges scored against them, and the absence rule argued in `docs/precedent-analyst.md` from what the key shows. See `evals/README.md`, The anchor set
 - [x] Measured improvement documented with before and after. Three arms
       recorded, both comparisons run, and the README states what was kept,
@@ -285,7 +286,12 @@ unparseable. `false_precedent_rate` 0 of 52 claims, `no_precedent_accuracy` 13
 of 13, `false_refusal_rate` 0 of 25, `groundedness_log` 138 of 138 cited
 passage ids in the set the surface returned, `agent_reach` 54 of 60 pairs, p50
 26.9s and p95 52.8s per recall. The full table is
-`evals/results/judgement-heading.md`.
+`evals/results/judgement-heading.md`. Re-run 11 Oct 2026 on CLI 1.6.2 with the
+patched provider and the runtime pinned in the record, after the spec and the
+CLI had moved: 0 of 54, 13 of 13, 1 of 25, 143 of 143, 53 of 60, p50 26.3s and
+p95 41.6s. The fixed and single-query arms were re-run the same day so the
+grid shares one set of pins, and Sonnet 5.5 and Haiku 5.5 were measured and
+judged beside the shipped model; see `evals/README.md`, The model arms.
 
 Read the two things the deterministic rates cannot say by themselves. Ten of
 the 52 claims are offered as `partial` where the truth is `applies`, so the
