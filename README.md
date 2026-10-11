@@ -409,10 +409,10 @@ runtime pinned in it; the retrieval records are the August ones. What the live s
 - **Every citation is real.** In every sweep, each cited passage id is a
   passage the archive actually returned, checked against the adapter log rather than the
   agent's own word.
-- **The search instruction is worth twice the latency.** Replacing it with the
-  one someone would plausibly write instead, a single search on the whole
-  symptom, halves the time but reaches 23 of 60 relevant documents instead of
-  53 and refuses 8 answerable cases. That measures the instruction as a whole,
+- **The search instruction is worth its latency.** Replacing it with the one
+  someone would plausibly write instead, a single search on the whole symptom,
+  takes p95 from 41.6s to 24.5s but reaches 23 of 60 relevant documents
+  instead of 53 and refuses 8 answerable cases. That measures the instruction as a whole,
   not query count alone.
 - **Judged scores belong to the judge.** Whether a cited passage supports a
   claim is scored by a second model. In the August rounds the same claims

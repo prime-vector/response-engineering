@@ -913,8 +913,10 @@ same blocked board. What is measured is the latency above. The degradation is a
 property of the contract, and one composed run is one run.
 
 If latency ever does bind, the levers are measured rather than guessed. One
-query instead of several halves it, p95 24.5s against 41.6s on 11 Oct 2026,
-and reaches 23 of 60 relevant documents instead of 53: half the latency for a third of the reach,
+query instead of several takes p95 from 41.6s to 24.5s on 11 Oct 2026 (27.1s
+against 52.8s in August, where it was half), and reaches 23 of 60 relevant
+documents instead of 53: two fifths of the latency saved for a third of the
+reach,
 which argues for tiering by severity rather than choosing once. Retrieval with
 no agent at all is two milliseconds and gives up applicability, divergence and
 refusal, which is most of the point. A cheaper model is measured above under
