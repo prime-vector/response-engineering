@@ -403,9 +403,9 @@ runtime pinned in it; the retrieval records are the August ones. What the live s
   could not fire (the single-query arm and Sonnet 5.5 each used the word once). The gap it hides is
   omission: in the shipped configuration, 14 of the 22 documents that do apply
   were returned to the agent and never reached the board.
-- **It refuses when it should, and only then.** In the shipped configuration,
-  all 13 cases with no precedent came back as none, and one of the 25
-  answerable cases was refused, against none in August.
+- **It refuses when it should, and once when it should not.** In the shipped
+  configuration, all 13 cases with no precedent came back as none, and one of
+  the 25 answerable cases was refused, against none in August.
 - **Every citation is real.** In every sweep, each cited passage id is a
   passage the archive actually returned, checked against the adapter log rather than the
   agent's own word.

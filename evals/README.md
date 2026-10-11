@@ -92,8 +92,10 @@ from the two transports beside each other.
 payload, without re-running the agent. It is a fresh measurement rather than a
 recount, so it stamps `rejudged_at`, records the fingerprint of the code that
 produced the new verdicts, and prints what moved. The August records carry every
-judging they had, and their per-arm tables list them; the 11 Oct records are
-one judged pass each, so their tables list one. The August tables listed: the sweep's own, then a
+judging they had, in their `judgings` arrays; the 11 Oct records are one judged
+pass each, and the per-arm tables now published are theirs, so the August
+rounds are read from the August JSON files beside them. The August tables
+listed: the sweep's own, then a
 re-judge for each change to what the judge was asked or how its provenance was
 recorded. The first of those widened the payload from four fields of a claim to
 all of them and moved `groundedness_judge` from 71.2% to 75.0%, 80.4% to 85.7%
@@ -117,8 +119,9 @@ claims have now been scored by two model families. Under `claude-opus-4-6` at
 temperature 0, and under `cursor-grok-4.6-high` through the CLI:
 
 One round from each family, matched, in the August records: the metered round
-current at the time, and the Cursor round that carries isolation evidence. Each arm's other rounds are in its own
-table, with the transport and the isolation state of each.
+current at the time, and the Cursor round that carries isolation evidence.
+Each arm's other rounds are in its August JSON record, with the transport and
+the isolation state of each.
 
 | arm | `claude-opus-4-6`, metered, no file tools | `cursor-grok-4.6-high`, isolated |
 | --- | --- | --- |
@@ -182,9 +185,10 @@ passages say neither. What separates the families is not one rule about
 absence, it is how literally each holds the instruction to judge only from the
 cited text.
 
-**`divergence_quality` barely moves at all.** Heading is 6/6 and fixed 6/7 in
-every judging under both families; single-query is 6/7 in every round but two,
-where it was 5/7. Against forty points of movement on
+**`divergence_quality` barely moves at all.** In the August records heading is
+6/6 and fixed 6/7 in every judging under both families; single-query is 6/7 in
+every round but two, where it was 5/7 (11 Oct: 6/7, 7/7 and 6/7, one claim
+each way). Against forty points of movement on
 `groundedness_judge`, that is the same measurement surviving a change of judge
 family.
 That judge is handed the dataset's list of distinguishing factors and asked
@@ -691,10 +695,12 @@ August records they replace are kept beside them. Those did not pin the
 runtime; the one thing they evidenced was that the tool-messages patch was
 applied, since an unpatched install fails the first tool call. The narrative
 below quotes the August sweep unless a figure is dated, with the 11 Oct value
-beside it where the two differ. The rates moved within a point or two; the
-particulars moved more than that, and are dated where they do: one answerable
-case refused where none was, `d01` refusing where it had offered a draft, the
-draft citations landing on other cases, p95 down from 52.8s to 41.6s. The
+beside it where the two differ. What the re-run moved: the shipped arm's
+false refusal from 0 of 25 to 1 of 25, single-query omission from 3 of 9 to 4
+of 10, heading divergence quality from 6 of 6 to 6 of 7 and fixed from 6 of 7
+to 7 of 7, p95 from 52.8s to 41.6s, `d01` from offering a draft to refusing,
+and the draft citations to other cases; the false precedent, no-precedent,
+log-groundedness and judged-groundedness rates held within two points. The
 current grid is the one published above.
 
 ### The two Phase 5 comparisons
@@ -773,8 +779,9 @@ That is not explained here.
 
 ### What the first judgement sweep says
 
-`results/judgement-heading.md` has the table: 38 cases, no run rejected or
-unparseable, `false_precedent_rate` 0 of 52 claims, `no_precedent_accuracy` 13
+`results/judgement-heading-20260820T041555Z.json` holds the August sweep (the
+published `results/judgement-heading.md` is now the 11 Oct one): 38 cases, no
+run rejected or unparseable, `false_precedent_rate` 0 of 52 claims, `no_precedent_accuracy` 13
 of 13, `false_refusal_rate` 0 of 25, `groundedness_log` 138 of 138,
 `agent_reach` 54 of 60 pairs, p50 26.9s and p95 52.8s. Re-run on 11 Oct 2026
 with the runtime pinned: 0 of 54, 13 of 13, 1 of 25, 143 of 143, 53 of 60,

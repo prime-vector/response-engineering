@@ -250,14 +250,15 @@ different model family with the prompts committed in `evals/judges/`:
 `groundedness_judge` and `divergence_quality`. Putting a judged figure beside a
 deterministic one makes it read as the same kind of fact.
 
-**How much that matters is now measured.** The same claims scored 38 of 52
-under `claude-opus-4-6` at temperature 0 and 17 of 52 under
+**How much that matters is now measured.** In the August 2026 rounds the same
+claims scored 38 of 52 under `claude-opus-4-6` at temperature 0 and 17 of 52 under
 `cursor-grok-4.6-high`, which cannot be set to a temperature at all and whose
 rounds were probed on two routes rather than against every checkout, the
 masking of which came afterwards. The first
 is what the published figures use, because that transport has no file tools, and the ordering between arms held under both. So the
-level of a judged metric belongs to the judge. The ordering has held in every round the records
-carry, five under the metered judge and three under the CLI one, which makes it
+level of a judged metric belongs to the judge. The ordering held in every
+round the August records carry, five under the metered judge and three under
+the CLI one, and in the single October pass, which makes it
 an ordering nobody has seen flip rather than a property of the arms established
 across judges. `divergence_quality` moved by one claim in total across three arms,
 because that judge is given the dataset's distinguishing factors and asked
@@ -286,8 +287,9 @@ prompt, 38 cases, `claude-sonnet-4-6` at temperature 0.2, zero runs rejected or
 unparseable. `false_precedent_rate` 0 of 52 claims, `no_precedent_accuracy` 13
 of 13, `false_refusal_rate` 0 of 25, `groundedness_log` 138 of 138 cited
 passage ids in the set the surface returned, `agent_reach` 54 of 60 pairs, p50
-26.9s and p95 52.8s per recall. The full table is
-`evals/results/judgement-heading.md`. Re-run 11 Oct 2026 on CLI 1.6.2 with the
+26.9s and p95 52.8s per recall. That sweep is
+`evals/results/judgement-heading-20260820T041555Z.json`; the published table
+is now the 11 Oct one. Re-run 11 Oct 2026 on CLI 1.6.2 with the
 patched provider and the runtime pinned in the record, after the spec and the
 CLI had moved: 0 of 54, 13 of 13, 1 of 25, 143 of 143, 53 of 60, p50 26.3s and
 p95 41.6s. The fixed and single-query arms were re-run the same day so the

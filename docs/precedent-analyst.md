@@ -442,7 +442,7 @@ direction held in every judging across both families and the size did not, so
 this is not something to decide a chunker with. Heading-aware is kept for its citations carrying the heading
 chain, which is a property and not a measured win.
 
-**The headline rate could not fire, and that is the result the arms share.**
+**The headline rate could barely fire, and that is the result the arms share.**
 `false_precedent_rate` is 0 in all three, and `applies` appears in none of the 130
 August claims (once in 132 on 11 Oct). `applies_omission_rate` is what catches
 the failure instead: 14 of 23 documents in August, 14 of 22 on 11 Oct, the ground truth says apply here, returned to the agent and never offered,

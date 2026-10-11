@@ -47,9 +47,9 @@ ground truth. groundedness_judge and divergence_quality are a model's opinion
 of a model, scored with the prompt committed beside this file and whatever
 sampling the transport can pin, which the record states rather than assumes.
 Mixing them into one table would launder the second as the first. Their level
-is judge-relative and measured to be so: on the shipped arm the same claims
-score 38 of 52 under one judge family and 17 of 52 under another, while the
-ordering between arms survives both.
+is judge-relative and measured to be so: in the August 2026 rounds on the
+shipped arm the same claims scored 38 of 52 under one judge family and 17 of
+52 under another, while the ordering between arms survived both.
 
 Stdlib plus PyYAML, like runner.py and validate.py. The judge calls the
 Messages API over raw HTTP rather than through the anthropic SDK, so that
@@ -1737,9 +1737,11 @@ def markdown(result):
            "`applies` is a property of the vocabulary the agent reached for, "
            "not evidence that it judged applicability well."
            if not summary["applicability_offered"].get("applies") else
-           ". `false_precedent_rate` fires only on `applies`, so it is scored "
-           f"over the {summary['applicability_offered']['applies']} claim(s) "
-           "that used the word and says nothing about the rest."),
+           ". `false_precedent_rate` can only fire on the "
+           f"{summary['applicability_offered']['applies']} claim(s) that used "
+           "`applies`; the denominator is every claim offered, so the rate is "
+           "a small numerator over a large field and says nothing about the "
+           "claims it could not have counted."),
         "",
         "`groundedness_log` is the check the adapter log can settle: every "
         "cited `passage_id` was in the set the surface returned. It proves a "
