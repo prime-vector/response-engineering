@@ -1733,9 +1733,13 @@ def markdown(result):
         + ", ".join(f"`{word}` {count}" for word, count
                     in sorted(summary["applicability_offered"].items(),
                               key=lambda kv: -kv[1]))
-        + ". A `false_precedent_rate` of zero over a run that never used "
-          "`applies` is a property of the vocabulary the agent reached for, "
-          "not evidence that it judged applicability well.",
+        + (". A `false_precedent_rate` of zero over a run that never used "
+           "`applies` is a property of the vocabulary the agent reached for, "
+           "not evidence that it judged applicability well."
+           if not summary["applicability_offered"].get("applies") else
+           ". `false_precedent_rate` fires only on `applies`, so it is scored "
+           f"over the {summary['applicability_offered']['applies']} claim(s) "
+           "that used the word and says nothing about the rest."),
         "",
         "`groundedness_log` is the check the adapter log can settle: every "
         "cited `passage_id` was in the set the surface returned. It proves a "

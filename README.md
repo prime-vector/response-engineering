@@ -119,7 +119,7 @@ docs/samples/                      committed model outputs, byte for byte, failu
 
 ## Run
 
-Live runs need Python 3, an Anthropic API key and the three provider patches below, and they cost real money: every `oa run` is a metered model call. One full three-act run of `demos/investigate.sh` came to roughly a US dollar on `claude-sonnet-4-6` in August 2026, most of it the board. Since 9 Oct 2026 three of the six specs run `claude-sonnet-5-5`; the commander, the Scribe and the Precedent Analyst stay on Sonnet 4.6, the first two for the reason under Known limits and the analyst because on the 38-case arm recorded on 9 Oct 2026 4.6 reached more of the expected precedents, 54 of 60 against 51, and on the bridge view 5.5 did not surface the grounding demo's near miss in three runs of three. The free path above needs none of this.
+Live runs need Python 3, an Anthropic API key and the three provider patches below, and they cost real money: every `oa run` is a metered model call. One full three-act run of `demos/investigate.sh` came to roughly a US dollar on `claude-sonnet-4-6` in August 2026, most of it the board. Since 9 Oct 2026 three of the six specs run `claude-sonnet-5-5`; the commander, the Scribe and the Precedent Analyst stay on Sonnet 4.6, the first two for the reason under Known limits and the analyst because on the 38-case arm judged on 11 Oct 2026 4.6 reached 53 of 60 expected precedents against 5.5's 52 and refused one answerable case against three, and on the bridge view 5.5 did not surface the grounding demo's near miss in three runs of three. The free path above needs none of this.
 
 ```bash
 # The contracts extra is not optional: from CLI 1.6.1, a task declaring a
@@ -395,8 +395,8 @@ The Precedent Analyst is the one agent here with an eval suite, because it is
 the one whose failure is quiet: a wrong precedent and a right one have the same
 shape. [`evals/`](evals/README.md) measures it against 38 hand-authored cases,
 scoring the retrieval surface with no model in the loop and the agent's
-judgement live, with every record re-run on 11 Oct 2026 and the runtime
-pinned in it. What the live sweeps found, in short:
+judgement live, with every judgement record re-run on 11 Oct 2026 and the
+runtime pinned in it; the retrieval records are the August ones. What the live sweeps found, in short:
 
 - **No false precedent, which is weaker than it sounds.** The agent never once
   said a document `applies`, so that rate could not fire. The gap it hides is

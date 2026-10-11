@@ -293,10 +293,11 @@ p95 41.6s. The fixed and single-query arms were re-run the same day so the
 grid shares one set of pins, and Sonnet 5.5 and Haiku 5.5 were measured and
 judged beside the shipped model; see `evals/README.md`, The model arms.
 
-Read the two things the deterministic rates cannot say by themselves. Ten of
-the 52 claims are offered as `partial` where the truth is `applies`, so the
-zero false precedent rate is a partly cautious agent rather than a calibrated
-one, and the table says so beside it. And `groundedness_judge` is 73.1%: 38 of
+Read the two things the deterministic rates cannot say by themselves. In the
+August sweep ten of the 52 claims (8 of 54 on 11 Oct) are offered as `partial`
+where the truth is `applies`, so the zero false precedent rate is a partly
+cautious agent rather than a calibrated one, and the table says so beside it.
+And `groundedness_judge` was 73.1% in August (70.4% on 11 Oct, 38 of 54): 38 of
 52 claims are supported by the passages they cite, and most of the other 14 are
 the same move, an absence asserted from silence. Judged by the other family the same claims scored 17 of
 52, which is why that figure is a comparison and not a score. "INC-2411 shows no audit
@@ -305,8 +306,9 @@ one. It is a divergence in the shape the prompt asks for, resting on something
 the archive never said. The log check cannot see this at all: every one of
 those citations is a passage the surface really returned.
 
-**Two cases cited a draft, and the interesting part is how.** `d01` cited
-`DRAFT-2508` and `g01` cited `DRAFT-2601`, both as `applicability: partial`,
+**Two cases cited a draft, and the interesting part is how.** In August `d01`
+cited `DRAFT-2508` and `g01` cited `DRAFT-2601` (on 11 Oct the drafts were
+cited on `b05` and `c01`; `d01` refused), both as `applicability: partial`,
 `confidence: speculative`, with a `divergence` that says in words that the
 document is unsubmitted, cannot be the basis of a precedent claim, and is
 surfaced only to flag that it exists. That is an agent trying to be transparent
@@ -323,10 +325,11 @@ rejected or unparseable in any of them. `--compare` refuses two records that
 differ in more than one thing, and says in its own output that one sweep is one
 sample of a stochastic system.
 
-**The rule 4 paragraph is kept, and it is the one that mattered.** Replacing it
-with a single search carrying the whole reported symptom costs 8 false refusals
-in 25 answerable cases, against none, and drops reach from 54 of 60 relevant
-pairs to 22. Every case in the composite scenario itself refuses: `a01` to
+**The rule 4 paragraph is kept, and it is the one that mattered.** In the
+August arms, replacing it with a single search carrying the whole reported
+symptom costs 8 false refusals in 25 answerable cases, against none, and drops
+reach from 54 of 60 relevant pairs to 22 (11 Oct 2026: 8 of 25 against 1, 23 of
+60 against 53, 47 searches against 178, p95 24.5s against 41.6s). Every case in the composite scenario itself refuses: `a01` to
 `a04`, the incident this repo is built around, all four report no applicable
 precedent. Median one search per case against five, 43 searches against 182. It
 is twice as fast, p95 27.1s against 52.8s. Half the latency for a third of the
@@ -349,17 +352,19 @@ knob to it, and two instructions inside one paragraph are one knob to
 needs a fourth arm that keeps the breadth instruction and changes only the
 repeat instruction; it is not run.
 
-**The three records do not pin the runtime that produced them.** They were made
-before the CLI version and the provider module were recorded, so "one install,
-one session, one input changed per arm" is an assertion by the author rather
-than something the artefact establishes. `--check-records` reports it per arm
-and calls for a fresh sweep, which is the only remedy. The provider patch is
+**The August records did not pin the runtime that produced them.** They were
+made before the CLI version and the provider module were recorded, so "one
+install, one session, one input changed per arm" was an assertion by the
+author rather than something the artefact established; the provider patch was
 evidenced by the runs themselves, because an unpatched install fails the first
-tool call and these made 388 successful ones; the CLI version is not.
+tool call and these made 388 successful ones, and the CLI version was not.
+Closed on 11 Oct 2026: all three arms re-run with both pinned in the record,
+and `--check-records` reports them current.
 
 **The chunker is not choosable off these numbers, and saying so is the result.**
-Heading-aware and fixed reach the same 54 of 60 pairs and omit 14 and 13 of the
-23 applying documents the archive handed over. The judged half parts by more
+In August heading-aware and fixed reach the same 54 of 60 pairs and omit 14
+and 13 of the 23 applying documents the archive handed over (11 Oct: 53 against
+55, 14 of 22 against 14 of 24, judged 38 of 54 against 48 of 56). The judged half parts by more
 than a wobble under one judge and inside it under the other: 38 of 52 against
 48 of 56 under Opus, about ten points, and 17 of 52 against 19 of 56 under
 Grok, two claims. Heading is below fixed in every judging the records carry.
@@ -373,8 +378,9 @@ points it moves across families is published as a variance figure. One sweep eac
 model, is not enough to choose on, which is a different statement from the two
 being indistinguishable, and the first version of this section made the second.
 
-`d01` is where they differ deterministically, and not symmetrically. Both
-indexes returned the covering procedure. Under heading-aware the agent offered
+`d01` is where the August arms differ deterministically, and not symmetrically
+(on 11 Oct both refuse it). Both indexes returned the covering procedure. Under
+heading-aware the agent offered
 only the barred draft, as `partial`, and cited the procedure not at all; under
 fixed it refused the case outright. Two different failures. Until
 `applies_omission_rate` existed, neither appeared in a headline rate: the first
@@ -396,10 +402,11 @@ claims", which is false for the arm that makes more, and explaining a result
 away with a sentence that does not apply to it is worse than leaving it
 unexplained.
 
-**A zero false precedent rate was the wrong headline.** Across all three sweeps
-the agent offered `partial` 113 times and `superseded` 17 times and `applies`
-not once, so the rate could not fire. `applies_omission_rate` is the row that
-catches what it cannot: 14 of 23 documents the ground truth says apply here,
+**A zero false precedent rate was the wrong headline.** Across the three
+August sweeps the agent offered `partial` 113 times and `superseded` 17 times
+and `applies` not once, so the rate could not fire (11 Oct: once in 132). 
+`applies_omission_rate` is the row that catches what it cannot: 14 of 23
+documents the ground truth says apply here (14 of 22 on 11 Oct),
 returned to the agent by the archive and never offered as precedent at all,
 mostly the covering runbook procedures. Nothing overclaimed, and the responder
 still does not get the thing that applies. Every other rate is blind to it,
