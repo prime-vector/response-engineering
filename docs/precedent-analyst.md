@@ -433,8 +433,9 @@ kept, what was rejected and the latency accepted for it. The guidance arm is the
 decisive one: in August, replacing rule 4 refuses 8 of 25 answerable cases
 against none and reaches 22 of 60 relevant pairs against 54, at half the
 latency (11 Oct 2026: 8 of 25 against 1, 23 of 60 against 53). The chunker arm is a
-result nobody should choose on rather than a null one: the same reach and the same
-order of omissions, a judged half parting at 38 of 52 claims supported against 48
+result nobody should choose on rather than a null one: in August the same reach
+and the same order of omissions (11 Oct: 53 against 55 of 60, and 14 of 22 against
+14 of 24 omitted), a judged half parting at 38 of 52 claims supported against 48
 of 56 under the judge now configured (38 of 54 against 48 of 56 on 11 Oct), about ten points, against two claims
 under a judge of another family. The
 direction held in every judging across both families and the size did not, so
@@ -447,7 +448,8 @@ August claims (once in 132 on 11 Oct). `applies_omission_rate` is what catches
 the failure instead: 14 of 23 documents in August, 14 of 22 on 11 Oct, the ground truth says apply here, returned to the agent and never offered,
 mostly the covering runbook procedures. It does not catch the other shape, a barred or
 unrelated document offered as `partial`, which is how the anchoring failure actually
-presented on `d01` and `g01`. Nothing scores that yet.
+presented in August, on `d01` and `g01` (on 11 Oct the drafts were offered on `b05`
+and `c01`, and `d01` refused). Nothing scores that yet.
 
 Read the deltas across both modes, because neither mode can produce all four numbers.
 `precedent_hit_rate@5` is retrieval mode and a property of the surface;
