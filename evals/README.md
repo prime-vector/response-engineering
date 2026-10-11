@@ -920,7 +920,7 @@ reach,
 which argues for tiering by severity rather than choosing once. Retrieval with
 no agent at all is two milliseconds and gives up applicability, divergence and
 refusal, which is most of the point. A cheaper model is measured above under
-The model arms: Haiku 5.5 at a third of the latency, with less reach.
+The model arms: Haiku 5.5 at two fifths of the latency, with less reach.
 
 The retrieval tables regenerate with `python3 evals/runner.py --config
 evals/config.yaml` and are checked for drift in CI. On the judgement side the
