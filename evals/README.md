@@ -623,6 +623,10 @@ decision belongs in `docs/precedent-analyst.md` and is still open.
 
 ## Status
 
+The `commit` fields inside the judgement records name hashes from before the
+history rewrite of 11 Oct 2026; the records are kept byte for byte, and
+`docs/history-rewrite-2026-10-11.txt` maps each old hash to its current one.
+
 Phase 4 and Phase 5 are done.
 
 - [x] Dataset written, 38 cases, composition asserted
