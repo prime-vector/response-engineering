@@ -276,7 +276,8 @@ not.** `queries_must_not_contain` is about what the agent asked the archive,
 and the only record of that was `search_coverage.queries_issued`, which is the
 agent's account of its own conduct. The archive now logs `args <tool>
 <arguments>` beside every call. Caller text, never archive text. On the sweep
-below, 182 searches were issued and 182 reported, no entity id in any of them,
+below, 182 searches were issued and 182 reported in August (178 issued and
+179 reported on 11 Oct), no entity id in any of them,
 and both halves of that are now measurements rather than one measurement and
 one assurance.
 
@@ -329,11 +330,12 @@ sample of a stochastic system.
 August arms, replacing it with a single search carrying the whole reported
 symptom costs 8 false refusals in 25 answerable cases, against none, and drops
 reach from 54 of 60 relevant pairs to 22 (11 Oct 2026: 8 of 25 against 1, 23 of
-60 against 53, 47 searches against 178, p95 24.5s against 41.6s). Every case in the composite scenario itself refuses: `a01` to
-`a04`, the incident this repo is built around, all four report no applicable
-precedent. Median one search per case against five, 43 searches against 182. It
-is twice as fast, p95 27.1s against 52.8s. Half the latency for a third of the
-reach.
+60 against 53, 47 searches against 178, p95 24.5s against 41.6s). In August
+every case in the composite scenario itself refuses: `a01` to `a04`, the
+incident this repo is built around, all four report no applicable precedent
+(on 11 Oct three of the four; `a04` offered INC-2288). Median one search per
+case against five, 43 searches against 182 in August. It is twice as fast,
+p95 27.1s against 52.8s in August. Half the latency for a third of the reach.
 
 That is the Phase 2 dilution measurement reaching the agent's answers. It was a
 property of the surface then, 79 of 82 passages scoring above zero and 0
@@ -343,9 +345,9 @@ clearing the floor; it is now a false refusal rate.
 this section claimed the second.** Rule 4 carries two instructions and the
 replacement drops both: query more than once, and ask for breadth because the
 surface caps how many passages one document contributes. The sweeps show the
-second doing real work. The shipped arm passed `limit: 8` on 157 of its 182
-searches; the alternative passed no limit at all on 41 of its 43 and took the
-surface default of five. So the reach collapse mixes fewer queries with a
+second doing real work. In August the shipped arm passed `limit: 8` on 157 of
+its 182 searches; the alternative passed no limit at all on 41 of its 43 and
+took the surface default of five (11 Oct: `limit: 8` on 141 of 178 and no limit on 44 of 47). So the reach collapse mixes fewer queries with a
 smaller passage budget. `--compare` cannot catch this: a system prompt is one
 knob to it, and two instructions inside one paragraph are one knob to
 `--check-prompts` as well. Grok found it in review of PR #17. Separating them
@@ -393,10 +395,12 @@ that makes a citation checkable in five seconds. It is a property, and it is
 recorded as a property rather than dressed up as a measured win.
 
 **`groundedness_judge` is higher in both alternatives, and only one of them has
-an explanation.** The single-query arm made 22 claims against 52, and the
+an explanation.** In August the single-query arm made 22 claims against 52
+(22 against 54 on 11 Oct), and the
 failure the judge catches is a divergence asserting an absence the passages
 never state, so there is more of it where there is more divergence text. The
-fixed arm made 56, more than the shipped arm, and still had more supported.
+fixed arm made 56, more than the shipped arm (56 against 54 on 11 Oct), and
+still had more supported.
 Why is not established. The first version of this section said "they make fewer
 claims", which is false for the arm that makes more, and explaining a result
 away with a sentence that does not apply to it is worse than leaving it
@@ -411,7 +415,8 @@ returned to the agent by the archive and never offered as precedent at all,
 mostly the covering runbook procedures. Nothing overclaimed, and the responder
 still does not get the thing that applies. Every other rate is blind to it,
 `agent_reach` included, because the archive did return them. Grok found the
-instance, `d01`; the class is 14 pairs under heading-aware and 13 under fixed.
+instance, `d01`; the class is 14 pairs under heading-aware and 13 under fixed
+in August (14 and 14 on 11 Oct).
 
 **The second experiment is no longer the reranker, and the reason is written
 down rather than quietly dropped.** `docs/precedent-analyst.md` named "hybrid

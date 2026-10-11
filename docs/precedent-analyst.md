@@ -421,9 +421,9 @@ the spec so the two differ in that paragraph and nothing else.
 **The paragraph is not one instruction, and the arm measures the paragraph.** Rule 4
 says to query more than once *and* to ask for enough breadth, because the surface caps
 how many passages a single document contributes. The replacement drops both, and the
-records show the second doing real work: the shipped arm passed `limit: 8` on 157 of
-its 182 searches, the alternative passed no limit at all on 41 of its 43 and took the
-surface default of five. So the delta belongs to the paragraph and not to query count
+records show the second doing real work: in August the shipped arm passed `limit: 8`
+on 157 of its 182 searches, the alternative passed no limit at all on 41 of its 43 and
+took the surface default of five (11 Oct: `limit: 8` on 141 of 178 and no limit on 44 of 47). So the delta belongs to the paragraph and not to query count
 inside it. Neither `--compare` nor `--check-prompts` can see this: one paragraph is one
 knob to both. Separating them needs a fourth arm that keeps the breadth instruction,
 and it is not run.

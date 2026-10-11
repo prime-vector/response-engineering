@@ -522,9 +522,10 @@ and `--compare` refuses two records that differ in more than one:
 **One input is not one instruction, and the third arm is where that bites.**
 Rule 4 tells the agent to query more than once *and* to ask for enough breadth,
 because the surface caps how many passages a single document contributes. The
-replacement drops both, and the records show the second doing real work: the
-shipped arm passed `limit: 8` on 157 of its 182 searches, the alternative
-passed no limit at all on 41 of its 43 and took the surface default of five. So
+replacement drops both, and the records show the second doing real work: in
+August the shipped arm passed `limit: 8` on 157 of its 182 searches, the
+alternative passed no limit at all on 41 of its 43 and took the surface default
+of five (11 Oct: `limit: 8` on 141 of 178 and no limit on 44 of 47). So
 that arm measures the paragraph, not query count inside it. Neither `--compare`
 nor `--check-prompts` can see the difference: one paragraph is one knob to
 both. Separating them needs a fourth arm that keeps the breadth instruction,
@@ -572,8 +573,9 @@ and every delta after that would be unattributable.
 ### The model arms
 
 Two records beside the grid, not in it: `trial-sonnet55-medium` and
-`trial-haiku55-medium`, the shipped configuration with only the model and
-`reasoning_effort: medium` changed, recorded and judged on 11 Oct 2026 beside
+`trial-haiku55-medium`, the shipped configuration with the model changed,
+`reasoning_effort: medium` added and the comment block arguing the shipped
+model choice dropped, and nothing else, recorded and judged on 11 Oct 2026 beside
 a fresh run of the shipped arm. The variant specs are committed under
 `evals/specs/` and each record's `agent.spec_fingerprint` is that file's
 hash; the record names the scratch path it ran from, which is what it ran
@@ -731,12 +733,14 @@ runbooks. The tables print the applicability distribution beside the rate so
 this cannot be read as calibration again.
 
 **The rule 4 paragraph is worth its words, and the arm measures the
-paragraph.** Replacing it refuses 8 of 25 answerable cases and reaches 22 of 60
-pairs instead of 54, with all four composite cases refusing, at half the
-latency (11 Oct 2026: 8 of 25 again, 23 of 60 against 53). The paragraph carries two instructions and the replacement drops both:
-query more than once, and ask for breadth because the surface caps passages per
-document. The shipped arm passed `limit: 8` on 157 of 182 searches; the
-alternative passed no limit on 41 of 43 and took the default of five. So the
+paragraph.** In August, replacing it refuses 8 of 25 answerable cases and
+reaches 22 of 60 pairs instead of 54, with all four composite cases refusing,
+at half the latency (11 Oct 2026: 8 of 25 again, 23 of 60 against 53, three of
+the four composite cases refusing and `a04` offering INC-2288). The paragraph
+carries two instructions and the replacement drops both: query more than once,
+and ask for breadth because the surface caps passages per document. In August
+the shipped arm passed `limit: 8` on 157 of 182 searches; the alternative
+passed no limit on 41 of 43 and took the default of five (11 Oct: `limit: 8` on 141 of 178 and no limit on 44 of 47). So the
 delta is the paragraph, not query count in isolation, and `--compare` cannot
 see the difference because a system prompt is one knob to it.
 
@@ -773,14 +777,15 @@ p50 26.3s and p95 41.6s.
 
 Three things in it are worth more than the headline rates.
 
-**A zero false precedent rate beside ten understated claims.** Ten of the 52
-claims are offered as `partial` where the ground truth says the document
-applies. An agent that never says `applies` cannot offer a false precedent, so
+**A zero false precedent rate beside ten understated claims.** In August ten
+of the 52 claims (8 of 54 on 11 Oct) are offered as `partial` where the ground
+truth says the document applies. An agent that never says `applies` cannot offer a false precedent, so
 the two figures have to be read together, and the table prints them together
 for that reason.
 
-**`groundedness_judge` at 73.1% under the judge now configured, and the
-failures have one shape.** Most of the 14 unsupported claims assert something
+**`groundedness_judge` at 73.1% in August under the judge now configured
+(70.4% on 11 Oct, 38 of 54), and the failures have one shape.** Most of the 14
+August unsupported claims (16 in October) assert something
 the cited passages never state: "the prior incident shows no audit
 daemon", from passages that simply do not mention one. It is a divergence of
 exactly the kind rule 5 asks for, resting on something the archive never said.

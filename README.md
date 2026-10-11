@@ -398,8 +398,9 @@ scoring the retrieval surface with no model in the loop and the agent's
 judgement live, with every judgement record re-run on 11 Oct 2026 and the
 runtime pinned in it; the retrieval records are the August ones. What the live sweeps found, in short:
 
-- **No false precedent, which is weaker than it sounds.** The agent never once
-  said a document `applies`, so that rate could not fire. The gap it hides is
+- **No false precedent, which is weaker than it sounds.** In the shipped
+  configuration the agent never once said a document `applies`, so that rate
+  could not fire (the single-query arm and Sonnet 5.5 each used the word once). The gap it hides is
   omission: in the shipped configuration, 14 of the 22 documents that do apply
   were returned to the agent and never reached the board.
 - **It refuses when it should, and only then.** In the shipped configuration,
@@ -420,7 +421,7 @@ runtime pinned in it; the retrieval records are the August ones. What the live s
 - **The newer models trade reach for grounding.** Sonnet 5.5 and Haiku 5.5 at
   medium effort, judged beside the shipped Sonnet 4.6 on 11 Oct 2026: fewer
   claims (31 and 29 against 54), two more answerable cases refused, reach of
-  52 and 47 of 60 against 53, and 26 of 31 and 26 of 28 citations judged
+  52 of 60 and 47 of 59 against 53 of 60, and 26 of 31 and 26 of 28 citations judged
   grounded against 38 of 54, at well under half the latency. Haiku lost one run
   of 38 to output the runner could not parse. The analyst stays on 4.6 for
   reach; the records and the variant specs are committed.

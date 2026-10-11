@@ -1763,9 +1763,12 @@ def markdown(result):
         f"{summary['understated_claims']['of']} claims go the other way: "
         f"offered as `partial` or `superseded` where the truth is `applies`. "
         f"Read this beside the false precedent rate. A zero there is only "
-        f"worth having if this is not large, because an agent that never "
-        f"says `applies` cannot offer a false precedent and has not "
-        f"calibrated anything.",
+        f"worth having if this is not large, because an agent that "
+        + ("never says `applies` cannot offer a false precedent and has not "
+           "calibrated anything."
+           if not summary["applicability_offered"].get("applies") else
+           f"said `applies` {summary['applicability_offered']['applies']} "
+           "time(s) has barely tested it."),
         "",
         "`agent_reach` is the retrieval figure this mode can report and "
         "retrieval mode cannot: relevant documents the archive actually "
