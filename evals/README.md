@@ -748,9 +748,10 @@ passed no limit on 41 of 43 and took the default of five (11 Oct: `limit: 8` on 
 delta is the paragraph, not query count in isolation, and `--compare` cannot
 see the difference because a system prompt is one knob to it.
 
-**The chunker is not choosable off one sweep each.** Same reach, 54 of 60, and
-14 against 13 omissions (11 Oct 2026: 53 against 55, 14 against 14, judged
-38 of 54 against 48 of 56). The judged half parts by 38/52 against 48/56, and
+**The chunker is not choosable off one sweep each.** In August the same
+reach, 54 of 60, and 14 against 13 omissions (11 Oct 2026: 53 against 55, 14
+against 14). The judged half parts by 38/52 against 48/56 in August (38 of 54
+against 48 of 56 on 11 Oct), and
 heading came out below fixed in every judging, so the gap is repeatable
 even though its size moves by several points between rounds. That is a real
 difference nobody should choose a chunker on: one sweep each, a judge scoring a
