@@ -47,9 +47,9 @@ ground truth. groundedness_judge and divergence_quality are a model's opinion
 of a model, scored with the prompt committed beside this file and whatever
 sampling the transport can pin, which the record states rather than assumes.
 Mixing them into one table would launder the second as the first. Their level
-is judge-relative and measured to be so: on the shipped arm the same claims
-score 38 of 52 under one judge family and 17 of 52 under another, while the
-ordering between arms survives both.
+is judge-relative and measured to be so: in the August 2026 rounds on the
+shipped arm the same claims scored 38 of 52 under one judge family and 17 of
+52 under another, while the ordering between arms survived both.
 
 Stdlib plus PyYAML, like runner.py and validate.py. The judge calls the
 Messages API over raw HTTP rather than through the anthropic SDK, so that
@@ -1733,9 +1733,15 @@ def markdown(result):
         + ", ".join(f"`{word}` {count}" for word, count
                     in sorted(summary["applicability_offered"].items(),
                               key=lambda kv: -kv[1]))
-        + ". A `false_precedent_rate` of zero over a run that never used "
-          "`applies` is a property of the vocabulary the agent reached for, "
-          "not evidence that it judged applicability well.",
+        + (". A `false_precedent_rate` of zero over a run that never used "
+           "`applies` is a property of the vocabulary the agent reached for, "
+           "not evidence that it judged applicability well."
+           if not summary["applicability_offered"].get("applies") else
+           ". `false_precedent_rate` can only fire on the "
+           f"{summary['applicability_offered']['applies']} claim(s) that used "
+           "`applies`; the denominator is every claim offered, so the rate is "
+           "a small numerator over a large field and says nothing about the "
+           "claims it could not have counted."),
         "",
         "`groundedness_log` is the check the adapter log can settle: every "
         "cited `passage_id` was in the set the surface returned. It proves a "
@@ -1759,9 +1765,12 @@ def markdown(result):
         f"{summary['understated_claims']['of']} claims go the other way: "
         f"offered as `partial` or `superseded` where the truth is `applies`. "
         f"Read this beside the false precedent rate. A zero there is only "
-        f"worth having if this is not large, because an agent that never "
-        f"says `applies` cannot offer a false precedent and has not "
-        f"calibrated anything.",
+        f"worth having if this is not large, because an agent that "
+        + ("never says `applies` cannot offer a false precedent and has not "
+           "calibrated anything."
+           if not summary["applicability_offered"].get("applies") else
+           f"said `applies` {summary['applicability_offered']['applies']} "
+           "time(s) has barely tested it."),
         "",
         "`agent_reach` is the retrieval figure this mode can report and "
         "retrieval mode cannot: relevant documents the archive actually "

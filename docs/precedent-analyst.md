@@ -284,8 +284,9 @@ never counted as a miss. The judgements are recorded in `evals/RELEVANCE.md`.
 | `cost_per_recall_usd` | unmeasured: `oa` reports no token usage, so this would be a price list times an estimate. The judge's own usage is recorded, because the API returns it | |
 
 `false_precedent_rate` is scored over claims and can be zero for a reason that
-is not calibration: on all three Phase 5 sweeps the agent never used `applies` at
-all, offering `partial` or `superseded` on every claim. The judgement tables print
+is not calibration: on all three August Phase 5 sweeps the agent never used
+`applies` at all, offering `partial` or `superseded` on every claim, and once in
+132 claims on the 11 Oct 2026 re-run. The judgement tables print
 the applicability distribution beside the rate for that reason, and
 `applies_omission_rate` is the row that catches what it cannot.
 
@@ -420,32 +421,35 @@ the spec so the two differ in that paragraph and nothing else.
 **The paragraph is not one instruction, and the arm measures the paragraph.** Rule 4
 says to query more than once *and* to ask for enough breadth, because the surface caps
 how many passages a single document contributes. The replacement drops both, and the
-records show the second doing real work: the shipped arm passed `limit: 8` on 157 of
-its 182 searches, the alternative passed no limit at all on 41 of its 43 and took the
-surface default of five. So the delta belongs to the paragraph and not to query count
+records show the second doing real work: in August the shipped arm passed `limit: 8`
+on 157 of its 182 searches, the alternative passed no limit at all on 41 of its 43 and
+took the surface default of five (11 Oct: `limit: 8` on 141 of 178 and no limit on 44 of 47). So the delta belongs to the paragraph and not to query count
 inside it. Neither `--compare` nor `--check-prompts` can see this: one paragraph is one
 knob to both. Separating them needs a fourth arm that keeps the breadth instruction,
 and it is not run.
 
 Done. Three arms recorded, both comparisons run, and the README carries what was
 kept, what was rejected and the latency accepted for it. The guidance arm is the
-decisive one: replacing rule 4 refuses 8 of 25 answerable cases against none and
-reaches 22 of 60 relevant pairs against 54, at half the latency. The chunker arm is a
-result nobody should choose on rather than a null one: the same reach and the same
-order of omissions, a judged half parting at 38 of 52 claims supported against 48
-of 56 under the judge now configured, about ten points, against two claims
+decisive one: in August, replacing rule 4 refuses 8 of 25 answerable cases
+against none and reaches 22 of 60 relevant pairs against 54, at half the
+latency (11 Oct 2026: 8 of 25 against 1, 23 of 60 against 53). The chunker arm is a
+result nobody should choose on rather than a null one: in August the same reach
+and the same order of omissions (11 Oct: 53 against 55 of 60, and 14 of 22 against
+14 of 24 omitted), a judged half parting at 38 of 52 claims supported against 48
+of 56 under the judge now configured (38 of 54 against 48 of 56 on 11 Oct), about ten points, against two claims
 under a judge of another family. The
 direction held in every judging across both families and the size did not, so
 this is not something to decide a chunker with. Heading-aware is kept for its citations carrying the heading
 chain, which is a property and not a measured win.
 
-**The headline rate could not fire, and that is the result the arms share.**
+**The headline rate could barely fire, and that is the result the arms share.**
 `false_precedent_rate` is 0 in all three, and `applies` appears in none of the 130
-claims. `applies_omission_rate` is what catches the failure instead: 14 of 23
-documents the ground truth says apply here, returned to the agent and never offered,
+August claims (once in 132 on 11 Oct). `applies_omission_rate` is what catches
+the failure instead: 14 of 23 documents in August, 14 of 22 on 11 Oct, the ground truth says apply here, returned to the agent and never offered,
 mostly the covering runbook procedures. It does not catch the other shape, a barred or
 unrelated document offered as `partial`, which is how the anchoring failure actually
-presented on `d01` and `g01`. Nothing scores that yet.
+presented in August, on `d01` and `g01` (on 11 Oct the drafts were offered on `b05`
+and `c01`, and `d01` refused). Nothing scores that yet.
 
 Read the deltas across both modes, because neither mode can produce all four numbers.
 `precedent_hit_rate@5` is retrieval mode and a property of the surface;

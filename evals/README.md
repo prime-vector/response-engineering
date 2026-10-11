@@ -91,8 +91,11 @@ from the two transports beside each other.
 `--rejudge` re-runs the judge over a recorded sweep with the current prompts and
 payload, without re-running the agent. It is a fresh measurement rather than a
 recount, so it stamps `rejudged_at`, records the fingerprint of the code that
-produced the new verdicts, and prints what moved. Each committed record carries every
-judging it has had, and the per-arm tables list them: the sweep's own, then a
+produced the new verdicts, and prints what moved. The August records carry every
+judging they had, in their `judgings` arrays; the 11 Oct records are one judged
+pass each, and the per-arm tables now published are theirs, so the August
+rounds are read from the August JSON files beside them. The August tables
+listed: the sweep's own, then a
 re-judge for each change to what the judge was asked or how its provenance was
 recorded. The first of those widened the payload from four fields of a claim to
 all of them and moved `groundedness_judge` from 71.2% to 75.0%, 80.4% to 85.7%
@@ -115,9 +118,10 @@ were not reading the corpus and not proof of it.
 claims have now been scored by two model families. Under `claude-opus-4-6` at
 temperature 0, and under `cursor-grok-4.6-high` through the CLI:
 
-One round from each family, matched: the current metered round, and the Cursor
-round that carries isolation evidence. Each arm's other rounds are in its own
-table, with the transport and the isolation state of each.
+One round from each family, matched, in the August records: the metered round
+current at the time, and the Cursor round that carries isolation evidence.
+Each arm's other rounds are in its August JSON record, with the transport and
+the isolation state of each.
 
 | arm | `claude-opus-4-6`, metered, no file tools | `cursor-grok-4.6-high`, isolated |
 | --- | --- | --- |
@@ -181,9 +185,10 @@ passages say neither. What separates the families is not one rule about
 absence, it is how literally each holds the instruction to judge only from the
 cited text.
 
-**`divergence_quality` barely moves at all.** Heading is 6/6 and fixed 6/7 in
-every judging under both families; single-query is 6/7 in every round but two,
-where it was 5/7. Against forty points of movement on
+**`divergence_quality` barely moves at all.** In the August records heading is
+6/6 and fixed 6/7 in every judging under both families; single-query is 6/7 in
+every round but two, where it was 5/7 (11 Oct: 6/7, 7/7 and 6/7, one claim
+each way). Against forty points of movement on
 `groundedness_judge`, that is the same measurement surviving a change of judge
 family.
 That judge is handed the dataset's list of distinguishing factors and asked
@@ -192,7 +197,7 @@ almost perfectly; the open one did not. If a judged metric has to be comparable
 across models, give the judge the answer key and ask it to match.
 
 **Within one judge, the verdicts still move.** Four judgings of the identical
-claims under Opus, all of them in the records:
+claims under Opus, all of them in the August records:
 
 | arm | first | second | third | fourth |
 | --- | --- | --- | --- | --- |
@@ -521,9 +526,10 @@ and `--compare` refuses two records that differ in more than one:
 **One input is not one instruction, and the third arm is where that bites.**
 Rule 4 tells the agent to query more than once *and* to ask for enough breadth,
 because the surface caps how many passages a single document contributes. The
-replacement drops both, and the records show the second doing real work: the
-shipped arm passed `limit: 8` on 157 of its 182 searches, the alternative
-passed no limit at all on 41 of its 43 and took the surface default of five. So
+replacement drops both, and the records show the second doing real work: in
+August the shipped arm passed `limit: 8` on 157 of its 182 searches, the
+alternative passed no limit at all on 41 of its 43 and took the surface default
+of five (11 Oct: `limit: 8` on 141 of 178 and no limit on 44 of 47). So
 that arm measures the paragraph, not query count inside it. Neither `--compare`
 nor `--check-prompts` can see the difference: one paragraph is one knob to
 both. Separating them needs a fourth arm that keeps the breadth instruction,
@@ -568,10 +574,44 @@ and every delta after that would be unattributable.
   would not support much of a significance test, and nothing here attempts
   one.
 
+### The model arms
+
+Two records beside the grid, not in it: `trial-sonnet55-medium` and
+`trial-haiku55-medium`, the shipped configuration with the model changed,
+`reasoning_effort: medium` added and the comment block arguing the shipped
+model choice dropped, and nothing else, recorded and judged on 11 Oct 2026 beside
+a fresh run of the shipped arm. The variant specs are committed under
+`evals/specs/` and each record's `agent.spec_fingerprint` is that file's
+hash; the record names the scratch path it ran from, which is what it ran
+from. They stay out of the comparison grid because the grid pins the agent
+spec and the model, and that is right: a column there credits a prompt or an
+index, and these change the producer.
+
+| | Sonnet 4.6, shipped | Sonnet 5.5 medium | Haiku 5.5 medium |
+| --- | --- | --- | --- |
+| claims offered | 54 | 31 | 29 |
+| `false_precedent_rate` | 0/54 | 0/31 | 0/29 |
+| `applies_omission_rate` | 14/22 | 13/23 | 14/21 |
+| `false_refusal_rate` | 1/25 | 3/25 | 3/24 |
+| `agent_reach` | 53/60 | 52/60 | 47/59 |
+| `groundedness_judge` | 38/54 | 26/31 | 26/28 |
+| `divergence_quality` | 6/7 | 4/4 | 4/4 |
+| p50 / p95 per recall | 26.3s / 41.6s | 10.3s / 15.1s | 10.5s / 16.0s |
+| runs lost | 0/38 | 0/38 | 1/38 |
+
+Read it as the October trial read, now with the judge, and as one judged
+sweep per arm: the newer models offer fewer claims, refuse more answerable
+cases, reach a little less, and a higher share of what they do cite is judged
+supported, at well under half the latency. Haiku
+lost case `f03` to output the runner could not parse, the fail-open CLAUDE.md
+records, which is why its denominators are 24 and 59. The commander's and the
+analyst's own model choice is argued in CLAUDE.md and did not change here.
+
 ### The anchor set
 
 `groundedness_judge` is readable as a comparison and not as a score: the same
-claims scored 38 of 52 under one model family and 17 of 52 under the other,
+claims scored 38 of 52 under one model family and 17 of 52 under the other in
+the August rounds,
 and nothing in the repository could say which was right. The remedy is not a
 panel, a consensus or a tiebreak judge. A council stabilises the number and
 leaves the cause, an underspecified rubric each family fills in differently,
@@ -648,15 +688,28 @@ Phase 4 and Phase 5 are done.
 - [ ] Thirty or more labelled by a person, both judges scored against them,
       and the absence rule argued in `docs/precedent-analyst.md`
 
-**What these three records do not pin, and what the runs themselves show.**
-They were made before the CLI and provider were recorded, so which runtime
-produced them is an assertion by the author, one session on one install, rather
-than a property of the artefact. `--check-records` says so per arm and calls
-for a fresh sweep, which is the only thing that closes it. One part of it is
-evidenced rather than asserted: 182, 163 and 43 tool calls came back
-successfully across the three arms, and an unpatched install fails the first
-one, so the `patches/` provider patch was applied. The CLI version is not
-evidenced that way. Arms recorded from here carry both.
+**Pinned since 11 Oct 2026.** All three arms were re-run that day on CLI 1.6.2
+with the patched provider, and each record carries the CLI version and the
+provider module's fingerprint, so `--check-records` reports them current. The
+August records they replace are kept beside them. Those did not pin the
+runtime; the one thing they evidenced was that the tool-messages patch was
+applied, since an unpatched install fails the first tool call. The narrative
+below quotes the August sweep unless a figure is dated, with the 11 Oct value
+beside it where the two differ. What the re-run moved, every rate on every
+arm read against its August record. Held exactly on all three arms: the false
+precedent rate at 0, no-precedent accuracy at 13 of 13, log groundedness at
+every citation returned. Held on two: false refusal (fixed 1 of 25,
+single-query 8 of 25) and judged groundedness (fixed 48 of 56, single-query 21
+of 22). Held on one: divergence quality (single-query 6 of 7). Everything else
+moved: the shipped arm's false refusal from 0 of 25 to 1 of 25 and its judged
+groundedness from 38 of 52 to 38 of 54; omission from 14 of 23 to 14 of 22 on
+heading, 13 of 23 to 14 of 24 on fixed and 3 of 9 to 4 of 10 on single-query;
+reach from 54 to 53, 54 to 55 and 22 to 23 of 60; divergence quality from 6 of
+6 to 6 of 7 on heading and 6 of 7 to 7 of 7 on fixed; p95 down on all three,
+52.8s to 41.6s, 55.3s to 48.0s and 27.1s to 24.5s, with p50 down on fixed and
+single-query and level on heading. In the particulars, `d01` went from
+offering a draft to refusing and the draft citations landed on other cases.
+The current grid is the one published above.
 
 ### The two Phase 5 comparisons
 
@@ -667,49 +720,52 @@ The grid is generated from the three records and diffed in CI:
 
 | measured by code | unit | judgement-heading | judgement-fixed | judgement-single-query |
 | --- | --- | --- | --- | --- |
-| `false_precedent_rate` | claims offered | 0/52 | 0/56 | 0/22 |
-| `applies_omission_rate` | applies documents returned to the agent | 14/23 | 13/23 | 3/9 |
+| `false_precedent_rate` | claims offered | 0/54 | 0/56 | 0/22 |
+| `applies_omission_rate` | applies documents returned to the agent | 14/22 | 14/24 | 4/10 |
 | `no_precedent_accuracy` | cases with no precedent | 13/13 | 13/13 | 13/13 |
-| `false_refusal_rate` | answerable cases | 0/25 | 1/25 | 8/25 |
-| `groundedness_log` | cited passage ids | 138/138 | 88/88 | 32/32 |
-| `agent_reach` | (case, relevant document) pairs | 54/60 | 54/60 | 22/60 |
-| claims understated | claims offered | 10/52 | 10/56 | 6/22 |
-| claims on documents not called relevant | claims offered | 18/52 | 18/56 | 3/22 |
-| searches issued | calls on the surface | 182, median 5.0 | 163, median 4.0 | 43, median 1.0 |
-| p50 / p95 | one recall | 26.9s / 52.8s | 26.4s / 55.3s | 13.1s / 27.1s |
+| `false_refusal_rate` | answerable cases | 1/25 | 1/25 | 8/25 |
+| `groundedness_log` | cited passage ids | 143/143 | 94/94 | 37/37 |
+| `agent_reach` | (case, relevant document) pairs | 53/60 | 55/60 | 23/60 |
+| claims understated | claims offered | 8/54 | 10/56 | 5/22 |
+| claims on documents not called relevant | claims offered | 19/54 | 17/56 | 3/22 |
+| searches issued | calls on the surface | 178, median 5.0 | 166, median 4.0 | 47, median 1.0 |
+| p50 / p95 | one recall | 26.3s / 41.6s | 22.7s / 48.0s | 9.9s / 24.5s |
 
-Applicability offered: judgement-heading `partial` 44, `superseded` 8; judgement-fixed `partial` 48, `superseded` 8; judgement-single-query `partial` 21, `superseded` 1. `false_precedent_rate` fires only on `applies`.
+Applicability offered: judgement-heading `partial` 46, `superseded` 8; judgement-fixed `partial` 49, `superseded` 7; judgement-single-query `partial` 19, `superseded` 2, `applies` 1. `false_precedent_rate` fires only on `applies`.
 
 | judged by claude-opus-4-6 via anthropic, no file tools, temperature 0 | judgement-heading | judgement-fixed | judgement-single-query |
 | --- | --- | --- | --- |
-| `groundedness_judge` | 38/52 | 48/56 | 21/22 |
-| `divergence_quality` | 6/6 | 6/7 | 6/7 |
+| `groundedness_judge` | 38/54 | 48/56 | 21/22 |
+| `divergence_quality` | 6/7 | 7/7 | 6/7 |
 
-Both judged rates are scored over what each run offered, so offering less can raise them: judgement-heading never offered the diverging record on `b04`.
-
-Generated by `python3 evals/judgement.py --comparison` from 3 records: `judgement-heading` recorded 2026-08-20T04:15:55Z, `judgement-fixed` recorded 2026-08-20T04:41:53Z, `judgement-single-query` recorded 2026-08-20T05:03:03Z. Do not hand-edit either copy: `--comparison --check` diffs this block in every file that publishes it.
+Generated by `python3 evals/judgement.py --comparison` from 3 records: `judgement-heading` recorded 2026-10-11T03:20:52Z, `judgement-fixed` recorded 2026-10-11T03:54:21Z, `judgement-single-query` recorded 2026-10-11T04:11:22Z. Do not hand-edit either copy: `--comparison --check` diffs this block in every file that publishes it.
 <!-- judgement-comparison:end -->
 
-**The headline rate is zero over a word the agent never used.** `applies`
-appears in none of the 130 claims across the three sweeps; every one is
-`partial` or `superseded`. `applies_omission_rate` catches what that
-rate cannot: 14 of 23 documents that apply, returned to the agent by the
+**The headline rate is zero over a word the agent barely used.** In the
+August sweeps `applies` appears in none of the 130 claims; every one is
+`partial` or `superseded` (11 Oct: once in 132, on the single-query arm).
+`applies_omission_rate` catches what that rate cannot: 14 of 23 documents
+that apply in August, 14 of 22 on 11 Oct, returned to the agent by the
 archive, on which no precedent was offered at all. Mostly the covering
 runbooks. The tables print the applicability distribution beside the rate so
 this cannot be read as calibration again.
 
 **The rule 4 paragraph is worth its words, and the arm measures the
-paragraph.** Replacing it refuses 8 of 25 answerable cases and reaches 22 of 60
-pairs instead of 54, with all four composite cases refusing, at half the
-latency. The paragraph carries two instructions and the replacement drops both:
-query more than once, and ask for breadth because the surface caps passages per
-document. The shipped arm passed `limit: 8` on 157 of 182 searches; the
-alternative passed no limit on 41 of 43 and took the default of five. So the
+paragraph.** In August, replacing it refuses 8 of 25 answerable cases and
+reaches 22 of 60 pairs instead of 54, with all four composite cases refusing,
+at half the latency (11 Oct 2026: 8 of 25 again, 23 of 60 against 53, three of
+the four composite cases refusing and `a04` offering INC-2288). The paragraph
+carries two instructions and the replacement drops both: query more than once,
+and ask for breadth because the surface caps passages per document. In August
+the shipped arm passed `limit: 8` on 157 of 182 searches; the alternative
+passed no limit on 41 of 43 and took the default of five (11 Oct: `limit: 8` on 141 of 178 and no limit on 44 of 47). So the
 delta is the paragraph, not query count in isolation, and `--compare` cannot
 see the difference because a system prompt is one knob to it.
 
-**The chunker is not choosable off one sweep each.** Same reach, 54 of 60, and
-14 against 13 omissions. The judged half parts by 38/52 against 48/56, and
+**The chunker is not choosable off one sweep each.** In August the same
+reach, 54 of 60, and 14 against 13 omissions (11 Oct 2026: 53 against 55, 14
+against 14). The judged half parts by 38/52 against 48/56 in August (38 of 54
+against 48 of 56 on 11 Oct), and
 heading came out below fixed in every judging, so the gap is repeatable
 even though its size moves by several points between rounds. That is a real
 difference nobody should choose a chunker on: one sweep each, a judge scoring a
@@ -717,34 +773,39 @@ model, and no account of why.
 Heading-aware is kept for its citations carrying the heading chain rather than
 the document title alone, which no metric here scores.
 
-`d01` is worth reading in both records. Both indexes returned the covering
-procedure. Heading-aware offered only the barred draft, as `partial`, and never
-cited the procedure; fixed refused the case. Two different failures, and until
+`d01` is worth reading in both August records. Both indexes returned the
+covering procedure. Heading-aware offered only the barred draft, as `partial`,
+and never cited the procedure; fixed refused the case (11 Oct: both refuse it). Two different failures, and until
 `applies_omission_rate` existed neither showed up in a headline rate.
 
 **A higher `groundedness_judge` in both alternatives is explained for one of
-them.** The single-query arm made 22 claims against 52, and the failure the
-judge catches scales with how much divergence text there is. The fixed arm made
-more claims than the shipped one, 56 against 52, and still had more supported.
+them.** In August the single-query arm made 22 claims against 52 (22 against
+54 on 11 Oct), and the failure the judge catches scales with how much
+divergence text there is. The fixed arm made more claims than the shipped one,
+56 against 52 (56 against 54), and still had more supported.
 That is not explained here.
 
 ### What the first judgement sweep says
 
-`results/judgement-heading.md` has the table: 38 cases, no run rejected or
-unparseable, `false_precedent_rate` 0 of 52 claims, `no_precedent_accuracy` 13
+`results/judgement-heading-20260820T041555Z.json` holds the August sweep (the
+published `results/judgement-heading.md` is now the 11 Oct one): 38 cases, no
+run rejected or unparseable, `false_precedent_rate` 0 of 52 claims, `no_precedent_accuracy` 13
 of 13, `false_refusal_rate` 0 of 25, `groundedness_log` 138 of 138,
-`agent_reach` 54 of 60 pairs, p50 26.9s and p95 52.8s.
+`agent_reach` 54 of 60 pairs, p50 26.9s and p95 52.8s. Re-run on 11 Oct 2026
+with the runtime pinned: 0 of 54, 13 of 13, 1 of 25, 143 of 143, 53 of 60,
+p50 26.3s and p95 41.6s.
 
 Three things in it are worth more than the headline rates.
 
-**A zero false precedent rate beside ten understated claims.** Ten of the 52
-claims are offered as `partial` where the ground truth says the document
-applies. An agent that never says `applies` cannot offer a false precedent, so
+**A zero false precedent rate beside ten understated claims.** In August ten
+of the 52 claims (8 of 54 on 11 Oct) are offered as `partial` where the ground
+truth says the document applies. An agent that never says `applies` cannot offer a false precedent, so
 the two figures have to be read together, and the table prints them together
 for that reason.
 
-**`groundedness_judge` at 73.1% under the judge now configured, and the
-failures have one shape.** Most of the 14 unsupported claims assert something
+**`groundedness_judge` at 73.1% in August under the judge now configured
+(70.4% on 11 Oct, 38 of 54), and the failures have one shape.** Most of the 14
+August unsupported claims (16 in October) assert something
 the cited passages never state: "the prior incident shows no audit
 daemon", from passages that simply do not mention one. It is a divergence of
 exactly the kind rule 5 asks for, resting on something the archive never said.
@@ -752,8 +813,10 @@ exactly the kind rule 5 asks for, resting on something the archive never said.
 surface really returned. This is the case for having both checks and for never
 adding them together.
 
-**Two cases cited a draft, and how they did it is the finding.** `d01` cited
-`DRAFT-2508` and `g01` cited `DRAFT-2601`, both as `partial` and
+**Two cases cited a draft, and how they did it is the finding.** In August
+`d01` cited `DRAFT-2508` and `g01` cited `DRAFT-2601` (on 11 Oct the drafts
+were cited on `b05` and `c01`, `g01` cited filed records only and `d01`
+refused), both as `partial` and
 `speculative`, with a `divergence` saying in words that the document is
 unsubmitted and cannot ground a precedent claim. `precedents[]` has no entry
 meaning retrieved and rejected, so an agent that wants to report the trap has
@@ -834,7 +897,8 @@ an incident, and putting it in the path would be a design error rather than a
 tuning problem.
 
 What an operator waits for is one recall. Measured across the shipped arm's 38
-runs, p50 26.9s and p95 52.8s, provider time included. The retrieval surface
+runs, p50 26.3s and p95 41.6s on 11 Oct 2026 (26.9s and 52.8s in August),
+provider time included. The retrieval surface
 itself answers in about two milliseconds, so essentially all of that is the
 model. The baseline this project is built against is a change correlation that
 was available for fifteen days and got run two hours and twenty-one minutes
@@ -864,11 +928,14 @@ same blocked board. What is measured is the latency above. The degradation is a
 property of the contract, and one composed run is one run.
 
 If latency ever does bind, the levers are measured rather than guessed. One
-query instead of several halves it, p95 27.1s against 52.8s, and reaches 22 of
-60 relevant documents instead of 54: half the latency for a third of the reach,
+query instead of several takes p95 from 41.6s to 24.5s on 11 Oct 2026 (27.1s
+against 52.8s in August, where it was half), and reaches 23 of 60 relevant
+documents instead of 53: two fifths of the latency saved for a third of the
+reach,
 which argues for tiering by severity rather than choosing once. Retrieval with
 no agent at all is two milliseconds and gives up applicability, divergence and
-refusal, which is most of the point. A cheaper model is untested here.
+refusal, which is most of the point. A cheaper model is measured above under
+The model arms: Haiku 5.5 at two fifths of the latency, with less reach.
 
 The retrieval tables regenerate with `python3 evals/runner.py --config
 evals/config.yaml` and are checked for drift in CI. On the judgement side the
@@ -881,11 +948,12 @@ derived from those records does regenerate, with `evals/judgement.py
 file, and the copies of the grid in this file and in the top-level README. `--rescore` recomputes
 the deterministic half from a stored record and prints which figures moved.
 
-These three records predate the runtime pin, so which CLI and which provider
-patch produced them is an assertion rather than something the record carries.
+The August records predate the runtime pin, so which CLI and which provider
+patch produced them was an assertion rather than something the record carried.
 The patch itself is evidenced by the runs, since an unpatched install fails the
-first tool call and these made hundreds; the version is not. Later sweeps pin
-both, and `evals/judgement.py --check-records` reports the gap per arm.
+first tool call and these made hundreds; the version is not. The 11 Oct 2026
+records pin both, and `evals/judgement.py --check-records` reports all three
+arms current.
 
 ### Notes for the runner
 

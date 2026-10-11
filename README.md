@@ -119,7 +119,7 @@ docs/samples/                      committed model outputs, byte for byte, failu
 
 ## Run
 
-Live runs need Python 3, an Anthropic API key and the three provider patches below, and they cost real money: every `oa run` is a metered model call. One full three-act run of `demos/investigate.sh` came to roughly a US dollar on `claude-sonnet-4-6` in August 2026, most of it the board. Since 9 Oct 2026 three of the six specs run `claude-sonnet-5-5`; the commander, the Scribe and the Precedent Analyst stay on Sonnet 4.6, the first two for the reason under Known limits and the analyst because on the 38-case arm recorded on 9 Oct 2026 4.6 reached more of the expected precedents, 54 of 60 against 51, and on the bridge view 5.5 did not surface the grounding demo's near miss in three runs of three. The free path above needs none of this.
+Live runs need Python 3, an Anthropic API key and the three provider patches below, and they cost real money: every `oa run` is a metered model call. One full three-act run of `demos/investigate.sh` came to roughly a US dollar on `claude-sonnet-4-6` in August 2026, most of it the board. Since 9 Oct 2026 three of the six specs run `claude-sonnet-5-5`; the commander, the Scribe and the Precedent Analyst stay on Sonnet 4.6, the first two for the reason under Known limits and the analyst because on the 38-case arm judged on 11 Oct 2026 4.6 reached 53 of 60 expected precedents against 5.5's 52 and refused one answerable case against three, and on the bridge view 5.5 did not surface the grounding demo's near miss in three runs of three. The free path above needs none of this.
 
 ```bash
 # The contracts extra is not optional: from CLI 1.6.1, a task declaring a
@@ -395,28 +395,37 @@ The Precedent Analyst is the one agent here with an eval suite, because it is
 the one whose failure is quiet: a wrong precedent and a right one have the same
 shape. [`evals/`](evals/README.md) measures it against 38 hand-authored cases,
 scoring the retrieval surface with no model in the loop and the agent's
-judgement live. What three live sweeps found, in short:
+judgement live, with every judgement record re-run on 11 Oct 2026 and the
+runtime pinned in it; the retrieval records are the August ones. What the live sweeps found, in short:
 
-- **No false precedent, which is weaker than it sounds.** The agent never once
-  said a document `applies`, so that rate could not fire. The gap it hides is
-  omission: in the shipped configuration, 14 of the 23 documents that do apply
+- **No false precedent, which is weaker than it sounds.** In the shipped
+  configuration the agent never once said a document `applies`, so that rate
+  could not fire (the single-query arm and Sonnet 5.5 each used the word once). The gap it hides is
+  omission: in the shipped configuration, 14 of the 22 documents that do apply
   were returned to the agent and never reached the board.
-- **It refuses when it should, and only then.** In the shipped configuration,
-  all 13 cases with no precedent came back as none, and none of the 25
-  answerable cases was refused.
+- **It refuses when it should, and once when it should not.** In the shipped
+  configuration, all 13 cases with no precedent came back as none, and one of
+  the 25 answerable cases was refused, against none in August.
 - **Every citation is real.** In every sweep, each cited passage id is a
   passage the archive actually returned, checked against the adapter log rather than the
   agent's own word.
-- **The search instruction is worth twice the latency.** Replacing it with the
-  one someone would plausibly write instead, a single search on the whole
-  symptom, halves the time but reaches 22 of 60 relevant documents instead of
-  54 and refuses 8 answerable cases. That measures the instruction as a whole,
+- **The search instruction is worth its latency.** Replacing it with the one
+  someone would plausibly write instead, a single search on the whole symptom,
+  takes p95 from 41.6s to 24.5s but reaches 23 of 60 relevant documents
+  instead of 53 and refuses 8 answerable cases. That measures the instruction as a whole,
   not query count alone.
 - **Judged scores belong to the judge.** Whether a cited passage supports a
-  claim is scored by a second model. The same claims scored 38 of 52 under one
-  judge family and 17 of 52 under another, with the configurations in the same
-  order. Read those as comparisons, never as scores.
-- **A recall takes about half a minute**, p50 26.9s and p95 52.8s, nearly all
+  claim is scored by a second model. In the August rounds the same claims
+  scored 38 of 52 under one judge family and 17 of 52 under another, with the
+  configurations in the same order. Read those as comparisons, never as scores.
+- **The newer models trade reach for grounding.** Sonnet 5.5 and Haiku 5.5 at
+  medium effort, judged beside the shipped Sonnet 4.6 on 11 Oct 2026: fewer
+  claims (31 and 29 against 54), two more answerable cases refused, reach of
+  52 of 60 and 47 of 59 against 53 of 60, and 26 of 31 and 26 of 28 claims judged
+  grounded against 38 of 54, at well under half the latency. Haiku lost one run
+  of 38 to output the runner could not parse. The analyst stays on 4.6 for
+  reach; the records and the variant specs are committed.
+- **A recall takes about half a minute**, p50 26.3s and p95 41.6s, nearly all
   of it the model. No typed route on the board makes precedent deciding
   evidence, so a slow or failed recall costs the board its precedent column
   and nothing else.
@@ -434,27 +443,25 @@ The tables, the method and the caveats behind every figure are in
 
 | measured by code | unit | judgement-heading | judgement-fixed | judgement-single-query |
 | --- | --- | --- | --- | --- |
-| `false_precedent_rate` | claims offered | 0/52 | 0/56 | 0/22 |
-| `applies_omission_rate` | applies documents returned to the agent | 14/23 | 13/23 | 3/9 |
+| `false_precedent_rate` | claims offered | 0/54 | 0/56 | 0/22 |
+| `applies_omission_rate` | applies documents returned to the agent | 14/22 | 14/24 | 4/10 |
 | `no_precedent_accuracy` | cases with no precedent | 13/13 | 13/13 | 13/13 |
-| `false_refusal_rate` | answerable cases | 0/25 | 1/25 | 8/25 |
-| `groundedness_log` | cited passage ids | 138/138 | 88/88 | 32/32 |
-| `agent_reach` | (case, relevant document) pairs | 54/60 | 54/60 | 22/60 |
-| claims understated | claims offered | 10/52 | 10/56 | 6/22 |
-| claims on documents not called relevant | claims offered | 18/52 | 18/56 | 3/22 |
-| searches issued | calls on the surface | 182, median 5.0 | 163, median 4.0 | 43, median 1.0 |
-| p50 / p95 | one recall | 26.9s / 52.8s | 26.4s / 55.3s | 13.1s / 27.1s |
+| `false_refusal_rate` | answerable cases | 1/25 | 1/25 | 8/25 |
+| `groundedness_log` | cited passage ids | 143/143 | 94/94 | 37/37 |
+| `agent_reach` | (case, relevant document) pairs | 53/60 | 55/60 | 23/60 |
+| claims understated | claims offered | 8/54 | 10/56 | 5/22 |
+| claims on documents not called relevant | claims offered | 19/54 | 17/56 | 3/22 |
+| searches issued | calls on the surface | 178, median 5.0 | 166, median 4.0 | 47, median 1.0 |
+| p50 / p95 | one recall | 26.3s / 41.6s | 22.7s / 48.0s | 9.9s / 24.5s |
 
-Applicability offered: judgement-heading `partial` 44, `superseded` 8; judgement-fixed `partial` 48, `superseded` 8; judgement-single-query `partial` 21, `superseded` 1. `false_precedent_rate` fires only on `applies`.
+Applicability offered: judgement-heading `partial` 46, `superseded` 8; judgement-fixed `partial` 49, `superseded` 7; judgement-single-query `partial` 19, `superseded` 2, `applies` 1. `false_precedent_rate` fires only on `applies`.
 
 | judged by claude-opus-4-6 via anthropic, no file tools, temperature 0 | judgement-heading | judgement-fixed | judgement-single-query |
 | --- | --- | --- | --- |
-| `groundedness_judge` | 38/52 | 48/56 | 21/22 |
-| `divergence_quality` | 6/6 | 6/7 | 6/7 |
+| `groundedness_judge` | 38/54 | 48/56 | 21/22 |
+| `divergence_quality` | 6/7 | 7/7 | 6/7 |
 
-Both judged rates are scored over what each run offered, so offering less can raise them: judgement-heading never offered the diverging record on `b04`.
-
-Generated by `python3 evals/judgement.py --comparison` from 3 records: `judgement-heading` recorded 2026-08-20T04:15:55Z, `judgement-fixed` recorded 2026-08-20T04:41:53Z, `judgement-single-query` recorded 2026-08-20T05:03:03Z. Do not hand-edit either copy: `--comparison --check` diffs this block in every file that publishes it.
+Generated by `python3 evals/judgement.py --comparison` from 3 records: `judgement-heading` recorded 2026-10-11T03:20:52Z, `judgement-fixed` recorded 2026-10-11T03:54:21Z, `judgement-single-query` recorded 2026-10-11T04:11:22Z. Do not hand-edit either copy: `--comparison --check` diffs this block in every file that publishes it.
 <!-- judgement-comparison:end -->
 
 </details>

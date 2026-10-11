@@ -70,9 +70,9 @@ judge:
 # arm" is a rule that quietly re-points a published table when someone records
 # an exploratory sweep.
 comparison:
-  - evals/results/judgement-heading-20260820T041555Z.json
-  - evals/results/judgement-fixed-20260820T044153Z.json
-  - evals/results/judgement-single-query-20260820T050303Z.json
+  - evals/results/judgement-heading-20261011T032052Z.json
+  - evals/results/judgement-fixed-20261011T035421Z.json
+  - evals/results/judgement-single-query-20261011T041122Z.json
 
 arms:
   # The shipped configuration: the index the mock serves by default and the
