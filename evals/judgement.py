@@ -316,6 +316,31 @@ def agent_runtime(oa):
     return runtime
 
 
+def publishable(value):
+    """A record as the tree may carry it: every string with the repository
+    root replaced by `.` and the home directory by `~`.
+
+    The records are committed and the repository is public, so a path that
+    names the machine or the person who ran the sweep is not provenance, it
+    is a leak. Applied where a record is written, never inside the judging
+    or scoring functions, because those are fingerprinted and a path edit
+    there would owe a paid re-judge for a change no verdict depends on.
+    Nothing the drift check compares reads a path; it compares the
+    fingerprints beside them.
+    """
+    if isinstance(value, dict):
+        return {k: publishable(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [publishable(v) for v in value]
+    if isinstance(value, str):
+        repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        home = os.path.expanduser("~")
+        for prefix, short in ((repo, "."), (home, "~")):
+            if value == prefix or prefix + os.sep in value or value.startswith(prefix + os.sep):
+                value = value.replace(prefix, short)
+    return value
+
+
 def case_input(case):
     """The recall task's input, built from the case.
 
@@ -2138,7 +2163,7 @@ def rescore(path, config=None):
                  "fingerprint under judged.",
     }
     with open(path, "w") as handle:
-        json.dump(result, handle, indent=2, sort_keys=False)
+        json.dump(publishable(result), handle, indent=2, sort_keys=False)
         handle.write("\n")
     table = os.path.join(RESULTS, f"{result['label']}.md")
     with open(table, "w") as handle:
@@ -2517,7 +2542,7 @@ def main():
     slug = stamp.replace(":", "").replace("-", "")
     out = os.path.join(RESULTS, f"{arm['label']}-{slug}.json")
     with open(out, "w") as handle:
-        json.dump(result, handle, indent=2, sort_keys=False)
+        json.dump(publishable(result), handle, indent=2, sort_keys=False)
         handle.write("\n")
     table = os.path.join(RESULTS, f"{arm['label']}.md")
     with open(table, "w") as handle:
@@ -2932,7 +2957,7 @@ def rejudge(record_path, config):
                  "fingerprint under judged.",
     }
     with open(record_path, "w") as handle:
-        json.dump(result, handle, indent=2, sort_keys=False)
+        json.dump(publishable(result), handle, indent=2, sort_keys=False)
         handle.write("\n")
     print(f"rejudged {record_path}")
     return 0

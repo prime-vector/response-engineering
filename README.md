@@ -4,7 +4,7 @@
 
 Operations is a software problem. We build the production agent layer: defined as code, tested in CI, constrained by contract.
 
-Built on [Open Agent Spec](https://github.com/prime-vector/open-agent-spec).
+Built on [Open Agent Spec](https://github.com/prime-vector/open-agent-spec): a YAML format that defines an agent, its tasks, its output contracts and its sandbox in one file, and a CLI, `oa`, that runs the file and enforces what it declares.
 
 **[Watch the walkthrough](https://youtu.be/OTdecUh1C98)**, 4 minutes 37: the incident, the layer, the layer doing it, and the one thing it does not claim.
 
@@ -14,11 +14,11 @@ A reference implementation of the investigation layer of incident response: six 
 
 The incident is a composite of a recurring pattern. Its hosts, dates, numbers and products are invented; [`SCENARIO.md`](SCENARIO.md) has it in full. A memory exhaustion problem on a production integration host opens and closes itself on thirteen of fifteen days, and nobody acknowledges it once. On day fifteen a business ticket starts an incident call. A careful analysis names a lead and says plainly it is not proof; within the hour it is relayed as one sentence with its caveats gone, and the call converges on a third party. The cause is never established.
 
-The agents here are built so that cannot happen quietly. Every claim one agent hands another carries a confidence word and the test that would prove it wrong, as required fields the output contract enforces. The Incident Commander's board cannot converge on a cause while the deciding evidence is outstanding. A directed change to production is blocked before it is sent. Each of those is a command you can run, below.
+The agents here are built so that cannot happen quietly. Every claim one agent hands another carries a confidence word and the test that would prove it wrong, as required fields the output contract enforces. The Incident Commander's board cannot converge on a cause while any deciding evidence it lists is outstanding. A directed change to production is blocked before it is sent. Each of those is a command you can run, below.
 
 ![Three evidence surfaces, each read by exactly one agent. The Telemetry Analyst, Change Correlator and Precedent Analyst each read one surface, and typed correlation and precedent reach the Incident Commander, with the Telemetry Analyst's findings marked as the handoff the pipeline does not compose, whose live board goes to the Scribe, whose timeline the driver files on the incident record sink, verified in the adapter log.](docs/diagrams/architecture.svg)
 
-Every arrow between agents is a typed output whose claims carry `confidence` and `falsifying_test` as required fields: a claim cannot shed its caveats when it changes hands. No agent reads another's evidence surface. The timeline is filed by the driver from the contract-validated output and that filing is proved from the adapter log's receipt. The change record is lodged by the Scribe through a tool call the adapter log names but does not prove: the sink issues no receipt for a draft, so `draft_ref` stays self-attested.
+Every arrow between agents is a typed output whose claims carry `confidence` and `falsifying_test` as required fields: a typed claim cannot shed its caveats when it changes hands, and the prose rendered from one can, which `docs/samples/briefing-2026-08-24/` records rather than denies. No agent reads another's evidence surface. The timeline is filed by the driver from the contract-validated output and that filing is proved from the adapter log's receipt. The change record is lodged by the Scribe through a tool call the adapter log names but does not prove: the sink issues no receipt for a draft, so `draft_ref` stays self-attested.
 
 [**The Investigation Layer**](docs/investigation-layer.md) walks the whole thing through with diagrams: the fifteen days nobody consumed, what each of the six agents refuses to do, where the sandbox block actually lives, and why the retrieval surface returns an empty set rather than the nearest match.
 
@@ -43,12 +43,15 @@ python3 demos/show.py day-one     # what had been collected by day one
 
 pipx install "open-agent-spec[contracts,otel]==1.6.2"
 oa validate --spec .agents/incident-commander.yaml
+pip install pyyaml jsonschema              # the checks below import both
 
 python3 checks/contract_invariants.py   # the board's contract holds its invariants
 python3 checks/prompt_inputs.py         # prompts read exactly their required inputs
 python3 checks/briefing_grounded.py     # the briefing cites only what its board cited
 python3 corpus/eval.py                  # the precedent archive meets its interface contract
 ```
+
+None of that runs an agent. What the agents produced on live runs is committed: [`docs/samples/`](docs/samples/) holds boards, briefings and agent traces pages from dated runs, and the walkthrough above shows the three acts end to end.
 
 ---
 
@@ -209,8 +212,10 @@ oa run --spec .agents/scribe.yaml --task draft_change_record \
   --input "$(cat fixtures/mitigation-directive.json)" --quiet
 
 # precedent standalone: what the archive held at this bound, and what it
-# actually supports. Every call is bounded by the view's as_of, so a replay of
-# what was knowable on day two cannot retrieve a record written on day fifteen.
+# actually supports. Search and coverage are bounded by the view's as_of, so a
+# replay of what was knowable on day two cannot retrieve a record written on
+# day fifteen. passage_get takes an id and no bound; only demos/investigate.sh
+# checks a fetched id against what a bounded search returned.
 python3 mock/adapter.py --surface precedent_archive         # 8426
 oa run --spec .agents/precedent-analyst.yaml --task recall \
   --input "$(cat fixtures/composite-incident.json)" --quiet
@@ -348,7 +353,8 @@ target lives. `demos/agent_traces_baseline.sh` does both over the runs it is
 given and renders `runs/baseline.html`: each objective with its target,
 measured value and met or missed, one row per run, and a sparkline per stage
 against its latency target. The objectives were set on 9 Oct 2026 from an
-eight-run baseline: the contract indicators hold on every run, the driver's
+eight-run baseline that is not committed, so the two committed samples can
+reproduce their own verdicts and not the baseline the targets were cut from: the contract indicators hold on every run, the driver's
 content checks carry the one error budget, and latency is a p95 ceiling with
 headroom over what was observed.
 
@@ -368,24 +374,25 @@ The controls above are real, and so are their edges. Know these before composing
 - **Tool-use claims are self-attested.** The runner cannot bind tool results into outputs, so a returned `draft_ref` or a cited `passage_id` proves nothing on its own: they are strings the model wrote either way. The drivers verify the claims the log can settle: it names every `tools/call` and, on the archive, every passage that left the surface by id and uri, so a citation is checked against what was returned. No driver verifies `draft_ref`: the sink names the `change_draft` call and issues no receipt for it, so the draft reference is a string the model wrote. The timeline is no longer filed by the agent: the driver files the validated output through `demos/file_timeline.py`, and `checks/timeline_filed.py` requires a successful `record_update` receipt from the current attempt matching the reference and the digest of the exact entries and gaps the contract validated. Two generations in one response drifted on a live run and nothing structural made them equal. The mock receipt proves acceptance, not durable storage. Anything consuming these outputs must apply the corresponding verification.
 - **A long generation can be lost in transit, and the stock provider cannot stream.** Through OAS 1.6.2 the provider posts and waits for the whole response as one body. On 23 Aug 2026 four consecutive `assess` runs died with `PROVIDER_ERROR: Remote end closed connection without response`, minutes into a request the same call had completed twice earlier that day, and nothing distinguishes that from a real failure at the CLI's exit status. The third patch in `patches/` streams instead and reassembles the events into the response shape the callers already expect; act two then ran end to end, correlator and board, in one minute forty-eight. Both demo drivers also retry once on a transport failure and never on anything else, because a retry that fires on a contract rejection or a sandbox block would be re-running the demonstration, and not at all for a stage that writes: the commander's `mitigate` may have acted by the time a long generation is lost, and a second attempt would act again. The Scribe's timeline retries, because the driver files it only after the surviving attempt returns. Anything else composing on this CLI inherits the unpatched behaviour and should assume a long generation is the exposed one.
 - **A provider policy refusal sits above the sandbox, and the sandbox demo cannot show it.** On every run recorded on 9 Oct 2026, four through `oa` and one by direct request, Sonnet 5.5 returned the mitigation directive as `stop_reason: refusal` in the `cyber` category with no content, before any tool call was made, whether the commander was asked to carry it out or the Scribe to document it. That is a real control and it is not the runner's: on those runs the demo never reached the fence it exists to show, which is why the commander and the Scribe run Sonnet 4.6. Since 10 Oct 2026 the provider patch fails such a run with `Anthropic refusal:` and the category rather than as a stream that ended early, and the demo drivers do not retry it; before that a refusal read as a transport failure and would have been retried once.
+- **`falsifying_test` is required, not non-empty.** Every output that carries a claim requires the field, and no schema sets a minimum length, so an empty string satisfies the contract. No committed sample or record carries one. The Precedent Analyst's schema is pinned by the judgement records, so tightening it waits for the next change that owes a sweep.
 - **The mock adapters are not a security boundary.** They bind 127.0.0.1 with no authentication, and the block in the sandbox demo lives in the runner, not the adapter. A vendor adapter fronts real systems, so it authenticates its callers and carries the host and sink refusals at its own layer; `interfaces/TELEMETRY.md` specifies that defence in depth, this repo demonstrates the runner's fence.
 - **CLI access is privileged.** `--system-prompt` replaces an agent's prompt wholesale, which the governance demos use deliberately. Schema pins survive an overridden prompt; prompt-dependent judgement does not, and whoever can run the CLI can also edit the spec. Treat CLI access to these agents like deploy access. It also sets what the three reject paths can prove: a stripped run is a different producer, not an ablation of one rule, because the operating rules, the output pins and the retrieval guidance all go with the prompt. Each stripped prompt therefore has to name the claim it wants malformed, or the substitute producer behaves well for its own reasons and demonstrates nothing.
 
 ## Design position
 
-**Three layers get conflated in incident management.** Notification and routing is solved: PagerDuty, Opsgenie. The record is solved: ServiceNow. The investigation, what is actually wrong and how we know it, is still entirely human, undocumented, and reconstructed from memory afterwards.
+**Three layers get conflated in incident management.** Notification and routing is solved: PagerDuty, Opsgenie. The record is solved: a change record system. The investigation, what is actually wrong and how we know it, is still entirely human, undocumented, and reconstructed from memory afterwards.
 
 This is the third layer. It has no incumbent, which is not an accident: it needs reasoning rather than workflow.
 
 **This is not alert correlation.** Correlation reduces noise. Against the scenario in `SCENARIO.md` it would have grouped fifteen days of identical problems into one tidy cluster and still told nobody what to do. Different job.
 
-**ServiceNow is a destination, not a competitor.** The draft change record this produces flows into it. Submission is a human action, always.
+**The change record system is a destination, not a competitor.** The draft change record this produces is shaped to be lodged in one; here it goes to a mock sink that issues no receipt. Submission is a human action, always.
 
 **No vendor name appears inside a spec.** Telemetry and change history both sit behind interfaces. Swapping platforms changes one endpoint and nothing else. See `interfaces/TELEMETRY.md`.
 
 ## The contract that matters
 
-The Incident Commander's output requires, per hypothesis: a confidence word, supporting evidence, and the single test that would falsify it. Convergence on a cause is blocked while deciding evidence is outstanding, and naming a third party on inferential evidence trips an attribution guard.
+The Incident Commander's output requires, per hypothesis: a confidence word and the single test that would falsify it, with supporting evidence typed beside them as a list that may be empty. Convergence on a cause is blocked while any deciding evidence the board lists is outstanding, and the board authors that list, so the guarantee is over what it records and not over the view behind it; naming a third party on inferential evidence trips an attribution guard.
 
 This exists because unstructured analysis loses its epistemics in transit. A well caveated hypothesis becomes a finding in three hops, and an investigation converges on whoever is most available to blame. A typed output cannot shed its own caveats when it changes hands.
 

@@ -39,8 +39,9 @@ would say everything was fine. This one shows `stage check: pass` beside
 
 `status` is the one hand-written file: the wrapper did not write it on 8 Oct,
 and the two numbers come from this run's record on the task board. Everything
-else regenerates from `spans.jsonl` and `status`. Re-running writes nothing if
-the artefacts are current, and CI checks that they are. The stage check's
+else regenerates from `spans.jsonl` and `status`. The commands below rewrite
+every derived file; when the artefacts are current the rewrite is byte for byte
+identical, and CI checks that it is. The stage check's
 verdict against the mode's expectations is the recorded `check=` status; CI
 re-runs the check without expectations, so a change to what it prints fails
 here, and a change to what it would decide about these spans does not. From
