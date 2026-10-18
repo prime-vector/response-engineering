@@ -474,4 +474,4 @@ The standard and its reference implementation live together under Prime Vector. 
 
 ## Licence
 
-MIT, the same as Open Agent Spec. See [`LICENSE`](LICENSE).
+MIT, the same as Open Agent Spec. See [`LICENSE`](LICENSE). Contributions are welcome; [`CONTRIBUTING.md`](CONTRIBUTING.md) has the rules that are not negotiable and the checks to run first.
