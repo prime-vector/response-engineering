@@ -1,4 +1,9 @@
-"""Offline check that a record states the sampling the provider sent."""
+"""Offline check of the sampling rule a record states.
+
+The rule mirrors the provider, which drops temperature whenever an effort is
+named; these tests hold judgement.py to that rule and do not observe the
+provider itself.
+"""
 import os
 import sys
 import unittest
@@ -16,7 +21,7 @@ def config_of(path):
 
 
 class AgentSampling(unittest.TestCase):
-    def test_an_effort_means_no_temperature_was_sent(self):
+    def test_with_an_effort_the_record_names_no_temperature(self):
         # The committed variant spec, so a spec that stops naming an effort
         # or starts naming one breaks this loudly rather than quietly.
         config = config_of("evals/specs/precedent-analyst-sonnet55-medium.yaml")
@@ -27,7 +32,7 @@ class AgentSampling(unittest.TestCase):
         self.assertEqual(judgement.sampling_label(sampling),
                          f"effort {config['reasoning_effort']}")
 
-    def test_without_an_effort_the_temperature_is_what_was_sent(self):
+    def test_without_an_effort_the_record_names_the_temperature(self):
         config = config_of(".agents/precedent-analyst.yaml")
         self.assertNotIn("reasoning_effort", config)
         sampling = judgement.agent_sampling(config)
@@ -36,7 +41,7 @@ class AgentSampling(unittest.TestCase):
         self.assertEqual(judgement.sampling_label(sampling),
                          f"temperature {config['temperature']}")
 
-    def test_a_new_record_carries_the_sampling_sent_not_the_spec_value(self):
+    def test_a_new_record_states_the_effort_not_the_spec_temperature(self):
         path = "evals/specs/precedent-analyst-sonnet55-medium.yaml"
         with open(os.path.join(ROOT, path)) as handle:
             spec = yaml.safe_load(handle)
