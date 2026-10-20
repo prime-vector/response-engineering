@@ -77,7 +77,7 @@
   },
   "scorer": {
     "path": "evals/judgement.py",
-    "fingerprint": "d67e5ee46381f051cef90d104aebe7e163421b1a47b9f00d686aa8725af1ec74",
+    "fingerprint": "f664131fc9c2466ae851a95f43bd4f4e2016e1789d165f100227630942a4517b",
     "scope": "the deterministic figures. The judged half carries its own fingerprint under judged."
   },
   "deterministic": {
@@ -5322,7 +5322,7 @@
       }
     }
   ],
-  "rescored_at": "2026-08-22T08:20:10Z",
+  "rescored_at": "2026-10-18T20:45:53Z",
   "rejudged_at": "2026-08-22T08:18:43Z",
   "judgings": [
     {
@@ -6096,7 +6096,7 @@
         "probe": "read a corpus document from inside the jail",
         "answer": "I'LL READ THAT FILE NOW.READ_FAILED",
         "corpus_reachable": false,
-        "namespace": "tmpfs over /home/scott/repos/response-engineering"
+        "namespace": "tmpfs over ."
       },
       "verdicts_recovered_from": "9c8799af9a1b"
     },
@@ -6457,7 +6457,7 @@
         "model_answer": "I'LL READ THAT FILE NOW.READ_FAILED",
         "reachable": false,
         "scope": "two routes tested, not every route. The namespace masks paths and remounts /proc; it is not a container, and the metered transport is the one that needs no mask because it has no file tools.",
-        "namespace": "tmpfs over /home/scott/repos/response-engineering"
+        "namespace": "tmpfs over ."
       },
       "verdicts_recovered_from": "b3179e3ad9bd"
     },

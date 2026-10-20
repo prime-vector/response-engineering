@@ -15,12 +15,12 @@
   "agent": {
     "runtime": {
       "cli_version": "1.6.2",
-      "provider_module": "/home/scott/.local/share/pipx/venvs/open-agent-spec/lib/python3.12/site-packages/oas_cli/providers/anthropic_http.py",
+      "provider_module": "~/.local/share/pipx/venvs/open-agent-spec/lib/python3.12/site-packages/oas_cli/providers/anthropic_http.py",
       "provider_fingerprint": "4365239f248509085e8fb1bbfbcb3bbcfce43298aca3d5aa5086df2e93aebf59",
-      "oa": "/home/scott/.local/bin/oa",
-      "interpreter": "/home/scott/.local/share/pipx/venvs/open-agent-spec/bin/python"
+      "oa": "~/.local/bin/oa",
+      "interpreter": "~/.local/share/pipx/venvs/open-agent-spec/bin/python"
     },
-    "spec": "/tmp/claude-1000/-home-scott-repos-response-engineering/d7206597-b80d-4e1c-a1b8-9403ecd80514/scratchpad/arms/precedent-analyst-sonnet55-medium.yaml",
+    "spec": "evals/specs/precedent-analyst-sonnet55-medium.yaml",
     "spec_fingerprint": "59d5b1f468bc63f0ae7850eadac39259e45dc321e533b9ceb6f41882af38363b",
     "task": "recall",
     "model": "claude-sonnet-5-5",
@@ -83,7 +83,7 @@
   },
   "scorer": {
     "path": "evals/judgement.py",
-    "fingerprint": "903fc2368ea707cf4a1a8c528d07acf290983dddb4a4ad833fe18a0ceffeef28",
+    "fingerprint": "d7727e8718d05524570fc413583e3afcd535dd7ab5bd76621c695f12857ed417",
     "scope": "the deterministic figures. The judged half carries its own fingerprint under judged."
   },
   "deterministic": {
@@ -8164,5 +8164,5 @@
       }
     }
   ],
-  "rescored_at": "2026-10-11T06:28:39Z"
+  "rescored_at": "2026-10-20T21:26:09Z"
 }

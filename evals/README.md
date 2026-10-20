@@ -582,8 +582,9 @@ Two records beside the grid, not in it: `trial-sonnet55-medium` and
 model choice dropped, and nothing else, recorded and judged on 11 Oct 2026 beside
 a fresh run of the shipped arm. The variant specs are committed under
 `evals/specs/` and each record's `agent.spec_fingerprint` is that file's
-hash; the record names the scratch path it ran from, which is what it ran
-from. They stay out of the comparison grid because the grid pins the agent
+hash; the record names that committed copy, since the scratch path the arm
+actually ran from named a machine and a session and a published record
+carries neither. They stay out of the comparison grid because the grid pins the agent
 spec and the model, and that is right: a column there credits a prompt or an
 index, and these change the producer.
 

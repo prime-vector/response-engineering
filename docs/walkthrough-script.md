@@ -363,7 +363,8 @@ renderers wrap to. The terminal is pinned rather than set by hand, because text
 that changes size between cuts is what makes a video look amateur without a
 viewer being able to say why: one Windows Terminal profile, launched the same
 way for every shot, holding at least 79 columns and 28 rows so the widest and
-the tallest frame both fit. `runs/RECORDING-STEPS.md` carries the command.
+the tallest frame both fit. The launch command lives with the local
+recording notes, which are not committed.
 Notifications off. Capture the window rather than the display, or an ultrawide
 monitor hands you a picture that is a thin strip on a phone. Diagrams in a
 browser sized to match, or dropped into the edit as stills.
