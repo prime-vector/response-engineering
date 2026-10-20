@@ -288,6 +288,12 @@ def build(view):
                 "how_to_obtain": "Query the audit log for denial records over the last 14 days on the affected host.",
                 "requested_from": "platform_team",
                 "requested_at": iso(BRIDGE + timedelta(hours=2, minutes=21)),
+                # Named as the board names it, so the board copies a number
+                # rather than computing one: a live run without thinking took
+                # the gap to as_of, 9, for the minute of the incident, 161.
+                "requested_at_elapsed_minutes": int(
+                    (BRIDGE + timedelta(hours=2, minutes=21) - TICKET)
+                    .total_seconds() // 60),
                 "still_outstanding": True,
                 "note": "This is the deciding evidence. Everything else is inference until it lands.",
             }

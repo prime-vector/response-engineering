@@ -2120,6 +2120,7 @@
       "how_to_obtain": "Query the audit log for denial records over the last 14 days on the affected host.",
       "requested_from": "platform_team",
       "requested_at": "2026-03-17T19:21:00+00:00",
+      "requested_at_elapsed_minutes": 161,
       "still_outstanding": true,
       "note": "This is the deciding evidence. Everything else is inference until it lands."
     }
