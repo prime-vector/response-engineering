@@ -24,7 +24,8 @@
     "spec_fingerprint": "0eb292b2df10df27991f9251a87ea29cb78991f4d0c887f8e7e25411880a8224",
     "task": "recall",
     "model": "claude-haiku-5-5",
-    "temperature": 0.2,
+    "temperature": null,
+    "effort": "medium",
     "max_tokens": 16000
   },
   "corpus": {
@@ -83,7 +84,7 @@
   },
   "scorer": {
     "path": "evals/judgement.py",
-    "fingerprint": "d7727e8718d05524570fc413583e3afcd535dd7ab5bd76621c695f12857ed417",
+    "fingerprint": "68d5c8032cebcee8c5c31d79345ed2b846e28bd1549ca2b212e175712931ef14",
     "scope": "the deterministic figures. The judged half carries its own fingerprint under judged."
   },
   "deterministic": {
@@ -8840,5 +8841,5 @@
       }
     }
   ],
-  "rescored_at": "2026-10-20T21:25:57Z"
+  "rescored_at": "2026-10-20T22:33:45Z"
 }

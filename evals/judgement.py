@@ -138,6 +138,37 @@ def load_config(path):
     return config
 
 
+def agent_sampling(config):
+    """The sampling the provider sends for a spec's intelligence.config.
+
+    It drops temperature whenever an effort is named, and the 5.5 models
+    reject one outright, so a record copying the spec's temperature beside an
+    effort would claim a setting that never reached the API.
+    """
+    effort = config.get("reasoning_effort")
+    return {"temperature": None if effort else config.get("temperature"),
+            "effort": effort}
+
+
+def agent_record(config, spec):
+    """A record's agent block, less the runtime it was run on."""
+    return {
+        "spec": config["spec"],
+        "spec_fingerprint": file_fingerprint(config["spec"]),
+        "task": config["task"],
+        "model": spec["intelligence"]["model"],
+        **agent_sampling(spec["intelligence"]["config"]),
+        "max_tokens": spec["intelligence"]["config"].get("max_tokens"),
+    }
+
+
+def sampling_label(agent):
+    """How a record's agent sampling reads in a table or a summary line."""
+    if agent.get("effort"):
+        return f"effort {agent['effort']}"
+    return f"temperature {agent.get('temperature')}"
+
+
 def in_checkout(path, field):
     """A configured path as a record names it: relative to the repository
     root, and inside it.
@@ -1655,15 +1686,7 @@ def run_arm(config, arm, cases, stamp, judged=True):
         "index": arm["index"],
         "index_fingerprint": file_fingerprint(arm["index"]),
         "chunker": arm["chunker"],
-        "agent": {
-            "runtime": agent_runtime(oa),
-            "spec": config["spec"],
-            "spec_fingerprint": file_fingerprint(config["spec"]),
-            "task": config["task"],
-            "model": spec["intelligence"]["model"],
-            "temperature": spec["intelligence"]["config"].get("temperature"),
-            "max_tokens": spec["intelligence"]["config"].get("max_tokens"),
-        },
+        "agent": {"runtime": agent_runtime(oa), **agent_record(config, spec)},
         "corpus": {"documents": len(corpus),
                    "fingerprint": corpus_fingerprint},
         "dataset": {
@@ -1769,8 +1792,8 @@ def markdown(result):
         f"- Arm `{result['label']}`" + (f", {arm['description']}"
                                         if arm["description"] else ""),
         f"- Agent `{result['agent']['spec']}` task `{result['agent']['task']}`,"
-        f" model {result['agent']['model']}, temperature "
-        f"{result['agent']['temperature']}",
+        f" model {result['agent']['model']}, "
+        f"{sampling_label(result['agent'])}",
         f"- System prompt: {arm['system_prompt']}"
         + (f" (`{arm['system_prompt_fingerprint'][:16]}`)"
            if arm["system_prompt_fingerprint"] else ""),
