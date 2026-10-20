@@ -1268,8 +1268,11 @@ def compare_judgement(path_a, a, path_b, b):
                   "precedent rate above is zero over a word the agent never "
                   "reached for. Read applies_omission_rate instead.")
 
+    # An effort means the provider sent no temperature, so name the effort.
+    sampling = (f"effort {a['agent']['effort']}" if a["agent"].get("effort")
+                else f"temperature {a['agent'].get('temperature')}")
     print(f"\n  One sweep each, {len(a['dataset']['ids'])} cases, a model at "
-          f"temperature {a['agent']['temperature']} on both sides. A few "
+          f"{sampling} on both sides. A few "
           f"points either way is what the same arm does twice; read the "
           f"named failures in each table, not the third decimal.")
     return 0
