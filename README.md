@@ -43,7 +43,7 @@ python3 demos/show.py day-one     # what had been collected by day one
 
 pipx install "open-agent-spec[contracts,otel]==1.6.2"
 oa validate --spec .agents/incident-commander.yaml
-pip install pyyaml jsonschema              # the checks below import both
+pip install pyyaml jsonschema              # between them the checks below need both
 
 python3 checks/contract_invariants.py   # the board's contract holds its invariants
 python3 checks/prompt_inputs.py         # prompts read exactly their required inputs
