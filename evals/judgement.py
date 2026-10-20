@@ -341,6 +341,23 @@ def publishable(value):
     return value
 
 
+def write_record(result, path, table=None):
+    """Write a record, and its table when there is one, from one redacted
+    value.
+
+    Both formats carry harness metadata, and the table renders agent.spec
+    verbatim, so redacting the JSON alone published the path in the Markdown
+    beside it whenever a spec was named absolutely.
+    """
+    public = publishable(result)
+    with open(path, "w") as handle:
+        json.dump(public, handle, indent=2, sort_keys=False)
+        handle.write("\n")
+    if table:
+        with open(table, "w") as handle:
+            handle.write(markdown(public))
+
+
 def case_input(case):
     """The recall task's input, built from the case.
 
@@ -2162,12 +2179,8 @@ def rescore(path, config=None):
         "scope": "the deterministic figures. The judged half carries its own "
                  "fingerprint under judged.",
     }
-    with open(path, "w") as handle:
-        json.dump(publishable(result), handle, indent=2, sort_keys=False)
-        handle.write("\n")
     table = os.path.join(RESULTS, f"{result['label']}.md")
-    with open(table, "w") as handle:
-        handle.write(markdown(result))
+    write_record(result, path, table)
     print(f"rescored {path} and rewrote {table}")
     return 0
 
@@ -2541,12 +2554,8 @@ def main():
     os.makedirs(RESULTS, exist_ok=True)
     slug = stamp.replace(":", "").replace("-", "")
     out = os.path.join(RESULTS, f"{arm['label']}-{slug}.json")
-    with open(out, "w") as handle:
-        json.dump(publishable(result), handle, indent=2, sort_keys=False)
-        handle.write("\n")
     table = os.path.join(RESULTS, f"{arm['label']}.md")
-    with open(table, "w") as handle:
-        handle.write(markdown(result))
+    write_record(result, out, table)
 
     summary = result["deterministic"]
     print()
@@ -2956,9 +2965,7 @@ def rejudge(record_path, config):
         "scope": "the deterministic figures. The judged half carries its own "
                  "fingerprint under judged.",
     }
-    with open(record_path, "w") as handle:
-        json.dump(publishable(result), handle, indent=2, sort_keys=False)
-        handle.write("\n")
+    write_record(result, record_path)
     print(f"rejudged {record_path}")
     return 0
 
