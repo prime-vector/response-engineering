@@ -125,7 +125,38 @@ def load_config(path):
     for key in ("spec", "task", "arms", "judge"):
         if key not in config:
             raise SystemExit(f"{path} is missing {key}")
+    config["spec"] = in_checkout(config["spec"], "spec")
+    for arm in config["arms"]:
+        arm["index"] = in_checkout(arm["index"], f"arm {arm['label']} index")
+        if arm.get("system_prompt"):
+            arm["system_prompt"] = in_checkout(
+                arm["system_prompt"], f"arm {arm['label']} system_prompt")
+    for name in ("groundedness_prompt", "divergence_prompt"):
+        if config["judge"].get(name):
+            config["judge"][name] = in_checkout(config["judge"][name],
+                                                f"judge {name}")
     return config
+
+
+def in_checkout(path, field):
+    """A configured path as a record names it: relative to the repository
+    root, and inside it.
+
+    A record names the files it was run against and the drift check compares
+    those names with the config's, so both sides have to be written one way;
+    an absolute path in the config would read as a different file from the
+    same one recorded relative. And a file outside the checkout can be neither
+    committed beside the record nor checked from it, while its path names
+    the machine that held it. Refused here, before any run is paid for.
+    """
+    repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    full = os.path.abspath(path)
+    if os.path.commonpath([repo, full]) != repo:
+        raise SystemExit(
+            f"{field} is outside this checkout. A record names the files it "
+            f"is checked against, so copy it under evals/ and name that "
+            f"copy, as evals/specs/ does for the trial arms.")
+    return os.path.relpath(full, repo)
 
 
 def pick_arm(config, label):
@@ -325,8 +356,9 @@ def publishable(value):
     is a leak. Applied where a record is written, never inside the judging
     or scoring functions, because those are fingerprinted and a path edit
     there would owe a paid re-judge for a change no verdict depends on.
-    Nothing the drift check compares reads a path; it compares the
-    fingerprints beside them.
+    The paths the drift check compares never reach this rewrite:
+    load_config holds every configured path to repository-relative form
+    inside the checkout, so there is no prefix in them to replace.
     """
     if isinstance(value, dict):
         return {k: publishable(v) for k, v in value.items()}
