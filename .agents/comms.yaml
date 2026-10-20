@@ -53,9 +53,8 @@ intelligence:
   endpoint: https://api.anthropic.com/v1
   model: claude-sonnet-5-5
   config:
-    temperature: 0.2
-    # Sonnet 5.5 rejects a temperature and runs adaptive thinking by default;
-    # naming an effort makes the provider send that and drop the temperature.
+    # No temperature: Sonnet 5.5 rejects a non-default one, and naming an
+    # effort makes the provider send that with adaptive thinking instead.
     reasoning_effort: medium
     # A stakeholder update is a few hundred tokens, 150 on the one Sonnet 5.5
     # run recorded, and thinking now spends from the same budget, so this is

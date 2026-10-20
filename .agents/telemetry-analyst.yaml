@@ -27,9 +27,8 @@ intelligence:
   endpoint: https://api.anthropic.com/v1
   model: claude-sonnet-5-5
   config:
-    temperature: 0.2
-    # Sonnet 5.5 rejects a temperature and runs adaptive thinking by default;
-    # naming an effort makes the provider send that and drop the temperature.
+    # No temperature: Sonnet 5.5 rejects a non-default one, and naming an
+    # effort makes the provider send that with adaptive thinking instead.
     reasoning_effort: medium
     max_tokens: 8000
     # Provider HTTP read timeout. The D+1 view is small but the default 60s
@@ -285,8 +284,8 @@ prompts:
 
     Your entire reply must be a single JSON object with exactly these
     top-level keys: recurrence_detected, recurrences, findings,
-    standing_conditions_implicated, next_actions. Show arithmetic and working
-    inside the relevant fields, never as prose outside the JSON. No markdown
+    standing_conditions_implicated, next_actions. Arithmetic goes in the field
+    it supports, never as prose outside the JSON. No markdown
     fences, no preamble, no text after the closing brace. Bare JSON numbers
     never contain digit grouping (34359738368, not 34,359,738,368); formatted
     figures belong inside strings.
