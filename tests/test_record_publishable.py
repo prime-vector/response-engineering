@@ -2,6 +2,7 @@
 import glob
 import json
 import os
+import shutil
 import sys
 import tempfile
 import unittest
@@ -87,6 +88,22 @@ class LoadConfig(unittest.TestCase):
             with self.subTest(name):
                 raw = yaml.safe_load(open(CONFIG))
                 put(raw, outside)
+                with self.assertRaises(SystemExit) as raised:
+                    self.load(raw)
+                self.assertIn(f"{name} is outside this checkout",
+                              str(raised.exception))
+
+    def test_a_link_inside_the_checkout_to_a_file_outside_is_refused(self):
+        outside = os.path.join(self.tmp, "variant.yaml")
+        open(outside, "w").close()
+        inside = tempfile.mkdtemp(dir=ROOT)
+        self.addCleanup(shutil.rmtree, inside)
+        link = os.path.join(inside, "variant.yaml")
+        os.symlink(outside, link)
+        for name, get, put in FIELDS:
+            with self.subTest(name):
+                raw = yaml.safe_load(open(CONFIG))
+                put(raw, os.path.relpath(link, ROOT))
                 with self.assertRaises(SystemExit) as raised:
                     self.load(raw)
                 self.assertIn(f"{name} is outside this checkout",

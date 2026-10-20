@@ -149,8 +149,10 @@ def in_checkout(path, field):
     committed beside the record nor checked from it, while its path names
     the machine that held it. Refused here, before any run is paid for.
     """
-    repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    full = os.path.abspath(path)
+    # Resolved, so a link inside the checkout to a file outside it is outside.
+    repo = os.path.realpath(os.path.dirname(os.path.dirname(
+        os.path.abspath(__file__))))
+    full = os.path.realpath(path)
     if os.path.commonpath([repo, full]) != repo:
         raise SystemExit(
             f"{field} is outside this checkout. A record names the files it "
