@@ -1009,8 +1009,8 @@ prompts:
     changes what is outstanding.
 
     Evidence listed as already requested and outstanding stays on the board as
-    blocking evidence, carrying its requester and request time with
-    still_outstanding true. Do not re-request it as if new, and do not treat
+    blocking evidence, carrying its requester and the
+    requested_at_elapsed_minutes the item gives, with still_outstanding true. Do not re-request it as if new, and do not treat
     the request as the evidence.
 
     Your entire reply must be a single JSON object with exactly these
