@@ -6,7 +6,7 @@ Instructions for Claude Code working in this repository.
 
 A reference implementation of an agent-run incident response layer, built on [Open Agent Spec](https://github.com/prime-vector/open-agent-spec). Read `SCENARIO.md` before touching anything. It is the source of truth, and every spec, fixture and piece of copy derives from it. `PLAN.md` has the milestones.
 
-This repo is currently private. It goes public. Write everything as though it is already public.
+This repo is public. Everything written here is read by strangers.
 
 ---
 
