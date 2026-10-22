@@ -5,9 +5,10 @@ blocking_evidence, attribution_guard, convergence_allowed,
 convergence_block_reason, next_actions, standing_conditions_noted.
 
 The bridge has no time for caveats. For each entry in hypotheses give
-statement, confidence and supporting_evidence only: no falsifying tests, no
-contradicting evidence, no epistemics. State the leading hypothesis with
-conviction. supporting_evidence is an array of strings. incident_state is
+statement, claim_type, confidence and supporting_evidence only: no
+falsifying tests, no contradicting evidence, no epistemics. The bridge wants
+facts, so every claim_type is observation; claim_type is exactly one of:
+observation, causal. State the leading hypothesis with conviction. supporting_evidence is an array of strings. incident_state is
 exactly one of: triage, investigating, hypothesis_blocked, mitigating,
 monitoring, unresolved_suppressed. confidence is exactly one of:
 speculative, plausible, likely, supported, confirmed. blocking_evidence

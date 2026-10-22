@@ -231,6 +231,17 @@ tasks:
               statement:
                 type: string
                 description: The claim, stated so it can be proven wrong
+              claim_type:
+                type: string
+                description: >
+                  What kind of claim the statement makes. observation: it
+                  states what was seen. causal: it says one thing made
+                  another happen, including a statement that bundles an
+                  observation with a cause. An observation establishes what
+                  was observed, not what caused it, so a causal claim is at
+                  most likely; the rule below rejects supported and
+                  confirmed on one.
+                enum: [observation, causal]
               confidence:
                 type: string
                 description: >
@@ -290,11 +301,14 @@ tasks:
                   against the output's own word.
                 items:
                   type: string
-            required: [statement, confidence, falsifying_test]
-            # Closed, for the reason blocking_evidence is. The rule below reads
-            # one field by name, so a hypothesis carrying its citation under
-            # any other name would be confirmed with the rule none the wiser.
-            # These nine and no others.
+            # falsifying_test before claim_type: when a board drops both, the
+            # validator reports the first, and the contract demo asserts that
+            # the stripped caveat is what the board is rejected for.
+            required: [statement, confidence, falsifying_test, claim_type]
+            # Closed, for the reason blocking_evidence is. The rules below read
+            # fields by name, so a hypothesis carrying its citation under any
+            # other name would be confirmed with the rule none the wiser.
+            # These ten and no others.
             additionalProperties: false
             # Precedent is supporting evidence, structurally rather than as a
             # matter of prompt discipline: a hypothesis resting on the archive
@@ -320,6 +334,23 @@ tasks:
                     confidence:
                       not:
                         const: confirmed
+              # A causal claim stays below supported. Live boards rated a
+              # statement that bundled an observation with its cause by the
+              # observed half, and a prompt sentence forbidding it was broken
+              # on every board it was tried on, so the rule lives here. What
+              # it cannot stop is a cause labelled as an observation: that is
+              # one explicit, reviewable word rather than a judgement inside a
+              # sentence, which is as far as a schema reaches.
+              - if:
+                  properties:
+                    claim_type:
+                      const: causal
+                  required: [claim_type]
+                then:
+                  properties:
+                    confidence:
+                      not:
+                        enum: [supported, confirmed]
         blocking_evidence:
           type: array
           description: >
@@ -990,6 +1021,12 @@ prompts:
       does not establish it, and nothing outstanding in blocking_evidence
       would decide it.
     - confirmed: a direct observation in the evidence array establishes it.
+    claim_type says what kind of claim a hypothesis makes. observation: it
+    states what was seen. causal: it says one thing made another happen, and
+    a statement that bundles an observation with its cause is causal. An
+    observation establishes what was observed, not what caused it, so a
+    causal hypothesis is at most likely, and the contract rejects supported
+    or confirmed on one.
     While blocking evidence that would decide a hypothesis is outstanding,
     that hypothesis is at most likely, however strongly the inference reads,
     and while any blocking evidence is outstanding no hypothesis is
@@ -1039,7 +1076,7 @@ prompts:
     inside strings.
 
     Field names must match the contract exactly:
-    - hypotheses[]: statement, confidence, supporting_evidence,
+    - hypotheses[]: statement, claim_type, confidence, supporting_evidence,
       contradicting_evidence, falsifying_test, rules_in, rules_out,
       third_party_named, precedent_cited. rules_in and rules_out are each
       one string, never a list.
@@ -1072,10 +1109,11 @@ prompts:
     plain strings. Every other field listed above is a scalar: never emit []
     or {} for a string or boolean field, omit optional fields instead.
     confidence is exactly one of: speculative, plausible, likely, supported,
-    confirmed. incident_state is exactly one of: triage, investigating,
-    hypothesis_blocked, mitigating, monitoring, unresolved_suppressed. intent
-    is exactly one of: collect_evidence, mitigate, communicate, restore. All
-    three are closed sets in the contract: a word outside them is rejected and
+    confirmed. claim_type is exactly one of: observation, causal, and every
+    hypothesis states one. incident_state is exactly one of: triage,
+    investigating, hypothesis_blocked, mitigating, monitoring,
+    unresolved_suppressed. intent is exactly one of: collect_evidence,
+    mitigate, communicate, restore. All four are closed sets in the contract: a word outside them is rejected and
     the board is lost, so an action that seems to want a fifth intent is one of
     these four with its specifics in the action text.
     summary is two sentences and under 600 characters; the detail belongs on

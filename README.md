@@ -394,7 +394,7 @@ This is the third layer. It has no incumbent, which is not an accident: it needs
 
 ## The contract that matters
 
-The Incident Commander's output requires, per hypothesis: a confidence word and the single test that would falsify it, with supporting evidence typed beside them as a list that may be empty. Convergence on a cause is blocked while any deciding evidence the board lists is outstanding, and the board authors that list, so the guarantee is over what it records and not over the view behind it; naming a third party on inferential evidence trips an attribution guard.
+The Incident Commander's output requires, per hypothesis: a confidence word, the single test that would falsify it, and whether the claim is an `observation` or `causal`, with supporting evidence typed beside them as a list that may be empty. A causal claim is never `supported` or `confirmed`, because an observation establishes what was observed and not what caused it; a cause the board labels an observation is not caught, though it is now one explicit word a reader can challenge. Convergence on a cause is blocked while any deciding evidence the board lists is outstanding, and the board authors that list, so the guarantee is over what it records and not over the view behind it; naming a third party on inferential evidence trips an attribution guard.
 
 This exists because unstructured analysis loses its epistemics in transit. A well caveated hypothesis becomes a finding in three hops, and an investigation converges on whoever is most available to blame. A typed output cannot shed its own caveats when it changes hands.
 

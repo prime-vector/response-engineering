@@ -175,7 +175,7 @@ Also 9 self-tests.
 
 def main():
     doc = DOC.read_text()
-    names = {name for name, _, _ in CASES}
+    names = {case[0] for case in CASES}
     # `all` included: the document cites it in the pre-take checklist, and
     # excluding it was a false positive this check found on its first run.
     modes = governance_modes(GOVERNANCE.read_text())
