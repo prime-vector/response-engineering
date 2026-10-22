@@ -59,6 +59,7 @@ BASE = {
     "hypotheses": [
         {
             "statement": "A recently activated daemon is consuming the host's memory.",
+            "claim_type": "causal",
             "confidence": "plausible",
             "supporting_evidence": ["Process snapshot E-1."],
             "falsifying_test": "The audit denial log names another source domain.",
@@ -167,6 +168,24 @@ CASES = [
     # up, and the gate found it there after finding it in the items.
     case("a citation smuggled onto the board itself",
          lambda b: b.update(precedent_cited=["p-14cc2f280479"]), False),
+    # Rule: a causal claim stays below supported. An observation establishes
+    # what was observed and not what caused it, and live boards rated a
+    # bundled observation-and-cause by its observed half. Both rejected words,
+    # the highest accepted one, and the other value at the top of the scale.
+    case("a causal claim at supported",
+         lambda b: b["hypotheses"][0].update(confidence="supported"), False),
+    case("a causal claim at confirmed",
+         lambda b: b["hypotheses"][0].update(confidence="confirmed"), False),
+    case("a causal claim at likely",
+         lambda b: b["hypotheses"][0].update(confidence="likely"), True),
+    case("an observation at confirmed",
+         lambda b: b["hypotheses"][0].update(claim_type="observation",
+                                             confidence="confirmed"), True),
+    # The rule cannot be dodged by leaving the label off or misspelling it.
+    case("claim_type omitted",
+         lambda b: b["hypotheses"][0].pop("claim_type"), False),
+    case("a claim_type outside the set",
+         lambda b: b["hypotheses"][0].update(claim_type="Causal"), False),
 ]
 
 # What none of this catches, stated here rather than left for a reader to
