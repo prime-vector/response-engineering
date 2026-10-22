@@ -57,8 +57,8 @@ different view per case.
 THE THRESHOLD IS PER MODEL, and it started out wrong. The minimum cacheable
 prefix is in tokens, roughly 1,024 for Sonnet and Opus and 2,048 for Haiku, and
 the first version of this patch used a flat 4,096 characters for all of them.
-That admitted the commander's system prompt, which is 4,333 characters and
-1,018 tokens: a breakpoint the model would never cache, on the one call in this
+That admitted the commander's system prompt, which was then 4,333 characters
+and 1,018 tokens: a breakpoint the model would never cache, on the one call in this
 repository that is single-shot. Not an error, and not a saving either, which is
 the kind of setting that reads like one in a diff.
 
@@ -71,11 +71,12 @@ substantial tool definitions clears it on the pair and on neither half; the
 first version measured each block alone and would have declined a breakpoint
 that had every right to cache. On this repository's own specs nothing moves,
 because the only tool-bound agent already cleared the floor on its system
-prompt alone. The rule was wrong in general, which is enough. Of the six specs here only the Precedent Analyst's system
-prompt clears it, which is the agent whose tool loop re-sends it five to ten
-times a run and the reason this patch exists. The commander's does not, and its
-single-shot `assess` therefore sets no breakpoint at all rather than one that
-does nothing.
+prompt alone. The rule was wrong in general, which is enough. Of the six specs here two system
+prompts clear it: the Precedent Analyst's, whose tool loop re-sends it five to
+ten times a run and is the reason this patch exists, and the commander's root
+prompt, which has since grown past the floor, so its single-shot `assess` sets
+a breakpoint that pays only when `assess` runs again within the cache's
+lifetime.
 
 ONE INTERACTION WITH `evals/`. A judgement record carries a provider
 fingerprint, and this changes the provider, so arms recorded before it and

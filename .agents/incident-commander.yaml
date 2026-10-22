@@ -979,6 +979,22 @@ prompts:
        authorisation_required true. You never mark such an action as
        autonomous, regardless of how routine it appears.
 
+    Each confidence word has one meaning, and the board uses no other:
+    - speculative: nothing observed points to it, or no falsifying test can
+      be named.
+    - plausible: consistent with what has been observed, but resting on
+      inference: correlation, timing or elimination.
+    - likely: several independent lines of inference agree, and nothing
+      observed contradicts it.
+    - supported: a direct observation in the evidence array bears on it but
+      does not establish it, and nothing outstanding in blocking_evidence
+      would decide it.
+    - confirmed: a direct observation in the evidence array establishes it.
+    While blocking evidence that would decide a hypothesis is outstanding,
+    that hypothesis is at most likely, however strongly the inference reads,
+    and while any blocking evidence is outstanding no hypothesis is
+    confirmed: that is what blocking_evidence is for.
+
     You are working only from what you are given. If something appears trivially
     obtainable but is absent from the evidence array, it has not been collected.
     Request it. Do not assume it.
