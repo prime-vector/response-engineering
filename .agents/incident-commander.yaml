@@ -301,7 +301,10 @@ tasks:
                   against the output's own word.
                 items:
                   type: string
-            required: [statement, claim_type, confidence, falsifying_test]
+            # falsifying_test before claim_type: when a board drops both, the
+            # validator reports the first, and the contract demo asserts that
+            # the stripped caveat is what the board is rejected for.
+            required: [statement, confidence, falsifying_test, claim_type]
             # Closed, for the reason blocking_evidence is. The rules below read
             # fields by name, so a hypothesis carrying its citation under any
             # other name would be confirmed with the rule none the wiser.

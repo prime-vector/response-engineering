@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
-"""Assert what the commander's board can and cannot express about precedent.
+"""Assert what the commander's board can and cannot express.
 
 Four rules in `.agents/incident-commander.yaml` close the typed routes by which
-precedent could become deciding evidence. They do not close prose, and the last
-two cases below are the boards that prove it: a schema sees the list the board
-wrote and never the view it was drawn from. The suite carries both halves,
+precedent could become deciding evidence. They do not close prose, and two
+cases below, "precedent asserted in prose as satisfying a blocking item" and "a
+board with no blocking evidence at all", are the boards that prove it: a schema
+sees the list the board wrote and never the view it was drawn from. A fifth
+rule holds a causal claim below supported, and its cases are the whole grid of
+the two label values against the five confidence words. The suite carries both halves,
 because a check that only demonstrates its own successes is how a claim grows
 past what it can keep.
 
@@ -59,7 +62,7 @@ BASE = {
     "hypotheses": [
         {
             "statement": "A recently activated daemon is consuming the host's memory.",
-            "claim_type": "causal",
+            "claim_type": "observation",
             "confidence": "plausible",
             "supporting_evidence": ["Process snapshot E-1."],
             "falsifying_test": "The audit denial log names another source domain.",
@@ -84,10 +87,13 @@ BASE = {
 }
 
 
-def case(name, mutate, accepted):
+def case(name, mutate, accepted, because=None):
+    """A board, the verdict the contract owes it, and, for a rejection, a
+    fragment of the validator's message that says which rule refused it.
+    Without the fragment a case can pass because some other rule fired."""
     board = copy.deepcopy(BASE)
     mutate(board)
-    return name, board, accepted
+    return name, board, accepted, because
 
 
 def _cite(board, ids=("p-14cc2f280479",)):
@@ -103,7 +109,8 @@ CASES = [
     # Rule: a hypothesis resting on the archive cannot be confirmed. Both
     # spellings, because the const alone closes one and the enum closes the
     # rest.
-    case("cited and confirmed", lambda b: (_cite(b), b["hypotheses"][0].update(confidence="confirmed")), False),
+    case("cited and confirmed", lambda b: (_cite(b), b["hypotheses"][0].update(confidence="confirmed")), False,
+         because="should not be valid under {'const': 'confirmed'}"),
     case("cited and Confirmed", lambda b: (_cite(b), b["hypotheses"][0].update(confidence="Confirmed")), False),
     case("a confidence outside the scale", lambda b: b["hypotheses"][0].update(confidence="high"), False),
     # The three closed sets are closed in the schema and stated in the prompt.
@@ -159,7 +166,13 @@ CASES = [
     # rule cannot see, on a hypothesis it then confirms.
     case("a citation smuggled under another field name",
          lambda b: b["hypotheses"][0].update(precedent_passage_id="p-14cc2f280479",
-                                             confidence="confirmed"), False),
+                                             confidence="confirmed"), False,
+         because="Additional properties are not allowed"),
+    # The closed hypothesis object on its own, with no confidence the other
+    # rules could refuse first.
+    case("an undeclared field on a hypothesis",
+         lambda b: b["hypotheses"][0].update(note="see the runbook"), False,
+         because="Additional properties are not allowed"),
     case("an undeclared field on a next action",
          lambda b: b["next_actions"][0].update(precedent="p-14cc2f280479"), False),
     case("an undeclared field on the attribution guard",
@@ -168,30 +181,57 @@ CASES = [
     # up, and the gate found it there after finding it in the items.
     case("a citation smuggled onto the board itself",
          lambda b: b.update(precedent_cited=["p-14cc2f280479"]), False),
-    # Rule: a causal claim stays below supported. An observation establishes
-    # what was observed and not what caused it, and live boards rated a
-    # bundled observation-and-cause by its observed half. Both rejected words,
-    # the highest accepted one, and the other value at the top of the scale.
-    case("a causal claim at supported",
-         lambda b: b["hypotheses"][0].update(confidence="supported"), False),
-    case("a causal claim at confirmed",
-         lambda b: b["hypotheses"][0].update(confidence="confirmed"), False),
-    case("a causal claim at likely",
-         lambda b: b["hypotheses"][0].update(confidence="likely"), True),
-    case("an observation at confirmed",
-         lambda b: b["hypotheses"][0].update(claim_type="observation",
-                                             confidence="confirmed"), True),
-    # The rule cannot be dodged by leaving the label off or misspelling it.
+    # The label cannot be dodged by leaving it off, misspelling it, or giving it
+    # another type.
+    # The governance contract demo strips the caveats and asserts the board is
+    # refused for the missing falsifying_test. A board that also drops the
+    # label must still be refused for that, which the order of `required`
+    # decides, so the order is held here rather than only commented.
+    case("falsifying_test and claim_type both stripped",
+         lambda b: (b["hypotheses"][0].pop("falsifying_test"),
+                    b["hypotheses"][0].pop("claim_type")), False,
+         because="'falsifying_test' is a required property"),
     case("claim_type omitted",
-         lambda b: b["hypotheses"][0].pop("claim_type"), False),
+         lambda b: b["hypotheses"][0].pop("claim_type"), False,
+         because="'claim_type' is a required property"),
     case("a claim_type outside the set",
-         lambda b: b["hypotheses"][0].update(claim_type="Causal"), False),
+         lambda b: b["hypotheses"][0].update(claim_type="Causal"), False,
+         because="is not one of ['observation', 'causal']"),
+    *[case(f"claim_type as {label}",
+           lambda b, v=value: b["hypotheses"][0].update(claim_type=v), False,
+           because="is not of type 'string'")
+      for label, value in (("true", True), ("1", 1), ("null", None),
+                           ("a list", ["causal"]))],
+]
+
+# Rule: a causal claim stays below supported. An observation establishes what
+# was observed and not what caused it, and live boards rated a bundled
+# observation-and-cause by its observed half. Every cell of the grid, both
+# labels against all five words, read out of the schema so a word added to
+# either enum is tested the day it lands. The verdict is stated here and not
+# read from the rule under test: these two words, and only on a causal claim.
+_HYPOTHESIS = yaml.safe_load(SPEC.read_text())["tasks"]["assess"]["output"][
+    "properties"]["hypotheses"]["items"]["properties"]
+_REFUSED_WHEN_CAUSAL = {"supported", "confirmed"}
+CASES += [
+    case(f"{label} at {word}",
+         lambda b, l=label, w=word: b["hypotheses"][0].update(claim_type=l,
+                                                              confidence=w),
+         not (label == "causal" and word in _REFUSED_WHEN_CAUSAL),
+         because=(f"'{word}' should not be valid under {{'enum'"
+                  if label == "causal" and word in _REFUSED_WHEN_CAUSAL
+                  else None))
+    # The declared words if the schema stops pinning them, so a dropped enum
+    # is reported by the case that tests it rather than by a crash here.
+    for label in _HYPOTHESIS["claim_type"].get("enum", ["observation", "causal"])
+    for word in _HYPOTHESIS["confidence"].get(
+        "enum", ["speculative", "plausible", "likely", "supported", "confirmed"])
 ]
 
 # What none of this catches, stated here rather than left for a reader to
 # assume otherwise: a passage paraphrased into supporting_evidence with no
-# citation at all, and the last two cases above, where the board writes its way
-# out of its own list. The first is why the demo checks citations against the
+# citation at all, and the two cases named in the docstring, where the board
+# writes its way out of its own list. The first is why the demo checks citations against the
 # adapter log. The rest is a judgement the contract cannot make, because a
 # schema sees the board and never the view it was drawn from, and it is a
 # responder's job rather than a validator's.
@@ -1185,13 +1225,15 @@ def main():
     schema = specs[SPEC.name]["tasks"]["assess"]["output"]
     scale_failures, declarations = confidence_scales_hold(specs)
     failures = 0
-    for name, board, accepted in CASES:
+    for name, board, accepted, because in CASES:
         try:
             validate(instance=board, schema=schema)
             got, why = True, "accepted"
         except ValidationError as exc:
             got, why = False, exc.message
-        ok = got == accepted
+        # A rejection that names a rule is held to that rule: refused for the
+        # wrong reason is a failure, not a pass.
+        ok = got == accepted and (got or because is None or because in why)
         failures += not ok
         verdict = "ok  " if ok else "FAIL"
         print(f"  {verdict} {name}: {'accepted' if got else 'rejected'}"
